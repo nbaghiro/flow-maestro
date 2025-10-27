@@ -32,6 +32,7 @@ lerna-debug.log*
 Thumbs.db
 
 # Editor
+.claude/
 .vscode/
 .idea/
 *.swp
