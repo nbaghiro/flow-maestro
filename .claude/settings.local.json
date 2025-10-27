@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(do sed -i '' 's|from \"\"../../../components/ui/|from \"\"../../../components/|g' \"$file\")",
+      "Bash(wc -l /Users/naib/Documents/code/flowmaestro/frontend/src/**/*.{ts,tsx})",
+      "Bash(docker-compose ps:*)",
+      "Read(//tmp/**)",
+      "Bash(curl:*)",
+      "Bash(lsof:*)",
+      "Bash(PGPASSWORD=flowmaestro_dev_password psql:*)",
+      "Bash(docker exec:*)",
+      "Bash(xargs:*)",
+      "WebSearch"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

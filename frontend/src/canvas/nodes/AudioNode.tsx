@@ -1,0 +1,41 @@
+import { memo } from "react";
+import { NodeProps } from "reactflow";
+import { BaseNode } from "./BaseNode";
+import { Mic } from "lucide-react";
+
+interface AudioNodeData {
+    label: string;
+    status?: "idle" | "pending" | "running" | "success" | "error";
+    config?: {
+        operation?: string;
+        model?: string;
+    };
+}
+
+function AudioNode({ data, selected }: NodeProps<AudioNodeData>) {
+    const operation = data.config?.operation || "transcribe";
+    const model = data.config?.model || "whisper-1";
+
+    return (
+        <BaseNode
+            icon={Mic}
+            label={data.label || "Audio"}
+            status={data.status}
+            category="ai"
+            selected={selected}
+        >
+            <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground">Operation:</span>
+                    <span className="text-xs font-medium capitalize">{operation}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground">Model:</span>
+                    <span className="text-xs font-medium">{model}</span>
+                </div>
+            </div>
+        </BaseNode>
+    );
+}
+
+export default memo(AudioNode);

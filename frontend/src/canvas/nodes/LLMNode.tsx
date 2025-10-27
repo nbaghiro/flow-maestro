@@ -1,0 +1,50 @@
+import { memo } from "react";
+import { NodeProps } from "reactflow";
+import { BaseNode } from "./BaseNode";
+import { Bot } from "lucide-react";
+
+interface LLMNodeData {
+    label: string;
+    status?: "idle" | "pending" | "running" | "success" | "error";
+    config?: {
+        provider?: string;
+        model?: string;
+        prompt?: string;
+    };
+}
+
+function LLMNode({ data, selected }: NodeProps<LLMNodeData>) {
+    const provider = data.config?.provider || "OpenAI";
+    const model = data.config?.model || "gpt-4";
+    const promptPreview = data.config?.prompt
+        ? data.config.prompt.substring(0, 50) + (data.config.prompt.length > 50 ? "..." : "")
+        : "No prompt configured";
+
+    return (
+        <BaseNode
+            icon={Bot}
+            label={data.label || "LLM"}
+            status={data.status}
+            category="ai"
+            selected={selected}
+        >
+            <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground">Provider:</span>
+                    <span className="text-xs font-medium">{provider}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground">Model:</span>
+                    <span className="text-xs font-medium">{model}</span>
+                </div>
+                <div className="pt-1.5 mt-1.5 border-t border-border">
+                    <div className="text-xs text-muted-foreground italic line-clamp-2">
+                        {promptPreview}
+                    </div>
+                </div>
+            </div>
+        </BaseNode>
+    );
+}
+
+export default memo(LLMNode);

@@ -1,0 +1,16 @@
+{
+    "name": "@flowmaestro/shared",
+    "version": "1.0.0",
+    "description": "Shared types and utilities for FlowMaestro",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "scripts": {
+        "build": "tsc",
+        "dev": "tsc --watch",
+        "clean": "rm -rf dist",
+        "typecheck": "tsc --noEmit"
+    },
+    "devDependencies": {
+        "typescript": "^5.3.3"
+    }
+}
