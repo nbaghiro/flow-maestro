@@ -2,6 +2,8 @@
 
 > Enterprise-Grade LLM Agent Orchestration System - Build, Deploy, and Scale AI Workflows
 
+![FlowMaestro Workflow Builder](docs/images/workflow-builder-preview.png)
+
 FlowMaestro is a production-ready platform for orchestrating complex AI agent workflows through a visual canvas interface. It provides durable execution guarantees, real-time monitoring, and enterprise-scale deployment capabilities on AWS infrastructure.
 
 ## Table of Contents
