@@ -1,0 +1,213 @@
+/**
+ * Trigger Card Component
+ * Displays individual trigger with details and actions
+ */
+
+import { useState } from "react";
+import { WorkflowTrigger, ScheduleTriggerConfig, WebhookTriggerConfig } from "../../types/trigger";
+import { Calendar, Webhook, Zap, Copy, Trash2, Power, PowerOff, MoreVertical } from "lucide-react";
+import { getWebhookUrl, deleteTrigger, updateTrigger } from "../../lib/api";
+import { cn } from "../../lib/utils";
+
+interface TriggerCardProps {
+    trigger: WorkflowTrigger;
+    onUpdate: () => void;
+}
+
+export function TriggerCard({ trigger, onUpdate }: TriggerCardProps) {
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [isToggling, setIsToggling] = useState(false);
+    const [showMenu, setShowMenu] = useState(false);
+
+    const getTriggerIcon = () => {
+        switch (trigger.trigger_type) {
+            case 'schedule':
+                return <Calendar className="w-5 h-5 text-blue-500" />;
+            case 'webhook':
+                return <Webhook className="w-5 h-5 text-purple-500" />;
+            case 'event':
+                return <Zap className="w-5 h-5 text-amber-500" />;
+            default:
+                return <Zap className="w-5 h-5 text-gray-500" />;
+        }
+    };
+
+    const getConfigDisplay = () => {
+        if (trigger.trigger_type === 'schedule') {
+            const config = trigger.config as ScheduleTriggerConfig;
+            return (
+                <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground">Cron:</span>
+                        <code className="text-xs bg-muted px-1.5 py-0.5 rounded font-mono">
+                            {config.cronExpression}
+                        </code>
+                    </div>
+                    {config.timezone && (
+                        <div className="flex items-center gap-2">
+                            <span className="text-xs text-muted-foreground">Timezone:</span>
+                            <span className="text-xs">{config.timezone}</span>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        if (trigger.trigger_type === 'webhook') {
+            const config = trigger.config as WebhookTriggerConfig;
+            return (
+                <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground">Method:</span>
+                        <span className="text-xs font-medium">{config.method || 'POST'}</span>
+                        {config.authType && config.authType !== 'none' && (
+                            <>
+                                <span className="text-xs text-muted-foreground">•</span>
+                                <span className="text-xs text-muted-foreground">Auth: {config.authType}</span>
+                            </>
+                        )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <code className="text-xs bg-muted px-2 py-1 rounded flex-1 truncate font-mono">
+                            {getWebhookUrl(trigger.id)}
+                        </code>
+                        <button
+                            onClick={copyWebhookUrl}
+                            className="p-1.5 hover:bg-muted rounded transition-colors flex-shrink-0"
+                            title="Copy webhook URL"
+                        >
+                            <Copy className="w-3.5 h-3.5" />
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+
+        return null;
+    };
+
+    const copyWebhookUrl = async () => {
+        const url = getWebhookUrl(trigger.id);
+        await navigator.clipboard.writeText(url);
+        // TODO: Show toast notification
+    };
+
+    const handleDelete = async () => {
+        if (!confirm(`Are you sure you want to delete the trigger "${trigger.name}"?`)) {
+            return;
+        }
+
+        setIsDeleting(true);
+        try {
+            await deleteTrigger(trigger.id);
+            onUpdate();
+        } catch (error) {
+            console.error("Failed to delete trigger:", error);
+            alert("Failed to delete trigger");
+        } finally {
+            setIsDeleting(false);
+        }
+    };
+
+    const handleToggleEnabled = async () => {
+        setIsToggling(true);
+        try {
+            await updateTrigger(trigger.id, { enabled: !trigger.enabled });
+            onUpdate();
+        } catch (error) {
+            console.error("Failed to toggle trigger:", error);
+            alert("Failed to update trigger");
+        } finally {
+            setIsToggling(false);
+        }
+    };
+
+    return (
+        <div className={cn(
+            "border rounded-lg p-3 hover:bg-muted/50 transition-colors relative",
+            !trigger.enabled && "opacity-60"
+        )}>
+            <div className="flex items-start gap-3">
+                {/* Icon */}
+                <div className="mt-0.5">{getTriggerIcon()}</div>
+
+                {/* Content */}
+                <div className="flex-1 min-w-0">
+                    {/* Header */}
+                    <div className="flex items-start justify-between gap-2 mb-1">
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                            <h4 className="font-medium text-sm truncate">{trigger.name}</h4>
+                            <span className={cn(
+                                "text-xs px-2 py-0.5 rounded-full flex-shrink-0",
+                                trigger.enabled
+                                    ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                                    : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
+                            )}>
+                                {trigger.enabled ? 'Active' : 'Disabled'}
+                            </span>
+                        </div>
+
+                        {/* Actions Menu */}
+                        <div className="relative flex-shrink-0">
+                            <button
+                                onClick={() => setShowMenu(!showMenu)}
+                                className="p-1 hover:bg-muted rounded transition-colors"
+                            >
+                                <MoreVertical className="w-4 h-4" />
+                            </button>
+
+                            {showMenu && (
+                                <>
+                                    <div
+                                        className="fixed inset-0 z-10"
+                                        onClick={() => setShowMenu(false)}
+                                    />
+                                    <div className="absolute right-0 mt-1 w-40 bg-background border border-border rounded-lg shadow-lg z-20 py-1">
+                                        <button
+                                            onClick={() => {
+                                                handleToggleEnabled();
+                                                setShowMenu(false);
+                                            }}
+                                            disabled={isToggling}
+                                            className="w-full px-3 py-2 text-left text-sm hover:bg-muted transition-colors flex items-center gap-2"
+                                        >
+                                            {trigger.enabled ? (
+                                                <><PowerOff className="w-4 h-4" /> Disable</>
+                                            ) : (
+                                                <><Power className="w-4 h-4" /> Enable</>
+                                            )}
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                handleDelete();
+                                                setShowMenu(false);
+                                            }}
+                                            disabled={isDeleting}
+                                            className="w-full px-3 py-2 text-left text-sm hover:bg-destructive/10 text-destructive transition-colors flex items-center gap-2"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                            Delete
+                                        </button>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Config */}
+                    <div className="mb-2">{getConfigDisplay()}</div>
+
+                    {/* Stats */}
+                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                        <span>Triggered {trigger.trigger_count} times</span>
+                        {trigger.last_triggered_at && (
+                            <span>
+                                Last: {new Date(trigger.last_triggered_at).toLocaleString()}
+                            </span>
+                        )}
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}

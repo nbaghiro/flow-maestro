@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { FormField, FormSection } from "../../../components/FormField";
 import { Slider } from "../../../components/Slider";
 import { OutputSettingsSection } from "../../../components/OutputSettingsSection";
+import { CredentialPicker } from "../../../components/credentials/CredentialPicker";
 
 interface LLMNodeConfigProps {
     data: any;
@@ -39,6 +40,7 @@ const modelsByProvider: Record<string, Array<{ value: string; label: string }>> 
 export function LLMNodeConfig({ data, onUpdate }: LLMNodeConfigProps) {
     const [provider, setProvider] = useState(data.config?.provider || "openai");
     const [model, setModel] = useState(data.config?.model || "gpt-4");
+    const [credentialId, setCredentialId] = useState<string | null>(data.config?.credentialId || null);
     const [systemPrompt, setSystemPrompt] = useState(data.config?.systemPrompt || "");
     const [prompt, setPrompt] = useState(data.config?.prompt || "");
     const [temperature, setTemperature] = useState(data.config?.temperature || 0.7);
@@ -50,6 +52,7 @@ export function LLMNodeConfig({ data, onUpdate }: LLMNodeConfigProps) {
         onUpdate({
             provider,
             model,
+            credentialId,
             systemPrompt,
             prompt,
             temperature,
@@ -57,7 +60,7 @@ export function LLMNodeConfig({ data, onUpdate }: LLMNodeConfigProps) {
             topP,
             outputVariable,
         });
-    }, [provider, model, systemPrompt, prompt, temperature, maxTokens, topP, outputVariable]);
+    }, [provider, model, credentialId, systemPrompt, prompt, temperature, maxTokens, topP, outputVariable]);
 
     const handleProviderChange = (newProvider: string) => {
         setProvider(newProvider);
@@ -66,6 +69,8 @@ export function LLMNodeConfig({ data, onUpdate }: LLMNodeConfigProps) {
         if (models && models.length > 0) {
             setModel(models[0].value);
         }
+        // Reset credential since it's provider-specific
+        setCredentialId(null);
     };
 
     return (
@@ -98,6 +103,15 @@ export function LLMNodeConfig({ data, onUpdate }: LLMNodeConfigProps) {
                         ))}
                     </select>
                 </FormField>
+
+                <CredentialPicker
+                    provider={provider}
+                    value={credentialId}
+                    onChange={setCredentialId}
+                    label="API Credential"
+                    description="Select the API credential to use for authentication"
+                    required
+                />
             </FormSection>
 
             <FormSection title="Prompts">

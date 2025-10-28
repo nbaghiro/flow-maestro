@@ -10,6 +10,8 @@ import { getWorkflow, updateWorkflow } from "../lib/api";
 import { Loader2 } from "lucide-react";
 import { TestDrawer } from "../components/TestDrawer";
 import { TestPanelContent } from "../canvas/panels/test/TestPanelContent";
+import { TriggerDrawer } from "../components/TriggerDrawer";
+import { TriggerPanelContent } from "../components/triggers/TriggerPanelContent";
 
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
 
@@ -27,7 +29,6 @@ export function FlowBuilder() {
         if (workflowId) {
             loadWorkflow();
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [workflowId]);
 
     // Helper function to create a serialized snapshot of the workflow state
@@ -135,7 +136,6 @@ export function FlowBuilder() {
             const initialState = getWorkflowStateSnapshot();
             setLastSavedState(initialState);
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isLoading, nodes, edges, workflowName]);
 
     const handleSave = async () => {
@@ -252,6 +252,11 @@ export function FlowBuilder() {
                     <TestDrawer>
                         <TestPanelContent />
                     </TestDrawer>
+
+                    {/* Trigger Drawer - Right Side Panel */}
+                    <TriggerDrawer>
+                        {workflowId && <TriggerPanelContent workflowId={workflowId} />}
+                    </TriggerDrawer>
                 </div>
             </div>
         </ReactFlowProvider>

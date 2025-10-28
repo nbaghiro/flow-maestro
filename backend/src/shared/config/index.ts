@@ -1,6 +1,9 @@
 import dotenv from "dotenv";
+import path from "path";
 
-dotenv.config();
+// Load .env from project root
+// When compiled, this will be in dist/, so we go up to backend/, then to project root
+dotenv.config({ path: path.resolve(__dirname, "../../../../.env") });
 
 export const config = {
     server: {

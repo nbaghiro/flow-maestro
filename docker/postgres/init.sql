@@ -48,13 +48,29 @@ CREATE TABLE IF NOT EXISTS execution_logs (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Create credentials table
+CREATE TABLE IF NOT EXISTS credentials (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL,
+    type VARCHAR(50) NOT NULL, -- 'api_key', 'oauth2', 'basic_auth', 'custom'
+    provider VARCHAR(100) NOT NULL, -- 'openai', 'anthropic', 'slack', 'google', etc.
+    encrypted_data TEXT NOT NULL, -- AES-256 encrypted JSON
+    metadata JSONB, -- { scopes, expires_at, account_info }
+    status VARCHAR(50) DEFAULT 'active', -- 'active', 'invalid', 'expired', 'revoked'
+    last_tested_at TIMESTAMP,
+    last_used_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Create integrations table
 CREATE TABLE IF NOT EXISTS integrations (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name VARCHAR(255) NOT NULL,
     type VARCHAR(100) NOT NULL,
     config JSONB NOT NULL,
-    credentials JSONB NOT NULL,
+    credential_id UUID REFERENCES credentials(id) ON DELETE SET NULL,
     user_id UUID NOT NULL,
     enabled BOOLEAN DEFAULT true,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -83,8 +99,14 @@ CREATE INDEX IF NOT EXISTS idx_executions_created_at ON executions(created_at DE
 
 CREATE INDEX IF NOT EXISTS idx_execution_logs_execution_id ON execution_logs(execution_id, created_at);
 
+CREATE INDEX IF NOT EXISTS idx_credentials_user_id ON credentials(user_id);
+CREATE INDEX IF NOT EXISTS idx_credentials_provider ON credentials(provider);
+CREATE INDEX IF NOT EXISTS idx_credentials_status ON credentials(status);
+CREATE INDEX IF NOT EXISTS idx_credentials_type ON credentials(type);
+
 CREATE INDEX IF NOT EXISTS idx_integrations_user_id ON integrations(user_id);
 CREATE INDEX IF NOT EXISTS idx_integrations_type ON integrations(type);
+CREATE INDEX IF NOT EXISTS idx_integrations_credential_id ON integrations(credential_id);
 
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 
@@ -99,6 +121,9 @@ $$ language 'plpgsql';
 
 -- Create triggers for updated_at
 CREATE TRIGGER update_workflows_updated_at BEFORE UPDATE ON workflows
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_credentials_updated_at BEFORE UPDATE ON credentials
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_integrations_updated_at BEFORE UPDATE ON integrations

@@ -3,10 +3,15 @@ import Anthropic from '@anthropic-ai/sdk';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { CohereClient } from 'cohere-ai';
 import { interpolateVariables } from './utils';
+import { CredentialRepository } from '../../../storage/repositories/CredentialRepository';
+import type { ApiKeyData } from '../../../storage/models/Credential';
+
+const credentialRepository = new CredentialRepository();
 
 export interface LLMNodeConfig {
     provider: 'openai' | 'anthropic' | 'google' | 'cohere';
     model: string;
+    credentialId?: string;
     systemPrompt?: string;
     prompt: string;
     temperature?: number;
@@ -24,6 +29,42 @@ export interface LLMNodeResult {
     };
     model: string;
     provider: string;
+}
+
+/**
+ * Get API key from credential or fall back to environment variable
+ */
+async function getApiKey(credentialId: string | undefined, provider: string, envVarName: string): Promise<string> {
+    // Try to get from credential first
+    if (credentialId) {
+        const credential = await credentialRepository.findByIdWithData(credentialId);
+        if (!credential) {
+            throw new Error(`Credential with ID ${credentialId} not found`);
+        }
+        if (credential.provider !== provider) {
+            throw new Error(`Credential provider mismatch: expected ${provider}, got ${credential.provider}`);
+        }
+        if (credential.status !== 'active') {
+            throw new Error(`Credential is not active (status: ${credential.status})`);
+        }
+        const data = credential.data as ApiKeyData;
+        if (!data.api_key) {
+            throw new Error('API key not found in credential data');
+        }
+        console.log(`[LLM] Using credential: ${credential.name} (${credential.id})`);
+        return data.api_key;
+    }
+
+    // Fall back to environment variable for backwards compatibility
+    const apiKey = process.env[envVarName];
+    if (!apiKey) {
+        throw new Error(
+            `No credential provided and ${envVarName} environment variable is not set. ` +
+            `Please add a credential in the Credentials page or set the ${envVarName} environment variable.`
+        );
+    }
+    console.log(`[LLM] Using environment variable: ${envVarName}`);
+    return apiKey;
 }
 
 /**
@@ -74,11 +115,7 @@ async function executeOpenAI(
     systemPrompt: string | undefined,
     userPrompt: string
 ): Promise<LLMNodeResult> {
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) {
-        throw new Error('OPENAI_API_KEY environment variable is not set');
-    }
-
+    const apiKey = await getApiKey(config.credentialId, 'openai', 'OPENAI_API_KEY');
     const openai = new OpenAI({ apiKey });
 
     const messages: Array<{ role: 'system' | 'user'; content: string }> = [];
@@ -117,11 +154,7 @@ async function executeAnthropic(
     systemPrompt: string | undefined,
     userPrompt: string
 ): Promise<LLMNodeResult> {
-    const apiKey = process.env.ANTHROPIC_API_KEY;
-    if (!apiKey) {
-        throw new Error('ANTHROPIC_API_KEY environment variable is not set');
-    }
-
+    const apiKey = await getApiKey(config.credentialId, 'anthropic', 'ANTHROPIC_API_KEY');
     const anthropic = new Anthropic({ apiKey });
 
     const response = await anthropic.messages.create({
@@ -156,11 +189,7 @@ async function executeGoogle(
     systemPrompt: string | undefined,
     userPrompt: string
 ): Promise<LLMNodeResult> {
-    const apiKey = process.env.GOOGLE_API_KEY;
-    if (!apiKey) {
-        throw new Error('GOOGLE_API_KEY environment variable is not set');
-    }
-
+    const apiKey = await getApiKey(config.credentialId, 'google', 'GOOGLE_API_KEY');
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({
         model: config.model,
@@ -194,11 +223,7 @@ async function executeCohere(
     systemPrompt: string | undefined,
     userPrompt: string
 ): Promise<LLMNodeResult> {
-    const apiKey = process.env.COHERE_API_KEY;
-    if (!apiKey) {
-        throw new Error('COHERE_API_KEY environment variable is not set');
-    }
-
+    const apiKey = await getApiKey(config.credentialId, 'cohere', 'COHERE_API_KEY');
     const cohere = new CohereClient({ token: apiKey });
 
     // Combine system prompt with user prompt

@@ -4,7 +4,7 @@ import { IntegrationModel, CreateIntegrationInput, UpdateIntegrationInput } from
 export class IntegrationRepository {
     async create(input: CreateIntegrationInput): Promise<IntegrationModel> {
         const query = `
-            INSERT INTO flowmaestro.integrations (name, type, config, credentials, user_id, enabled)
+            INSERT INTO flowmaestro.integrations (name, type, config, credential_id, user_id, enabled)
             VALUES ($1, $2, $3, $4, $5, $6)
             RETURNING *
         `;
@@ -13,7 +13,7 @@ export class IntegrationRepository {
             input.name,
             input.type,
             JSON.stringify(input.config),
-            JSON.stringify(input.credentials),
+            input.credential_id || null,
             input.user_id,
             input.enabled !== undefined ? input.enabled : true
         ];
@@ -101,9 +101,9 @@ export class IntegrationRepository {
             values.push(JSON.stringify(input.config));
         }
 
-        if (input.credentials !== undefined) {
-            updates.push(`credentials = $${paramIndex++}`);
-            values.push(JSON.stringify(input.credentials));
+        if (input.credential_id !== undefined) {
+            updates.push(`credential_id = $${paramIndex++}`);
+            values.push(input.credential_id);
         }
 
         if (input.enabled !== undefined) {
@@ -143,9 +143,7 @@ export class IntegrationRepository {
             config: typeof row.config === "string"
                 ? JSON.parse(row.config)
                 : row.config,
-            credentials: typeof row.credentials === "string"
-                ? JSON.parse(row.credentials)
-                : row.credentials,
+            credential_id: row.credential_id || null,
             created_at: new Date(row.created_at),
             updated_at: new Date(row.updated_at)
         };

@@ -1,0 +1,10 @@
+{
+  "database-url-var": "DATABASE_URL",
+  "migrations-dir": "migrations",
+  "migrations-table": "pgmigrations",
+  "schema": "flowmaestro",
+  "dir": "migrations",
+  "check-order": true,
+  "migration-file-language": "sql",
+  "ignore-pattern": "(\\..*|README\\.md)"
+}

@@ -106,103 +106,114 @@ export function TestDrawer({ children }: TestDrawerProps) {
         },
     ];
 
-    if (!isDrawerOpen) {
-        return (
-            <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40">
+    return (
+        <>
+            {/* Bottom Button - Always Visible */}
+            <div className="fixed bottom-4 left-1/2 -translate-x-full pr-1 z-40">
                 <button
                     onClick={toggleDrawer}
-                    className="px-4 py-2 bg-background border border-border rounded-lg shadow-lg hover:bg-muted transition-colors"
+                    className={cn(
+                        "px-4 py-2 border rounded-lg shadow-lg transition-colors",
+                        isDrawerOpen
+                            ? "bg-primary text-primary-foreground border-primary hover:bg-primary/90"
+                            : "bg-background border-border hover:bg-muted"
+                    )}
                 >
                     <div className="flex items-center gap-2">
                         <Play className="w-4 h-4" />
                         <span className="text-sm font-medium">Open Test Panel</span>
-                        <ChevronLeft className="w-4 h-4 opacity-50" />
+                        {isDrawerOpen ? (
+                            <ChevronRight className="w-4 h-4 opacity-70" />
+                        ) : (
+                            <ChevronLeft className="w-4 h-4 opacity-50" />
+                        )}
                     </div>
                 </button>
             </div>
-        );
-    }
 
-    return (
-        <div
-            ref={drawerRef}
-            className="h-full bg-background border-l border-border shadow-2xl flex flex-col"
-            style={{ width: drawerWidth }}
-        >
-            {/* Resize Handle */}
-            <div
-                className={cn(
-                    "absolute top-0 left-0 bottom-0 w-1 cursor-ew-resize hover:bg-primary/20 transition-colors",
-                    isResizing && "bg-primary/30"
-                )}
-                onMouseDown={handleResizeStart}
-            >
-                <div className="absolute top-0 left-0 bottom-0 w-3 -translate-x-1/2" />
-            </div>
-
-            {/* Header */}
-            <div className="flex items-center justify-between px-4 py-2 border-b border-border flex-shrink-0">
-                <div className="flex items-center gap-2">
-                    <h3 className="text-sm font-semibold">Test Scenario</h3>
-                </div>
-
-                {/* Actions */}
-                <div className="flex items-center gap-2">
-                    <button
-                        onClick={toggleDrawer}
-                        className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors"
-                        title="Collapse"
+            {/* Drawer Panel */}
+            {isDrawerOpen && (
+                <div
+                    ref={drawerRef}
+                    className="h-full bg-background border-l border-border shadow-2xl flex flex-col"
+                    style={{ width: drawerWidth }}
+                >
+                    {/* Resize Handle */}
+                    <div
+                        className={cn(
+                            "absolute top-0 left-0 bottom-0 w-1 cursor-ew-resize hover:bg-primary/20 transition-colors",
+                            isResizing && "bg-primary/30"
+                        )}
+                        onMouseDown={handleResizeStart}
                     >
-                        <ChevronRight className="w-4 h-4" />
-                    </button>
-                    <button
-                        onClick={() => setDrawerOpen(false)}
-                        className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors"
-                        title="Close"
-                    >
-                        <X className="w-4 h-4" />
-                    </button>
-                </div>
-            </div>
+                        <div className="absolute top-0 left-0 bottom-0 w-3 -translate-x-1/2" />
+                    </div>
 
-            {/* Tabs */}
-            <div className="px-4 py-2 border-b border-border bg-muted/30 flex-shrink-0">
-                <div className="flex items-center gap-1">
-                    {tabs.map((tab) => {
-                        const Icon = tab.icon;
-                        return (
+                    {/* Header */}
+                    <div className="flex items-center justify-between px-4 py-2 border-b border-border flex-shrink-0">
+                        <div className="flex items-center gap-2">
+                            <h3 className="text-sm font-semibold">Test Scenario</h3>
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex items-center gap-2">
                             <button
-                                key={tab.id}
-                                onClick={() => setActiveTab(tab.id)}
-                                className={cn(
-                                    "flex items-center gap-2 px-3 py-1.5 text-sm rounded-md transition-colors relative",
-                                    activeTab === tab.id
-                                        ? "bg-background text-foreground font-medium shadow-sm"
-                                        : "text-muted-foreground hover:text-foreground hover:bg-background/50"
-                                )}
+                                onClick={toggleDrawer}
+                                className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors"
+                                title="Collapse"
                             >
-                                <Icon className="w-4 h-4" />
-                                <span>{tab.label}</span>
-                                {tab.badge && (
-                                    <span
-                                        className={cn(
-                                            "absolute -top-1 -right-1 w-2 h-2 rounded-full",
-                                            tab.badge === "running"
-                                                ? "bg-blue-500 animate-pulse"
-                                                : "bg-green-500"
-                                        )}
-                                    />
-                                )}
+                                <ChevronRight className="w-4 h-4" />
                             </button>
-                        );
-                    })}
-                </div>
-            </div>
+                            <button
+                                onClick={() => setDrawerOpen(false)}
+                                className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors"
+                                title="Close"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+                        </div>
+                    </div>
 
-            {/* Content */}
-            <div className="flex-1 overflow-hidden">
-                {children}
-            </div>
-        </div>
+                    {/* Tabs */}
+                    <div className="px-4 py-2 border-b border-border bg-muted/30 flex-shrink-0">
+                        <div className="flex items-center gap-1">
+                            {tabs.map((tab) => {
+                                const Icon = tab.icon;
+                                return (
+                                    <button
+                                        key={tab.id}
+                                        onClick={() => setActiveTab(tab.id)}
+                                        className={cn(
+                                            "flex items-center gap-2 px-3 py-1.5 text-sm rounded-md transition-colors relative",
+                                            activeTab === tab.id
+                                                ? "bg-background text-foreground font-medium shadow-sm"
+                                                : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+                                        )}
+                                    >
+                                        <Icon className="w-4 h-4" />
+                                        <span>{tab.label}</span>
+                                        {tab.badge && (
+                                            <span
+                                                className={cn(
+                                                    "absolute -top-1 -right-1 w-2 h-2 rounded-full",
+                                                    tab.badge === "running"
+                                                        ? "bg-blue-500 animate-pulse"
+                                                        : "bg-green-500"
+                                                )}
+                                            />
+                                        )}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    {/* Content */}
+                    <div className="flex-1 overflow-hidden">
+                        {children}
+                    </div>
+                </div>
+            )}
+        </>
     );
 }

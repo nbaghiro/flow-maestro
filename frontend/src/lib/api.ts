@@ -2,6 +2,13 @@
  * API Client for FlowMaestro Backend
  */
 
+import type {
+    WorkflowTrigger,
+    TriggerWithScheduleInfo,
+    CreateTriggerInput,
+    UpdateTriggerInput,
+} from '../types/trigger';
+
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 interface ExecuteWorkflowRequest {
@@ -282,6 +289,341 @@ export async function updateWorkflow(
             ...(token && { Authorization: `Bearer ${token}` }),
         },
         body: JSON.stringify(updates),
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    return response.json();
+}
+
+// ===== Trigger API Functions =====
+
+/**
+ * Create a new trigger for a workflow
+ */
+export async function createTrigger(input: CreateTriggerInput): Promise<{ success: boolean; data: WorkflowTrigger; error?: string }> {
+    const token = getAuthToken();
+
+    const response = await fetch(`${API_BASE_URL}/api/triggers`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            ...(token && { Authorization: `Bearer ${token}` }),
+        },
+        body: JSON.stringify(input),
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    return response.json();
+}
+
+/**
+ * Get list of triggers for a workflow
+ */
+export async function getTriggers(workflowId: string): Promise<{ success: boolean; data: WorkflowTrigger[]; error?: string }> {
+    const token = getAuthToken();
+
+    const response = await fetch(`${API_BASE_URL}/api/triggers?workflowId=${workflowId}`, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            ...(token && { Authorization: `Bearer ${token}` }),
+        },
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    return response.json();
+}
+
+/**
+ * Get a specific trigger by ID
+ */
+export async function getTrigger(triggerId: string): Promise<{ success: boolean; data: TriggerWithScheduleInfo; error?: string }> {
+    const token = getAuthToken();
+
+    const response = await fetch(`${API_BASE_URL}/api/triggers/${triggerId}`, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            ...(token && { Authorization: `Bearer ${token}` }),
+        },
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    return response.json();
+}
+
+/**
+ * Update a trigger
+ */
+export async function updateTrigger(triggerId: string, input: UpdateTriggerInput): Promise<{ success: boolean; data: WorkflowTrigger; error?: string }> {
+    const token = getAuthToken();
+
+    const response = await fetch(`${API_BASE_URL}/api/triggers/${triggerId}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+            ...(token && { Authorization: `Bearer ${token}` }),
+        },
+        body: JSON.stringify(input),
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    return response.json();
+}
+
+/**
+ * Delete a trigger
+ */
+export async function deleteTrigger(triggerId: string): Promise<{ success: boolean; message?: string; error?: string }> {
+    const token = getAuthToken();
+
+    const response = await fetch(`${API_BASE_URL}/api/triggers/${triggerId}`, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json',
+            ...(token && { Authorization: `Bearer ${token}` }),
+        },
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    return response.json();
+}
+
+/**
+ * Get webhook URL for a trigger
+ */
+export function getWebhookUrl(triggerId: string): string {
+    return `${API_BASE_URL}/api/webhooks/${triggerId}`;
+}
+
+// ===== Credential API Functions =====
+
+export type CredentialType = 'api_key' | 'oauth2' | 'basic_auth' | 'custom';
+export type CredentialStatus = 'active' | 'invalid' | 'expired' | 'revoked';
+
+export interface Credential {
+    id: string;
+    name: string;
+    type: CredentialType;
+    provider: string;
+    status: CredentialStatus;
+    metadata?: {
+        scopes?: string[];
+        expires_at?: number;
+        account_info?: {
+            email?: string;
+            username?: string;
+            workspace?: string;
+        };
+    };
+    last_tested_at: string | null;
+    last_used_at: string | null;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface CreateCredentialInput {
+    name: string;
+    type: CredentialType;
+    provider: string;
+    data: {
+        api_key?: string;
+        api_secret?: string;
+        [key: string]: any;
+    };
+    metadata?: Record<string, any>;
+}
+
+/**
+ * Create a new credential
+ */
+export async function createCredential(input: CreateCredentialInput): Promise<{ success: boolean; data: Credential; error?: string }> {
+    const token = getAuthToken();
+
+    const response = await fetch(`${API_BASE_URL}/api/credentials`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            ...(token && { Authorization: `Bearer ${token}` }),
+        },
+        body: JSON.stringify(input),
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    return response.json();
+}
+
+/**
+ * Get list of credentials
+ */
+export async function getCredentials(params?: {
+    provider?: string;
+    type?: CredentialType;
+    status?: CredentialStatus;
+}): Promise<{ success: boolean; data: { items: Credential[]; total: number }; error?: string }> {
+    const token = getAuthToken();
+
+    const queryParams = new URLSearchParams();
+    if (params?.provider) queryParams.append('provider', params.provider);
+    if (params?.type) queryParams.append('type', params.type);
+    if (params?.status) queryParams.append('status', params.status);
+
+    const response = await fetch(
+        `${API_BASE_URL}/api/credentials${queryParams.toString() ? `?${queryParams.toString()}` : ''}`,
+        {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                ...(token && { Authorization: `Bearer ${token}` }),
+            },
+        }
+    );
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    return response.json();
+}
+
+/**
+ * Get a specific credential by ID
+ */
+export async function getCredential(credentialId: string): Promise<{ success: boolean; data: Credential; error?: string }> {
+    const token = getAuthToken();
+
+    const response = await fetch(`${API_BASE_URL}/api/credentials/${credentialId}`, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            ...(token && { Authorization: `Bearer ${token}` }),
+        },
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    return response.json();
+}
+
+/**
+ * Test a credential connection without saving it first
+ */
+export async function testCredentialConnection(provider: string, data: { api_key?: string; api_secret?: string; [key: string]: any }): Promise<{ success: boolean; data: { valid: boolean; message: string }; error?: string }> {
+    const token = getAuthToken();
+
+    const response = await fetch(`${API_BASE_URL}/api/credentials/test-connection`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            ...(token && { Authorization: `Bearer ${token}` }),
+        },
+        body: JSON.stringify({
+            provider,
+            type: 'api_key',
+            data
+        }),
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    return response.json();
+}
+
+/**
+ * Test a credential
+ */
+export async function testCredential(credentialId: string): Promise<{ success: boolean; data: { valid: boolean; message: string }; error?: string }> {
+    const token = getAuthToken();
+
+    const response = await fetch(`${API_BASE_URL}/api/credentials/${credentialId}/test`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            ...(token && { Authorization: `Bearer ${token}` }),
+        },
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    return response.json();
+}
+
+/**
+ * Update a credential
+ */
+export async function updateCredential(
+    credentialId: string,
+    input: Partial<CreateCredentialInput>
+): Promise<{ success: boolean; data: Credential; error?: string }> {
+    const token = getAuthToken();
+
+    const response = await fetch(`${API_BASE_URL}/api/credentials/${credentialId}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+            ...(token && { Authorization: `Bearer ${token}` }),
+        },
+        body: JSON.stringify(input),
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    return response.json();
+}
+
+/**
+ * Delete a credential
+ */
+export async function deleteCredential(credentialId: string): Promise<{ success: boolean; error?: string }> {
+    const token = getAuthToken();
+
+    const response = await fetch(`${API_BASE_URL}/api/credentials/${credentialId}`, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json',
+            ...(token && { Authorization: `Bearer ${token}` }),
+        },
     });
 
     if (!response.ok) {

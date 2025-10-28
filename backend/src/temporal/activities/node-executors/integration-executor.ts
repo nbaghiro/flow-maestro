@@ -1,14 +1,16 @@
 import axios from 'axios';
 import * as nodemailer from 'nodemailer';
 import { interpolateVariables } from './utils';
+import { getAccessToken } from '../../../services/oauth/TokenRefreshService';
 
 export interface IntegrationNodeConfig {
     service: 'slack' | 'email' | 'webhook';
     operation: string;
 
-    // Authentication
-    apiKey?: string;
-    credentials?: any;
+    // Authentication (prioritized in this order)
+    credentialId?: string;  // OAuth credential ID (preferred)
+    apiKey?: string;        // Manual API key
+    credentials?: any;      // Legacy credentials
 
     // Service-specific config
     config: Record<string, any>;
@@ -77,9 +79,23 @@ async function executeSlack(
     config: IntegrationNodeConfig,
     context: Record<string, any>
 ): Promise<IntegrationNodeResult> {
-    const token = config.apiKey || process.env.SLACK_BOT_TOKEN;
-    if (!token) {
-        throw new Error('Slack token not configured (set SLACK_BOT_TOKEN or provide apiKey)');
+    // Get token in priority order: OAuth credential > API key > env var
+    let token: string;
+
+    if (config.credentialId) {
+        // Use OAuth token from credential (auto-refreshes if needed!)
+        token = await getAccessToken(config.credentialId);
+        console.log(`[Integration/Slack] Using OAuth credential: ${config.credentialId}`);
+    } else if (config.apiKey) {
+        token = config.apiKey;
+        console.log(`[Integration/Slack] Using provided API key`);
+    } else if (process.env.SLACK_BOT_TOKEN) {
+        token = process.env.SLACK_BOT_TOKEN;
+        console.log(`[Integration/Slack] Using env var SLACK_BOT_TOKEN`);
+    } else {
+        throw new Error(
+            'Slack token not configured. Please connect your Slack account or provide an API key.'
+        );
     }
 
     const slackConfig = config.config;

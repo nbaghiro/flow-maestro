@@ -8,8 +8,11 @@ import { workflowRoutes } from "./routes/workflows";
 import { authRoutes } from "./routes/auth";
 import { executionRoutes } from "./routes/executions";
 import { integrationRoutes } from "./routes/integrations";
+import { credentialRoutes } from "./routes/credentials";
 import { nodeRoutes } from "./routes/nodes";
 import { websocketRoutes } from "./routes/websocket";
+import { triggerRoutes } from "./routes/triggers";
+import { oauthRoutes } from "./routes/oauth";
 import { db } from "../storage/database";
 import { eventBridge } from "../shared/websocket/EventBridge";
 
@@ -75,7 +78,10 @@ export async function buildServer() {
     await fastify.register(workflowRoutes, { prefix: "/api/workflows" });
     await fastify.register(executionRoutes, { prefix: "/api/executions" });
     await fastify.register(integrationRoutes, { prefix: "/api/integrations" });
+    await fastify.register(credentialRoutes, { prefix: "/api/credentials" });
+    await fastify.register(oauthRoutes, { prefix: "/api/oauth" });
     await fastify.register(nodeRoutes, { prefix: "/api/nodes" });
+    await fastify.register(triggerRoutes, { prefix: "/api" });
     await fastify.register(websocketRoutes);
 
     // Error handler (must be last)
