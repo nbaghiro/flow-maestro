@@ -44,14 +44,18 @@ export const workflowDefinitionSchema = z.object({
 export const createWorkflowSchema = z.object({
     name: z.string().min(1).max(255),
     description: z.string().max(1000).optional(),
-    definition: workflowDefinitionSchema
+    definition: workflowDefinitionSchema,
+    aiGenerated: z.boolean().optional(),
+    aiPrompt: z.string().max(2000).optional()
 });
 
 // Update workflow request
 export const updateWorkflowSchema = z.object({
     name: z.string().min(1).max(255).optional(),
     description: z.string().max(1000).optional(),
-    definition: workflowDefinitionSchema.optional()
+    definition: workflowDefinitionSchema.optional(),
+    aiGenerated: z.boolean().optional(),
+    aiPrompt: z.string().max(2000).optional()
 });
 
 // Query parameters for listing workflows
@@ -65,7 +69,14 @@ export const workflowIdParamSchema = z.object({
     id: z.string().uuid()
 });
 
+// Generate workflow request (AI generation)
+export const generateWorkflowSchema = z.object({
+    prompt: z.string().min(10).max(2000),
+    credentialId: z.string().uuid()
+});
+
 export type CreateWorkflowRequest = z.infer<typeof createWorkflowSchema>;
 export type UpdateWorkflowRequest = z.infer<typeof updateWorkflowSchema>;
 export type ListWorkflowsQuery = z.infer<typeof listWorkflowsQuerySchema>;
 export type WorkflowIdParam = z.infer<typeof workflowIdParamSchema>;
+export type GenerateWorkflowRequest = z.infer<typeof generateWorkflowSchema>;

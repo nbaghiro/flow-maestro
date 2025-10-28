@@ -32,7 +32,9 @@ export async function updateWorkflowRoute(fastify: FastifyInstance) {
             const workflow = await workflowRepository.update(id, {
                 name: body.name,
                 description: body.description,
-                definition: body.definition
+                definition: body.definition,
+                ai_generated: body.aiGenerated,
+                ai_prompt: body.aiPrompt
             });
 
             return reply.send({

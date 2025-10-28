@@ -64,12 +64,19 @@ Example:
 
 ## Best Practices
 
-1. **Always use `IF NOT EXISTS`** - Makes migrations idempotent
-2. **Test rollbacks** - Ensure migrations can be rolled back
-3. **One change per migration** - Keep migrations focused
-4. **Document migrations** - Add comments explaining what and why
-5. **Never edit existing migrations** - Create new ones instead
-6. **Test in development first** - Always test before production
+Writing reliable database migrations requires following several key practices to ensure safety and maintainability.
+
+**Always use `IF NOT EXISTS`** when creating tables, indexes, or other database objects. This makes migrations idempotent, meaning they can be run multiple times without error. If a migration fails partway through and needs to be re-run, the idempotent structure prevents conflicts.
+
+**Test rollbacks** to ensure migrations can be safely reverted. Before deploying a migration to production, verify that the down migration successfully reverses all changes. This is critical for handling issues in production where you may need to quickly roll back a problematic migration.
+
+**One change per migration** keeps migrations focused and easier to understand, test, and roll back. Instead of bundling multiple unrelated changes into a single migration, create separate migrations for each logical change. This also makes it easier to selectively apply or revert specific features.
+
+**Document migrations** with clear comments explaining what the migration does and why it's needed. Include the date, a description of the business requirement driving the change, and any important considerations for future developers. Well-documented migrations serve as a historical record of how the schema evolved.
+
+**Never edit existing migrations** that have been deployed to production. Migrations that have already run should be treated as immutable historical records. If you need to make changes, create a new migration that modifies the previous work. This ensures consistency across all environments and prevents conflicts in the migration history.
+
+**Test in development first** before running migrations in production. Always apply migrations to a development environment that mirrors production, verify the changes work as expected, test the rollback path, and only then proceed to staging and production environments.
 
 ## Migration Files
 

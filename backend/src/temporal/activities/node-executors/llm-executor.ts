@@ -8,6 +8,91 @@ import type { ApiKeyData } from '../../../storage/models/Credential';
 
 const credentialRepository = new CredentialRepository();
 
+/**
+ * Retry configuration
+ */
+const RETRY_CONFIG = {
+    maxRetries: 3,
+    initialDelayMs: 1000,
+    maxDelayMs: 10000,
+    backoffMultiplier: 2
+};
+
+/**
+ * Check if error is retryable (overload, rate limit, or temporary server errors)
+ */
+function isRetryableError(error: any): boolean {
+    // HTTP status codes that should be retried
+    const retryableStatusCodes = [429, 503, 529];
+
+    // Check status code
+    if (error.status && retryableStatusCodes.includes(error.status)) {
+        return true;
+    }
+
+    // Check error type for Anthropic SDK
+    if (error.type && ['overloaded_error', 'rate_limit_error'].includes(error.type)) {
+        return true;
+    }
+
+    // Check for common error messages
+    if (error.message) {
+        const message = error.message.toLowerCase();
+        if (message.includes('overloaded') ||
+            message.includes('rate limit') ||
+            message.includes('too many requests')) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+/**
+ * Retry wrapper with exponential backoff
+ */
+async function withRetry<T>(
+    fn: () => Promise<T>,
+    context: string
+): Promise<T> {
+    let lastError: any;
+
+    for (let attempt = 0; attempt <= RETRY_CONFIG.maxRetries; attempt++) {
+        try {
+            return await fn();
+        } catch (error: any) {
+            lastError = error;
+
+            // Don't retry if it's not a retryable error
+            if (!isRetryableError(error)) {
+                throw error;
+            }
+
+            // Don't retry if we've exhausted attempts
+            if (attempt >= RETRY_CONFIG.maxRetries) {
+                console.error(`[LLM] ${context} - Max retries (${RETRY_CONFIG.maxRetries}) exceeded`);
+                throw error;
+            }
+
+            // Calculate delay with exponential backoff
+            const delay = Math.min(
+                RETRY_CONFIG.initialDelayMs * Math.pow(RETRY_CONFIG.backoffMultiplier, attempt),
+                RETRY_CONFIG.maxDelayMs
+            );
+
+            console.warn(
+                `[LLM] ${context} - Retryable error (${error.status || error.type}): ${error.message}. ` +
+                `Retrying in ${delay}ms (attempt ${attempt + 1}/${RETRY_CONFIG.maxRetries})`
+            );
+
+            // Wait before retrying
+            await new Promise(resolve => setTimeout(resolve, delay));
+        }
+    }
+
+    throw lastError;
+}
+
 export interface LLMNodeConfig {
     provider: 'openai' | 'anthropic' | 'google' | 'cohere';
     model: string;
@@ -124,29 +209,31 @@ async function executeOpenAI(
     }
     messages.push({ role: 'user', content: userPrompt });
 
-    const response = await openai.chat.completions.create({
-        model: config.model,
-        messages,
-        temperature: config.temperature ?? 0.7,
-        max_tokens: config.maxTokens ?? 1000,
-        top_p: config.topP ?? 1,
-    });
+    return withRetry(async () => {
+        const response = await openai.chat.completions.create({
+            model: config.model,
+            messages,
+            temperature: config.temperature ?? 0.7,
+            max_tokens: config.maxTokens ?? 1000,
+            top_p: config.topP ?? 1,
+        });
 
-    const text = response.choices[0]?.message?.content || '';
-    const usage = response.usage;
+        const text = response.choices[0]?.message?.content || '';
+        const usage = response.usage;
 
-    console.log(`[LLM] OpenAI response: ${text.length} chars, ${usage?.total_tokens} tokens`);
+        console.log(`[LLM] OpenAI response: ${text.length} chars, ${usage?.total_tokens} tokens`);
 
-    return {
-        text,
-        usage: usage ? {
-            promptTokens: usage.prompt_tokens,
-            completionTokens: usage.completion_tokens,
-            totalTokens: usage.total_tokens
-        } : undefined,
-        model: config.model,
-        provider: 'openai'
-    };
+        return {
+            text,
+            usage: usage ? {
+                promptTokens: usage.prompt_tokens,
+                completionTokens: usage.completion_tokens,
+                totalTokens: usage.total_tokens
+            } : undefined,
+            model: config.model,
+            provider: 'openai'
+        };
+    }, `OpenAI ${config.model}`);
 }
 
 async function executeAnthropic(
@@ -157,31 +244,33 @@ async function executeAnthropic(
     const apiKey = await getApiKey(config.credentialId, 'anthropic', 'ANTHROPIC_API_KEY');
     const anthropic = new Anthropic({ apiKey });
 
-    const response = await anthropic.messages.create({
-        model: config.model,
-        max_tokens: config.maxTokens ?? 1000,
-        temperature: config.temperature ?? 0.7,
-        system: systemPrompt,
-        messages: [
-            { role: 'user', content: userPrompt }
-        ]
-    });
+    return withRetry(async () => {
+        const response = await anthropic.messages.create({
+            model: config.model,
+            max_tokens: config.maxTokens ?? 1000,
+            temperature: config.temperature ?? 0.7,
+            system: systemPrompt,
+            messages: [
+                { role: 'user', content: userPrompt }
+            ]
+        });
 
-    const text = response.content[0].type === 'text' ? response.content[0].text : '';
-    const usage = response.usage;
+        const text = response.content[0].type === 'text' ? response.content[0].text : '';
+        const usage = response.usage;
 
-    console.log(`[LLM] Anthropic response: ${text.length} chars, ${usage.input_tokens + usage.output_tokens} tokens`);
+        console.log(`[LLM] Anthropic response: ${text.length} chars, ${usage.input_tokens + usage.output_tokens} tokens`);
 
-    return {
-        text,
-        usage: {
-            promptTokens: usage.input_tokens,
-            completionTokens: usage.output_tokens,
-            totalTokens: usage.input_tokens + usage.output_tokens
-        },
-        model: config.model,
-        provider: 'anthropic'
-    };
+        return {
+            text,
+            usage: {
+                promptTokens: usage.input_tokens,
+                completionTokens: usage.output_tokens,
+                totalTokens: usage.input_tokens + usage.output_tokens
+            },
+            model: config.model,
+            provider: 'anthropic'
+        };
+    }, `Anthropic ${config.model}`);
 }
 
 async function executeGoogle(
@@ -205,17 +294,19 @@ async function executeGoogle(
         ? `${systemPrompt}\n\n${userPrompt}`
         : userPrompt;
 
-    const result = await model.generateContent(fullPrompt);
-    const response = result.response;
-    const text = response.text();
+    return withRetry(async () => {
+        const result = await model.generateContent(fullPrompt);
+        const response = result.response;
+        const text = response.text();
 
-    console.log(`[LLM] Google response: ${text.length} chars`);
+        console.log(`[LLM] Google response: ${text.length} chars`);
 
-    return {
-        text,
-        model: config.model,
-        provider: 'google'
-    };
+        return {
+            text,
+            model: config.model,
+            provider: 'google'
+        };
+    }, `Google ${config.model}`);
 }
 
 async function executeCohere(
@@ -231,23 +322,25 @@ async function executeCohere(
         ? `${systemPrompt}\n\n${userPrompt}`
         : userPrompt;
 
-    const response = await cohere.generate({
-        model: config.model,
-        prompt: fullPrompt,
-        temperature: config.temperature ?? 0.7,
-        maxTokens: config.maxTokens ?? 1000,
-        p: config.topP ?? 1,
-    });
+    return withRetry(async () => {
+        const response = await cohere.generate({
+            model: config.model,
+            prompt: fullPrompt,
+            temperature: config.temperature ?? 0.7,
+            maxTokens: config.maxTokens ?? 1000,
+            p: config.topP ?? 1,
+        });
 
-    const text = response.generations[0]?.text || '';
+        const text = response.generations[0]?.text || '';
 
-    console.log(`[LLM] Cohere response: ${text.length} chars`);
+        console.log(`[LLM] Cohere response: ${text.length} chars`);
 
-    return {
-        text,
-        model: config.model,
-        provider: 'cohere'
-    };
+        return {
+            text,
+            model: config.model,
+            provider: 'cohere'
+        };
+    }, `Cohere ${config.model}`);
 }
 
 /**

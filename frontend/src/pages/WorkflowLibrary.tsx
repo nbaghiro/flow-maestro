@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { getWorkflows, createWorkflow } from "../lib/api";
+import { getWorkflows, createWorkflow, generateWorkflow, updateWorkflow } from "../lib/api";
 import { useAuth } from "../contexts/AuthContext";
 import { CreateWorkflowDialog } from "../components/CreateWorkflowDialog";
-import { Plus, FileText, Calendar, Loader2, LogOut, User } from "lucide-react";
+import { AIGenerateDialog } from "../components/AIGenerateDialog";
+import { convertToReactFlowFormat } from "../lib/workflow-layout";
+import { Plus, FileText, Calendar, Loader2, LogOut, User, Sparkles } from "lucide-react";
 
 interface Workflow {
     id: string;
@@ -17,6 +19,7 @@ export function WorkflowLibrary() {
     const [workflows, setWorkflows] = useState<Workflow[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [isAIDialogOpen, setIsAIDialogOpen] = useState(false);
     const { user, logout } = useAuth();
     const navigate = useNavigate();
 
@@ -41,6 +44,72 @@ export function WorkflowLibrary() {
         const response = await createWorkflow(name, description);
         if (response.success && response.data) {
             navigate(`/builder/${response.data.id}`);
+        }
+    };
+
+    const handleGenerateWorkflow = async (prompt: string, credentialId: string) => {
+        try {
+            // Generate workflow using AI
+            const generateResponse = await generateWorkflow({ prompt, credentialId });
+
+            if (generateResponse.success && generateResponse.data) {
+                const { nodes, edges, metadata } = generateResponse.data;
+
+                // Convert generated workflow to React Flow format
+                const { nodes: flowNodes, edges: flowEdges } = convertToReactFlowFormat(
+                    nodes,
+                    edges,
+                    metadata.entryNodeId
+                );
+
+                // Create a new workflow with the generated name
+                const workflowName = metadata.name || "AI Generated Workflow";
+                const createResponse = await createWorkflow(workflowName, metadata.description);
+
+                if (createResponse.success && createResponse.data) {
+                    const workflowId = createResponse.data.id;
+
+                    // Convert React Flow format back to backend format for saving
+                    const nodesMap: Record<string, any> = {};
+                    flowNodes.forEach(node => {
+                        const { label, onError, ...config } = node.data || {};
+                        nodesMap[node.id] = {
+                            type: node.type || 'default',
+                            name: label || node.id,
+                            config: config,
+                            position: node.position,
+                            ...(onError && { onError }),
+                        };
+                    });
+
+                    // Find entry point
+                    const inputNode = flowNodes.find(n => n.type === 'input');
+                    const entryPoint = inputNode?.id || (flowNodes.length > 0 ? flowNodes[0].id : '');
+
+                    const workflowDefinition = {
+                        name: workflowName,
+                        nodes: nodesMap,
+                        edges: flowEdges.map(edge => ({
+                            id: edge.id,
+                            source: edge.source,
+                            target: edge.target,
+                            sourceHandle: edge.sourceHandle,
+                        })),
+                        entryPoint,
+                    };
+
+                    // Update workflow with the generated definition
+                    await updateWorkflow(workflowId, {
+                        name: workflowName,
+                        definition: workflowDefinition,
+                    });
+
+                    // Navigate to the builder with the new workflow
+                    navigate(`/builder/${workflowId}`);
+                }
+            }
+        } catch (error) {
+            console.error("Failed to generate workflow:", error);
         }
     };
 
@@ -105,13 +174,23 @@ export function WorkflowLibrary() {
                         </p>
                     </div>
 
-                    <button
-                        onClick={() => setIsDialogOpen(true)}
-                        className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-primary hover:bg-primary/90 rounded-lg transition-colors shadow-sm"
-                    >
-                        <Plus className="w-4 h-4" />
-                        New Workflow
-                    </button>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => setIsAIDialogOpen(true)}
+                            className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-foreground bg-background hover:bg-muted border border-border rounded-lg transition-colors shadow-sm"
+                            title="Generate workflow with AI"
+                        >
+                            <Sparkles className="w-4 h-4" />
+                            Generate with AI
+                        </button>
+                        <button
+                            onClick={() => setIsDialogOpen(true)}
+                            className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-primary hover:bg-primary/90 rounded-lg transition-colors shadow-sm"
+                        >
+                            <Plus className="w-4 h-4" />
+                            New Workflow
+                        </button>
+                    </div>
                 </div>
 
                 {/* Workflow Grid */}
@@ -182,6 +261,13 @@ export function WorkflowLibrary() {
                 isOpen={isDialogOpen}
                 onClose={() => setIsDialogOpen(false)}
                 onCreate={handleCreateWorkflow}
+            />
+
+            {/* AI Generate Dialog */}
+            <AIGenerateDialog
+                open={isAIDialogOpen}
+                onOpenChange={setIsAIDialogOpen}
+                onGenerate={handleGenerateWorkflow}
             />
         </div>
     );

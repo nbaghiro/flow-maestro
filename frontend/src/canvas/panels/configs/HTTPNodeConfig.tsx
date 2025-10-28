@@ -35,10 +35,25 @@ interface KeyValue {
 }
 
 export function HTTPNodeConfig({ data, onUpdate }: HTTPNodeConfigProps) {
+    // Helper function to convert object to KeyValue array
+    const toKeyValueArray = (obj: any): KeyValue[] => {
+        if (Array.isArray(obj)) return obj;
+        if (obj && typeof obj === 'object') {
+            return Object.entries(obj).map(([key, value]) => ({ key, value: String(value) }));
+        }
+        return [];
+    };
+
     const [method, setMethod] = useState(data.config?.method || "GET");
     const [url, setUrl] = useState(data.config?.url || "");
-    const [headers, setHeaders] = useState<KeyValue[]>(data.config?.headers || [{ key: "", value: "" }]);
-    const [queryParams, setQueryParams] = useState<KeyValue[]>(data.config?.queryParams || []);
+    const [headers, setHeaders] = useState<KeyValue[]>(
+        data.config?.headers
+            ? toKeyValueArray(data.config.headers).length > 0
+                ? toKeyValueArray(data.config.headers)
+                : [{ key: "", value: "" }]
+            : [{ key: "", value: "" }]
+    );
+    const [queryParams, setQueryParams] = useState<KeyValue[]>(toKeyValueArray(data.config?.queryParams));
     const [authType, setAuthType] = useState(data.config?.authType || "none");
     const [authCredentials, setAuthCredentials] = useState(data.config?.authCredentials || "");
     const [bodyType, setBodyType] = useState(data.config?.bodyType || "json");

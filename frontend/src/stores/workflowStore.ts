@@ -1,11 +1,16 @@
 import { create } from "zustand";
 import { Node, Edge, NodeChange, EdgeChange, applyNodeChanges, applyEdgeChanges } from "reactflow";
-import { executeWorkflow as executeWorkflowAPI } from "../lib/api";
+import { executeWorkflow as executeWorkflowAPI, generateWorkflow } from "../lib/api";
+import { convertToReactFlowFormat } from "../lib/workflow-layout";
 
 interface WorkflowStore {
     nodes: Node[];
     edges: Edge[];
     selectedNode: string | null;
+
+    // Workflow metadata
+    aiGenerated: boolean;
+    aiPrompt: string | null;
 
     // Execution state
     isExecuting: boolean;
@@ -21,19 +26,25 @@ interface WorkflowStore {
     updateNode: (nodeId: string, data: any) => void;
     deleteNode: (nodeId: string) => void;
     selectNode: (nodeId: string | null) => void;
+    setAIMetadata: (aiGenerated: boolean, aiPrompt: string | null) => void;
     executeWorkflow: (inputs?: Record<string, any>) => Promise<void>;
+    generateWorkflowFromAI: (prompt: string, credentialId: string) => Promise<void>;
 }
 
 export const useWorkflowStore = create<WorkflowStore>((set, get) => ({
     nodes: [],
     edges: [],
     selectedNode: null,
+    aiGenerated: false,
+    aiPrompt: null,
     isExecuting: false,
     executionResult: null,
     executionError: null,
 
     setNodes: (nodes) => set({ nodes }),
     setEdges: (edges) => set({ edges }),
+
+    setAIMetadata: (aiGenerated, aiPrompt) => set({ aiGenerated, aiPrompt }),
 
     onNodesChange: (changes) => {
         set({
@@ -102,6 +113,43 @@ export const useWorkflowStore = create<WorkflowStore>((set, get) => ({
                 executionError: error.message || 'Unknown error',
                 isExecuting: false
             });
+        }
+    },
+
+    generateWorkflowFromAI: async (prompt: string, credentialId: string) => {
+        console.log('[Workflow] Generating workflow from AI prompt:', prompt);
+
+        try {
+            const response = await generateWorkflow({ prompt, credentialId });
+
+            if (response.success && response.data) {
+                console.log('[Workflow] AI generated workflow with', response.data.nodes.length, 'nodes');
+
+                // Convert to React Flow format with auto-layout
+                const { nodes, edges } = convertToReactFlowFormat(
+                    response.data.nodes,
+                    response.data.edges,
+                    response.data.metadata.entryNodeId
+                );
+
+                // Replace current workflow with generated workflow
+                set({
+                    nodes,
+                    edges,
+                    selectedNode: null,
+                    executionResult: null,
+                    executionError: null,
+                    aiGenerated: true,
+                    aiPrompt: prompt
+                });
+
+                console.log('[Workflow] Successfully added AI-generated workflow to canvas');
+            } else {
+                throw new Error(response.error || 'Failed to generate workflow');
+            }
+        } catch (error: any) {
+            console.error('[Workflow] AI generation failed:', error);
+            throw error; // Re-throw so dialog can show error
         }
     },
 }));

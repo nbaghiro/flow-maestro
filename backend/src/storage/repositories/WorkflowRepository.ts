@@ -4,8 +4,8 @@ import { WorkflowModel, CreateWorkflowInput, UpdateWorkflowInput } from "../mode
 export class WorkflowRepository {
     async create(input: CreateWorkflowInput): Promise<WorkflowModel> {
         const query = `
-            INSERT INTO flowmaestro.workflows (name, description, definition, user_id)
-            VALUES ($1, $2, $3, $4)
+            INSERT INTO flowmaestro.workflows (name, description, definition, user_id, ai_generated, ai_prompt)
+            VALUES ($1, $2, $3, $4, $5, $6)
             RETURNING *
         `;
 
@@ -13,7 +13,9 @@ export class WorkflowRepository {
             input.name,
             input.description || null,
             JSON.stringify(input.definition),
-            input.user_id
+            input.user_id,
+            input.ai_generated || false,
+            input.ai_prompt || null
         ];
 
         const result = await db.query<WorkflowModel>(query, values);
@@ -84,6 +86,16 @@ export class WorkflowRepository {
         if (input.version !== undefined) {
             updates.push(`version = $${paramIndex++}`);
             values.push(input.version);
+        }
+
+        if (input.ai_generated !== undefined) {
+            updates.push(`ai_generated = $${paramIndex++}`);
+            values.push(input.ai_generated);
+        }
+
+        if (input.ai_prompt !== undefined) {
+            updates.push(`ai_prompt = $${paramIndex++}`);
+            values.push(input.ai_prompt);
         }
 
         if (updates.length === 0) {

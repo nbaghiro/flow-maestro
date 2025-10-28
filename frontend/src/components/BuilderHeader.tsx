@@ -1,4 +1,4 @@
-import { Save, Play, Loader2, CheckCircle, XCircle } from "lucide-react";
+import { Save, Play, Loader2, CheckCircle, XCircle, Settings } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useWorkflowStore } from "../stores/workflowStore";
 
@@ -8,6 +8,7 @@ interface BuilderHeaderProps {
     saveStatus?: 'idle' | 'saving' | 'saved' | 'error';
     onSave?: () => void;
     onNameChange?: (name: string) => void;
+    onOpenSettings?: () => void;
 }
 
 export function BuilderHeader({
@@ -15,7 +16,8 @@ export function BuilderHeader({
     hasUnsavedChanges = false,
     saveStatus = 'idle',
     onSave,
-    onNameChange
+    onNameChange,
+    onOpenSettings
 }: BuilderHeaderProps) {
     const { executeWorkflow, isExecuting, executionResult, executionError } = useWorkflowStore();
     const navigate = useNavigate();
@@ -90,6 +92,14 @@ export function BuilderHeader({
 
                 {/* Right: Action Buttons */}
                 <div className="flex items-center gap-2">
+                    <button
+                        onClick={onOpenSettings}
+                        className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted border border-border rounded-lg transition-colors"
+                        title="Workflow Settings"
+                    >
+                        <Settings className="w-4 h-4" />
+                    </button>
+
                     <button
                         onClick={onSave}
                         disabled={saveStatus === 'saving'}

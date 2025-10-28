@@ -11,13 +11,15 @@ import { cn } from "../lib/utils";
 
 interface TestDrawerProps {
     children?: React.ReactNode;
+    renderButtonOnly?: boolean;
+    renderPanelOnly?: boolean;
 }
 
 const MIN_WIDTH = 400;
 const MAX_WIDTH = 800;
 const DEFAULT_WIDTH = 500;
 
-export function TestDrawer({ children }: TestDrawerProps) {
+export function TestDrawer({ children, renderButtonOnly, renderPanelOnly }: TestDrawerProps) {
     const {
         isDrawerOpen,
         drawerWidth,
@@ -106,33 +108,35 @@ export function TestDrawer({ children }: TestDrawerProps) {
         },
     ];
 
-    return (
-        <>
-            {/* Bottom Button - Always Visible */}
-            <div className="fixed bottom-4 left-1/2 -translate-x-full pr-1 z-40">
-                <button
-                    onClick={toggleDrawer}
-                    className={cn(
-                        "px-4 py-2 border rounded-lg shadow-lg transition-colors",
-                        isDrawerOpen
-                            ? "bg-primary text-primary-foreground border-primary hover:bg-primary/90"
-                            : "bg-background border-border hover:bg-muted"
+    // Render only button
+    if (renderButtonOnly) {
+        return (
+            <button
+                onClick={toggleDrawer}
+                className={cn(
+                    "px-4 py-2 border rounded-lg shadow-lg transition-colors",
+                    isDrawerOpen
+                        ? "bg-primary text-primary-foreground border-primary hover:bg-primary/90"
+                        : "bg-background border-border hover:bg-muted"
+                )}
+            >
+                <div className="flex items-center gap-2">
+                    <Play className="w-4 h-4" />
+                    <span className="text-sm font-medium">Open Test Panel</span>
+                    {isDrawerOpen ? (
+                        <ChevronRight className="w-4 h-4 opacity-70" />
+                    ) : (
+                        <ChevronLeft className="w-4 h-4 opacity-50" />
                     )}
-                >
-                    <div className="flex items-center gap-2">
-                        <Play className="w-4 h-4" />
-                        <span className="text-sm font-medium">Open Test Panel</span>
-                        {isDrawerOpen ? (
-                            <ChevronRight className="w-4 h-4 opacity-70" />
-                        ) : (
-                            <ChevronLeft className="w-4 h-4 opacity-50" />
-                        )}
-                    </div>
-                </button>
-            </div>
+                </div>
+            </button>
+        );
+    }
 
-            {/* Drawer Panel */}
-            {isDrawerOpen && (
+    // Render only panel
+    if (renderPanelOnly) {
+        return isDrawerOpen ? (
+            <div className="fixed top-0 right-0 bottom-0 z-50">
                 <div
                     ref={drawerRef}
                     className="h-full bg-background border-l border-border shadow-2xl flex flex-col"
@@ -211,6 +215,120 @@ export function TestDrawer({ children }: TestDrawerProps) {
                     {/* Content */}
                     <div className="flex-1 overflow-hidden">
                         {children}
+                    </div>
+                </div>
+            </div>
+        ) : null;
+    }
+
+    // Render both button and panel (default behavior)
+    return (
+        <>
+            {/* Bottom Button - Always Visible */}
+            <div>
+                <button
+                    onClick={toggleDrawer}
+                    className={cn(
+                        "px-4 py-2 border rounded-lg shadow-lg transition-colors",
+                        isDrawerOpen
+                            ? "bg-primary text-primary-foreground border-primary hover:bg-primary/90"
+                            : "bg-background border-border hover:bg-muted"
+                    )}
+                >
+                    <div className="flex items-center gap-2">
+                        <Play className="w-4 h-4" />
+                        <span className="text-sm font-medium">Open Test Panel</span>
+                        {isDrawerOpen ? (
+                            <ChevronRight className="w-4 h-4 opacity-70" />
+                        ) : (
+                            <ChevronLeft className="w-4 h-4 opacity-50" />
+                        )}
+                    </div>
+                </button>
+            </div>
+
+            {/* Drawer Panel */}
+            {isDrawerOpen && (
+                <div className="fixed top-0 right-0 bottom-0 z-50">
+                    <div
+                        ref={drawerRef}
+                        className="h-full bg-background border-l border-border shadow-2xl flex flex-col"
+                        style={{ width: drawerWidth }}
+                    >
+                        {/* Resize Handle */}
+                        <div
+                            className={cn(
+                                "absolute top-0 left-0 bottom-0 w-1 cursor-ew-resize hover:bg-primary/20 transition-colors",
+                                isResizing && "bg-primary/30"
+                            )}
+                            onMouseDown={handleResizeStart}
+                        >
+                            <div className="absolute top-0 left-0 bottom-0 w-3 -translate-x-1/2" />
+                        </div>
+
+                        {/* Header */}
+                        <div className="flex items-center justify-between px-4 py-2 border-b border-border flex-shrink-0">
+                            <div className="flex items-center gap-2">
+                                <h3 className="text-sm font-semibold">Test Scenario</h3>
+                            </div>
+
+                            {/* Actions */}
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={toggleDrawer}
+                                    className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors"
+                                    title="Collapse"
+                                >
+                                    <ChevronRight className="w-4 h-4" />
+                                </button>
+                                <button
+                                    onClick={() => setDrawerOpen(false)}
+                                    className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors"
+                                    title="Close"
+                                >
+                                    <X className="w-4 h-4" />
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Tabs */}
+                        <div className="px-4 py-2 border-b border-border bg-muted/30 flex-shrink-0">
+                            <div className="flex items-center gap-1">
+                                {tabs.map((tab) => {
+                                    const Icon = tab.icon;
+                                    return (
+                                        <button
+                                            key={tab.id}
+                                            onClick={() => setActiveTab(tab.id)}
+                                            className={cn(
+                                                "flex items-center gap-2 px-3 py-1.5 text-sm rounded-md transition-colors relative",
+                                                activeTab === tab.id
+                                                    ? "bg-background text-foreground font-medium shadow-sm"
+                                                    : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+                                            )}
+                                        >
+                                            <Icon className="w-4 h-4" />
+                                            <span>{tab.label}</span>
+                                            {tab.badge && (
+                                                <span
+                                                    className={cn(
+                                                        "absolute -top-1 -right-1 w-2 h-2 rounded-full",
+                                                        tab.badge === "running"
+                                                            ? "bg-blue-500 animate-pulse"
+                                                            : "bg-green-500"
+                                                    )}
+                                                />
+                                            )}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        {/* Content */}
+                        <div className="flex-1 overflow-hidden">
+                            {children}
+                        </div>
                     </div>
                 </div>
             )}

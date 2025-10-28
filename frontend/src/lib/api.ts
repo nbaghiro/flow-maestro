@@ -299,6 +299,29 @@ export async function updateWorkflow(
     return response.json();
 }
 
+/**
+ * Delete a workflow
+ */
+export async function deleteWorkflow(workflowId: string) {
+    const token = getAuthToken();
+
+    const response = await fetch(`${API_BASE_URL}/api/workflows/${workflowId}`, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json',
+            ...(token && { Authorization: `Bearer ${token}` }),
+        },
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    // 204 No Content means successful deletion
+    return { success: true };
+}
+
 // ===== Trigger API Functions =====
 
 /**
@@ -629,6 +652,58 @@ export async function deleteCredential(credentialId: string): Promise<{ success:
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    return response.json();
+}
+
+// ===== AI Workflow Generation =====
+
+export interface GenerateWorkflowRequest {
+    prompt: string;
+    credentialId: string;
+}
+
+export interface GeneratedWorkflow {
+    nodes: Array<{
+        id: string;
+        type: string;
+        label: string;
+        config: Record<string, any>;
+    }>;
+    edges: Array<{
+        source: string;
+        target: string;
+        sourceHandle: string;
+        targetHandle: string;
+    }>;
+    metadata: {
+        name: string;
+        entryNodeId: string;
+        description: string;
+    };
+}
+
+/**
+ * Generate workflow from natural language prompt using AI
+ */
+export async function generateWorkflow(
+    request: GenerateWorkflowRequest
+): Promise<{ success: boolean; data: GeneratedWorkflow; error?: string }> {
+    const token = getAuthToken();
+
+    const response = await fetch(`${API_BASE_URL}/api/workflows/generate`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            ...(token && { Authorization: `Bearer ${token}` }),
+        },
+        body: JSON.stringify(request),
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error?.message || errorData.error || `HTTP ${response.status}: ${response.statusText}`);
     }
 
     return response.json();

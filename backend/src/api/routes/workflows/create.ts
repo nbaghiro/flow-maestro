@@ -17,7 +17,9 @@ export async function createWorkflowRoute(fastify: FastifyInstance) {
                 name: body.name,
                 description: body.description,
                 definition: body.definition,
-                user_id: request.user!.id
+                user_id: request.user!.id,
+                ai_generated: body.aiGenerated,
+                ai_prompt: body.aiPrompt
             });
 
             return reply.status(201).send({

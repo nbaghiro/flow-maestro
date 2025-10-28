@@ -2,7 +2,7 @@
 
 ## Overview
 
-This is a comprehensive integration test suite for FlowMaestro that validates realistic user workflows rather than focusing on code coverage metrics. Tests use mocked external APIs, in-memory database, and run entirely in CI without external dependencies.
+FlowMaestro's test suite validates realistic user workflows rather than targeting arbitrary code coverage percentages. The tests use mocked external APIs, an in-memory database, and run entirely in CI without external dependencies. This approach ensures that every test represents actual user scenarios while maintaining fast execution times.
 
 ## Running Tests
 
@@ -22,6 +22,8 @@ npm run test:coverage
 
 ## Test Structure
 
+The test suite is organized into three main categories:
+
 ```
 tests/
 ├── fixtures/          # Test data and workflow definitions
@@ -37,45 +39,39 @@ tests/
     └── api-endpoints/ # API endpoint tests
 ```
 
-## Test Philosophy
+## Testing Philosophy
 
-### Focus on User Flows, Not Code Coverage
+### Focus on Real-World Scenarios
 
-Instead of targeting arbitrary code coverage percentages, we focus on:
-- **Realistic workflows**: Each test represents a real user workflow
-- **All node types covered**: Tests exercise all node types through realistic use cases
-- **Educational value**: Tests serve as working examples for users
-- **Fast execution**: No external dependencies, runs in seconds
+FlowMaestro's testing approach prioritizes real-world usage patterns over code coverage metrics. Each test represents an actual workflow that users might build, ensuring that:
+
+- **Node types are validated** through practical use cases rather than isolated unit tests
+- **Tests serve as documentation** showing developers and users how workflows should be structured
+- **Execution speed remains high** since no external services are involved
+- **CI runs are reliable** without flaky network calls or rate limits
 
 ### Current Test Coverage
 
-**Workflows:**
-- ✅ ArXiv Paper Research Assistant (7/8 tests passing)
-- ⏳ Content Summarizer (planned)
-- ⏳ Data Processing Pipeline (planned)
-- ⏳ Conditional Logic Workflow (planned)
-- ⏳ Email Newsletter Generator (planned)
-- ⏳ Code Documentation Generator (planned)
-- ⏳ Personal Finance Tracker (planned)
-- ⏳ Multi-step Web Scraping (planned)
+The test suite includes comprehensive coverage of core workflow types:
 
-**Node Types Tested:**
-- ✅ HTTP Node
-- ✅ Transform Node (parseXML, custom/JSONata)
-- ✅ Variable Node
-- ✅ File Operations Node (parsePDF)
-- ✅ LLM Node (Anthropic)
-- ✅ Output Node
-- ⏳ Input Node
-- ⏳ Conditional Node
-- ⏳ Switch Node
-- ⏳ Loop Node
+**Workflows:**
+- ArXiv Paper Research Assistant (7/8 tests passing) - Demonstrates HTTP requests, XML parsing, PDF processing, and LLM integration
+- Additional workflows planned for content summarization, data pipelines, conditional logic, and more
+
+**Node Types:**
+- HTTP Node - External API calls with various methods and authentication
+- Transform Node - XML parsing, JSONata expressions, and custom transformations
+- Variable Node - Workflow-level state management
+- File Operations Node - PDF parsing and file handling
+- LLM Node - Anthropic Claude integration with prompt handling
+- Output Node - Result display and formatting
+- Input Node, Conditional Node, Switch Node, Loop Node - In development
 
 ## Test Helpers
 
 ### MockAPIs
 
-Provides pre-configured mocks for external services:
+The MockAPIs helper provides pre-configured mocks for common external services, eliminating the need for real API keys or network calls:
 
 ```typescript
 // Mock ArXiv API
@@ -96,7 +92,7 @@ MockAPIs.mockHTTP('https://api.example.com/data', 'GET', { data: 'value' });
 
 ### Database Helpers
 
-In-memory SQLite for fast, isolated tests:
+Tests use an in-memory SQLite database for fast, isolated execution. The database is automatically cleaned between tests:
 
 ```typescript
 // Seed test data
@@ -109,7 +105,7 @@ clearTestData();
 
 ### Test Server
 
-Fastify server with in-memory database:
+The test server provides a fully-functional Fastify instance with in-memory database:
 
 ```typescript
 const server = await setupTestServer();
@@ -126,7 +122,9 @@ const response = await server.inject({
 
 ## Writing New Tests
 
-### 1. Create Workflow Fixture
+### Creating Workflow Fixtures
+
+Start by defining the workflow structure and any mock data needed:
 
 ```typescript
 // tests/fixtures/workflows/my-workflow.fixture.ts
@@ -140,7 +138,9 @@ export const myWorkflowMockData = {
 };
 ```
 
-### 2. Write Integration Test
+### Writing Integration Tests
+
+Integration tests execute nodes step-by-step, building context as they go:
 
 ```typescript
 // tests/integration/workflows/my-workflow.test.ts
@@ -180,7 +180,7 @@ describe('My Workflow', () => {
 
 ## CI Integration
 
-Tests run automatically in GitHub Actions:
+Tests run automatically in GitHub Actions without requiring any secrets or external service access:
 
 ```yaml
 - name: Run Integration Tests
@@ -189,25 +189,26 @@ Tests run automatically in GitHub Actions:
     NODE_ENV: test
 ```
 
-No real API keys or external services required!
+## Known Issues and Limitations
 
-## Known Issues
+The test suite has a few known limitations being addressed:
 
-- [ ] Variable interpolation in nested object paths needs debugging
-- [ ] HTTP node doesn't use `outputVariable` config (returns data directly)
-- [ ] LLM executor uses deprecated model warning (cosmetic)
+- Variable interpolation in nested object paths needs additional debugging
+- HTTP node returns data directly rather than using the `outputVariable` config
+- LLM executor shows deprecated model warnings (cosmetic issue only)
 
-## Contributing
+## Contributing New Tests
 
-When adding new node types:
-1. Create realistic workflow that uses the node
-2. Add mock responses for any external APIs
-3. Write integration test following the pattern above
-4. Ensure test is self-documenting (serves as example)
+When adding new node types or features, follow these guidelines:
+
+1. **Create realistic workflows** that demonstrate the new functionality in a practical context
+2. **Add comprehensive mocks** for any external APIs the node might call
+3. **Follow established patterns** from existing tests for consistency
+4. **Ensure tests are self-documenting** so they serve as examples for users
 
 ## Resources
 
-- [Jest Documentation](https://jestjs.io/)
-- [Nock (HTTP Mocking)](https://github.com/nock/nock)
-- [Supertest (API Testing)](https://github.com/visionmedia/supertest)
-- [Temporal Testing](https://docs.temporal.io/typescript/testing)
+- [Jest Documentation](https://jestjs.io/) - Test framework
+- [Nock HTTP Mocking](https://github.com/nock/nock) - HTTP request interception
+- [Supertest API Testing](https://github.com/visionmedia/supertest) - HTTP assertions
+- [Temporal Testing](https://docs.temporal.io/typescript/testing) - Workflow testing patterns

@@ -12,6 +12,8 @@ import { TestDrawer } from "../components/TestDrawer";
 import { TestPanelContent } from "../canvas/panels/test/TestPanelContent";
 import { TriggerDrawer } from "../components/TriggerDrawer";
 import { TriggerPanelContent } from "../components/triggers/TriggerPanelContent";
+import { AIGenerateButton } from "../components/AIGenerateButton";
+import { WorkflowSettingsDialog } from "../components/WorkflowSettingsDialog";
 
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
 
@@ -19,11 +21,13 @@ export function FlowBuilder() {
     const { workflowId } = useParams<{ workflowId: string }>();
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
     const [workflowName, setWorkflowName] = useState("Untitled Workflow");
+    const [workflowDescription, setWorkflowDescription] = useState("");
     const [isLoading, setIsLoading] = useState(true);
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
     const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
     const [lastSavedState, setLastSavedState] = useState<string>("");
-    const { selectedNode, nodes, edges } = useWorkflowStore();
+    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+    const { selectedNode, nodes, edges, aiGenerated, aiPrompt, setAIMetadata } = useWorkflowStore();
 
     useEffect(() => {
         if (workflowId) {
@@ -38,7 +42,7 @@ export function FlowBuilder() {
             // Extract label and onError from node.data, rest goes into config
             const { label, onError, ...config } = node.data || {};
 
-            return {
+            const nodeData: any = {
                 id: node.id,
                 type: node.type || 'default',
                 name: label || node.id,
@@ -49,9 +53,14 @@ export function FlowBuilder() {
                     x: node.position.x,
                     y: node.position.y,
                 },
-                // Only include onError if it exists
-                ...(onError && { onError }),
             };
+
+            // Only include onError if it exists and has a strategy
+            if (onError && onError.strategy) {
+                nodeData.onError = onError;
+            }
+
+            return nodeData;
         });
 
         const edgesSnapshot = edges.map(edge => ({
@@ -89,6 +98,13 @@ export function FlowBuilder() {
             const response = await getWorkflow(workflowId);
             if (response.success && response.data) {
                 setWorkflowName(response.data.name);
+                setWorkflowDescription(response.data.description || "");
+
+                // Load AI metadata
+                setAIMetadata(
+                    response.data.ai_generated || false,
+                    response.data.ai_prompt || null
+                );
 
                 // Load workflow definition (nodes, edges) into the canvas
                 if (response.data.definition) {
@@ -150,18 +166,33 @@ export function FlowBuilder() {
                 // Extract label and onError from node.data, rest goes into config
                 const { label, onError, ...config } = node.data || {};
 
-                nodesMap[node.id] = {
+                // Only include onError if it has a valid strategy
+                const nodeData: any = {
                     type: node.type || 'default',
                     name: label || node.id,
                     config: config,
                     position: node.position,
-                    ...(onError && { onError }),
                 };
+
+                // Only add onError if it exists and has a strategy
+                if (onError && onError.strategy) {
+                    nodeData.onError = onError;
+                }
+
+                nodesMap[node.id] = nodeData;
             });
 
             // Find entry point (first Input node or first node)
             const inputNode = nodes.find(n => n.type === 'input');
             const entryPoint = inputNode?.id || (nodes.length > 0 ? nodes[0].id : '');
+
+            // Don't save if there are no nodes
+            if (!entryPoint || nodes.length === 0) {
+                console.error('Cannot save workflow with no nodes');
+                setSaveStatus('error');
+                setTimeout(() => setSaveStatus('idle'), 3000);
+                return;
+            }
 
             const workflowDefinition = {
                 name: workflowName,
@@ -184,10 +215,26 @@ export function FlowBuilder() {
 
             console.log('Full workflow definition:', JSON.stringify(workflowDefinition, null, 2));
 
-            await updateWorkflow(workflowId, {
+            // Build update payload, only including non-empty fields
+            const updatePayload: any = {
                 name: workflowName,
                 definition: workflowDefinition,
-            });
+            };
+
+            // Only include description if it's not empty
+            if (workflowDescription) {
+                updatePayload.description = workflowDescription;
+            }
+
+            // Only include AI metadata if present
+            if (aiGenerated !== undefined) {
+                updatePayload.aiGenerated = aiGenerated;
+            }
+            if (aiPrompt) {
+                updatePayload.aiPrompt = aiPrompt;
+            }
+
+            await updateWorkflow(workflowId, updatePayload);
 
             setSaveStatus('saved');
 
@@ -216,6 +263,26 @@ export function FlowBuilder() {
         setWorkflowName(name);
     };
 
+    const handleSettingsSave = async (name: string, description: string) => {
+        if (!workflowId) return;
+
+        try {
+            // Update backend
+            await updateWorkflow(workflowId, {
+                name,
+                description,
+            });
+
+            // Update local state
+            setWorkflowName(name);
+            setWorkflowDescription(description);
+        } catch (error) {
+            console.error('Failed to save workflow settings:', error);
+            // Re-throw so the dialog can display the error
+            throw error;
+        }
+    };
+
     if (isLoading) {
         return (
             <div className="h-screen flex items-center justify-center bg-gray-50">
@@ -236,6 +303,17 @@ export function FlowBuilder() {
                     saveStatus={saveStatus}
                     onSave={handleSave}
                     onNameChange={handleNameChange}
+                    onOpenSettings={() => setIsSettingsOpen(true)}
+                />
+
+                <WorkflowSettingsDialog
+                    open={isSettingsOpen}
+                    onOpenChange={setIsSettingsOpen}
+                    workflowName={workflowName}
+                    workflowDescription={workflowDescription}
+                    aiGenerated={aiGenerated}
+                    aiPrompt={aiPrompt}
+                    onSave={handleSettingsSave}
                 />
 
                 <div className="flex-1 flex overflow-hidden">
@@ -248,13 +326,24 @@ export function FlowBuilder() {
                     </div>
                     {selectedNode && <NodeInspector />}
 
-                    {/* Test Drawer - Right Side Panel */}
-                    <TestDrawer>
+                    {/* Centered Floating Buttons Group */}
+                    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40">
+                        <div className="flex items-center gap-2">
+                            <AIGenerateButton />
+                            <TestDrawer renderButtonOnly>
+                                <TestPanelContent />
+                            </TestDrawer>
+                            <TriggerDrawer renderButtonOnly>
+                                {workflowId && <TriggerPanelContent workflowId={workflowId} />}
+                            </TriggerDrawer>
+                        </div>
+                    </div>
+
+                    {/* Drawer Panels - Positioned on the right */}
+                    <TestDrawer renderPanelOnly>
                         <TestPanelContent />
                     </TestDrawer>
-
-                    {/* Trigger Drawer - Right Side Panel */}
-                    <TriggerDrawer>
+                    <TriggerDrawer renderPanelOnly>
                         {workflowId && <TriggerPanelContent workflowId={workflowId} />}
                     </TriggerDrawer>
                 </div>
