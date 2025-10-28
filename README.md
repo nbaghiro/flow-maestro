@@ -19,6 +19,7 @@ FlowMaestro is a production-ready platform for orchestrating complex AI agent wo
 - [Development Guide](#development-guide)
 - [Contributing](#contributing)
 - [Project Structure](#project-structure)
+- [Documentation](#documentation)
 
 ---
 
@@ -2306,6 +2307,16 @@ npm run build
 - **Discussions**: GitHub Discussions
 - **Issues**: GitHub Issues
 - **Security**: Report security issues privately to security@flowmaestro.com
+
+---
+
+## Documentation
+
+Comprehensive guides and implementation notes are available in the `_docs` folder:
+
+- **[Workflow Triggers Implementation](./_docs/workflow-triggers-implementation.md)** - Complete guide to the workflow trigger system (schedules, webhooks, events)
+- **[Database Migrations Guide](./_docs/database-migrations.md)** - How to create and run database migrations
+- **[Testing Guide](./_docs/testing-guide.md)** - Integration test suite documentation and philosophy
 
 ---
 
