@@ -4,7 +4,9 @@ Watch FlowMaestro in action - building AI workflows with natural language prompt
 
 ## Demo Recording
 
-https://github.com/nbaghiro/flow-maestro/assets/0/demo-recording.mp4
+https://github.com/user-attachments/assets/demo-recording.mp4
+
+<video src="demo-recording.mp4" controls title="FlowMaestro Demo"></video>
 
 ### What's Shown
 
