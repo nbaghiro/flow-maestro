@@ -86,6 +86,9 @@ export async function orchestratorWorkflow(input: OrchestratorInput): Promise<Or
             return;
         }
 
+        // Mark as executed immediately to prevent circular dependency infinite recursion
+        executed.add(nodeId);
+
         const node = nodeMap.get(nodeId);
         if (!node) {
             throw new Error(`Node ${nodeId} not found in workflow definition`);
@@ -103,7 +106,6 @@ export async function orchestratorWorkflow(input: OrchestratorInput): Promise<Or
         if (dependencies.some(depId => errors[depId])) {
             console.log(`[Orchestrator] Skipping ${nodeId} due to failed dependency`);
             errors[nodeId] = 'Dependency failed';
-            executed.add(nodeId);
             return;
         }
 
@@ -129,8 +131,6 @@ export async function orchestratorWorkflow(input: OrchestratorInput): Promise<Or
                 console.log(`[Orchestrator] Node ${nodeId} completed, added keys: ${Object.keys(result).join(', ')}`);
             }
 
-            executed.add(nodeId);
-
             // Execute dependent nodes
             const dependents = outgoingEdges.get(nodeId) || [];
             for (const dependentId of dependents) {
@@ -140,8 +140,7 @@ export async function orchestratorWorkflow(input: OrchestratorInput): Promise<Or
             const errorMessage = error.message || 'Unknown error';
             console.error(`[Orchestrator] Node ${nodeId} failed: ${errorMessage}`);
             errors[nodeId] = errorMessage;
-            executed.add(nodeId);
-            // Don't execute dependents if this node failed
+            // Don't execute dependents if this node failed (already marked as executed at start)
         }
     }
 

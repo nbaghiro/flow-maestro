@@ -108,8 +108,7 @@ export async function executeNode(input: ExecuteNodeInput): Promise<NodeResult> 
             return await executeKnowledgeBaseQueryNode({
                 nodeType,
                 nodeConfig,
-                context,
-                config: nodeConfig
+                context
             });
 
         default:

@@ -164,7 +164,10 @@ export type WebSocketEventType =
     | "node:retry"
     | "node:stream"
     | "user:input:required"
-    | "user:input:response";
+    | "user:input:response"
+    | "kb:document:processing"
+    | "kb:document:completed"
+    | "kb:document:failed";
 
 export interface WebSocketEvent {
     type: WebSocketEventType;

@@ -9,8 +9,7 @@ export {
 export {
     extractTextActivity,
     chunkTextActivity,
-    generateEmbeddingsActivity,
-    storeChunksActivity,
+    generateAndStoreEmbeddingsActivity,
     completeDocumentProcessingActivity,
     type ProcessDocumentInput
 } from "./process-document";

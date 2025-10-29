@@ -1,7 +1,7 @@
 import { FastifyInstance } from "fastify";
 import { KnowledgeBaseRepository, KnowledgeDocumentRepository } from "../../../storage/repositories";
 import { authMiddleware } from "../../middleware";
-import { temporalClient } from "../../../temporal/client";
+import { getTemporalClient } from "../../../temporal/client";
 
 export async function addUrlRoute(fastify: FastifyInstance) {
     fastify.post(
@@ -50,11 +50,11 @@ export async function addUrlRoute(fastify: FastifyInstance) {
             });
 
             // Start Temporal workflow to process the URL
-            const client = await temporalClient();
+            const client = await getTemporalClient();
             const workflowId = `process-document-${document.id}`;
 
             await client.workflow.start("processDocumentWorkflow", {
-                taskQueue: "orchestrator-queue",
+                taskQueue: "flowmaestro-orchestrator",
                 workflowId,
                 args: [
                     {

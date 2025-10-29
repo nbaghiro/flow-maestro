@@ -1,6 +1,5 @@
 import * as fs from "fs/promises";
-import * as path from "path";
-import pdf from "pdf-parse";
+import { PDFParse } from "pdf-parse";
 import mammoth from "mammoth";
 import * as cheerio from "cheerio";
 import axios from "axios";
@@ -84,14 +83,15 @@ export class TextExtractor {
     private async extractFromPDF(filePath: string): Promise<ExtractedText> {
         try {
             const dataBuffer = await fs.readFile(filePath);
-            const data = await pdf(dataBuffer);
+
+            const pdfParser = new PDFParse({ data: dataBuffer });
+            const data = await pdfParser.getText();
 
             return {
                 content: data.text,
                 metadata: {
-                    pages: data.numpages,
+                    pages: data.total,
                     wordCount: this.countWords(data.text),
-                    info: data.info
                 }
             };
         } catch (error: any) {

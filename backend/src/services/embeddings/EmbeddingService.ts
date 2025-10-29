@@ -140,19 +140,26 @@ export class EmbeddingService {
         // First, try to get from user credentials
         if (userId) {
             try {
-                const credentials = await this.credentialRepository.findByUserIdAndProvider(
+                const credentials = await this.credentialRepository.findByProvider(
                     userId,
                     "openai"
                 );
 
                 if (credentials.length > 0) {
                     // Find active API key credential
-                    const apiKeyCredential = credentials.find(
-                        (c) => c.type === "api_key" && c.status === "active"
+                    const apiKeyCredentialSummary = credentials.find(
+                        (c: any) => c.type === "api_key" && c.status === "active"
                     );
 
-                    if (apiKeyCredential && apiKeyCredential.decrypted_data?.api_key) {
-                        return apiKeyCredential.decrypted_data.api_key;
+                    if (apiKeyCredentialSummary) {
+                        // Fetch full credential with decrypted data
+                        const apiKeyCredential = await this.credentialRepository.findByIdWithData(
+                            apiKeyCredentialSummary.id
+                        );
+
+                        if (apiKeyCredential && apiKeyCredential.data && 'api_key' in apiKeyCredential.data) {
+                            return apiKeyCredential.data.api_key;
+                        }
                     }
                 }
             } catch (error) {

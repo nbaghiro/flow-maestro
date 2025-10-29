@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useKnowledgeBaseStore } from "../../stores/knowledgeBaseStore";
+import { wsClient } from "../../lib/websocket";
 import {
     BookOpen,
     Upload,
@@ -21,7 +22,6 @@ export function KnowledgeBaseDetail() {
         currentDocuments,
         currentStats,
         loading,
-        error,
         fetchKnowledgeBase,
         fetchDocuments,
         fetchStats,
@@ -41,6 +41,40 @@ export function KnowledgeBaseDetail() {
             fetchStats(id);
         }
     }, [id]);
+
+    // Subscribe to document processing events for realtime updates
+    useEffect(() => {
+        if (!id) return;
+
+        const handleDocumentCompleted = (event: any) => {
+            // Check if this event is for the current KB
+            if (event.knowledgeBaseId === id) {
+                console.log("Document completed, refreshing stats and documents...", event);
+                // Refresh both stats and documents list
+                fetchStats(id);
+                fetchDocuments(id);
+            }
+        };
+
+        const handleDocumentFailed = (event: any) => {
+            // Check if this event is for the current KB
+            if (event.knowledgeBaseId === id) {
+                console.log("Document failed, refreshing documents...", event);
+                // Refresh documents to show failed status
+                fetchDocuments(id);
+            }
+        };
+
+        // Subscribe to WebSocket events
+        wsClient.on("kb:document:completed", handleDocumentCompleted);
+        wsClient.on("kb:document:failed", handleDocumentFailed);
+
+        // Cleanup on unmount
+        return () => {
+            wsClient.off("kb:document:completed", handleDocumentCompleted);
+            wsClient.off("kb:document:failed", handleDocumentFailed);
+        };
+    }, [id, fetchStats, fetchDocuments]);
 
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (!e.target.files || !e.target.files[0] || !id) return;

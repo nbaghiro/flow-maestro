@@ -7,6 +7,7 @@ import { TextExtractor, TextChunker } from "../../services/document-processing";
 import { EmbeddingService } from "../../services/embeddings";
 import { DocumentFileType } from "../../storage/models/KnowledgeDocument";
 import { CreateKnowledgeChunkInput } from "../../storage/models/KnowledgeChunk";
+import { globalEventEmitter } from "../../shared/events/EventEmitter";
 
 export interface ProcessDocumentInput {
     documentId: string;
@@ -24,6 +25,18 @@ const textExtractor = new TextExtractor();
 const embeddingService = new EmbeddingService();
 
 /**
+ * Sanitize text to remove invalid UTF-8 characters and null bytes
+ * PostgreSQL doesn't allow null bytes in TEXT fields
+ */
+function sanitizeText(text: string): string {
+    // Remove null bytes and other control characters except newlines/tabs
+    return text
+        .replace(/\x00/g, '') // Remove null bytes
+        .replace(/[\x01-\x08\x0B-\x0C\x0E-\x1F\x7F]/g, '') // Remove other control chars
+        .trim();
+}
+
+/**
  * Activity: Extract text from document
  */
 export async function extractTextActivity(input: ProcessDocumentInput): Promise<string> {
@@ -32,6 +45,16 @@ export async function extractTextActivity(input: ProcessDocumentInput): Promise<
     try {
         // Update status to processing
         await documentRepository.updateStatus(input.documentId, "processing");
+
+        // Get document details for event
+        const document = await documentRepository.findById(input.documentId);
+
+        // Emit processing event
+        globalEventEmitter.emitDocumentProcessing(
+            input.knowledgeBaseId,
+            input.documentId,
+            document?.name || "Unknown"
+        );
 
         let extractedText: { content: string; metadata: Record<string, any> };
 
@@ -45,20 +68,35 @@ export async function extractTextActivity(input: ProcessDocumentInput): Promise<
             throw new Error("Either filePath or sourceUrl must be provided");
         }
 
+        // Sanitize content to remove invalid UTF-8 characters
+        const sanitizedContent = sanitizeText(extractedText.content);
+
+        if (!sanitizedContent || sanitizedContent.trim().length === 0) {
+            throw new Error("No valid content extracted from document after sanitization");
+        }
+
         // Update document with extracted content and metadata
         await documentRepository.update(input.documentId, {
-            content: extractedText.content,
+            content: sanitizedContent,
             metadata: extractedText.metadata
         });
 
         console.log(
-            `[extractTextActivity] Successfully extracted ${extractedText.content.length} characters`
+            `[extractTextActivity] Successfully extracted ${sanitizedContent.length} characters`
         );
 
-        return extractedText.content;
+        return sanitizedContent;
     } catch (error: any) {
         console.error(`[extractTextActivity] Error:`, error);
         await documentRepository.updateStatus(input.documentId, "failed", error.message);
+
+        // Emit document failed event
+        globalEventEmitter.emitDocumentFailed(
+            input.knowledgeBaseId,
+            input.documentId,
+            error.message
+        );
+
         throw error;
     }
 }
@@ -97,20 +135,35 @@ export async function chunkTextActivity(input: ProcessDocumentInput & { content:
             file_type: input.fileType
         });
 
-        console.log(`[chunkTextActivity] Created ${chunks.length} chunks`);
+        // Sanitize each chunk to ensure no invalid characters
+        const sanitizedChunks = chunks.map(chunk => ({
+            ...chunk,
+            content: sanitizeText(chunk.content)
+        }));
 
-        return chunks;
+        console.log(`[chunkTextActivity] Created ${sanitizedChunks.length} chunks`);
+
+        return sanitizedChunks;
     } catch (error: any) {
         console.error(`[chunkTextActivity] Error:`, error);
         await documentRepository.updateStatus(input.documentId, "failed", error.message);
+
+        // Emit document failed event
+        globalEventEmitter.emitDocumentFailed(
+            input.knowledgeBaseId,
+            input.documentId,
+            error.message
+        );
+
         throw error;
     }
 }
 
 /**
- * Activity: Generate embeddings for chunks
+ * Activity: Generate embeddings and store chunks with embeddings
+ * Combined activity to avoid passing large embedding arrays through Temporal
  */
-export async function generateEmbeddingsActivity(
+export async function generateAndStoreEmbeddingsActivity(
     input: ProcessDocumentInput & {
         chunks: Array<{
             content: string;
@@ -118,9 +171,9 @@ export async function generateEmbeddingsActivity(
             metadata: any;
         }>;
     }
-): Promise<number[][]> {
+): Promise<{ chunkCount: number; totalTokens: number }> {
     console.log(
-        `[generateEmbeddingsActivity] Generating embeddings for ${input.chunks.length} chunks`
+        `[generateAndStoreEmbeddingsActivity] Processing ${input.chunks.length} chunks`
     );
 
     try {
@@ -134,6 +187,7 @@ export async function generateEmbeddingsActivity(
         const texts = input.chunks.map((chunk) => chunk.content);
 
         // Generate embeddings
+        console.log(`[generateAndStoreEmbeddingsActivity] Generating embeddings...`);
         const result = await embeddingService.generateEmbeddings(
             texts,
             {
@@ -145,48 +199,17 @@ export async function generateEmbeddingsActivity(
         );
 
         console.log(
-            `[generateEmbeddingsActivity] Generated ${result.embeddings.length} embeddings, used ${result.usage.total_tokens} tokens`
+            `[generateAndStoreEmbeddingsActivity] Generated ${result.embeddings.length} embeddings, used ${result.usage.total_tokens} tokens`
         );
 
-        return result.embeddings;
-    } catch (error: any) {
-        console.error(`[generateEmbeddingsActivity] Error:`, error);
-        await documentRepository.updateStatus(input.documentId, "failed", error.message);
-        throw error;
-    }
-}
-
-/**
- * Activity: Store chunks with embeddings in database
- */
-export async function storeChunksActivity(
-    input: ProcessDocumentInput & {
-        chunks: Array<{
-            content: string;
-            index: number;
-            metadata: any;
-        }>;
-        embeddings: number[][];
-    }
-): Promise<{ chunkCount: number }> {
-    console.log(
-        `[storeChunksActivity] Storing ${input.chunks.length} chunks with embeddings`
-    );
-
-    try {
-        if (input.chunks.length !== input.embeddings.length) {
-            throw new Error(
-                `Mismatch between chunks (${input.chunks.length}) and embeddings (${input.embeddings.length})`
-            );
-        }
-
-        // Prepare chunk inputs
+        // Store chunks with embeddings immediately
+        console.log(`[generateAndStoreEmbeddingsActivity] Storing chunks in database...`);
         const chunkInputs: CreateKnowledgeChunkInput[] = input.chunks.map((chunk, index) => ({
             document_id: input.documentId,
             knowledge_base_id: input.knowledgeBaseId,
             chunk_index: chunk.index,
             content: chunk.content,
-            embedding: input.embeddings[index],
+            embedding: result.embeddings[index],
             token_count: embeddingService.estimateTokens(chunk.content),
             metadata: chunk.metadata
         }));
@@ -194,12 +217,23 @@ export async function storeChunksActivity(
         // Batch insert chunks
         const createdChunks = await chunkRepository.batchInsert(chunkInputs);
 
-        console.log(`[storeChunksActivity] Successfully stored ${createdChunks.length} chunks`);
+        console.log(`[generateAndStoreEmbeddingsActivity] Successfully stored ${createdChunks.length} chunks`);
 
-        return { chunkCount: createdChunks.length };
+        return {
+            chunkCount: createdChunks.length,
+            totalTokens: result.usage.total_tokens
+        };
     } catch (error: any) {
-        console.error(`[storeChunksActivity] Error:`, error);
+        console.error(`[generateAndStoreEmbeddingsActivity] Error:`, error);
         await documentRepository.updateStatus(input.documentId, "failed", error.message);
+
+        // Emit document failed event
+        globalEventEmitter.emitDocumentFailed(
+            input.knowledgeBaseId,
+            input.documentId,
+            error.message
+        );
+
         throw error;
     }
 }
@@ -215,6 +249,16 @@ export async function completeDocumentProcessingActivity(
     try {
         await documentRepository.updateStatus(input.documentId, "ready");
         console.log(`[completeDocumentProcessingActivity] Document marked as ready`);
+
+        // Get chunk count for the completed document
+        const chunks = await chunkRepository.findByDocumentId(input.documentId);
+
+        // Emit document completed event with chunk count
+        globalEventEmitter.emitDocumentCompleted(
+            input.knowledgeBaseId,
+            input.documentId,
+            chunks.length
+        );
     } catch (error: any) {
         console.error(`[completeDocumentProcessingActivity] Error:`, error);
         throw error;

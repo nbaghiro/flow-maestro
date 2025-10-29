@@ -35,7 +35,10 @@ export class EventBridge {
             "node:failed",
             "node:retry",
             "node:stream",
-            "user:input:required"
+            "user:input:required",
+            "kb:document:processing",
+            "kb:document:completed",
+            "kb:document:failed"
         ];
 
         eventTypes.forEach((eventType) => {

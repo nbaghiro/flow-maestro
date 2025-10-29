@@ -5,8 +5,7 @@ import type * as activities from "../activities/process-document";
 const {
     extractTextActivity,
     chunkTextActivity,
-    generateEmbeddingsActivity,
-    storeChunksActivity,
+    generateAndStoreEmbeddingsActivity,
     completeDocumentProcessingActivity
 } = proxyActivities<typeof activities>({
     startToCloseTimeout: "10 minutes",
@@ -40,9 +39,8 @@ export interface ProcessDocumentWorkflowResult {
  * This workflow orchestrates the following steps:
  * 1. Extract text from the document
  * 2. Chunk the text into smaller pieces
- * 3. Generate embeddings for each chunk
- * 4. Store chunks with embeddings in the database
- * 5. Mark the document as ready
+ * 3. Generate embeddings and store chunks (combined to avoid payload size limits)
+ * 4. Mark the document as ready
  */
 export async function processDocumentWorkflow(
     input: ProcessDocumentWorkflowInput
@@ -79,8 +77,9 @@ export async function processDocumentWorkflow(
             throw new Error("No chunks created from content");
         }
 
-        // Step 3: Generate embeddings for chunks
-        const embeddings = await generateEmbeddingsActivity({
+        // Step 3: Generate embeddings and store chunks
+        // Combined activity to avoid passing large embedding arrays through workflow
+        const { chunkCount, totalTokens } = await generateAndStoreEmbeddingsActivity({
             documentId: input.documentId,
             knowledgeBaseId: input.knowledgeBaseId,
             filePath: input.filePath,
@@ -90,19 +89,11 @@ export async function processDocumentWorkflow(
             chunks
         });
 
-        // Step 4: Store chunks with embeddings
-        const { chunkCount } = await storeChunksActivity({
-            documentId: input.documentId,
-            knowledgeBaseId: input.knowledgeBaseId,
-            filePath: input.filePath,
-            sourceUrl: input.sourceUrl,
-            fileType: input.fileType as any,
-            userId: input.userId,
-            chunks,
-            embeddings
-        });
+        console.log(
+            `[processDocumentWorkflow] Generated embeddings and stored ${chunkCount} chunks (${totalTokens} tokens)`
+        );
 
-        // Step 5: Mark document as ready
+        // Step 4: Mark document as ready
         await completeDocumentProcessingActivity({
             documentId: input.documentId,
             knowledgeBaseId: input.knowledgeBaseId,

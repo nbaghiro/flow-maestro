@@ -137,6 +137,31 @@ export class WorkflowEventEmitter {
             validation
         });
     }
+
+    // Knowledge Base events
+    emitDocumentProcessing(knowledgeBaseId: string, documentId: string, documentName: string): void {
+        this.emit("kb:document:processing", {
+            knowledgeBaseId,
+            documentId,
+            documentName
+        });
+    }
+
+    emitDocumentCompleted(knowledgeBaseId: string, documentId: string, chunkCount: number): void {
+        this.emit("kb:document:completed", {
+            knowledgeBaseId,
+            documentId,
+            chunkCount
+        });
+    }
+
+    emitDocumentFailed(knowledgeBaseId: string, documentId: string, error: string): void {
+        this.emit("kb:document:failed", {
+            knowledgeBaseId,
+            documentId,
+            error
+        });
+    }
 }
 
 // Global singleton instance

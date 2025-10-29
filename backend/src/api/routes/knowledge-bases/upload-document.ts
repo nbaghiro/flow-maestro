@@ -6,7 +6,7 @@ import * as path from "path";
 import { pipeline } from "stream/promises";
 import { createWriteStream } from "fs";
 import { DocumentFileType } from "../../../storage/models/KnowledgeDocument";
-import { temporalClient } from "../../../temporal/client";
+import { getTemporalClient } from "../../../temporal/client";
 
 export async function uploadDocumentRoute(fastify: FastifyInstance) {
     fastify.post(
@@ -90,11 +90,11 @@ export async function uploadDocumentRoute(fastify: FastifyInstance) {
             });
 
             // Start Temporal workflow to process the document
-            const client = await temporalClient();
+            const client = await getTemporalClient();
             const workflowId = `process-document-${document.id}`;
 
             await client.workflow.start("processDocumentWorkflow", {
-                taskQueue: "orchestrator-queue",
+                taskQueue: "flowmaestro-orchestrator",
                 workflowId,
                 args: [
                     {

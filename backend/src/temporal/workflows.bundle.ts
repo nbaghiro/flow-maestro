@@ -9,3 +9,4 @@ export * from "./workflows/orchestrator-workflow";
 export * from "./workflows/user-input-workflow";
 export * from "./workflows/long-running-task-workflow";
 export * from "./workflows/triggered-workflow";
+export * from "./workflows/process-document-workflow";

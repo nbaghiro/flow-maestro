@@ -1,7 +1,6 @@
 import { ExecuteNodeInput, NodeResult } from "./index";
 import { KnowledgeBaseRepository, KnowledgeChunkRepository } from "../../../storage/repositories";
 import { EmbeddingService } from "../../../services/embeddings";
-import { interpolateVariables } from "../../../shared/utils/interpolate-variables";
 
 export interface KnowledgeBaseQueryNodeConfig {
     knowledgeBaseId: string;
@@ -18,7 +17,7 @@ export interface KnowledgeBaseQueryNodeConfig {
 export async function executeKnowledgeBaseQueryNode(
     input: ExecuteNodeInput
 ): Promise<NodeResult> {
-    const config = input.config as KnowledgeBaseQueryNodeConfig;
+    const config = input.nodeConfig as KnowledgeBaseQueryNodeConfig;
     const kbRepository = new KnowledgeBaseRepository();
     const chunkRepository = new KnowledgeChunkRepository();
     const embeddingService = new EmbeddingService();
@@ -33,11 +32,12 @@ export async function executeKnowledgeBaseQueryNode(
             throw new Error("Query text is required");
         }
 
-        // Interpolate variables in query text
-        const interpolatedQuery = interpolateVariables(config.queryText, input.context || {});
+        // TODO: Implement variable interpolation for query text
+        // For now, use the query text directly
+        const interpolatedQuery = config.queryText;
 
         if (!interpolatedQuery || interpolatedQuery.trim().length === 0) {
-            throw new Error("Query text is empty after variable interpolation");
+            throw new Error("Query text is empty");
         }
 
         // Get knowledge base
