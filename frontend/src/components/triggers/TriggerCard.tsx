@@ -4,9 +4,10 @@
  */
 
 import { useState } from "react";
-import { WorkflowTrigger, ScheduleTriggerConfig, WebhookTriggerConfig } from "../../types/trigger";
-import { Calendar, Webhook, Zap, Copy, Trash2, Power, PowerOff, MoreVertical } from "lucide-react";
-import { getWebhookUrl, deleteTrigger, updateTrigger } from "../../lib/api";
+import { WorkflowTrigger, ScheduleTriggerConfig, WebhookTriggerConfig, ManualTriggerConfig } from "../../types/trigger";
+import { Calendar, Webhook, Zap, Copy, Trash2, Power, PowerOff, MoreVertical, Play } from "lucide-react";
+import { getWebhookUrl, deleteTrigger, updateTrigger, executeTrigger } from "../../lib/api";
+import { useWorkflowStore } from "../../stores/workflowStore";
 import { cn } from "../../lib/utils";
 
 interface TriggerCardProps {
@@ -17,10 +18,14 @@ interface TriggerCardProps {
 export function TriggerCard({ trigger, onUpdate }: TriggerCardProps) {
     const [isDeleting, setIsDeleting] = useState(false);
     const [isToggling, setIsToggling] = useState(false);
+    const [isRunning, setIsRunning] = useState(false);
     const [showMenu, setShowMenu] = useState(false);
+    const { startExecution } = useWorkflowStore();
 
     const getTriggerIcon = () => {
         switch (trigger.trigger_type) {
+            case 'manual':
+                return <Play className="w-5 h-5 text-green-500" />;
             case 'schedule':
                 return <Calendar className="w-5 h-5 text-blue-500" />;
             case 'webhook':
@@ -33,6 +38,23 @@ export function TriggerCard({ trigger, onUpdate }: TriggerCardProps) {
     };
 
     const getConfigDisplay = () => {
+        if (trigger.trigger_type === 'manual') {
+            const config = trigger.config as ManualTriggerConfig;
+            const inputCount = config.inputs ? Object.keys(config.inputs).length : 0;
+            return (
+                <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground">
+                            {inputCount > 0 ? `${inputCount} input${inputCount !== 1 ? 's' : ''}` : 'No inputs'}
+                        </span>
+                    </div>
+                    {config.description && (
+                        <p className="text-xs text-muted-foreground">{config.description}</p>
+                    )}
+                </div>
+            );
+        }
+
         if (trigger.trigger_type === 'schedule') {
             const config = trigger.config as ScheduleTriggerConfig;
             return (
@@ -122,6 +144,39 @@ export function TriggerCard({ trigger, onUpdate }: TriggerCardProps) {
         }
     };
 
+    const handleRun = async () => {
+        if (!trigger.enabled) {
+            alert("Please enable the trigger first");
+            return;
+        }
+
+        setIsRunning(true);
+        try {
+            // For manual triggers, use the stored inputs
+            let inputs: Record<string, any> | undefined;
+            if (trigger.trigger_type === 'manual') {
+                const config = trigger.config as ManualTriggerConfig;
+                inputs = config.inputs;
+            }
+
+            const response = await executeTrigger(trigger.id, inputs);
+
+            if (response.success && response.data) {
+                // Start execution monitoring in the workflow store
+                startExecution(response.data.executionId, trigger.id);
+
+                // Show success notification
+                alert(`Execution started successfully!\nExecution ID: ${response.data.executionId}`);
+                onUpdate();
+            }
+        } catch (error) {
+            console.error("Failed to execute trigger:", error);
+            alert("Failed to execute trigger: " + (error instanceof Error ? error.message : String(error)));
+        } finally {
+            setIsRunning(false);
+        }
+    };
+
     return (
         <div className={cn(
             "border rounded-lg p-3 hover:bg-muted/50 transition-colors relative",
@@ -196,6 +251,22 @@ export function TriggerCard({ trigger, onUpdate }: TriggerCardProps) {
 
                     {/* Config */}
                     <div className="mb-2">{getConfigDisplay()}</div>
+
+                    {/* Run Button */}
+                    <button
+                        onClick={handleRun}
+                        disabled={!trigger.enabled || isRunning}
+                        className={cn(
+                            "w-full px-3 py-2 rounded-lg font-medium text-sm transition-colors flex items-center justify-center gap-2 mb-2",
+                            trigger.enabled
+                                ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                                : "bg-muted text-muted-foreground cursor-not-allowed"
+                        )}
+                        title={!trigger.enabled ? "Enable trigger first" : "Run trigger now"}
+                    >
+                        <Play className="w-4 h-4" />
+                        {isRunning ? "Running..." : "Run Now"}
+                    </button>
 
                     {/* Stats */}
                     <div className="flex items-center gap-4 text-xs text-muted-foreground">

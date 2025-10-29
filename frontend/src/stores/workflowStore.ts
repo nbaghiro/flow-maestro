@@ -3,6 +3,38 @@ import { Node, Edge, NodeChange, EdgeChange, applyNodeChanges, applyEdgeChanges 
 import { executeWorkflow as executeWorkflowAPI, generateWorkflow } from "../lib/api";
 import { convertToReactFlowFormat } from "../lib/workflow-layout";
 
+export type NodeExecutionStatus = "idle" | "pending" | "running" | "success" | "error" | "skipped";
+
+export interface NodeExecutionState {
+    status: NodeExecutionStatus;
+    startedAt: Date | null;
+    completedAt: Date | null;
+    output: any;
+    error: string | null;
+    duration: number | null;
+}
+
+export interface ExecutionLog {
+    id: string;
+    level: "info" | "debug" | "warn" | "error";
+    message: string;
+    nodeId?: string;
+    timestamp: Date;
+    metadata?: Record<string, any>;
+}
+
+export interface CurrentExecution {
+    id: string;
+    status: "pending" | "running" | "completed" | "failed" | "cancelled";
+    nodeStates: Map<string, NodeExecutionState>;
+    variables: Map<string, any>;
+    logs: ExecutionLog[];
+    startedAt: Date;
+    completedAt: Date | null;
+    duration: number | null;
+    triggerId?: string;
+}
+
 interface WorkflowStore {
     nodes: Node[];
     edges: Edge[];
@@ -12,10 +44,13 @@ interface WorkflowStore {
     aiGenerated: boolean;
     aiPrompt: string | null;
 
-    // Execution state
+    // Execution state (legacy)
     isExecuting: boolean;
     executionResult: any | null;
     executionError: string | null;
+
+    // Current execution (new real-time state)
+    currentExecution: CurrentExecution | null;
 
     // Actions
     setNodes: (nodes: Node[]) => void;
@@ -29,6 +64,14 @@ interface WorkflowStore {
     setAIMetadata: (aiGenerated: boolean, aiPrompt: string | null) => void;
     executeWorkflow: (inputs?: Record<string, any>) => Promise<void>;
     generateWorkflowFromAI: (prompt: string, credentialId: string) => Promise<void>;
+
+    // Execution state management
+    startExecution: (executionId: string, triggerId?: string) => void;
+    updateExecutionStatus: (status: CurrentExecution["status"]) => void;
+    updateNodeState: (nodeId: string, state: Partial<NodeExecutionState>) => void;
+    addExecutionLog: (log: Omit<ExecutionLog, "id" | "timestamp">) => void;
+    updateVariable: (key: string, value: any) => void;
+    clearExecution: () => void;
 }
 
 export const useWorkflowStore = create<WorkflowStore>((set, get) => ({
@@ -40,6 +83,7 @@ export const useWorkflowStore = create<WorkflowStore>((set, get) => ({
     isExecuting: false,
     executionResult: null,
     executionError: null,
+    currentExecution: null,
 
     setNodes: (nodes) => set({ nodes }),
     setEdges: (edges) => set({ edges }),
@@ -151,5 +195,122 @@ export const useWorkflowStore = create<WorkflowStore>((set, get) => ({
             console.error('[Workflow] AI generation failed:', error);
             throw error; // Re-throw so dialog can show error
         }
+    },
+
+    // Execution state management methods
+    startExecution: (executionId: string, triggerId?: string) => {
+        console.log('[Workflow] Starting execution:', executionId);
+        set({
+            currentExecution: {
+                id: executionId,
+                status: "running",
+                nodeStates: new Map(),
+                variables: new Map(),
+                logs: [],
+                startedAt: new Date(),
+                completedAt: null,
+                duration: null,
+                triggerId,
+            },
+        });
+    },
+
+    updateExecutionStatus: (status: CurrentExecution["status"]) => {
+        const { currentExecution } = get();
+        if (!currentExecution) return;
+
+        const now = new Date();
+        const completedAt = ["completed", "failed", "cancelled"].includes(status) ? now : null;
+        const duration = completedAt
+            ? now.getTime() - currentExecution.startedAt.getTime()
+            : null;
+
+        set({
+            currentExecution: {
+                ...currentExecution,
+                status,
+                completedAt,
+                duration,
+            },
+        });
+
+        console.log('[Workflow] Execution status updated:', status);
+    },
+
+    updateNodeState: (nodeId: string, state: Partial<NodeExecutionState>) => {
+        const { currentExecution } = get();
+        if (!currentExecution) return;
+
+        const existingState = currentExecution.nodeStates.get(nodeId) || {
+            status: "idle",
+            startedAt: null,
+            completedAt: null,
+            output: null,
+            error: null,
+            duration: null,
+        };
+
+        const updatedState: NodeExecutionState = {
+            ...existingState,
+            ...state,
+        };
+
+        // Calculate duration if completed
+        if (updatedState.completedAt && updatedState.startedAt) {
+            updatedState.duration =
+                updatedState.completedAt.getTime() - updatedState.startedAt.getTime();
+        }
+
+        const newNodeStates = new Map(currentExecution.nodeStates);
+        newNodeStates.set(nodeId, updatedState);
+
+        set({
+            currentExecution: {
+                ...currentExecution,
+                nodeStates: newNodeStates,
+            },
+        });
+
+        console.log('[Workflow] Node state updated:', nodeId, updatedState.status);
+    },
+
+    addExecutionLog: (log: Omit<ExecutionLog, "id" | "timestamp">) => {
+        const { currentExecution } = get();
+        if (!currentExecution) return;
+
+        const newLog: ExecutionLog = {
+            ...log,
+            id: `log-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            timestamp: new Date(),
+        };
+
+        set({
+            currentExecution: {
+                ...currentExecution,
+                logs: [...currentExecution.logs, newLog],
+            },
+        });
+    },
+
+    updateVariable: (key: string, value: any) => {
+        const { currentExecution } = get();
+        if (!currentExecution) return;
+
+        const newVariables = new Map(currentExecution.variables);
+        newVariables.set(key, value);
+
+        set({
+            currentExecution: {
+                ...currentExecution,
+                variables: newVariables,
+            },
+        });
+
+        console.log('[Workflow] Variable updated:', key);
+    },
+
+    clearExecution: () => {
+        console.log('[Workflow] Clearing execution state');
+        set({ currentExecution: null });
     },
 }));

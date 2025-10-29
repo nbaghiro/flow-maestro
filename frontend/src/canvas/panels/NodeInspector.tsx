@@ -21,6 +21,7 @@ import { OutputNodeConfig } from "./configs/OutputNodeConfig";
 import { HTTPNodeConfig } from "./configs/HTTPNodeConfig";
 import { DatabaseNodeConfig } from "./configs/DatabaseNodeConfig";
 import { IntegrationNodeConfig } from "./configs/IntegrationNodeConfig";
+import { KnowledgeBaseQueryNodeConfig } from "./configs/KnowledgeBaseQueryNodeConfig";
 
 export function NodeInspector() {
     const { nodes, selectedNode, selectNode, updateNode } = useWorkflowStore();
@@ -93,6 +94,8 @@ export function NodeInspector() {
                 return <DatabaseNodeConfig data={node.data} onUpdate={handleUpdate} />;
             case "integration":
                 return <IntegrationNodeConfig data={node.data} onUpdate={handleUpdate} />;
+            case "knowledgeBaseQuery":
+                return <KnowledgeBaseQueryNodeConfig data={node.data} onUpdate={handleUpdate} />;
 
             default:
                 return (

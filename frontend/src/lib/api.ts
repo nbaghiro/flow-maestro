@@ -437,10 +437,130 @@ export async function deleteTrigger(triggerId: string): Promise<{ success: boole
 }
 
 /**
+ * Execute a trigger
+ */
+export async function executeTrigger(triggerId: string, inputs?: Record<string, any>): Promise<{
+    success: boolean;
+    data?: {
+        executionId: string;
+        workflowId: string;
+        triggerId: string;
+        status: string;
+        inputs: Record<string, any>;
+    };
+    error?: string;
+}> {
+    const token = getAuthToken();
+
+    const response = await fetch(`${API_BASE_URL}/api/triggers/${triggerId}/execute`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            ...(token && { Authorization: `Bearer ${token}` }),
+        },
+        body: JSON.stringify({ inputs }),
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    return response.json();
+}
+
+/**
  * Get webhook URL for a trigger
  */
 export function getWebhookUrl(triggerId: string): string {
     return `${API_BASE_URL}/api/webhooks/${triggerId}`;
+}
+
+// ===== Execution API Functions =====
+
+export interface Execution {
+    id: string;
+    workflow_id: string;
+    status: "pending" | "running" | "completed" | "failed" | "cancelled";
+    inputs: Record<string, any> | null;
+    outputs: Record<string, any> | null;
+    current_state: any | null;
+    error: string | null;
+    started_at: string | null;
+    completed_at: string | null;
+    created_at: string;
+}
+
+export interface ListExecutionsResponse {
+    success: boolean;
+    data: {
+        items: Execution[];
+        total: number;
+        page: number;
+        pageSize: number;
+        hasMore: boolean;
+    };
+    error?: string;
+}
+
+/**
+ * Get list of executions for a workflow
+ */
+export async function getExecutions(
+    workflowId?: string,
+    params?: {
+        status?: "pending" | "running" | "completed" | "failed" | "cancelled";
+        limit?: number;
+        offset?: number;
+    }
+): Promise<ListExecutionsResponse> {
+    const token = getAuthToken();
+
+    const queryParams = new URLSearchParams();
+    if (workflowId) queryParams.append('workflowId', workflowId);
+    if (params?.status) queryParams.append('status', params.status);
+    if (params?.limit) queryParams.append('limit', params.limit.toString());
+    if (params?.offset) queryParams.append('offset', params.offset.toString());
+
+    const response = await fetch(
+        `${API_BASE_URL}/api/executions${queryParams.toString() ? `?${queryParams.toString()}` : ''}`,
+        {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                ...(token && { Authorization: `Bearer ${token}` }),
+            },
+        }
+    );
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    return response.json();
+}
+
+/**
+ * Get a specific execution by ID
+ */
+export async function getExecution(executionId: string): Promise<{ success: boolean; data: Execution; error?: string }> {
+    const token = getAuthToken();
+
+    const response = await fetch(`${API_BASE_URL}/api/executions/${executionId}`, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            ...(token && { Authorization: `Bearer ${token}` }),
+        },
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    return response.json();
 }
 
 // ===== Credential API Functions =====

@@ -1,12 +1,10 @@
 import { FastifyInstance } from "fastify";
 import { getTemporalClient } from "../../../temporal/client";
 import { authMiddleware } from "../../middleware";
+import { convertFrontendToBackend, FrontendWorkflowDefinition } from "../../../shared/utils/workflow-converter";
 
 interface ExecuteWorkflowBody {
-    workflowDefinition: {
-        nodes: any[];
-        edges: any[];
-    };
+    workflowDefinition: FrontendWorkflowDefinition;
     inputs?: Record<string, any>;
 }
 
@@ -32,12 +30,18 @@ export async function executeWorkflowRoute(fastify: FastifyInstance) {
                 // Generate unique workflow ID
                 const workflowId = `workflow-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
+                // Convert frontend workflow definition to backend format
+                const backendWorkflowDefinition = convertFrontendToBackend(
+                    body.workflowDefinition,
+                    `Workflow ${workflowId}`
+                );
+
                 // Start the workflow
                 const handle = await client.workflow.start('orchestratorWorkflow', {
                     taskQueue: 'flowmaestro-orchestrator',
                     workflowId,
                     args: [{
-                        workflowDefinition: body.workflowDefinition,
+                        workflowDefinition: backendWorkflowDefinition,
                         inputs: body.inputs || {}
                     }],
                 });

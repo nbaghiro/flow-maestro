@@ -19,10 +19,18 @@ const operations = [
 ];
 
 export function TransformNodeConfig({ data, onUpdate }: TransformNodeConfigProps) {
-    const [operation, setOperation] = useState(data.config?.operation || "map");
-    const [inputData, setInputData] = useState(data.config?.inputData || "");
-    const [expression, setExpression] = useState(data.config?.expression || "");
-    const [outputVariable, setOutputVariable] = useState(data.config?.outputVariable || "");
+    const [operation, setOperation] = useState(data.operation || "map");
+    const [inputData, setInputData] = useState(data.inputData || "");
+    const [expression, setExpression] = useState(data.expression || "");
+    const [outputVariable, setOutputVariable] = useState(data.outputVariable || "");
+
+    // Sync state when data prop changes (e.g., loading from database)
+    useEffect(() => {
+        if (data.operation) setOperation(data.operation);
+        if (data.inputData) setInputData(data.inputData);
+        if (data.expression) setExpression(data.expression);
+        if (data.outputVariable) setOutputVariable(data.outputVariable);
+    }, [data.operation, data.inputData, data.expression, data.outputVariable]);
 
     useEffect(() => {
         onUpdate({

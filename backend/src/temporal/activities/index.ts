@@ -6,3 +6,11 @@ export {
     type TriggerExecutionInput,
     type TriggerExecutionResult
 } from "./trigger-execution";
+export {
+    extractTextActivity,
+    chunkTextActivity,
+    generateEmbeddingsActivity,
+    storeChunksActivity,
+    completeDocumentProcessingActivity,
+    type ProcessDocumentInput
+} from "./process-document";

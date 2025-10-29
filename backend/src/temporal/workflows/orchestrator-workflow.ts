@@ -10,20 +10,23 @@ const { executeNode } = proxyActivities<typeof activities>({
 });
 
 export interface WorkflowNode {
-    id: string;
     type: string;
-    data: any;
+    name: string;
+    config: any;
+    position?: { x: number; y: number };
 }
 
 export interface WorkflowEdge {
     id: string;
     source: string;
     target: string;
+    sourceHandle?: string;
 }
 
 export interface WorkflowDefinition {
-    nodes: WorkflowNode[];
+    nodes: Record<string, WorkflowNode>;
     edges: WorkflowEdge[];
+    entryPoint?: string;
 }
 
 export interface OrchestratorInput {
@@ -44,17 +47,20 @@ export async function orchestratorWorkflow(input: OrchestratorInput): Promise<Or
     const { workflowDefinition, inputs = {} } = input;
     const { nodes, edges } = workflowDefinition;
 
-    console.log(`[Orchestrator] Starting workflow with ${nodes.length} nodes, ${edges.length} edges`);
+    // Convert nodes Record to entries for processing
+    const nodeEntries = Object.entries(nodes);
+    console.log(`[Orchestrator] Starting workflow with ${nodeEntries.length} nodes, ${edges.length} edges`);
 
     // Build execution graph
     const nodeMap = new Map<string, WorkflowNode>();
     const outgoingEdges = new Map<string, string[]>();
     const incomingEdges = new Map<string, string[]>();
 
-    nodes.forEach(node => {
-        nodeMap.set(node.id, node);
-        outgoingEdges.set(node.id, []);
-        incomingEdges.set(node.id, []);
+    // Initialize maps from nodes Record
+    nodeEntries.forEach(([nodeId, node]) => {
+        nodeMap.set(nodeId, node);
+        outgoingEdges.set(nodeId, []);
+        incomingEdges.set(nodeId, []);
     });
 
     edges.forEach(edge => {
@@ -63,11 +69,11 @@ export async function orchestratorWorkflow(input: OrchestratorInput): Promise<Or
     });
 
     // Find start nodes (nodes with no incoming edges or input nodes)
-    const startNodes = nodes.filter(
-        node => node.type === 'input' || (incomingEdges.get(node.id)?.length || 0) === 0
+    const startNodes = nodeEntries.filter(
+        ([nodeId, node]) => node.type === 'input' || (incomingEdges.get(nodeId)?.length || 0) === 0
     );
 
-    console.log(`[Orchestrator] Start nodes: ${startNodes.map(n => n.id).join(', ')}`);
+    console.log(`[Orchestrator] Start nodes: ${startNodes.map(([id]) => id).join(', ')}`);
 
     // Execution context - stores all node outputs
     const context: Record<string, any> = { ...inputs };
@@ -106,7 +112,7 @@ export async function orchestratorWorkflow(input: OrchestratorInput): Promise<Or
         try {
             // Handle input nodes specially
             if (node.type === 'input') {
-                const inputName = node.data.inputName || 'input';
+                const inputName = node.config.inputName || 'input';
                 const inputValue = inputs[inputName];
                 context[inputName] = inputValue;
                 console.log(`[Orchestrator] Input node ${nodeId}: ${inputName} = ${inputValue}`);
@@ -114,7 +120,7 @@ export async function orchestratorWorkflow(input: OrchestratorInput): Promise<Or
                 // Execute the node using the activity
                 const result = await executeNode({
                     nodeType: node.type,
-                    nodeConfig: node.data,
+                    nodeConfig: node.config,
                     context,
                 });
 
@@ -141,8 +147,8 @@ export async function orchestratorWorkflow(input: OrchestratorInput): Promise<Or
 
     // Execute from all start nodes
     try {
-        for (const startNode of startNodes) {
-            await executeNodeAndDependents(startNode.id);
+        for (const [startNodeId] of startNodes) {
+            await executeNodeAndDependents(startNodeId);
         }
 
         // Check if there were any errors

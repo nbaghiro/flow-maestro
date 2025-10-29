@@ -5,6 +5,7 @@ import { getTriggerRoute } from "./get";
 import { updateTriggerRoute } from "./update";
 import { deleteTriggerRoute } from "./delete";
 import { webhookReceiverRoute } from "./webhook";
+import { executeTriggerRoute } from "./execute";
 
 export async function triggerRoutes(fastify: FastifyInstance) {
     // Webhook receiver routes (PUBLIC - no auth)
@@ -19,5 +20,6 @@ export async function triggerRoutes(fastify: FastifyInstance) {
         instance.register(getTriggerRoute);
         instance.register(updateTriggerRoute);
         instance.register(deleteTriggerRoute);
+        instance.register(executeTriggerRoute);
     }, { prefix: "/triggers" });
 }

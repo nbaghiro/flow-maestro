@@ -5,11 +5,11 @@ import { Workflows } from "./pages/Workflows";
 import { Credentials } from "./pages/Credentials";
 import { Integrations } from "./pages/Integrations";
 import { Templates } from "./pages/Templates";
-import { Executions } from "./pages/Executions";
 import { Settings } from "./pages/Settings";
 import { Account } from "./pages/Account";
 import { Workspace } from "./pages/Workspace";
 import { FlowBuilder } from "./pages/FlowBuilder";
+import { KnowledgeBaseList, KnowledgeBaseDetail } from "./pages/KnowledgeBases";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { AppLayout } from "./components/layout/AppLayout";
 
@@ -32,8 +32,9 @@ function App() {
                 <Route index element={<Workflows />} />
                 <Route path="credentials" element={<Credentials />} />
                 <Route path="integrations" element={<Integrations />} />
+                <Route path="knowledge-bases" element={<KnowledgeBaseList />} />
+                <Route path="knowledge-bases/:id" element={<KnowledgeBaseDetail />} />
                 <Route path="templates" element={<Templates />} />
-                <Route path="executions" element={<Executions />} />
                 <Route path="settings" element={<Settings />} />
                 <Route path="account" element={<Account />} />
                 <Route path="workspace" element={<Workspace />} />

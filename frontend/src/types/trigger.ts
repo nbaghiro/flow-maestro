@@ -29,6 +29,8 @@ export interface EventTriggerConfig {
 export interface ManualTriggerConfig {
     requireInputs?: boolean;
     inputSchema?: Record<string, any>;
+    inputs?: Record<string, any>;  // Actual input values for the trigger
+    description?: string;
 }
 
 export type TriggerConfig =

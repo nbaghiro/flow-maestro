@@ -4,7 +4,7 @@
  */
 
 import { useState } from "react";
-import { X, Calendar, Webhook } from "lucide-react";
+import { X, Calendar, Webhook, Play } from "lucide-react";
 import { createTrigger } from "../../lib/api";
 import type { TriggerType, CreateTriggerInput } from "../../types/trigger";
 
@@ -28,6 +28,10 @@ export function CreateTriggerDialog({ workflowId, onClose, onSuccess }: CreateTr
     const [webhookMethod, setWebhookMethod] = useState<"GET" | "POST" | "PUT" | "DELETE" | "PATCH" | "ANY">("POST");
     const [authType, setAuthType] = useState<"none" | "hmac" | "bearer" | "api_key">("none");
 
+    // Manual trigger fields
+    const [manualInputs, setManualInputs] = useState<Array<{ key: string; value: string }>>([{ key: "", value: "" }]);
+    const [manualDescription, setManualDescription] = useState("");
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError(null);
@@ -40,22 +44,46 @@ export function CreateTriggerDialog({ workflowId, onClose, onSuccess }: CreateTr
         setLoading(true);
 
         try {
+            let config: any;
+            if (triggerType === "schedule") {
+                config = {
+                    cronExpression,
+                    timezone,
+                    enabled: true,
+                };
+            } else if (triggerType === "webhook") {
+                config = {
+                    method: webhookMethod,
+                    authType,
+                    responseFormat: "json",
+                };
+            } else if (triggerType === "manual") {
+                // Convert inputs array to object, filtering out empty keys
+                const inputsObject: Record<string, any> = {};
+                manualInputs.forEach(({ key, value }) => {
+                    if (key.trim()) {
+                        // Try to parse value as JSON, otherwise use as string
+                        try {
+                            inputsObject[key.trim()] = JSON.parse(value);
+                        } catch {
+                            inputsObject[key.trim()] = value;
+                        }
+                    }
+                });
+
+                config = {
+                    inputs: inputsObject,
+                    description: manualDescription || undefined,
+                    requireInputs: Object.keys(inputsObject).length > 0,
+                };
+            }
+
             const input: CreateTriggerInput = {
                 workflowId,
                 name: name.trim(),
                 triggerType,
                 enabled: true,
-                config: triggerType === "schedule"
-                    ? {
-                        cronExpression,
-                        timezone,
-                        enabled: true,
-                    }
-                    : {
-                        method: webhookMethod,
-                        authType,
-                        responseFormat: "json",
-                    },
+                config,
             };
 
             await createTrigger(input);
@@ -121,7 +149,22 @@ export function CreateTriggerDialog({ workflowId, onClose, onSuccess }: CreateTr
                             <label className="block text-sm font-medium mb-1.5">
                                 Trigger Type
                             </label>
-                            <div className="grid grid-cols-2 gap-2">
+                            <div className="grid grid-cols-3 gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setTriggerType("manual")}
+                                    className={`p-3 border rounded-lg transition-all ${
+                                        triggerType === "manual"
+                                            ? "border-primary bg-primary/5 ring-2 ring-primary/20"
+                                            : "border-border hover:bg-muted"
+                                    }`}
+                                    disabled={loading}
+                                >
+                                    <Play className="w-5 h-5 mx-auto mb-1 text-green-500" />
+                                    <div className="text-sm font-medium">Manual</div>
+                                    <div className="text-xs text-muted-foreground">Static inputs</div>
+                                </button>
+
                                 <button
                                     type="button"
                                     onClick={() => setTriggerType("schedule")}
@@ -153,6 +196,85 @@ export function CreateTriggerDialog({ workflowId, onClose, onSuccess }: CreateTr
                                 </button>
                             </div>
                         </div>
+
+                        {/* Manual Configuration */}
+                        {triggerType === "manual" && (
+                            <>
+                                <div>
+                                    <label className="block text-sm font-medium mb-1.5">
+                                        Description (optional)
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={manualDescription}
+                                        onChange={(e) => setManualDescription(e.target.value)}
+                                        className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                                        placeholder="e.g., Test with sample data"
+                                        disabled={loading}
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium mb-1.5">
+                                        Static Inputs
+                                    </label>
+                                    <p className="text-xs text-muted-foreground mb-2">
+                                        Define key-value pairs for workflow inputs. Values can be strings or JSON.
+                                    </p>
+                                    <div className="space-y-2">
+                                        {manualInputs.map((input, index) => (
+                                            <div key={index} className="flex gap-2">
+                                                <input
+                                                    type="text"
+                                                    value={input.key}
+                                                    onChange={(e) => {
+                                                        const newInputs = [...manualInputs];
+                                                        newInputs[index].key = e.target.value;
+                                                        setManualInputs(newInputs);
+                                                    }}
+                                                    className="flex-1 px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                                                    placeholder="key"
+                                                    disabled={loading}
+                                                />
+                                                <input
+                                                    type="text"
+                                                    value={input.value}
+                                                    onChange={(e) => {
+                                                        const newInputs = [...manualInputs];
+                                                        newInputs[index].value = e.target.value;
+                                                        setManualInputs(newInputs);
+                                                    }}
+                                                    className="flex-[2] px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                                                    placeholder="value"
+                                                    disabled={loading}
+                                                />
+                                                {manualInputs.length > 1 && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            const newInputs = manualInputs.filter((_, i) => i !== index);
+                                                            setManualInputs(newInputs);
+                                                        }}
+                                                        className="px-3 py-2 border border-border rounded-lg text-destructive hover:bg-destructive/10 transition-colors"
+                                                        disabled={loading}
+                                                    >
+                                                        <X className="w-4 h-4" />
+                                                    </button>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => setManualInputs([...manualInputs, { key: "", value: "" }])}
+                                        className="mt-2 text-sm text-primary hover:underline"
+                                        disabled={loading}
+                                    >
+                                        + Add Input
+                                    </button>
+                                </div>
+                            </>
+                        )}
 
                         {/* Schedule Configuration */}
                         {triggerType === "schedule" && (

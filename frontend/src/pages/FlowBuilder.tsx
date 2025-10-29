@@ -8,10 +8,7 @@ import { BuilderHeader } from "../components/BuilderHeader";
 import { useWorkflowStore } from "../stores/workflowStore";
 import { getWorkflow, updateWorkflow } from "../lib/api";
 import { Loader2 } from "lucide-react";
-import { TestDrawer } from "../components/TestDrawer";
-import { TestPanelContent } from "../canvas/panels/test/TestPanelContent";
-import { TriggerDrawer } from "../components/TriggerDrawer";
-import { TriggerPanelContent } from "../components/triggers/TriggerPanelContent";
+import { ExecutionPanel } from "../components/ExecutionPanel";
 import { AIGenerateButton } from "../components/AIGenerateButton";
 import { WorkflowSettingsDialog } from "../components/WorkflowSettingsDialog";
 
@@ -330,22 +327,12 @@ export function FlowBuilder() {
                     <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40">
                         <div className="flex items-center gap-2">
                             <AIGenerateButton />
-                            <TestDrawer renderButtonOnly>
-                                <TestPanelContent />
-                            </TestDrawer>
-                            <TriggerDrawer renderButtonOnly>
-                                {workflowId && <TriggerPanelContent workflowId={workflowId} />}
-                            </TriggerDrawer>
+                            {workflowId && <ExecutionPanel workflowId={workflowId} renderButtonOnly />}
                         </div>
                     </div>
 
                     {/* Drawer Panels - Positioned on the right */}
-                    <TestDrawer renderPanelOnly>
-                        <TestPanelContent />
-                    </TestDrawer>
-                    <TriggerDrawer renderPanelOnly>
-                        {workflowId && <TriggerPanelContent workflowId={workflowId} />}
-                    </TriggerDrawer>
+                    {workflowId && <ExecutionPanel workflowId={workflowId} renderPanelOnly />}
                 </div>
             </div>
         </ReactFlowProvider>

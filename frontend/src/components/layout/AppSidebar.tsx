@@ -3,8 +3,8 @@ import {
     LayoutGrid,
     Key,
     Plug,
+    BookOpen,
     FileText,
-    History,
     Settings,
     User,
     Building,
@@ -27,8 +27,8 @@ const navItems: NavItem[] = [
     { icon: LayoutGrid, label: 'Workflows', path: '/', section: 'primary' },
     { icon: Key, label: 'Credentials', path: '/credentials', section: 'primary' },
     { icon: Plug, label: 'Integrations', path: '/integrations', section: 'primary' },
+    { icon: BookOpen, label: 'Knowledge Bases', path: '/knowledge-bases', section: 'primary' },
     { icon: FileText, label: 'Templates', path: '/templates', badge: 'Soon', section: 'primary' },
-    { icon: History, label: 'Executions', path: '/executions', section: 'primary' },
 
     // Settings navigation
     { icon: Settings, label: 'Settings', path: '/settings', section: 'settings' },

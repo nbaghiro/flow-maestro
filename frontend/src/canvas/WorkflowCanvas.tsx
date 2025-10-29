@@ -30,6 +30,7 @@ import OutputNode from "./nodes/OutputNode";
 import HTTPNode from "./nodes/HTTPNode";
 import DatabaseNode from "./nodes/DatabaseNode";
 import IntegrationNode from "./nodes/IntegrationNode";
+import KnowledgeBaseQueryNode from "./nodes/KnowledgeBaseQueryNode";
 
 // Register node types
 const nodeTypes = {
@@ -49,6 +50,7 @@ const nodeTypes = {
     http: HTTPNode,
     database: DatabaseNode,
     integration: IntegrationNode,
+    knowledgeBaseQuery: KnowledgeBaseQueryNode,
 };
 
 export function WorkflowCanvas() {

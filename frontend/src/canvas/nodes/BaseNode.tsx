@@ -1,7 +1,9 @@
-import { ReactNode } from "react";
-import { Handle, Position } from "reactflow";
+import { ReactNode, useState } from "react";
+import { Handle, Position, useNodeId } from "reactflow";
 import { cn } from "../../lib/utils";
 import { LucideIcon } from "lucide-react";
+import { useWorkflowStore, NodeExecutionStatus } from "../../stores/workflowStore";
+import { NodeExecutionModal } from "../../components/execution/NodeExecutionModal";
 
 export type NodeStatus = "idle" | "pending" | "running" | "success" | "error";
 
@@ -15,6 +17,7 @@ interface BaseNodeProps {
     hasInputHandle?: boolean;
     hasOutputHandle?: boolean;
     customHandles?: ReactNode;
+    onStatusClick?: () => void;
 }
 
 const statusConfig: Record<NodeStatus, { color: string; label: string }> = {
@@ -61,15 +64,46 @@ const categoryConfig: Record<string, { borderColor: string; iconBg: string; icon
 export function BaseNode({
     icon: Icon,
     label,
-    status = "idle",
+    status: providedStatus,
     category = "data",
     children,
     selected = false,
     hasInputHandle = true,
     hasOutputHandle = true,
     customHandles,
+    onStatusClick,
 }: BaseNodeProps) {
+    const nodeId = useNodeId();
+    const { currentExecution } = useWorkflowStore();
     const categoryStyle = categoryConfig[category];
+    const [showModal, setShowModal] = useState(false);
+
+    // Get execution status for this node
+    const executionState = nodeId && currentExecution
+        ? currentExecution.nodeStates.get(nodeId)
+        : null;
+
+    // Use execution status if available, otherwise use provided status
+    const status: NodeStatus = executionState
+        ? (executionState.status as NodeStatus)
+        : (providedStatus || "idle");
+
+    // Build tooltip text
+    const getTooltipText = () => {
+        if (!executionState) return statusConfig[status].label;
+
+        const parts = [statusConfig[status].label];
+
+        if (executionState.duration) {
+            parts.push(`${executionState.duration}ms`);
+        }
+
+        if (executionState.error) {
+            parts.push(`Error: ${executionState.error}`);
+        }
+
+        return parts.join(" • ");
+    };
 
     return (
         <div
@@ -91,8 +125,22 @@ export function BaseNode({
                     <span className="font-medium text-sm text-foreground">{label}</span>
                 </div>
                 <div
-                    className={cn("w-1.5 h-1.5 rounded-full", statusConfig[status].color)}
-                    title={statusConfig[status].label}
+                    className={cn(
+                        "w-2 h-2 rounded-full transition-all",
+                        statusConfig[status].color,
+                        executionState && "cursor-pointer hover:scale-125"
+                    )}
+                    title={getTooltipText()}
+                    onClick={(e) => {
+                        if (executionState) {
+                            e.stopPropagation();
+                            if (onStatusClick) {
+                                onStatusClick();
+                            } else {
+                                setShowModal(true);
+                            }
+                        }
+                    }}
                 />
             </div>
 
@@ -123,6 +171,16 @@ export function BaseNode({
                         />
                     )}
                 </>
+            )}
+
+            {/* Execution Modal */}
+            {showModal && executionState && nodeId && (
+                <NodeExecutionModal
+                    nodeId={nodeId}
+                    nodeName={label}
+                    executionState={executionState}
+                    onClose={() => setShowModal(false)}
+                />
             )}
         </div>
     );

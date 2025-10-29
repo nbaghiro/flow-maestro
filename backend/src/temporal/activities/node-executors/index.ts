@@ -15,6 +15,7 @@ import { executeAudioNode, AudioNodeConfig, AudioNodeResult } from './audio-exec
 import { executeEmbeddingsNode, EmbeddingsNodeConfig, EmbeddingsNodeResult } from './embeddings-executor';
 import { executeDatabaseNode, DatabaseNodeConfig, DatabaseNodeResult } from './database-executor';
 import { executeIntegrationNode, IntegrationNodeConfig, IntegrationNodeResult } from './integration-executor';
+import { executeKnowledgeBaseQueryNode, KnowledgeBaseQueryNodeConfig } from './kb-query-executor';
 
 export type NodeConfig =
     | { type: 'http'; config: HTTPNodeConfig }
@@ -103,6 +104,14 @@ export async function executeNode(input: ExecuteNodeInput): Promise<NodeResult> 
         case 'integration':
             return await executeIntegrationNode(nodeConfig as IntegrationNodeConfig, context);
 
+        case 'knowledgeBaseQuery':
+            return await executeKnowledgeBaseQueryNode({
+                nodeType,
+                nodeConfig,
+                context,
+                config: nodeConfig
+            });
+
         default:
             throw new Error(`Node type '${nodeType}' not yet implemented`);
     }
@@ -126,7 +135,8 @@ export {
     executeAudioNode,
     executeEmbeddingsNode,
     executeDatabaseNode,
-    executeIntegrationNode
+    executeIntegrationNode,
+    executeKnowledgeBaseQueryNode
 };
 
 // Export types
@@ -163,5 +173,6 @@ export type {
     DatabaseNodeConfig,
     DatabaseNodeResult,
     IntegrationNodeConfig,
-    IntegrationNodeResult
+    IntegrationNodeResult,
+    KnowledgeBaseQueryNodeConfig
 };

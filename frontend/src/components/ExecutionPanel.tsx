@@ -1,16 +1,17 @@
 /**
- * Test Drawer Component
- * Resizable right side panel for test scenario management and execution monitoring
+ * Execution Panel Component
+ * Resizable right side panel for workflow triggers and execution management
  */
 
 import { useRef, useEffect, useState } from "react";
-import { useTestScenarioStore } from "../stores/testScenarioStore";
+import { useTriggerStore } from "../stores/triggerStore";
 import { useWorkflowStore } from "../stores/workflowStore";
-import { ChevronLeft, ChevronRight, X, Play, Settings, BarChart3 } from "lucide-react";
+import { ChevronLeft, ChevronRight, X, Zap, Play, History as HistoryIcon } from "lucide-react";
 import { cn } from "../lib/utils";
+import { ExecutionPanelContent } from "./execution/ExecutionPanelContent";
 
-interface TestDrawerProps {
-    children?: React.ReactNode;
+interface ExecutionPanelProps {
+    workflowId: string;
     renderButtonOnly?: boolean;
     renderPanelOnly?: boolean;
 }
@@ -19,23 +20,34 @@ const MIN_WIDTH = 400;
 const MAX_WIDTH = 800;
 const DEFAULT_WIDTH = 500;
 
-export function TestDrawer({ children, renderButtonOnly, renderPanelOnly }: TestDrawerProps) {
+type TabType = "triggers" | "execution" | "history";
+
+export function ExecutionPanel({ workflowId, renderButtonOnly, renderPanelOnly }: ExecutionPanelProps) {
     const {
         isDrawerOpen,
         drawerWidth,
-        activeTab,
         setDrawerOpen,
         setDrawerWidth,
-        setActiveTab,
-        execution,
-    } = useTestScenarioStore();
+        triggers,
+    } = useTriggerStore();
 
-    const { selectNode } = useWorkflowStore();
+    const { selectNode, currentExecution } = useWorkflowStore();
 
     const [isResizing, setIsResizing] = useState(false);
+    const [activeTab, setActiveTab] = useState<TabType>("triggers");
     const drawerRef = useRef<HTMLDivElement>(null);
     const resizeStartX = useRef(0);
     const resizeStartWidth = useRef(DEFAULT_WIDTH);
+
+    // Auto-switch to execution tab when an execution starts
+    useEffect(() => {
+        if (currentExecution && !isDrawerOpen) {
+            setDrawerOpen(true);
+            setActiveTab("execution");
+        } else if (currentExecution && isDrawerOpen && activeTab === "triggers") {
+            setActiveTab("execution");
+        }
+    }, [currentExecution?.id]);
 
     // Handle resize start
     const handleResizeStart = (e: React.MouseEvent) => {
@@ -81,32 +93,63 @@ export function TestDrawer({ children, renderButtonOnly, renderPanelOnly }: Test
         const newOpenState = !isDrawerOpen;
         setDrawerOpen(newOpenState);
 
-        // Deselect node when opening test panel
+        // Deselect node when opening execution panel
         if (newOpenState) {
             selectNode(null);
         }
     };
 
-    // Tab configuration
-    const tabs = [
-        {
-            id: "setup" as const,
-            label: "Setup",
-            icon: Settings,
-        },
-        {
-            id: "execution" as const,
-            label: "Execution",
-            icon: Play,
-            badge: execution.status === "running" ? "running" : undefined,
-        },
-        {
-            id: "results" as const,
-            label: "Results",
-            icon: BarChart3,
-            badge: execution.status === "completed" ? "completed" : undefined,
-        },
-    ];
+    // Get enabled trigger count
+    const enabledCount = triggers.filter(t => t.enabled).length;
+
+    // Render tabs
+    const renderTabs = () => (
+        <div className="flex items-center gap-1 px-4 py-2 border-b border-border bg-muted/20">
+            <button
+                onClick={() => setActiveTab("triggers")}
+                className={cn(
+                    "flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors",
+                    activeTab === "triggers"
+                        ? "bg-background text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+                )}
+            >
+                <Zap className="w-4 h-4" />
+                Triggers
+                {enabledCount > 0 && activeTab === "triggers" && (
+                    <span className="text-xs px-1.5 py-0.5 rounded-full bg-primary/10 text-primary">
+                        {enabledCount}
+                    </span>
+                )}
+            </button>
+
+            <button
+                onClick={() => setActiveTab("execution")}
+                className={cn(
+                    "flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors",
+                    activeTab === "execution"
+                        ? "bg-background text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+                )}
+            >
+                <Play className="w-4 h-4" />
+                Execution
+            </button>
+
+            <button
+                onClick={() => setActiveTab("history")}
+                className={cn(
+                    "flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors",
+                    activeTab === "history"
+                        ? "bg-background text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+                )}
+            >
+                <HistoryIcon className="w-4 h-4" />
+                History
+            </button>
+        </div>
+    );
 
     // Render only button
     if (renderButtonOnly) {
@@ -121,8 +164,18 @@ export function TestDrawer({ children, renderButtonOnly, renderPanelOnly }: Test
                 )}
             >
                 <div className="flex items-center gap-2">
-                    <Play className="w-4 h-4" />
-                    <span className="text-sm font-medium">Open Test Panel</span>
+                    <Zap className="w-4 h-4" />
+                    <span className="text-sm font-medium">Execution</span>
+                    {enabledCount > 0 && (
+                        <span className={cn(
+                            "text-xs px-2 py-0.5 rounded-full",
+                            isDrawerOpen
+                                ? "bg-primary-foreground/20 text-primary-foreground"
+                                : "bg-primary/10 text-primary"
+                        )}>
+                            {enabledCount}
+                        </span>
+                    )}
                     {isDrawerOpen ? (
                         <ChevronRight className="w-4 h-4 opacity-70" />
                     ) : (
@@ -154,9 +207,10 @@ export function TestDrawer({ children, renderButtonOnly, renderPanelOnly }: Test
                     </div>
 
                     {/* Header */}
-                    <div className="flex items-center justify-between px-4 py-2 border-b border-border flex-shrink-0">
+                    <div className="flex items-center justify-between px-4 py-3 border-b border-border flex-shrink-0">
                         <div className="flex items-center gap-2">
-                            <h3 className="text-sm font-semibold">Test Scenario</h3>
+                            <Zap className="w-4 h-4 text-primary" />
+                            <h3 className="text-sm font-semibold">Execution & Triggers</h3>
                         </div>
 
                         {/* Actions */}
@@ -179,42 +233,11 @@ export function TestDrawer({ children, renderButtonOnly, renderPanelOnly }: Test
                     </div>
 
                     {/* Tabs */}
-                    <div className="px-4 py-2 border-b border-border bg-muted/30 flex-shrink-0">
-                        <div className="flex items-center gap-1">
-                            {tabs.map((tab) => {
-                                const Icon = tab.icon;
-                                return (
-                                    <button
-                                        key={tab.id}
-                                        onClick={() => setActiveTab(tab.id)}
-                                        className={cn(
-                                            "flex items-center gap-2 px-3 py-1.5 text-sm rounded-md transition-colors relative",
-                                            activeTab === tab.id
-                                                ? "bg-background text-foreground font-medium shadow-sm"
-                                                : "text-muted-foreground hover:text-foreground hover:bg-background/50"
-                                        )}
-                                    >
-                                        <Icon className="w-4 h-4" />
-                                        <span>{tab.label}</span>
-                                        {tab.badge && (
-                                            <span
-                                                className={cn(
-                                                    "absolute -top-1 -right-1 w-2 h-2 rounded-full",
-                                                    tab.badge === "running"
-                                                        ? "bg-blue-500 animate-pulse"
-                                                        : "bg-green-500"
-                                                )}
-                                            />
-                                        )}
-                                    </button>
-                                );
-                            })}
-                        </div>
-                    </div>
+                    {renderTabs()}
 
                     {/* Content */}
                     <div className="flex-1 overflow-hidden">
-                        {children}
+                        <ExecutionPanelContent workflowId={workflowId} activeTab={activeTab} />
                     </div>
                 </div>
             </div>
@@ -236,8 +259,18 @@ export function TestDrawer({ children, renderButtonOnly, renderPanelOnly }: Test
                     )}
                 >
                     <div className="flex items-center gap-2">
-                        <Play className="w-4 h-4" />
-                        <span className="text-sm font-medium">Open Test Panel</span>
+                        <Zap className="w-4 h-4" />
+                        <span className="text-sm font-medium">Execution</span>
+                        {enabledCount > 0 && (
+                            <span className={cn(
+                                "text-xs px-2 py-0.5 rounded-full",
+                                isDrawerOpen
+                                    ? "bg-primary-foreground/20 text-primary-foreground"
+                                    : "bg-primary/10 text-primary"
+                            )}>
+                                {enabledCount}
+                            </span>
+                        )}
                         {isDrawerOpen ? (
                             <ChevronRight className="w-4 h-4 opacity-70" />
                         ) : (
@@ -267,9 +300,10 @@ export function TestDrawer({ children, renderButtonOnly, renderPanelOnly }: Test
                         </div>
 
                         {/* Header */}
-                        <div className="flex items-center justify-between px-4 py-2 border-b border-border flex-shrink-0">
+                        <div className="flex items-center justify-between px-4 py-3 border-b border-border flex-shrink-0">
                             <div className="flex items-center gap-2">
-                                <h3 className="text-sm font-semibold">Test Scenario</h3>
+                                <Zap className="w-4 h-4 text-primary" />
+                                <h3 className="text-sm font-semibold">Execution & Triggers</h3>
                             </div>
 
                             {/* Actions */}
@@ -292,42 +326,11 @@ export function TestDrawer({ children, renderButtonOnly, renderPanelOnly }: Test
                         </div>
 
                         {/* Tabs */}
-                        <div className="px-4 py-2 border-b border-border bg-muted/30 flex-shrink-0">
-                            <div className="flex items-center gap-1">
-                                {tabs.map((tab) => {
-                                    const Icon = tab.icon;
-                                    return (
-                                        <button
-                                            key={tab.id}
-                                            onClick={() => setActiveTab(tab.id)}
-                                            className={cn(
-                                                "flex items-center gap-2 px-3 py-1.5 text-sm rounded-md transition-colors relative",
-                                                activeTab === tab.id
-                                                    ? "bg-background text-foreground font-medium shadow-sm"
-                                                    : "text-muted-foreground hover:text-foreground hover:bg-background/50"
-                                            )}
-                                        >
-                                            <Icon className="w-4 h-4" />
-                                            <span>{tab.label}</span>
-                                            {tab.badge && (
-                                                <span
-                                                    className={cn(
-                                                        "absolute -top-1 -right-1 w-2 h-2 rounded-full",
-                                                        tab.badge === "running"
-                                                            ? "bg-blue-500 animate-pulse"
-                                                            : "bg-green-500"
-                                                    )}
-                                                />
-                                            )}
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                        </div>
+                        {renderTabs()}
 
                         {/* Content */}
                         <div className="flex-1 overflow-hidden">
-                            {children}
+                            <ExecutionPanelContent workflowId={workflowId} activeTab={activeTab} />
                         </div>
                     </div>
                 </div>

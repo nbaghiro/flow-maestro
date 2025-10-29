@@ -2,6 +2,7 @@ import Fastify from "fastify";
 import cors from "@fastify/cors";
 import jwt from "@fastify/jwt";
 import websocket from "@fastify/websocket";
+import multipart from "@fastify/multipart";
 import { config } from "../shared/config";
 import { errorHandler } from "./middleware";
 import { workflowRoutes } from "./routes/workflows";
@@ -13,6 +14,7 @@ import { nodeRoutes } from "./routes/nodes";
 import { websocketRoutes } from "./routes/websocket";
 import { triggerRoutes } from "./routes/triggers";
 import { oauthRoutes } from "./routes/oauth";
+import { knowledgeBaseRoutes } from "./routes/knowledge-bases";
 import { db } from "../storage/database";
 import { eventBridge } from "../shared/websocket/EventBridge";
 
@@ -50,6 +52,13 @@ export async function buildServer() {
     // Register WebSocket
     await fastify.register(websocket);
 
+    // Register multipart for file uploads
+    await fastify.register(multipart, {
+        limits: {
+            fileSize: 50 * 1024 * 1024 // 50MB limit
+        }
+    });
+
     // Initialize event bridge (connect orchestrator events to WebSocket)
     eventBridge.initialize();
 
@@ -81,6 +90,7 @@ export async function buildServer() {
     await fastify.register(credentialRoutes, { prefix: "/api/credentials" });
     await fastify.register(oauthRoutes, { prefix: "/api/oauth" });
     await fastify.register(nodeRoutes, { prefix: "/api/nodes" });
+    await fastify.register(knowledgeBaseRoutes, { prefix: "/api/knowledge-bases" });
     await fastify.register(triggerRoutes, { prefix: "/api" });
     await fastify.register(websocketRoutes);
 

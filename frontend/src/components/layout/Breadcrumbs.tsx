@@ -6,7 +6,6 @@ const routeLabels: Record<string, string> = {
     '/credentials': 'Credentials',
     '/integrations': 'Integrations',
     '/templates': 'Templates',
-    '/executions': 'Executions',
     '/settings': 'Settings',
     '/account': 'Account',
     '/workspace': 'Workspace',

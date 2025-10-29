@@ -19,8 +19,11 @@ async function run() {
     });
 
     // Resolve workflows path - use absolute path
-    // Temporal will look for either .ts or .js depending on environment
-    const workflowsPath = path.resolve(__dirname, "../workflows.bundle.js");
+    // When running with tsx (dev), use .ts; when built, use .js
+    const isDev = __filename.endsWith('.ts');
+    const workflowsPath = isDev
+        ? path.resolve(__dirname, "../workflows.bundle.ts")
+        : path.resolve(__dirname, "../workflows.bundle.js");
 
     console.log(`Loading workflows from: ${workflowsPath}`);
 
