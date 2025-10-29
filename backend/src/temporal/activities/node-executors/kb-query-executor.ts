@@ -5,8 +5,6 @@ import { EmbeddingService } from "../../../services/embeddings";
 export interface KnowledgeBaseQueryNodeConfig {
     knowledgeBaseId: string;
     queryText: string; // Can include variable interpolation like {{input.query}}
-    topK?: number; // Number of results to return (default: 5)
-    similarityThreshold?: number; // Minimum similarity score (default: 0.7)
     includeMetadata?: boolean; // Include chunk metadata in results (default: true)
 }
 
@@ -61,8 +59,8 @@ export async function executeKnowledgeBaseQueryNode(
         const searchResults = await chunkRepository.searchSimilar({
             knowledge_base_id: config.knowledgeBaseId,
             query_embedding: queryEmbedding,
-            top_k: config.topK || 5,
-            similarity_threshold: config.similarityThreshold || 0.7
+            top_k: 5,
+            similarity_threshold: 0.7
         });
 
         // Format results
@@ -105,9 +103,7 @@ export async function executeKnowledgeBaseQueryNode(
                 count: results.length,
                 metadata: {
                     knowledgeBaseId: config.knowledgeBaseId,
-                    knowledgeBaseName: kb.name,
-                    topK: config.topK || 5,
-                    similarityThreshold: config.similarityThreshold || 0.7
+                    knowledgeBaseName: kb.name
                 }
             }
         };

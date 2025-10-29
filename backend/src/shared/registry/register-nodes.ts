@@ -151,6 +151,48 @@ export function registerAllNodes(): void {
         configForm: []
     });
 
+    nodeRegistry.register("knowledgeBaseQuery", {
+        type: "knowledgeBaseQuery",
+        displayName: "Knowledge Base Query",
+        description: "Search knowledge base using semantic similarity (RAG)",
+        icon: "📚",
+        category: "data",
+        inputs: {
+            queryText: {
+                type: "string",
+                description: "Text to search for (supports variables like {{input.query}})",
+                required: true
+            }
+        },
+        outputs: {
+            results: {
+                type: "array",
+                description: "Array of matching chunks with similarity scores"
+            },
+            topResult: {
+                type: "object",
+                description: "The most relevant result"
+            },
+            combinedText: {
+                type: "string",
+                description: "All results formatted for LLM prompts"
+            },
+            count: {
+                type: "number",
+                description: "Number of results returned"
+            }
+        },
+        configForm: [
+            {
+                key: "knowledgeBaseId",
+                type: "select",
+                label: "Knowledge Base",
+                description: "Select which knowledge base to search",
+                required: true
+            }
+        ]
+    });
+
     // Connection Nodes
     nodeRegistry.register("http", {
         type: "http",

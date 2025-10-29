@@ -17,8 +17,6 @@ export async function queryKnowledgeBaseRoute(fastify: FastifyInstance) {
             const params = request.params as { id: string };
             const body = request.body as {
                 query: string;
-                topK?: number;
-                similarityThreshold?: number;
             };
 
             // Verify ownership
@@ -60,8 +58,8 @@ export async function queryKnowledgeBaseRoute(fastify: FastifyInstance) {
                 const results = await chunkRepository.searchSimilar({
                     knowledge_base_id: params.id,
                     query_embedding: queryEmbedding,
-                    top_k: body.topK || 5,
-                    similarity_threshold: body.similarityThreshold || 0.7
+                    top_k: 5,
+                    similarity_threshold: 0.7
                 });
 
                 return reply.send({

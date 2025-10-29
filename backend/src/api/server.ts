@@ -17,8 +17,11 @@ import { oauthRoutes } from "./routes/oauth";
 import { knowledgeBaseRoutes } from "./routes/knowledge-bases";
 import { db } from "../storage/database";
 import { eventBridge } from "../shared/websocket/EventBridge";
+import { registerAllNodes } from "../shared/registry/register-nodes";
 
 export async function buildServer() {
+    // Register all node types in the registry
+    registerAllNodes();
     const fastify = Fastify({
         logger: {
             level: config.logLevel,
@@ -38,7 +41,8 @@ export async function buildServer() {
     // Register CORS
     await fastify.register(cors, {
         origin: config.cors.origin,
-        credentials: config.cors.credentials
+        credentials: config.cors.credentials,
+        methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]
     });
 
     // Register JWT

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useKnowledgeBaseStore } from "../../stores/knowledgeBaseStore";
-import { wsClient } from "../../lib/websocket";
+import { ChunkSearchResult } from "../../lib/knowledgeBaseApi";
 import {
     BookOpen,
     Upload,
@@ -12,6 +12,9 @@ import {
     CheckCircle,
     XCircle,
     Clock,
+    Trash2,
+    RefreshCw,
+    Search,
 } from "lucide-react";
 
 export function KnowledgeBaseDetail() {
@@ -27,12 +30,26 @@ export function KnowledgeBaseDetail() {
         fetchStats,
         uploadDoc,
         addUrl,
+        deleteDoc,
+        reprocessDoc,
+        query,
+        deleteKB,
     } = useKnowledgeBaseStore();
 
     const [showUrlModal, setShowUrlModal] = useState(false);
     const [urlInput, setUrlInput] = useState("");
     const [urlNameInput, setUrlNameInput] = useState("");
     const [uploading, setUploading] = useState(false);
+    const [deleteConfirmDocId, setDeleteConfirmDocId] = useState<string | null>(null);
+    const [processingDocId, setProcessingDocId] = useState<string | null>(null);
+
+    // Search state
+    const [searchQuery, setSearchQuery] = useState("");
+    const [searchResults, setSearchResults] = useState<ChunkSearchResult[]>([]);
+    const [searching, setSearching] = useState(false);
+    const [showSearchResults, setShowSearchResults] = useState(false);
+    const [showDeleteKBModal, setShowDeleteKBModal] = useState(false);
+    const [deletingKB, setDeletingKB] = useState(false);
 
     useEffect(() => {
         if (id) {
@@ -41,40 +58,6 @@ export function KnowledgeBaseDetail() {
             fetchStats(id);
         }
     }, [id]);
-
-    // Subscribe to document processing events for realtime updates
-    useEffect(() => {
-        if (!id) return;
-
-        const handleDocumentCompleted = (event: any) => {
-            // Check if this event is for the current KB
-            if (event.knowledgeBaseId === id) {
-                console.log("Document completed, refreshing stats and documents...", event);
-                // Refresh both stats and documents list
-                fetchStats(id);
-                fetchDocuments(id);
-            }
-        };
-
-        const handleDocumentFailed = (event: any) => {
-            // Check if this event is for the current KB
-            if (event.knowledgeBaseId === id) {
-                console.log("Document failed, refreshing documents...", event);
-                // Refresh documents to show failed status
-                fetchDocuments(id);
-            }
-        };
-
-        // Subscribe to WebSocket events
-        wsClient.on("kb:document:completed", handleDocumentCompleted);
-        wsClient.on("kb:document:failed", handleDocumentFailed);
-
-        // Cleanup on unmount
-        return () => {
-            wsClient.off("kb:document:completed", handleDocumentCompleted);
-            wsClient.off("kb:document:failed", handleDocumentFailed);
-        };
-    }, [id, fetchStats, fetchDocuments]);
 
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (!e.target.files || !e.target.files[0] || !id) return;
@@ -109,6 +92,71 @@ export function KnowledgeBaseDetail() {
             console.error("Failed to add URL:", error);
         } finally {
             setUploading(false);
+        }
+    };
+
+    const handleDeleteDocument = async (docId: string) => {
+        if (!id) return;
+
+        setProcessingDocId(docId);
+        try {
+            await deleteDoc(id, docId);
+            setDeleteConfirmDocId(null);
+        } catch (error) {
+            console.error("Failed to delete document:", error);
+        } finally {
+            setProcessingDocId(null);
+        }
+    };
+
+    const handleReprocessDocument = async (docId: string) => {
+        if (!id) return;
+
+        setProcessingDocId(docId);
+        try {
+            await reprocessDoc(id, docId);
+        } catch (error) {
+            console.error("Failed to reprocess document:", error);
+        } finally {
+            setProcessingDocId(null);
+        }
+    };
+
+    const handleSearch = async () => {
+        if (!searchQuery.trim() || !id) return;
+
+        setSearching(true);
+        setShowSearchResults(true);
+        try {
+            const results = await query(id, {
+                query: searchQuery,
+            });
+            setSearchResults(results);
+        } catch (error) {
+            console.error("Failed to search knowledge base:", error);
+            setSearchResults([]);
+        } finally {
+            setSearching(false);
+        }
+    };
+
+    const handleSearchKeyPress = (e: React.KeyboardEvent) => {
+        if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            handleSearch();
+        }
+    };
+
+    const handleDeleteKnowledgeBase = async () => {
+        if (!id) return;
+
+        setDeletingKB(true);
+        try {
+            await deleteKB(id);
+            navigate("/knowledge-bases");
+        } catch (error) {
+            console.error("Failed to delete knowledge base:", error);
+            setDeletingKB(false);
         }
     };
 
@@ -199,6 +247,13 @@ export function KnowledgeBaseDetail() {
                             <p className="text-muted-foreground">{currentKB.description}</p>
                         )}
                     </div>
+                    <button
+                        onClick={() => setShowDeleteKBModal(true)}
+                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        title="Delete knowledge base"
+                    >
+                        <Trash2 className="w-5 h-5" />
+                    </button>
                 </div>
             </div>
 
@@ -221,6 +276,129 @@ export function KnowledgeBaseDetail() {
                     </div>
                 </div>
             )}
+
+            {/* Search Section */}
+            <div className="border border-border rounded-lg p-6 mb-6">
+                <div className="flex items-center gap-2 mb-4">
+                    <Search className="w-5 h-5 text-primary" />
+                    <h2 className="text-lg font-semibold">Search Knowledge Base</h2>
+                </div>
+
+                <div className="space-y-4">
+                    {/* Search Input */}
+                    <div className="flex gap-2">
+                        <input
+                            type="text"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            onKeyPress={handleSearchKeyPress}
+                            placeholder="Ask a question or search for information..."
+                            className="flex-1 px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20"
+                        />
+                        <button
+                            onClick={handleSearch}
+                            disabled={!searchQuery.trim() || searching}
+                            className="p-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            title="Search"
+                        >
+                            {searching ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                                <Search className="w-4 h-4" />
+                            )}
+                        </button>
+                    </div>
+
+                    {/* Search Results */}
+                    {showSearchResults && (
+                        <div className="mt-6 border-t border-border pt-4">
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="font-semibold">
+                                    Search Results
+                                    {searchResults.length > 0 && (
+                                        <span className="text-sm text-muted-foreground ml-2">
+                                            ({searchResults.length} {searchResults.length === 1 ? 'result' : 'results'})
+                                        </span>
+                                    )}
+                                </h3>
+                                <button
+                                    onClick={() => setShowSearchResults(false)}
+                                    className="text-sm text-muted-foreground hover:text-foreground"
+                                >
+                                    Hide
+                                </button>
+                            </div>
+
+                            {searching ? (
+                                <div className="text-center py-8">
+                                    <Loader2 className="w-6 h-6 mx-auto animate-spin text-primary" />
+                                    <p className="text-sm text-muted-foreground mt-2">Searching...</p>
+                                </div>
+                            ) : searchResults.length === 0 ? (
+                                <div className="text-center py-8">
+                                    <FileText className="w-12 h-12 mx-auto text-muted-foreground mb-2" />
+                                    <p className="text-muted-foreground">No results found</p>
+                                    <p className="text-sm text-muted-foreground mt-1">
+                                        Try adjusting your query or lowering the similarity threshold
+                                    </p>
+                                </div>
+                            ) : (
+                                <div className="space-y-4">
+                                    {searchResults.map((result, index) => (
+                                        <div
+                                            key={result.id}
+                                            className="border border-border rounded-lg p-4 hover:bg-muted/50 transition-colors"
+                                        >
+                                            <div className="flex items-start justify-between mb-2">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-xs font-medium text-muted-foreground">
+                                                        #{index + 1}
+                                                    </span>
+                                                    <span className="text-sm font-medium">
+                                                        {result.document_name}
+                                                    </span>
+                                                    <span className="text-xs text-muted-foreground">
+                                                        Chunk {result.chunk_index + 1}
+                                                    </span>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <div className="text-xs font-medium text-primary">
+                                                        {(result.similarity * 100).toFixed(1)}% match
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="text-sm text-foreground leading-relaxed">
+                                                {result.content}
+                                            </div>
+
+                                            {result.metadata && Object.keys(result.metadata).length > 0 && (
+                                                <div className="mt-2 flex flex-wrap gap-2">
+                                                    {result.metadata.page && (
+                                                        <span className="text-xs px-2 py-1 bg-muted rounded">
+                                                            Page {result.metadata.page}
+                                                        </span>
+                                                    )}
+                                                    {result.metadata.section && (
+                                                        <span className="text-xs px-2 py-1 bg-muted rounded">
+                                                            {result.metadata.section}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    <div className="text-xs text-muted-foreground">
+                        <strong>Tip:</strong> Use semantic search to find relevant information across all your documents.
+                        Press Enter to search.
+                    </div>
+                </div>
+            </div>
 
             {/* Upload Section */}
             <div className="border border-border rounded-lg p-6 mb-6">
@@ -328,9 +506,36 @@ export function KnowledgeBaseDetail() {
                                         )}
                                     </div>
 
-                                    <div className="flex items-center gap-2 ml-4">
-                                        {getStatusIcon(doc.status)}
-                                        <span className="text-sm">{getStatusText(doc.status)}</span>
+                                    <div className="flex items-center gap-3 ml-4">
+                                        <div className="flex items-center gap-2">
+                                            {getStatusIcon(doc.status)}
+                                            <span className="text-sm">{getStatusText(doc.status)}</span>
+                                        </div>
+
+                                        <div className="flex items-center gap-1">
+                                            {doc.status === "failed" && (
+                                                <button
+                                                    onClick={() => handleReprocessDocument(doc.id)}
+                                                    disabled={processingDocId === doc.id}
+                                                    className="p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    title="Reprocess document"
+                                                >
+                                                    {processingDocId === doc.id ? (
+                                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                                    ) : (
+                                                        <RefreshCw className="w-4 h-4" />
+                                                    )}
+                                                </button>
+                                            )}
+                                            <button
+                                                onClick={() => setDeleteConfirmDocId(doc.id)}
+                                                disabled={processingDocId === doc.id}
+                                                className="p-2 text-red-600 hover:bg-red-50 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                                title="Delete document"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -390,6 +595,76 @@ export function KnowledgeBaseDetail() {
                                 className="flex-1 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {uploading ? "Adding..." : "Add URL"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Delete Document Confirmation Modal */}
+            {deleteConfirmDocId && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-lg p-6 w-full max-w-md">
+                        <h2 className="text-lg font-semibold mb-4">Delete Document</h2>
+                        <p className="text-muted-foreground mb-6">
+                            Are you sure you want to delete this document? This action cannot be undone and will remove all associated chunks and embeddings.
+                        </p>
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => setDeleteConfirmDocId(null)}
+                                className="flex-1 px-4 py-2 border border-border rounded-lg hover:bg-muted transition-colors"
+                                disabled={processingDocId === deleteConfirmDocId}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={() => handleDeleteDocument(deleteConfirmDocId)}
+                                disabled={processingDocId === deleteConfirmDocId}
+                                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                            >
+                                {processingDocId === deleteConfirmDocId ? (
+                                    <>
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                        Deleting...
+                                    </>
+                                ) : (
+                                    "Delete"
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Delete Knowledge Base Confirmation Modal */}
+            {showDeleteKBModal && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-lg p-6 w-full max-w-md">
+                        <h2 className="text-lg font-semibold mb-4">Delete Knowledge Base</h2>
+                        <p className="text-muted-foreground mb-6">
+                            Are you sure you want to delete <strong>{currentKB?.name}</strong>? This action cannot be undone and will permanently delete all documents, chunks, and embeddings in this knowledge base.
+                        </p>
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => setShowDeleteKBModal(false)}
+                                className="flex-1 px-4 py-2 border border-border rounded-lg hover:bg-muted transition-colors"
+                                disabled={deletingKB}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleDeleteKnowledgeBase}
+                                disabled={deletingKB}
+                                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                            >
+                                {deletingKB ? (
+                                    <>
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                        Deleting...
+                                    </>
+                                ) : (
+                                    "Delete Knowledge Base"
+                                )}
                             </button>
                         </div>
                     </div>

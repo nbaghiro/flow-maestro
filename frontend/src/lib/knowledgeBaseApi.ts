@@ -76,8 +76,6 @@ export interface UpdateKnowledgeBaseInput {
 
 export interface QueryKnowledgeBaseInput {
     query: string;
-    topK?: number;
-    similarityThreshold?: number;
 }
 
 export interface ApiResponse<T = any> {
@@ -186,7 +184,6 @@ export async function deleteKnowledgeBase(id: string): Promise<ApiResponse> {
     const response = await fetch(`${API_BASE_URL}/api/knowledge-bases/${id}`, {
         method: 'DELETE',
         headers: {
-            'Content-Type': 'application/json',
             ...(token && { Authorization: `Bearer ${token}` }),
         },
     });
@@ -305,6 +302,47 @@ export async function queryKnowledgeBase(
             ...(token && { Authorization: `Bearer ${token}` }),
         },
         body: JSON.stringify(input),
+    });
+
+    if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return response.json();
+}
+
+/**
+ * Delete a document from a knowledge base
+ */
+export async function deleteDocument(kbId: string, docId: string): Promise<ApiResponse> {
+    const token = getAuthToken();
+
+    const response = await fetch(`${API_BASE_URL}/api/knowledge-bases/${kbId}/documents/${docId}`, {
+        method: 'DELETE',
+        headers: {
+            ...(token && { Authorization: `Bearer ${token}` }),
+        },
+    });
+
+    if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return response.json();
+}
+
+/**
+ * Reprocess a document (retry failed processing or regenerate embeddings)
+ */
+export async function reprocessDocument(kbId: string, docId: string): Promise<ApiResponse> {
+    const token = getAuthToken();
+
+    const response = await fetch(`${API_BASE_URL}/api/knowledge-bases/${kbId}/documents/${docId}/reprocess`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            ...(token && { Authorization: `Bearer ${token}` }),
+        },
     });
 
     if (!response.ok) {

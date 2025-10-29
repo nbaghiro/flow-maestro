@@ -8,6 +8,8 @@ import { getStatsRoute } from "./stats";
 import { uploadDocumentRoute } from "./upload-document";
 import { addUrlRoute } from "./add-url";
 import { listDocumentsRoute } from "./list-documents";
+import { deleteDocumentRoute } from "./delete-document";
+import { reprocessDocumentRoute } from "./reprocess-document";
 import { queryKnowledgeBaseRoute } from "./query";
 
 export async function knowledgeBaseRoutes(fastify: FastifyInstance) {
@@ -23,6 +25,8 @@ export async function knowledgeBaseRoutes(fastify: FastifyInstance) {
     await listDocumentsRoute(fastify);
     await uploadDocumentRoute(fastify);
     await addUrlRoute(fastify);
+    await deleteDocumentRoute(fastify);
+    await reprocessDocumentRoute(fastify);
 
     // Query
     await queryKnowledgeBaseRoute(fastify);

@@ -86,6 +86,20 @@ services:
         networks:
             - flowmaestro
 
+    # Adminer - Lightweight PostgreSQL Admin Tool
+    adminer:
+        image: adminer:latest
+        container_name: flowmaestro-adminer
+        depends_on:
+            postgres:
+                condition: service_healthy
+        ports:
+            - "8080:8080"
+        environment:
+            ADMINER_DEFAULT_SERVER: postgres
+        networks:
+            - flowmaestro
+
 networks:
     flowmaestro:
         driver: bridge

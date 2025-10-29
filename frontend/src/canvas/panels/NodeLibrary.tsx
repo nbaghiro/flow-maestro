@@ -13,6 +13,7 @@ import {
     Shuffle,
     Variable,
     Send,
+    BookOpen,
     Globe,
     Database,
     Plug,
@@ -99,7 +100,7 @@ const nodeLibrary: NodeDefinition[] = [
         description: "Pause workflow execution for a duration",
     },
 
-    // Data Operations (4 nodes)
+    // Data Operations (5 nodes)
     {
         type: "input",
         label: "Input",
@@ -120,6 +121,13 @@ const nodeLibrary: NodeDefinition[] = [
         icon: Variable,
         category: "data",
         description: "Set or get workflow variables",
+    },
+    {
+        type: "knowledgeBaseQuery",
+        label: "KB Query",
+        icon: BookOpen,
+        category: "data",
+        description: "Search knowledge base using semantic similarity (RAG)",
     },
     {
         type: "output",

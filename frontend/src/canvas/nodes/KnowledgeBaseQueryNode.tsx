@@ -10,15 +10,11 @@ interface KnowledgeBaseQueryNodeData {
         knowledgeBaseId?: string;
         knowledgeBaseName?: string;
         queryText?: string;
-        topK?: number;
-        similarityThreshold?: number;
     };
 }
 
 function KnowledgeBaseQueryNode({ data, selected }: NodeProps<KnowledgeBaseQueryNodeData>) {
     const kbName = data.config?.knowledgeBaseName || "No KB selected";
-    const topK = data.config?.topK || 5;
-    const threshold = data.config?.similarityThreshold || 0.7;
     const queryPreview = data.config?.queryText
         ? data.config.queryText.substring(0, 30) + (data.config.queryText.length > 30 ? "..." : "")
         : "No query set";
@@ -42,12 +38,6 @@ function KnowledgeBaseQueryNode({ data, selected }: NodeProps<KnowledgeBaseQuery
                     <span className="text-xs text-muted-foreground">Query:</span>
                     <span className="text-xs font-medium truncate max-w-[120px]" title={data.config?.queryText}>
                         {queryPreview}
-                    </span>
-                </div>
-                <div className="flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">Results:</span>
-                    <span className="text-xs font-medium">
-                        {topK} (≥{(threshold * 100).toFixed(0)}%)
                     </span>
                 </div>
             </div>

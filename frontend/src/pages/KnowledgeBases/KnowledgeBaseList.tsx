@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useKnowledgeBaseStore } from "../../stores/knowledgeBaseStore";
-import { BookOpen, Plus, Trash2, FileText } from "lucide-react";
+import { BookOpen, Plus, Trash2, FileText, Loader2 } from "lucide-react";
 
 export function KnowledgeBaseList() {
     const navigate = useNavigate();
@@ -9,6 +9,8 @@ export function KnowledgeBaseList() {
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [newKBName, setNewKBName] = useState("");
     const [newKBDescription, setNewKBDescription] = useState("");
+    const [deletingId, setDeletingId] = useState<string | null>(null);
+    const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; name: string } | null>(null);
     const { createKB } = useKnowledgeBaseStore();
 
     useEffect(() => {
@@ -32,13 +34,19 @@ export function KnowledgeBaseList() {
         }
     };
 
-    const handleDelete = async (id: string, name: string) => {
-        if (confirm(`Are you sure you want to delete "${name}"? This will delete all documents and embeddings.`)) {
-            try {
-                await deleteKB(id);
-            } catch (error) {
-                console.error("Failed to delete knowledge base:", error);
-            }
+    const handleDelete = async () => {
+        if (!deleteConfirm) return;
+
+        setDeletingId(deleteConfirm.id);
+        try {
+            await deleteKB(deleteConfirm.id);
+            // Refresh the list after deletion
+            await fetchKnowledgeBases();
+            setDeleteConfirm(null);
+        } catch (error) {
+            console.error("Failed to delete knowledge base:", error);
+        } finally {
+            setDeletingId(null);
         }
     };
 
@@ -110,12 +118,13 @@ export function KnowledgeBaseList() {
                                 <button
                                     onClick={(e) => {
                                         e.stopPropagation();
-                                        handleDelete(kb.id, kb.name);
+                                        setDeleteConfirm({ id: kb.id, name: kb.name });
                                     }}
-                                    className="p-1 hover:bg-red-50 rounded transition-colors"
+                                    disabled={deletingId === kb.id}
+                                    className="p-1 hover:bg-red-50 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                     title="Delete"
                                 >
-                                    <Trash2 className="w-4 h-4 text-red-600" />
+                                    <Trash2 className={`w-4 h-4 text-red-600 ${deletingId === kb.id ? 'animate-pulse' : ''}`} />
                                 </button>
                             </div>
 
@@ -191,6 +200,41 @@ export function KnowledgeBaseList() {
                                 className="flex-1 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 Create
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Delete Confirmation Modal */}
+            {deleteConfirm && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-lg p-6 w-full max-w-md">
+                        <h2 className="text-lg font-semibold mb-4">Delete Knowledge Base</h2>
+                        <p className="text-muted-foreground mb-6">
+                            Are you sure you want to delete <strong>{deleteConfirm.name}</strong>? This will delete all documents and embeddings.
+                        </p>
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => setDeleteConfirm(null)}
+                                className="flex-1 px-4 py-2 border border-border rounded-lg hover:bg-muted transition-colors"
+                                disabled={deletingId === deleteConfirm.id}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleDelete}
+                                disabled={deletingId === deleteConfirm.id}
+                                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                            >
+                                {deletingId === deleteConfirm.id ? (
+                                    <>
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                        Deleting...
+                                    </>
+                                ) : (
+                                    "Delete"
+                                )}
                             </button>
                         </div>
                     </div>

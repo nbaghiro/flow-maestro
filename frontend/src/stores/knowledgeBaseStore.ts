@@ -19,6 +19,8 @@ import {
     uploadDocument,
     addUrlToKnowledgeBase,
     queryKnowledgeBase,
+    deleteDocument,
+    reprocessDocument,
 } from '../lib/knowledgeBaseApi';
 
 interface KnowledgeBaseStore {
@@ -40,6 +42,8 @@ interface KnowledgeBaseStore {
     fetchDocuments: (id: string) => Promise<void>;
     uploadDoc: (id: string, file: File) => Promise<void>;
     addUrl: (id: string, url: string, name?: string) => Promise<void>;
+    deleteDoc: (kbId: string, docId: string) => Promise<void>;
+    reprocessDoc: (kbId: string, docId: string) => Promise<void>;
     query: (id: string, input: QueryKnowledgeBaseInput) => Promise<ChunkSearchResult[]>;
     clearError: () => void;
     clearCurrent: () => void;
@@ -232,6 +236,51 @@ export const useKnowledgeBaseStore = create<KnowledgeBaseStore>((set, get) => ({
         } catch (error) {
             set({
                 error: error instanceof Error ? error.message : 'Failed to add URL',
+                loading: false,
+            });
+            throw error;
+        }
+    },
+
+    // Delete a document
+    deleteDoc: async (kbId: string, docId: string) => {
+        set({ loading: true, error: null });
+        try {
+            const response = await deleteDocument(kbId, docId);
+            if (response.success) {
+                // Refresh documents list and stats
+                await Promise.all([
+                    get().fetchDocuments(kbId),
+                    get().fetchStats(kbId)
+                ]);
+                set({ loading: false });
+            } else {
+                throw new Error(response.error || 'Failed to delete document');
+            }
+        } catch (error) {
+            set({
+                error: error instanceof Error ? error.message : 'Failed to delete document',
+                loading: false,
+            });
+            throw error;
+        }
+    },
+
+    // Reprocess a document
+    reprocessDoc: async (kbId: string, docId: string) => {
+        set({ loading: true, error: null });
+        try {
+            const response = await reprocessDocument(kbId, docId);
+            if (response.success) {
+                // Refresh documents list to show updated status
+                await get().fetchDocuments(kbId);
+                set({ loading: false });
+            } else {
+                throw new Error(response.error || 'Failed to reprocess document');
+            }
+        } catch (error) {
+            set({
+                error: error instanceof Error ? error.message : 'Failed to reprocess document',
                 loading: false,
             });
             throw error;

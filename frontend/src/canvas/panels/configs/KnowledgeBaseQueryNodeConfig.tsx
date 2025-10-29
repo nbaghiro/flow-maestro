@@ -18,10 +18,6 @@ interface KnowledgeBase {
 export function KnowledgeBaseQueryNodeConfig({ data, onUpdate }: KnowledgeBaseQueryNodeConfigProps) {
     const [knowledgeBaseId, setKnowledgeBaseId] = useState(data.config?.knowledgeBaseId || "");
     const [queryText, setQueryText] = useState(data.config?.queryText || "");
-    const [topK, setTopK] = useState(data.config?.topK || 5);
-    const [similarityThreshold, setSimilarityThreshold] = useState(
-        data.config?.similarityThreshold || 0.7
-    );
     const [outputVariable, setOutputVariable] = useState(data.config?.outputVariable || "");
 
     // Fetch available knowledge bases
@@ -41,11 +37,9 @@ export function KnowledgeBaseQueryNodeConfig({ data, onUpdate }: KnowledgeBaseQu
             knowledgeBaseId,
             knowledgeBaseName: selectedKB?.name || "",
             queryText,
-            topK,
-            similarityThreshold,
             outputVariable,
         });
-    }, [knowledgeBaseId, queryText, topK, similarityThreshold, outputVariable, kbData]);
+    }, [knowledgeBaseId, queryText, outputVariable, kbData]);
 
     return (
         <div>
@@ -105,60 +99,6 @@ Or use: {{input.question}}'
                         <strong>Tip:</strong> Use variables like{" "}
                         <code className="px-1 bg-blue-100 rounded">{"{{input.query}}"}</code> to make
                         the query dynamic based on workflow inputs.
-                    </p>
-                </div>
-            </FormSection>
-
-            <FormSection title="Search Parameters">
-                <FormField
-                    label="Number of Results (Top K)"
-                    description="How many relevant chunks to return (1-20)"
-                >
-                    <div className="space-y-2">
-                        <input
-                            type="range"
-                            min="1"
-                            max="20"
-                            value={topK}
-                            onChange={(e) => setTopK(Number(e.target.value))}
-                            className="w-full"
-                        />
-                        <div className="flex items-center justify-between text-sm">
-                            <span className="text-muted-foreground">Fewer results</span>
-                            <span className="font-medium">{topK} results</span>
-                            <span className="text-muted-foreground">More results</span>
-                        </div>
-                    </div>
-                </FormField>
-
-                <FormField
-                    label="Similarity Threshold"
-                    description="Minimum similarity score (0.0 - 1.0). Higher = more relevant."
-                >
-                    <div className="space-y-2">
-                        <input
-                            type="range"
-                            min="0"
-                            max="1"
-                            step="0.05"
-                            value={similarityThreshold}
-                            onChange={(e) => setSimilarityThreshold(Number(e.target.value))}
-                            className="w-full"
-                        />
-                        <div className="flex items-center justify-between text-sm">
-                            <span className="text-muted-foreground">More results</span>
-                            <span className="font-medium">{(similarityThreshold * 100).toFixed(0)}%</span>
-                            <span className="text-muted-foreground">Higher quality</span>
-                        </div>
-                    </div>
-                </FormField>
-
-                <div className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg">
-                    <p className="text-xs text-gray-700">
-                        <strong>How it works:</strong> The node will search the knowledge base using
-                        semantic similarity and return the most relevant chunks. Use the{" "}
-                        <code className="px-1 bg-gray-100 rounded">combinedText</code> output to
-                        include context in LLM prompts.
                     </p>
                 </div>
             </FormSection>
