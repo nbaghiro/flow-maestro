@@ -1,4 +1,5 @@
 import axios, { AxiosRequestConfig, Method } from 'axios';
+import type { JsonObject, JsonValue } from '@flowmaestro/shared';
 import { interpolateVariables } from './utils';
 
 export interface HTTPNodeConfig {
@@ -18,7 +19,7 @@ export interface HTTPNodeResult {
     status: number;
     statusText: string;
     headers: Record<string, string>;
-    data: any;
+    data: JsonValue;
     responseTime: number;
 }
 
@@ -27,8 +28,8 @@ export interface HTTPNodeResult {
  */
 export async function executeHTTPNode(
     config: HTTPNodeConfig,
-    context: Record<string, any>
-): Promise<HTTPNodeResult> {
+    context: JsonObject
+): Promise<JsonObject> {
     const startTime = Date.now();
 
     // Interpolate variables in URL
@@ -73,7 +74,7 @@ export async function executeHTTPNode(
     }
 
     // Build request body
-    let data: any = undefined;
+    let data: JsonValue = null;
     if (config.body && ['POST', 'PUT', 'PATCH'].includes(config.method)) {
         const bodyString = interpolateVariables(config.body, context);
 
@@ -119,7 +120,7 @@ export async function executeHTTPNode(
                 headers: response.headers as Record<string, string>,
                 data: response.data,
                 responseTime
-            };
+            } as unknown as JsonObject;
         } catch (error) {
             lastError = error as Error;
             console.error(`[HTTP] Attempt ${attempt + 1} failed:`, error);

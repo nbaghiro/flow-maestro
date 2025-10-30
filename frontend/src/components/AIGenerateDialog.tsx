@@ -7,7 +7,7 @@ import { useState, useEffect } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { X, Sparkles, Loader2, RefreshCw } from "lucide-react";
 import { useConnectionStore } from "../stores/connectionStore";
-import { getRandomExamplePrompts } from "../lib/example-prompts";
+import { getRandomExamplePrompts } from "@flowmaestro/shared";
 
 interface AIGenerateDialogProps {
     open: boolean;

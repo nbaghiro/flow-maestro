@@ -86,9 +86,16 @@ export const useConnectionStore = create<ConnectionStore>((set, get) => ({
             const response = await testConnection(id);
 
             // Update connection status based on test result
-            if (response.success) {
+            if (response.success && response.data.test_result) {
                 const testResult = response.data.test_result;
-                const newStatus = testResult.success ? "active" : "invalid";
+                // Type narrow: test result should be an object with success property
+                const newStatus =
+                    typeof testResult === "object" &&
+                    testResult !== null &&
+                    "success" in testResult &&
+                    testResult.success
+                        ? "active"
+                        : "invalid";
                 set((state) => ({
                     connections: state.connections.map((conn) =>
                         conn.id === id
@@ -100,7 +107,13 @@ export const useConnectionStore = create<ConnectionStore>((set, get) => ({
                             : conn
                     ),
                 }));
-                return testResult.success;
+                return (
+                    typeof testResult === "object" &&
+                    testResult !== null &&
+                    "success" in testResult &&
+                    typeof testResult.success === "boolean" &&
+                    testResult.success
+                );
             }
             return false;
         } catch (error) {

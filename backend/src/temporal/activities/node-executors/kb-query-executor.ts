@@ -1,4 +1,5 @@
-import { ExecuteNodeInput, NodeResult } from "./index";
+import { ExecuteNodeInput } from "./index";
+import type { JsonObject } from '@flowmaestro/shared';
 import { KnowledgeBaseRepository, KnowledgeChunkRepository } from "../../../storage/repositories";
 import { EmbeddingService } from "../../../services/embeddings";
 
@@ -14,8 +15,8 @@ export interface KnowledgeBaseQueryNodeConfig {
  */
 export async function executeKnowledgeBaseQueryNode(
     input: ExecuteNodeInput
-): Promise<NodeResult> {
-    const config = input.nodeConfig as KnowledgeBaseQueryNodeConfig;
+): Promise<JsonObject> {
+    const config = input.nodeConfig as unknown as KnowledgeBaseQueryNodeConfig;
     const kbRepository = new KnowledgeBaseRepository();
     const chunkRepository = new KnowledgeChunkRepository();
     const embeddingService = new EmbeddingService();
@@ -65,7 +66,7 @@ export async function executeKnowledgeBaseQueryNode(
 
         // Format results
         const results = searchResults.map((result) => {
-            const formattedResult: any = {
+            const formattedResult: Record<string, unknown> = {
                 content: result.content,
                 similarity: result.similarity,
                 documentName: result.document_name,
@@ -89,7 +90,8 @@ export async function executeKnowledgeBaseQueryNode(
                 const sourceInfo = r.documentName
                     ? `[Source: ${r.documentName}, Chunk ${r.chunkIndex}]`
                     : "";
-                return `Result ${index + 1} (similarity: ${r.similarity.toFixed(3)}):\n${r.content}\n${sourceInfo}`;
+                const similarity = typeof r.similarity === 'number' ? r.similarity : 0;
+                return `Result ${index + 1} (similarity: ${similarity.toFixed(3)}):\n${r.content}\n${sourceInfo}`;
             })
             .join("\n\n---\n\n");
 
@@ -106,12 +108,13 @@ export async function executeKnowledgeBaseQueryNode(
                     knowledgeBaseName: kb.name
                 }
             }
-        };
-    } catch (error: any) {
+        } as unknown as JsonObject;
+    } catch (error: unknown) {
         console.error("[KB Query Executor] Error:", error);
+        const errorMessage = error instanceof Error ? error.message : "Failed to query knowledge base";
         return {
             success: false,
-            error: error.message || "Failed to query knowledge base"
-        };
+            error: errorMessage
+        } as unknown as JsonObject;
     }
 }

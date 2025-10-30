@@ -1,4 +1,5 @@
 import { interpolateVariables } from './utils';
+import type { JsonObject, JsonValue } from '@flowmaestro/shared';
 
 export type ComparisonOperator =
     | '=='
@@ -20,8 +21,8 @@ export interface ConditionalNodeConfig {
 export interface ConditionalNodeResult {
     conditionMet: boolean;
     branch: 'true' | 'false';
-    leftValue: any;
-    rightValue: any;
+    leftValue: JsonValue;
+    rightValue: JsonValue;
     operator: ComparisonOperator;
 }
 
@@ -30,8 +31,8 @@ export interface ConditionalNodeResult {
  */
 export async function executeConditionalNode(
     config: ConditionalNodeConfig,
-    context: Record<string, any>
-): Promise<ConditionalNodeResult> {
+    context: JsonObject
+): Promise<JsonObject> {
     // Interpolate variables in both values
     const leftInterpolated = interpolateVariables(config.leftValue, context);
     const rightInterpolated = interpolateVariables(config.rightValue, context);
@@ -54,13 +55,13 @@ export async function executeConditionalNode(
         leftValue,
         rightValue,
         operator: config.operator
-    };
+    } as unknown as JsonObject;
 }
 
 /**
  * Parse a string value into its appropriate type (number, boolean, null, or keep as string)
  */
-function parseValue(value: string): any {
+function parseValue(value: string): JsonValue {
     // Try to parse as number
     const num = Number(value);
     if (!isNaN(num) && value.trim() !== '') {
@@ -89,7 +90,7 @@ function parseValue(value: string): any {
 /**
  * Evaluate a condition based on operator
  */
-function evaluateCondition(left: any, operator: ComparisonOperator, right: any): boolean {
+function evaluateCondition(left: JsonValue, operator: ComparisonOperator, right: JsonValue): boolean {
     switch (operator) {
         case '==':
             return equals(left, right);
@@ -117,10 +118,10 @@ function evaluateCondition(left: any, operator: ComparisonOperator, right: any):
 /**
  * Compare two values for equality with type coercion
  */
-function equals(left: any, right: any): boolean {
-    // Handle null/undefined
-    if (left === null || left === undefined) {
-        return right === null || right === undefined;
+function equals(left: JsonValue, right: JsonValue): boolean {
+    // Handle null
+    if (left === null) {
+        return right === null;
     }
 
     // Type coercion for numbers
@@ -145,7 +146,7 @@ function equals(left: any, right: any): boolean {
 /**
  * Compare two values numerically or lexicographically
  */
-function compare(left: any, right: any): number {
+function compare(left: JsonValue, right: JsonValue): number {
     const leftNum = Number(left);
     const rightNum = Number(right);
 
@@ -160,7 +161,7 @@ function compare(left: any, right: any): number {
 /**
  * Check if value contains searchValue (for strings and arrays)
  */
-function contains(value: any, searchValue: any): boolean {
+function contains(value: JsonValue, searchValue: JsonValue): boolean {
     if (typeof value === 'string') {
         return value.toLowerCase().includes(String(searchValue).toLowerCase());
     }
@@ -175,7 +176,7 @@ function contains(value: any, searchValue: any): boolean {
 /**
  * Check if value starts with searchValue
  */
-function startsWith(value: any, searchValue: any): boolean {
+function startsWith(value: JsonValue, searchValue: JsonValue): boolean {
     const str = String(value);
     const search = String(searchValue);
     return str.toLowerCase().startsWith(search.toLowerCase());
@@ -184,7 +185,7 @@ function startsWith(value: any, searchValue: any): boolean {
 /**
  * Check if value ends with searchValue
  */
-function endsWith(value: any, searchValue: any): boolean {
+function endsWith(value: JsonValue, searchValue: JsonValue): boolean {
     const str = String(value);
     const search = String(searchValue);
     return str.toLowerCase().endsWith(search.toLowerCase());

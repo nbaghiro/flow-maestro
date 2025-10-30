@@ -1,4 +1,5 @@
 import axios from 'axios';
+import type { JsonObject } from '@flowmaestro/shared';
 import * as nodemailer from 'nodemailer';
 import { interpolateVariables } from './utils';
 import { getAccessToken } from '../../../services/oauth/TokenRefreshService';
@@ -33,13 +34,13 @@ export interface IntegrationNodeResult {
  */
 export async function executeIntegrationNode(
     config: IntegrationNodeConfig,
-    context: Record<string, any>
-): Promise<IntegrationNodeResult> {
+    context: JsonObject
+): Promise<JsonObject> {
     const startTime = Date.now();
 
     console.log(`[Integration] Service: ${config.service}, Operation: ${config.operation}`);
 
-    let result: IntegrationNodeResult;
+    let result: JsonObject;
 
     switch (config.service) {
         case 'slack':
@@ -59,17 +60,17 @@ export async function executeIntegrationNode(
     }
 
     result.metadata = {
-        ...result.metadata,
+        ...(result.metadata as JsonObject),
         requestTime: Date.now() - startTime,
     };
 
-    console.log(`[Integration] Completed in ${result.metadata.requestTime}ms`);
+    console.log(`[Integration] Completed in ${((result.metadata as JsonObject)?.requestTime as number) || 0}ms`);
 
     if (config.outputVariable) {
-        return { [config.outputVariable]: result } as any;
+        return { [config.outputVariable]: result } as unknown as JsonObject;
     }
 
-    return result;
+    return result as unknown as JsonObject;
 }
 
 /**
@@ -77,8 +78,8 @@ export async function executeIntegrationNode(
  */
 async function executeSlack(
     config: IntegrationNodeConfig,
-    context: Record<string, any>
-): Promise<IntegrationNodeResult> {
+    context: JsonObject
+): Promise<JsonObject> {
     // Get token in priority order: OAuth connection > API key > env var
     let token: string;
 
@@ -134,7 +135,7 @@ async function executeSlack(
             operation: 'send_message',
             success: true,
             data: response.data,
-        };
+        } as unknown as JsonObject;
     } else if (config.operation === 'upload_file') {
         // Upload file to Slack
         const channels = slackConfig.channels?.join(',') || '';
@@ -167,7 +168,7 @@ async function executeSlack(
             operation: 'upload_file',
             success: true,
             data: response.data,
-        };
+        } as unknown as JsonObject;
     } else {
         throw new Error(`Unsupported Slack operation: ${config.operation}`);
     }
@@ -178,8 +179,8 @@ async function executeSlack(
  */
 async function executeEmail(
     config: IntegrationNodeConfig,
-    context: Record<string, any>
-): Promise<IntegrationNodeResult> {
+    context: JsonObject
+): Promise<JsonObject> {
     const emailConfig = config.config;
 
     if (config.operation !== 'send') {
@@ -281,7 +282,7 @@ async function executeEmail(
             accepted: info.accepted,
             rejected: info.rejected,
         },
-    };
+    } as unknown as JsonObject;
 }
 
 /**
@@ -289,8 +290,8 @@ async function executeEmail(
  */
 async function executeWebhook(
     config: IntegrationNodeConfig,
-    context: Record<string, any>
-): Promise<IntegrationNodeResult> {
+    context: JsonObject
+): Promise<JsonObject> {
     const webhookConfig = config.config;
 
     if (config.operation === 'send') {
@@ -331,7 +332,7 @@ async function executeWebhook(
                 headers: response.headers,
                 body: response.data,
             },
-        };
+        } as unknown as JsonObject;
     } else {
         throw new Error(`Unsupported webhook operation: ${config.operation}`);
     }
@@ -340,7 +341,7 @@ async function executeWebhook(
 /**
  * Interpolate variables in an object recursively
  */
-function interpolateObject(obj: any, context: Record<string, any>): any {
+function interpolateObject(obj: any, context: JsonObject): any {
     if (typeof obj === 'string') {
         return interpolateVariables(obj, context);
     } else if (Array.isArray(obj)) {

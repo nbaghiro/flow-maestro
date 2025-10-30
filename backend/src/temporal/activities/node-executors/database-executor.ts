@@ -1,5 +1,6 @@
 import { Pool, PoolClient } from 'pg';
-import { MongoClient, Db } from 'mongodb';
+import { MongoClient, Db, Document } from 'mongodb';
+import type { JsonObject, JsonValue } from '@flowmaestro/shared';
 import { interpolateVariables } from './utils';
 
 export interface DatabaseNodeConfig {
@@ -16,15 +17,15 @@ export interface DatabaseNodeConfig {
 
     // For SQL databases
     query?: string; // SQL query
-    parameters?: any[]; // Parameterized values
+    parameters?: JsonValue[]; // Parameterized values
 
     // For MongoDB
     collection?: string;
-    document?: any;
-    filter?: any;
-    update?: any;
-    projection?: any;
-    sort?: any;
+    document?: JsonObject | JsonObject[];
+    filter?: JsonObject;
+    update?: JsonObject;
+    projection?: JsonObject;
+    sort?: JsonObject;
     limit?: number;
     skip?: number;
 
@@ -40,12 +41,12 @@ export interface DatabaseNodeResult {
     provider: string;
 
     // Query results
-    rows?: any[];
+    rows?: JsonObject[];
     rowCount?: number;
 
     // Insert/Update/Delete results
     affectedRows?: number;
-    insertId?: any;
+    insertId?: JsonValue;
 
     metadata?: {
         queryTime: number;
@@ -62,8 +63,8 @@ const mongoClients = new Map<string, MongoClient>();
  */
 export async function executeDatabaseNode(
     config: DatabaseNodeConfig,
-    context: Record<string, any>
-): Promise<DatabaseNodeResult> {
+    context: JsonObject
+): Promise<JsonObject> {
     const startTime = Date.now();
 
     console.log(`[Database] Provider: ${config.provider}, Operation: ${config.operation}`);
@@ -95,10 +96,10 @@ export async function executeDatabaseNode(
     console.log(`[Database] Completed in ${queryTime}ms, ${result.rowCount || result.affectedRows || 0} rows`);
 
     if (config.outputVariable) {
-        return { [config.outputVariable]: result } as any;
+        return { [config.outputVariable]: result } as unknown as JsonObject;
     }
 
-    return result;
+    return result as unknown as JsonObject;
 }
 
 /**
@@ -106,7 +107,7 @@ export async function executeDatabaseNode(
  */
 async function executePostgreSQL(
     config: DatabaseNodeConfig,
-    context: Record<string, any>
+    context: JsonObject
 ): Promise<DatabaseNodeResult> {
     // Build connection string
     const connectionString = config.connectionString
@@ -210,7 +211,7 @@ async function executePostgreSQL(
  */
 async function executeMongoDB(
     config: DatabaseNodeConfig,
-    context: Record<string, any>
+    context: JsonObject
 ): Promise<DatabaseNodeResult> {
     // Build connection string
     const connectionString = config.connectionString
@@ -237,9 +238,9 @@ async function executeMongoDB(
 
     if (config.operation === 'query') {
         // Find documents
-        const filter = interpolateObject(config.filter || {}, context);
-        const projection = config.projection || {};
-        const sort = config.sort || {};
+        const filter = interpolateObject(config.filter || {}, context) as Document;
+        const projection = (config.projection || {}) as Document;
+        const sort = (config.sort || {}) as Document;
         const limit = config.limit || 1000;
         const skip = config.skip || 0;
 
@@ -251,7 +252,7 @@ async function executeMongoDB(
             .limit(config.maxRows || limit)
             .skip(skip);
 
-        const rows = await cursor.toArray();
+        const rows = await cursor.toArray() as JsonObject[];
 
         return {
             operation: 'query',
@@ -270,24 +271,24 @@ async function executeMongoDB(
         console.log(`[Database/MongoDB] Inserting document(s) into ${collectionName}`);
 
         if (Array.isArray(document)) {
-            const result = await collection.insertMany(document);
+            const result = await collection.insertMany(document as Document[]);
             return {
                 operation: 'insert',
                 provider: 'mongodb',
                 affectedRows: result.insertedCount,
-                insertId: result.insertedIds,
+                insertId: Object.values(result.insertedIds).map(id => id.toString()),
                 metadata: {
                     queryTime: 0,
                     rowsReturned: 0,
                 },
             };
         } else {
-            const result = await collection.insertOne(document);
+            const result = await collection.insertOne(document as Document);
             return {
                 operation: 'insert',
                 provider: 'mongodb',
                 affectedRows: result.acknowledged ? 1 : 0,
-                insertId: result.insertedId,
+                insertId: result.insertedId.toString(),
                 metadata: {
                     queryTime: 0,
                     rowsReturned: 0,
@@ -296,8 +297,8 @@ async function executeMongoDB(
         }
     } else if (config.operation === 'update') {
         // Update document(s)
-        const filter = interpolateObject(config.filter || {}, context);
-        const update = interpolateObject(config.update || {}, context);
+        const filter = interpolateObject(config.filter || {}, context) as Document;
+        const update = interpolateObject(config.update || {}, context) as Document;
 
         console.log(`[Database/MongoDB] Updating documents in ${collectionName}`);
 
@@ -314,7 +315,7 @@ async function executeMongoDB(
         };
     } else if (config.operation === 'delete') {
         // Delete document(s)
-        const filter = interpolateObject(config.filter || {}, context);
+        const filter = interpolateObject(config.filter || {}, context) as Document;
 
         console.log(`[Database/MongoDB] Deleting documents from ${collectionName}`);
 
@@ -337,7 +338,7 @@ async function executeMongoDB(
 /**
  * Build PostgreSQL connection string from config
  */
-function buildPostgreSQLConnectionString(config: DatabaseNodeConfig, context: Record<string, any>): string {
+function buildPostgreSQLConnectionString(config: DatabaseNodeConfig, context: JsonObject): string {
     const host = interpolateVariables(config.host || 'localhost', context);
     const port = config.port || 5432;
     const database = interpolateVariables(config.database || '', context);
@@ -350,7 +351,7 @@ function buildPostgreSQLConnectionString(config: DatabaseNodeConfig, context: Re
 /**
  * Build MongoDB connection string from config
  */
-function buildMongoDBConnectionString(config: DatabaseNodeConfig, context: Record<string, any>): string {
+function buildMongoDBConnectionString(config: DatabaseNodeConfig, context: JsonObject): string {
     const host = interpolateVariables(config.host || 'localhost', context);
     const port = config.port || 27017;
     const database = interpolateVariables(config.database || 'test', context);
@@ -367,15 +368,15 @@ function buildMongoDBConnectionString(config: DatabaseNodeConfig, context: Recor
 /**
  * Interpolate variables in an object recursively
  */
-function interpolateObject(obj: any, context: Record<string, any>): any {
+function interpolateObject(obj: JsonValue, context: JsonObject): JsonValue {
     if (typeof obj === 'string') {
         return interpolateVariables(obj, context);
     } else if (Array.isArray(obj)) {
         return obj.map(item => interpolateObject(item, context));
     } else if (obj && typeof obj === 'object') {
-        const result: any = {};
+        const result: JsonObject = {};
         for (const key in obj) {
-            if (obj.hasOwnProperty(key)) {
+            if (Object.prototype.hasOwnProperty.call(obj, key)) {
                 result[key] = interpolateObject(obj[key], context);
             }
         }

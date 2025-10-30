@@ -1,3 +1,4 @@
+import type { JsonObject, JsonValue } from '@flowmaestro/shared';
 import { interpolateWithObjectSupport } from './utils';
 
 export interface OutputNodeConfig {
@@ -8,7 +9,7 @@ export interface OutputNodeConfig {
 }
 
 export interface OutputNodeResult {
-    outputs: Record<string, any>;
+    outputs: JsonObject;
 }
 
 /**
@@ -16,10 +17,10 @@ export interface OutputNodeResult {
  */
 export async function executeOutputNode(
     config: OutputNodeConfig,
-    context: Record<string, any>
-): Promise<OutputNodeResult> {
+    context: JsonObject
+): Promise<JsonObject> {
     // Interpolate variables in value
-    let value: any = interpolateWithObjectSupport(config.value, context);
+    let value: JsonValue = interpolateWithObjectSupport(config.value, context);
 
     // Format conversion
     value = formatValue(value, config.format);
@@ -30,10 +31,10 @@ export async function executeOutputNode(
         outputs: {
             [config.outputName]: value
         }
-    };
+    } as unknown as JsonObject;
 }
 
-function formatValue(value: any, format: string): any {
+function formatValue(value: JsonValue, format: string): JsonValue {
     switch (format) {
         case 'json':
             return typeof value === 'string' ? JSON.parse(value) : value;

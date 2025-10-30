@@ -44,6 +44,7 @@ export function Workflows() {
             document.addEventListener("mousedown", handleClickOutside);
             return () => document.removeEventListener("mousedown", handleClickOutside);
         }
+        return undefined;
     }, [openMenuId]);
 
     const loadWorkflows = async () => {
@@ -66,69 +67,69 @@ export function Workflows() {
         }
     };
 
-    const handleGenerateWorkflow = async (prompt: string, credentialId: string) => {
-        try {
-            // Generate workflow using AI
-            const generateResponse = await generateWorkflow({ prompt, credentialId });
+    const handleGenerateWorkflow = async (prompt: string, connectionId: string) => {
+        // Generate workflow using AI
+        const generateResponse = await generateWorkflow({ prompt, connectionId });
 
-            if (generateResponse.success && generateResponse.data) {
-                const { nodes, edges, metadata } = generateResponse.data;
+        if (generateResponse.success && generateResponse.data) {
+            const { nodes, edges, metadata } = generateResponse.data;
 
-                // Convert generated workflow to React Flow format
-                const { nodes: flowNodes, edges: flowEdges } = convertToReactFlowFormat(
-                    nodes,
-                    edges,
-                    metadata.entryNodeId
-                );
+            // Convert generated workflow to React Flow format
+            const { nodes: flowNodes, edges: flowEdges } = convertToReactFlowFormat(
+                nodes,
+                edges,
+                metadata.entryNodeId
+            );
 
-                // Create a new workflow with the generated name
-                const workflowName = metadata.name || "AI Generated Workflow";
-                const createResponse = await createWorkflow(workflowName, metadata.description);
+            // Create a new workflow with the generated name
+            const workflowName = metadata.name || "AI Generated Workflow";
+            const createResponse = await createWorkflow(workflowName, metadata.description);
 
-                if (createResponse.success && createResponse.data) {
-                    const workflowId = createResponse.data.id;
+            if (createResponse.success && createResponse.data) {
+                const workflowId = createResponse.data.id;
 
-                    // Convert React Flow format back to backend format for saving
-                    const nodesMap: Record<string, any> = {};
-                    flowNodes.forEach(node => {
-                        const { label, onError, ...config } = node.data || {};
-                        nodesMap[node.id] = {
-                            type: node.type || 'default',
-                            name: label || node.id,
-                            config: config,
-                            position: node.position,
-                            ...(onError && { onError }),
-                        };
-                    });
-
-                    // Find entry point
-                    const inputNode = flowNodes.find(n => n.type === 'input');
-                    const entryPoint = inputNode?.id || (flowNodes.length > 0 ? flowNodes[0].id : '');
-
-                    const workflowDefinition = {
-                        name: workflowName,
-                        nodes: nodesMap,
-                        edges: flowEdges.map(edge => ({
-                            id: edge.id,
-                            source: edge.source,
-                            target: edge.target,
-                            sourceHandle: edge.sourceHandle,
-                        })),
-                        entryPoint,
+                // Convert React Flow format back to backend format for saving
+                const nodesMap: Record<string, any> = {};
+                flowNodes.forEach(node => {
+                    const { label, onError, ...config } = (node.data || {}) as any;
+                    nodesMap[node.id] = {
+                        type: node.type || 'default',
+                        name: label || node.id,
+                        config: config,
+                        position: node.position,
+                        ...(onError && { onError }),
                     };
+                });
 
-                    // Update workflow with the generated definition
-                    await updateWorkflow(workflowId, {
-                        name: workflowName,
-                        definition: workflowDefinition,
-                    });
+                // Find entry point
+                const inputNode = flowNodes.find(n => n.type === 'input');
+                const entryPoint = inputNode?.id || (flowNodes.length > 0 ? flowNodes[0].id : '');
 
-                    // Navigate to the builder with the new workflow
-                    navigate(`/builder/${workflowId}`);
-                }
+                const workflowDefinition = {
+                    name: workflowName,
+                    nodes: nodesMap,
+                    edges: flowEdges.map(edge => ({
+                        id: edge.id,
+                        source: edge.source,
+                        target: edge.target,
+                        sourceHandle: edge.sourceHandle,
+                    })),
+                    entryPoint,
+                };
+
+                // Update workflow with the generated definition
+                await updateWorkflow(workflowId, {
+                    name: workflowName,
+                    definition: workflowDefinition,
+                });
+
+                // Navigate to the builder with the new workflow
+                navigate(`/builder/${workflowId}`);
+            } else {
+                throw new Error(createResponse.error || "Failed to create workflow");
             }
-        } catch (error) {
-            console.error("Failed to generate workflow:", error);
+        } else {
+            throw new Error(generateResponse.error || "Failed to generate workflow");
         }
     };
 

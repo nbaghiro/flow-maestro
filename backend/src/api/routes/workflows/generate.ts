@@ -17,7 +17,7 @@ export async function generateWorkflowRoute(fastify: FastifyInstance) {
 
                 const workflow = await generateWorkflow({
                     userPrompt: body.prompt,
-                    connectionId: body.connectionId || body.credentialId, // Support both for backwards compatibility
+                    connectionId: body.connectionId,
                     userId: request.user!.id
                 });
 

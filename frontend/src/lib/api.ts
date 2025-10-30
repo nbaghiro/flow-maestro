@@ -3,6 +3,12 @@
  */
 
 import type {
+    JsonObject,
+    JsonValue,
+    WorkflowNode,
+    WorkflowEdge,
+} from "@flowmaestro/shared";
+import type {
     WorkflowTrigger,
     TriggerWithScheduleInfo,
     CreateTriggerInput,
@@ -13,10 +19,10 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 interface ExecuteWorkflowRequest {
     workflowDefinition: {
-        nodes: any[];
-        edges: any[];
+        nodes: WorkflowNode[];
+        edges: WorkflowEdge[];
     };
-    inputs?: Record<string, any>;
+    inputs?: JsonObject;
 }
 
 interface ExecuteWorkflowResponse {
@@ -25,7 +31,7 @@ interface ExecuteWorkflowResponse {
         workflowId: string;
         result: {
             success: boolean;
-            outputs: Record<string, any>;
+            outputs: JsonObject;
             error?: string;
         };
     };
@@ -79,9 +85,9 @@ function getAuthToken(): string | null {
  * Execute a workflow
  */
 export async function executeWorkflow(
-    nodes: any[],
-    edges: any[],
-    inputs: Record<string, any> = {}
+    nodes: WorkflowNode[],
+    edges: WorkflowEdge[],
+    inputs: JsonObject = {}
 ): Promise<ExecuteWorkflowResponse> {
     const token = getAuthToken();
 
@@ -274,8 +280,8 @@ export async function updateWorkflow(
         description?: string;
         definition?: {
             name: string;
-            nodes: Record<string, any>;
-            edges: any[];
+            nodes: Record<string, WorkflowNode>;
+            edges: WorkflowEdge[];
             entryPoint: string;
         };
     }
@@ -437,14 +443,14 @@ export async function deleteTrigger(triggerId: string): Promise<{ success: boole
 /**
  * Execute a trigger
  */
-export async function executeTrigger(triggerId: string, inputs?: Record<string, any>): Promise<{
+export async function executeTrigger(triggerId: string, inputs?: JsonObject): Promise<{
     success: boolean;
     data?: {
         executionId: string;
         workflowId: string;
         triggerId: string;
         status: string;
-        inputs: Record<string, any>;
+        inputs: JsonObject;
     };
     error?: string;
 }> {
@@ -480,9 +486,9 @@ export interface Execution {
     id: string;
     workflow_id: string;
     status: "pending" | "running" | "completed" | "failed" | "cancelled";
-    inputs: Record<string, any> | null;
-    outputs: Record<string, any> | null;
-    current_state: any | null;
+    inputs: JsonObject | null;
+    outputs: JsonObject | null;
+    current_state: JsonValue | null;
     error: string | null;
     started_at: string | null;
     completed_at: string | null;
@@ -592,11 +598,11 @@ export interface Connection {
             workspace?: string;
         };
         mcp_version?: string;
-        mcp_server_info?: Record<string, any>;
+        mcp_server_info?: JsonObject;
     };
     mcp_server_url: string | null;
     mcp_tools: MCPTool[] | null;
-    capabilities: Record<string, any>;
+    capabilities: JsonObject;
     last_tested_at: string | null;
     last_used_at: string | null;
     created_at: string;
@@ -607,7 +613,7 @@ export interface CreateConnectionInput {
     name: string;
     connection_method: ConnectionMethod;
     provider: string;
-    data: {
+    data: JsonObject & {
         api_key?: string;
         api_secret?: string;
         server_url?: string;
@@ -615,12 +621,11 @@ export interface CreateConnectionInput {
         bearer_token?: string;
         username?: string;
         password?: string;
-        [key: string]: any;
     };
-    metadata?: Record<string, any>;
+    metadata?: JsonObject;
     mcp_server_url?: string;
     mcp_tools?: MCPTool[];
-    capabilities?: Record<string, any>;
+    capabilities?: JsonObject;
 }
 
 /**
@@ -705,7 +710,7 @@ export async function getConnection(connectionId: string): Promise<{ success: bo
 /**
  * Test a connection without saving it first
  */
-export async function testConnectionBeforeSave(input: CreateConnectionInput): Promise<{ success: boolean; data: { test_result: any; connection_valid: boolean }; error?: string }> {
+export async function testConnectionBeforeSave(input: CreateConnectionInput): Promise<{ success: boolean; data: { test_result: JsonValue; connection_valid: boolean }; error?: string }> {
     const token = getAuthToken();
 
     const response = await fetch(`${API_BASE_URL}/api/connections/test`, {
@@ -728,7 +733,7 @@ export async function testConnectionBeforeSave(input: CreateConnectionInput): Pr
 /**
  * Test an existing connection
  */
-export async function testConnection(connectionId: string): Promise<{ success: boolean; data: { connection_id: string; test_result: any }; error?: string }> {
+export async function testConnection(connectionId: string): Promise<{ success: boolean; data: { connection_id: string; test_result: JsonValue }; error?: string }> {
     const token = getAuthToken();
 
     const response = await fetch(`${API_BASE_URL}/api/connections/${connectionId}/test`, {
@@ -839,7 +844,7 @@ export async function getMCPProviders(): Promise<{ success: boolean; data: MCPPr
  */
 export async function discoverMCPTools(request: MCPDiscoveryRequest): Promise<{
     success: boolean;
-    data: { server_info: any; tools: MCPTool[]; tool_count: number };
+    data: { server_info: JsonObject; tools: MCPTool[]; tool_count: number };
     error?: string
 }> {
     const token = getAuthToken();
@@ -900,7 +905,13 @@ export interface GeneratedWorkflow {
         id: string;
         type: string;
         label: string;
-        config: Record<string, any>;
+        config: JsonObject;
+        status?: string;
+        onError?: {
+            strategy: "continue" | "fallback" | "goto" | "fail";
+            fallbackValue?: JsonValue;
+            gotoNode?: string;
+        };
     }>;
     edges: Array<{
         source: string;

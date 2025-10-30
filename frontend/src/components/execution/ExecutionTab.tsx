@@ -14,7 +14,7 @@ interface ExecutionTabProps {
 
 type LogLevel = "info" | "debug" | "warn" | "error" | "all";
 
-export function ExecutionTab({ workflowId }: ExecutionTabProps) {
+export function ExecutionTab({ workflowId: _workflowId }: ExecutionTabProps) {
     const { currentExecution } = useWorkflowStore();
     const [logLevelFilter, setLogLevelFilter] = useState<LogLevel>("all");
     const [nodeFilter, setNodeFilter] = useState<string>("all");

@@ -1,3 +1,4 @@
+import type { JsonObject, JsonValue } from '@flowmaestro/shared';
 import { interpolateVariables } from './utils';
 
 export interface SwitchCase {
@@ -13,8 +14,8 @@ export interface SwitchNodeConfig {
 
 export interface SwitchNodeResult {
     matchedCase: string | null;
-    matchedValue: any;
-    evaluatedExpression: any;
+    matchedValue: JsonValue;
+    evaluatedExpression: JsonValue;
 }
 
 /**
@@ -22,8 +23,8 @@ export interface SwitchNodeResult {
  */
 export async function executeSwitchNode(
     config: SwitchNodeConfig,
-    context: Record<string, any>
-): Promise<SwitchNodeResult> {
+    context: JsonObject
+): Promise<JsonObject> {
     // Interpolate and evaluate the expression
     const expressionValue = interpolateVariables(config.expression, context);
 
@@ -40,7 +41,7 @@ export async function executeSwitchNode(
                 matchedCase: switchCase.value,
                 matchedValue: caseValue,
                 evaluatedExpression: expressionValue
-            };
+            } as unknown as JsonObject;
         }
     }
 
@@ -52,7 +53,7 @@ export async function executeSwitchNode(
         matchedCase: defaultCase,
         matchedValue: null,
         evaluatedExpression: expressionValue
-    };
+    } as unknown as JsonObject;
 }
 
 /**
@@ -62,7 +63,7 @@ export async function executeSwitchNode(
  * - Number comparison
  * - Wildcard patterns (* and ?)
  */
-function matchesCase(expressionValue: any, caseValue: any): boolean {
+function matchesCase(expressionValue: JsonValue, caseValue: JsonValue): boolean {
     // Handle null/undefined
     if (expressionValue === null || expressionValue === undefined) {
         return caseValue === null || caseValue === undefined;

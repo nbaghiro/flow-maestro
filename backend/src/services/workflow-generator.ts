@@ -365,7 +365,7 @@ export async function generateWorkflow(
             model = 'gpt-4';
             break;
         case 'anthropic':
-            model = 'claude-3-5-sonnet-20241022';
+            model = 'claude-3-opus-20240229';
             break;
         case 'google':
             model = 'gemini-pro';
@@ -393,13 +393,19 @@ export async function generateWorkflow(
     // Call LLM
     const result = await executeLLMNode(llmConfig, {});
 
-    console.log('[Workflow Generator] LLM response length:', result.text.length);
+    // Extract text from result
+    const text = result.text;
+    if (typeof text !== 'string') {
+        throw new Error('LLM result did not contain a text string');
+    }
+
+    console.log('[Workflow Generator] LLM response length:', text.length);
 
     // Parse JSON response
     let workflow: GeneratedWorkflow;
     try {
         // Extract JSON from markdown code blocks if present
-        let jsonText = result.text.trim();
+        let jsonText = text.trim();
         const jsonMatch = jsonText.match(/```(?:json)?\s*(\{[\s\S]*\})\s*```/);
         if (jsonMatch) {
             jsonText = jsonMatch[1];
@@ -407,7 +413,7 @@ export async function generateWorkflow(
 
         workflow = JSON.parse(jsonText);
     } catch (error) {
-        console.error('[Workflow Generator] Failed to parse LLM response:', result.text);
+        console.error('[Workflow Generator] Failed to parse LLM response:', text);
         throw new Error('Failed to parse workflow JSON from LLM response. Please try again.');
     }
 

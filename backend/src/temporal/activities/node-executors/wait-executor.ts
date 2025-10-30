@@ -1,3 +1,4 @@
+import type { JsonObject } from '@flowmaestro/shared';
 import { interpolateVariables } from './utils';
 
 export interface WaitNodeConfig {
@@ -30,8 +31,8 @@ export interface WaitNodeResult {
  */
 export async function executeWaitNode(
     config: WaitNodeConfig,
-    context: Record<string, any>
-): Promise<WaitNodeResult> {
+    context: JsonObject
+): Promise<JsonObject> {
     const startTime = new Date();
     console.log(`[Wait] Type: ${config.waitType}, Start: ${startTime.toISOString()}`);
 
@@ -95,10 +96,10 @@ export async function executeWaitNode(
     };
 
     if (config.outputVariable) {
-        return { [config.outputVariable]: result } as any;
+        return { [config.outputVariable]: result } as unknown as JsonObject;
     }
 
-    return result;
+    return result as unknown as JsonObject;
 }
 
 /**

@@ -2,6 +2,8 @@
  * Trigger Types and Interfaces
  */
 
+import type { JsonObject, JsonValue } from "@flowmaestro/shared";
+
 export type TriggerType = 'schedule' | 'webhook' | 'event' | 'manual';
 
 export interface ScheduleTriggerConfig {
@@ -22,14 +24,14 @@ export interface WebhookTriggerConfig {
 
 export interface EventTriggerConfig {
     eventType: string;
-    filters?: Record<string, any>;
+    filters?: JsonObject;
     source?: string;
 }
 
 export interface ManualTriggerConfig {
     requireInputs?: boolean;
-    inputSchema?: Record<string, any>;
-    inputs?: Record<string, any>;  // Actual input values for the trigger
+    inputSchema?: JsonObject;
+    inputs?: JsonObject;  // Actual input values for the trigger
     description?: string;
 }
 
@@ -74,15 +76,15 @@ export interface TriggerExecution {
     id: string;
     trigger_id: string;
     execution_id: string;
-    trigger_payload: Record<string, any> | null;
+    trigger_payload: JsonObject | null;
     created_at: string;
 }
 
 export interface ScheduleInfo {
     scheduleId: string;
-    state: any;
-    spec: any;
-    info: any;
+    state: JsonValue;
+    spec: JsonValue;
+    info: JsonValue;
     nextRunTime?: string;
 }
 

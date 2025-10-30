@@ -1,4 +1,5 @@
 import OpenAI from 'openai';
+import type { JsonObject } from '@flowmaestro/shared';
 import Anthropic from '@anthropic-ai/sdk';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import axios from 'axios';
@@ -53,13 +54,13 @@ export interface VisionNodeResult {
  */
 export async function executeVisionNode(
     config: VisionNodeConfig,
-    context: Record<string, any>
-): Promise<VisionNodeResult> {
+    context: JsonObject
+): Promise<JsonObject> {
     const startTime = Date.now();
 
     console.log(`[Vision] Provider: ${config.provider}, Operation: ${config.operation}`);
 
-    let result: VisionNodeResult;
+    let result: JsonObject;
 
     switch (config.provider) {
         case 'openai':
@@ -79,17 +80,17 @@ export async function executeVisionNode(
     }
 
     result.metadata = {
-        ...result.metadata,
+        ...(result.metadata as JsonObject),
         processingTime: Date.now() - startTime,
     };
 
-    console.log(`[Vision] Completed in ${result.metadata.processingTime}ms`);
+    console.log(`[Vision] Completed in ${((result.metadata as JsonObject)?.processingTime as number) || 0}ms`);
 
     if (config.outputVariable) {
-        return { [config.outputVariable]: result } as any;
+        return { [config.outputVariable]: result } as unknown as JsonObject;
     }
 
-    return result;
+    return result as unknown as JsonObject;
 }
 
 /**
@@ -97,8 +98,8 @@ export async function executeVisionNode(
  */
 async function executeOpenAI(
     config: VisionNodeConfig,
-    context: Record<string, any>
-): Promise<VisionNodeResult> {
+    context: JsonObject
+): Promise<JsonObject> {
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
         throw new Error('OPENAI_API_KEY environment variable is not set');
@@ -146,7 +147,7 @@ async function executeOpenAI(
                 processingTime: 0,
                 tokensUsed: response.usage?.total_tokens,
             },
-        };
+        } as unknown as JsonObject;
     } else if (config.operation === 'generate') {
         // DALL-E for image generation
         const prompt = interpolateVariables(config.generationPrompt || '', context);
@@ -179,7 +180,7 @@ async function executeOpenAI(
             metadata: {
                 processingTime: 0,
             },
-        };
+        } as unknown as JsonObject;
     } else {
         throw new Error(`Unsupported operation for OpenAI: ${config.operation}`);
     }
@@ -190,8 +191,8 @@ async function executeOpenAI(
  */
 async function executeAnthropic(
     config: VisionNodeConfig,
-    context: Record<string, any>
-): Promise<VisionNodeResult> {
+    context: JsonObject
+): Promise<JsonObject> {
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) {
         throw new Error('ANTHROPIC_API_KEY environment variable is not set');
@@ -282,7 +283,7 @@ async function executeAnthropic(
             processingTime: 0,
             tokensUsed: response.usage.input_tokens + response.usage.output_tokens,
         },
-    };
+    } as unknown as JsonObject;
 }
 
 /**
@@ -290,8 +291,8 @@ async function executeAnthropic(
  */
 async function executeGoogle(
     config: VisionNodeConfig,
-    context: Record<string, any>
-): Promise<VisionNodeResult> {
+    context: JsonObject
+): Promise<JsonObject> {
     const apiKey = process.env.GOOGLE_API_KEY;
     if (!apiKey) {
         throw new Error('GOOGLE_API_KEY environment variable is not set');
@@ -363,5 +364,5 @@ async function executeGoogle(
         metadata: {
             processingTime: 0,
         },
-    };
+    } as unknown as JsonObject;
 }

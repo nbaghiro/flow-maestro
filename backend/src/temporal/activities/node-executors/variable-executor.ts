@@ -1,3 +1,4 @@
+import type { JsonObject, JsonValue } from '@flowmaestro/shared';
 import { interpolateVariables } from './utils';
 
 export interface VariableNodeConfig {
@@ -9,17 +10,19 @@ export interface VariableNodeConfig {
 }
 
 export interface VariableNodeResult {
-    [key: string]: any;
+    [key: string]: JsonValue;
 }
+
+type VariableStore = JsonObject | Map<string, JsonValue>;
 
 /**
  * Execute Variable node - manages workflow variables
  */
 export async function executeVariableNode(
     config: VariableNodeConfig,
-    context: Record<string, any>,
-    globalStore?: Map<string, any>
-): Promise<VariableNodeResult> {
+    context: JsonObject,
+    globalStore?: Map<string, JsonValue>
+): Promise<JsonObject> {
     console.log(`[Variable] Operation: ${config.operation} on '${config.variableName}' (${config.scope})`);
 
     const store = config.scope === 'global' ? globalStore : context;
@@ -41,10 +44,10 @@ export async function executeVariableNode(
 
 function setVariable(
     config: VariableNodeConfig,
-    context: Record<string, any>,
-    store: any
+    context: JsonObject,
+    store: VariableStore
 ): VariableNodeResult {
-    let value: any = interpolateVariables(config.value || '', context);
+    let value: JsonValue = interpolateVariables(config.value || '', context);
 
     // Type conversion
     if (config.valueType && config.valueType !== 'auto') {
@@ -64,7 +67,7 @@ function setVariable(
 
 function getVariable(
     config: VariableNodeConfig,
-    store: any
+    store: VariableStore
 ): VariableNodeResult {
     const value = store instanceof Map
         ? store.get(config.variableName)
@@ -72,12 +75,12 @@ function getVariable(
 
     console.log(`[Variable] Get '${config.variableName}' = ${JSON.stringify(value).substring(0, 100)}`);
 
-    return { [config.variableName]: value };
+    return { [config.variableName]: value ?? null };
 }
 
 function deleteVariable(
     config: VariableNodeConfig,
-    store: any
+    store: VariableStore
 ): VariableNodeResult {
     if (store instanceof Map) {
         store.delete(config.variableName);
@@ -90,7 +93,7 @@ function deleteVariable(
     return {};
 }
 
-function convertType(value: any, type: string): any {
+function convertType(value: JsonValue, type: string): JsonValue {
     switch (type) {
         case 'string':
             return String(value);

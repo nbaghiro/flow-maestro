@@ -1,5 +1,6 @@
 import jsonata from 'jsonata';
 import { parseStringPromise } from 'xml2js';
+import type { JsonObject, JsonValue, JsonArray } from '@flowmaestro/shared';
 
 export interface TransformNodeConfig {
     operation: 'map' | 'filter' | 'reduce' | 'sort' | 'merge' | 'extract' | 'custom' | 'parseXML' | 'parseJSON';
@@ -9,7 +10,7 @@ export interface TransformNodeConfig {
 }
 
 export interface TransformNodeResult {
-    [key: string]: any; // The transformed data stored under outputVariable name
+    [key: string]: JsonValue; // The transformed data stored under outputVariable name
 }
 
 /**
@@ -17,15 +18,15 @@ export interface TransformNodeResult {
  */
 export async function executeTransformNode(
     config: TransformNodeConfig,
-    context: Record<string, any>
-): Promise<TransformNodeResult> {
+    context: JsonObject
+): Promise<JsonObject> {
     // Get input data from context
     const inputData = getVariableValue(config.inputData, context);
 
     console.log(`[Transform] Operation: ${config.operation}`);
     console.log(`[Transform] Input type: ${typeof inputData}, ${Array.isArray(inputData) ? 'array' : 'object'}`);
 
-    let result: any;
+    let result: JsonValue;
 
     switch (config.operation) {
         case 'map':
@@ -50,24 +51,30 @@ export async function executeTransformNode(
             result = await executeJSONata(inputData, config.expression);
             break;
         case 'parseXML':
+            if (typeof inputData !== 'string') {
+                throw new Error('parseXML requires string input');
+            }
             result = await parseXML(inputData);
             break;
         case 'parseJSON':
+            if (typeof inputData !== 'string') {
+                throw new Error('parseJSON requires string input');
+            }
             result = parseJSON(inputData);
             break;
         default:
             throw new Error(`Unsupported transform operation: ${config.operation}`);
     }
 
-    console.log(`[Transform] Result type: ${typeof result}, ${Array.isArray(result) ? `array[${result.length}]` : 'object'}`);
+    console.log(`[Transform] Result type: ${typeof result}, ${Array.isArray(result) ? `array[${(result as JsonArray).length}]` : 'object'}`);
 
     // Return result with the output variable name
     return {
         [config.outputVariable]: result
-    };
+    } as unknown as JsonObject;
 }
 
-async function executeMap(data: any[], expression: string, context: Record<string, any>): Promise<any[]> {
+async function executeMap(data: JsonValue, expression: string, context: JsonObject): Promise<JsonArray> {
     if (!Array.isArray(data)) {
         throw new Error('Map operation requires array input');
     }
@@ -83,7 +90,7 @@ async function executeMap(data: any[], expression: string, context: Record<strin
     return await expr.evaluate({ items: data, ...context });
 }
 
-async function executeFilter(data: any[], expression: string, context: Record<string, any>): Promise<any[]> {
+async function executeFilter(data: JsonValue, expression: string, context: JsonObject): Promise<JsonArray> {
     if (!Array.isArray(data)) {
         throw new Error('Filter operation requires array input');
     }
@@ -99,7 +106,7 @@ async function executeFilter(data: any[], expression: string, context: Record<st
     return await expr.evaluate({ items: data, ...context });
 }
 
-async function executeReduce(data: any[], expression: string, context: Record<string, any>): Promise<any> {
+async function executeReduce(data: JsonValue, expression: string, context: JsonObject): Promise<JsonValue> {
     if (!Array.isArray(data)) {
         throw new Error('Reduce operation requires array input');
     }
@@ -115,7 +122,7 @@ async function executeReduce(data: any[], expression: string, context: Record<st
     return await expr.evaluate({ items: data, ...context });
 }
 
-async function executeSort(data: any[], expression: string): Promise<any[]> {
+async function executeSort(data: JsonValue, expression: string): Promise<JsonArray> {
     if (!Array.isArray(data)) {
         throw new Error('Sort operation requires array input');
     }
@@ -130,45 +137,49 @@ async function executeSort(data: any[], expression: string): Promise<any[]> {
     return [...data].sort((a, b) => {
         const aVal = getNestedValue(a, expression);
         const bVal = getNestedValue(b, expression);
+        if (aVal === null || bVal === null) return 0;
         return aVal > bVal ? 1 : aVal < bVal ? -1 : 0;
     });
 }
 
-async function executeMerge(data: any, expression: string, context: Record<string, any>): Promise<any> {
+async function executeMerge(data: JsonValue, expression: string, context: JsonObject): Promise<JsonValue> {
     // Parse expression to get variables to merge
     const varsToMerge = expression.match(/\$\{([^}]+)\}/g) || [];
     const values = varsToMerge.map(varRef => getVariableValue(varRef, context));
 
     if (Array.isArray(data)) {
         // Merge arrays
-        return values.reduce((acc, val) => {
+        return values.reduce<JsonArray>((acc, val) => {
             if (Array.isArray(val)) {
                 return [...acc, ...val];
             }
             return acc;
         }, [...data]);
-    } else {
+    } else if (typeof data === 'object' && data !== null) {
         // Merge objects
-        return values.reduce((acc, val) => {
-            if (typeof val === 'object' && val !== null) {
+        return values.reduce<JsonObject>((acc, val) => {
+            if (typeof val === 'object' && val !== null && !Array.isArray(val)) {
                 return { ...acc, ...val };
             }
             return acc;
         }, { ...data });
+    } else {
+        // Primitive types - return as is
+        return data;
     }
 }
 
-async function executeExtract(data: any, expression: string): Promise<any> {
+async function executeExtract(data: JsonValue, expression: string): Promise<JsonValue> {
     // Extract nested property
     return getNestedValue(data, expression);
 }
 
-async function executeJSONata(data: any, expression: string): Promise<any> {
+async function executeJSONata(data: JsonValue, expression: string): Promise<JsonValue> {
     const expr = jsonata(expression);
     return await expr.evaluate(data);
 }
 
-async function parseXML(xmlString: string): Promise<any> {
+async function parseXML(xmlString: string): Promise<JsonValue> {
     if (typeof xmlString !== 'string') {
         throw new Error('parseXML requires string input');
     }
@@ -179,7 +190,7 @@ async function parseXML(xmlString: string): Promise<any> {
     });
 }
 
-function parseJSON(jsonString: string): any {
+function parseJSON(jsonString: string): JsonValue {
     if (typeof jsonString !== 'string') {
         throw new Error('parseJSON requires string input');
     }
@@ -194,7 +205,7 @@ function parseJSON(jsonString: string): any {
 /**
  * Get variable value from context using ${variableName} syntax
  */
-function getVariableValue(varRef: string, context: Record<string, any>): any {
+function getVariableValue(varRef: string, context: JsonObject): JsonValue {
     // Remove ${ and } if present
     const varName = varRef.replace(/^\$\{/, '').replace(/\}$/, '');
     return getNestedValue(context, varName);
@@ -203,12 +214,16 @@ function getVariableValue(varRef: string, context: Record<string, any>): any {
 /**
  * Get nested property value using dot notation
  */
-function getNestedValue(obj: any, path: string): any {
+function getNestedValue(obj: JsonValue, path: string): JsonValue {
     const keys = path.split('.');
-    let value = obj;
+    let value: JsonValue = obj;
 
     for (const key of keys) {
-        value = value?.[key];
+        if (value && typeof value === 'object' && !Array.isArray(value)) {
+            value = value[key];
+        } else {
+            return null;
+        }
     }
 
     return value;

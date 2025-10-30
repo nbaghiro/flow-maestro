@@ -1,4 +1,5 @@
 import OpenAI from 'openai';
+import type { JsonObject } from '@flowmaestro/shared';
 import axios from 'axios';
 import * as fs from 'fs/promises';
 import * as path from 'path';
@@ -59,13 +60,13 @@ export interface AudioNodeResult {
  */
 export async function executeAudioNode(
     config: AudioNodeConfig,
-    context: Record<string, any>
-): Promise<AudioNodeResult> {
+    context: JsonObject
+): Promise<JsonObject> {
     const startTime = Date.now();
 
     console.log(`[Audio] Provider: ${config.provider}, Operation: ${config.operation}`);
 
-    let result: AudioNodeResult;
+    let result: JsonObject;
 
     switch (config.provider) {
         case 'openai':
@@ -84,17 +85,17 @@ export async function executeAudioNode(
     }
 
     result.metadata = {
-        ...result.metadata,
+        ...(result.metadata as JsonObject),
         processingTime: Date.now() - startTime,
     };
 
-    console.log(`[Audio] Completed in ${result.metadata.processingTime}ms`);
+    console.log(`[Audio] Completed in ${((result.metadata as JsonObject)?.processingTime as number) || 0}ms`);
 
     if (config.outputVariable) {
-        return { [config.outputVariable]: result } as any;
+        return { [config.outputVariable]: result } as unknown as JsonObject;
     }
 
-    return result;
+    return result as unknown as JsonObject;
 }
 
 /**
@@ -102,8 +103,8 @@ export async function executeAudioNode(
  */
 async function executeOpenAI(
     config: AudioNodeConfig,
-    context: Record<string, any>
-): Promise<AudioNodeResult> {
+    context: JsonObject
+): Promise<JsonObject> {
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
         throw new Error('OPENAI_API_KEY environment variable is not set');
@@ -139,7 +140,7 @@ async function executeOpenAI(
                 metadata: {
                     processingTime: 0,
                 },
-            };
+            } as unknown as JsonObject;
         } finally {
             // Clean up temp file if created
             if (audioFile.path && audioFile.path.startsWith(os.tmpdir())) {
@@ -191,7 +192,7 @@ async function executeOpenAI(
                 processingTime: 0,
                 charactersUsed: text.length,
             },
-        };
+        } as unknown as JsonObject;
     } else {
         throw new Error(`Unsupported operation for OpenAI: ${config.operation}`);
     }
@@ -202,8 +203,8 @@ async function executeOpenAI(
  */
 async function executeElevenLabs(
     config: AudioNodeConfig,
-    context: Record<string, any>
-): Promise<AudioNodeResult> {
+    context: JsonObject
+): Promise<JsonObject> {
     const apiKey = process.env.ELEVENLABS_API_KEY;
     if (!apiKey) {
         throw new Error('ELEVENLABS_API_KEY environment variable is not set');
@@ -267,7 +268,7 @@ async function executeElevenLabs(
             processingTime: 0,
             charactersUsed: text.length,
         },
-    };
+    } as unknown as JsonObject;
 }
 
 /**

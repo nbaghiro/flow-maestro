@@ -1,4 +1,3 @@
-import React from "react";
 import { Connection, ConnectionMethod, ConnectionStatus } from "../../lib/api";
 import { StatusBadge } from "../common/StatusBadge";
 import { cn } from "../../lib/utils";

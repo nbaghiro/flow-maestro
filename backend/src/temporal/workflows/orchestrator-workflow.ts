@@ -1,5 +1,9 @@
 import { proxyActivities } from '@temporalio/workflow';
 import type * as activities from '../activities';
+import type { WorkflowDefinition, WorkflowNode, JsonObject } from '@flowmaestro/shared';
+
+// Re-export WorkflowDefinition for use by other workflow files
+export type { WorkflowDefinition, WorkflowNode };
 
 const { executeNode } = proxyActivities<typeof activities>({
     startToCloseTimeout: '10 minutes',
@@ -25,37 +29,16 @@ const {
     },
 });
 
-export interface WorkflowNode {
-    type: string;
-    name: string;
-    config: any;
-    position?: { x: number; y: number };
-}
-
-export interface WorkflowEdge {
-    id: string;
-    source: string;
-    target: string;
-    sourceHandle?: string;
-}
-
-export interface WorkflowDefinition {
-    name?: string;
-    nodes: Record<string, WorkflowNode>;
-    edges: WorkflowEdge[];
-    entryPoint?: string;
-}
-
 export interface OrchestratorInput {
     executionId: string;
     workflowDefinition: WorkflowDefinition;
-    inputs?: Record<string, any>;
+    inputs?: JsonObject;
     userId?: string;
 }
 
 export interface OrchestratorResult {
     success: boolean;
-    outputs: Record<string, any>;
+    outputs: JsonObject;
     error?: string;
 }
 
@@ -105,7 +88,7 @@ export async function orchestratorWorkflow(input: OrchestratorInput): Promise<Or
     console.log(`[Orchestrator] Start nodes: ${startNodes.map(([id]) => id).join(', ')}`);
 
     // Execution context - stores all node outputs
-    const context: Record<string, any> = { ...inputs };
+    const context: JsonObject = { ...inputs };
     const executed = new Set<string>();
     const errors: Record<string, string> = {};
     let completedNodeCount = 0;
@@ -154,10 +137,10 @@ export async function orchestratorWorkflow(input: OrchestratorInput): Promise<Or
         try {
             // Handle input nodes specially
             if (node.type === 'input') {
-                const inputName = node.config.inputName || 'input';
+                const inputName = typeof node.config.inputName === 'string' ? node.config.inputName : 'input';
                 const inputValue = inputs[inputName];
                 context[inputName] = inputValue;
-                console.log(`[Orchestrator] Input node ${nodeId}: ${inputName} = ${inputValue}`);
+                console.log(`[Orchestrator] Input node ${nodeId}: ${inputName} = ${JSON.stringify(inputValue)}`);
             } else {
                 // Execute the node using the activity
                 const result = await executeNode({
@@ -195,8 +178,8 @@ export async function orchestratorWorkflow(input: OrchestratorInput): Promise<Or
             for (const dependentId of dependents) {
                 await executeNodeAndDependents(dependentId);
             }
-        } catch (error: any) {
-            const errorMessage = error.message || 'Unknown error';
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
             console.error(`[Orchestrator] Node ${nodeId} failed: ${errorMessage}`);
             errors[nodeId] = errorMessage;
 
@@ -252,9 +235,9 @@ export async function orchestratorWorkflow(input: OrchestratorInput): Promise<Or
             success: true,
             outputs: context,
         };
-    } catch (error: any) {
-        console.error(`[Orchestrator] Workflow failed: ${error.message}`);
-        const errorMessage = error.message || 'Unknown error';
+    } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        console.error(`[Orchestrator] Workflow failed: ${errorMessage}`);
 
         // Emit execution failed event
         await emitExecutionFailed({

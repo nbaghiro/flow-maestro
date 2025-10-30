@@ -1,5 +1,5 @@
 import { EventEmitter as NodeEventEmitter } from "events";
-import { WebSocketEvent, WebSocketEventType } from "@flowmaestro/shared";
+import type { WebSocketEvent, WebSocketEventType, JsonObject, JsonValue } from "@flowmaestro/shared";
 
 type EventHandler = (event: WebSocketEvent) => void;
 
@@ -11,12 +11,12 @@ export class WorkflowEventEmitter {
         this.emitter.setMaxListeners(100); // Support many concurrent executions
     }
 
-    emit(type: WebSocketEventType, data: Record<string, any>): void {
-        const event: WebSocketEvent = {
+    emit(type: WebSocketEventType, data: JsonObject): void {
+        const event = {
             type,
             timestamp: Date.now(),
             ...data
-        };
+        } as WebSocketEvent;
 
         // Emit to specific execution listeners
         if (data.executionId) {
@@ -65,7 +65,7 @@ export class WorkflowEventEmitter {
         });
     }
 
-    emitExecutionCompleted(executionId: string, outputs: any, duration: number): void {
+    emitExecutionCompleted(executionId: string, outputs: JsonObject, duration: number): void {
         this.emit("execution:completed", {
             executionId,
             status: "completed",
@@ -79,7 +79,7 @@ export class WorkflowEventEmitter {
             executionId,
             status: "failed",
             error,
-            failedNodeId
+            ...(failedNodeId && { failedNodeId }),
         });
     }
 
@@ -92,13 +92,13 @@ export class WorkflowEventEmitter {
         });
     }
 
-    emitNodeCompleted(executionId: string, nodeId: string, output: any, duration: number, metadata?: any): void {
+    emitNodeCompleted(executionId: string, nodeId: string, output: JsonValue, duration: number, metadata?: JsonObject): void {
         this.emit("node:completed", {
             executionId,
             nodeId,
             output,
             duration,
-            metadata
+            ...(metadata && { metadata }),
         });
     }
 
@@ -128,13 +128,13 @@ export class WorkflowEventEmitter {
         });
     }
 
-    emitUserInputRequired(executionId: string, nodeId: string, prompt: string, inputType: string, validation?: any): void {
+    emitUserInputRequired(executionId: string, nodeId: string, prompt: string, inputType: string, validation?: JsonValue): void {
         this.emit("user:input:required", {
             executionId,
             nodeId,
             prompt,
             inputType,
-            validation
+            ...(validation && { validation }),
         });
     }
 

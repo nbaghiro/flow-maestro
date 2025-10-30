@@ -15,8 +15,8 @@ export function AIGenerateButton() {
         (state) => state.generateWorkflowFromAI
     );
 
-    const handleGenerate = async (prompt: string, credentialId: string) => {
-        await generateWorkflowFromAI(prompt, credentialId);
+    const handleGenerate = async (prompt: string, connectionId: string) => {
+        await generateWorkflowFromAI(prompt, connectionId);
     };
 
     return (

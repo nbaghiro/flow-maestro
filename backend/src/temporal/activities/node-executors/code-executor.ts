@@ -3,6 +3,7 @@ import { spawn } from 'child_process';
 import { writeFile, unlink } from 'fs/promises';
 import * as path from 'path';
 import * as os from 'os';
+import type { JsonObject, JsonValue } from '@flowmaestro/shared';
 
 export interface CodeNodeConfig {
     language: 'javascript' | 'python';
@@ -21,7 +22,7 @@ export interface CodeNodeConfig {
 
 export interface CodeNodeResult {
     language: string;
-    output: any; // Return value from code
+    output: JsonValue; // Return value from code
     stdout?: string; // Console output
     stderr?: string; // Error output
     logs?: string[]; // Collected logs
@@ -38,8 +39,8 @@ export interface CodeNodeResult {
  */
 export async function executeCodeNode(
     config: CodeNodeConfig,
-    context: Record<string, any>
-): Promise<CodeNodeResult> {
+    context: JsonObject
+): Promise<JsonObject> {
     const startTime = Date.now();
 
     console.log(`[Code] Executing ${config.language} code`);
@@ -67,10 +68,10 @@ export async function executeCodeNode(
     console.log(`[Code] Execution completed in ${result.metadata.executionTime}ms`);
 
     if (config.outputVariable) {
-        return { [config.outputVariable]: result } as any;
+        return { [config.outputVariable]: result } as unknown as JsonObject;
     }
 
-    return result;
+    return result as unknown as JsonObject;
 }
 
 /**
@@ -78,28 +79,29 @@ export async function executeCodeNode(
  */
 async function executeJavaScript(
     config: CodeNodeConfig,
-    context: Record<string, any>
+    context: JsonObject
 ): Promise<CodeNodeResult> {
     const logs: string[] = [];
 
     // Create sandbox with input variables and safe console
-    const sandbox: Record<string, any> = {
+    // Note: sandbox can contain functions (console methods) which aren't JsonValue
+    const sandbox: Record<string, unknown> = {
         console: {
-            log: (...args: any[]) => {
+            log: (...args: unknown[]) => {
                 const message = args.map(arg =>
                     typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
                 ).join(' ');
                 logs.push(message);
                 console.log('[Code/JS]', message);
             },
-            error: (...args: any[]) => {
+            error: (...args: unknown[]) => {
                 const message = args.map(arg =>
                     typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
                 ).join(' ');
                 logs.push(`ERROR: ${message}`);
                 console.error('[Code/JS]', message);
             },
-            warn: (...args: any[]) => {
+            warn: (...args: unknown[]) => {
                 const message = args.map(arg =>
                     typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
                 ).join(' ');
@@ -147,9 +149,10 @@ async function executeJavaScript(
                 executionTime: 0, // Will be set by caller
             },
         };
-    } catch (error: any) {
-        console.error('[Code/JS] Execution failed:', error.message);
-        throw new Error(`JavaScript execution failed: ${error.message}`);
+    } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        console.error('[Code/JS] Execution failed:', errorMessage);
+        throw new Error(`JavaScript execution failed: ${errorMessage}`);
     }
 }
 
@@ -158,7 +161,7 @@ async function executeJavaScript(
  */
 async function executePython(
     config: CodeNodeConfig,
-    context: Record<string, any>
+    context: JsonObject
 ): Promise<CodeNodeResult> {
     // Create temporary file for Python code
     const tempDir = os.tmpdir();
@@ -166,7 +169,7 @@ async function executePython(
 
     try {
         // Prepare input variables as JSON
-        const inputVars: Record<string, any> = {};
+        const inputVars: JsonObject = {};
         if (config.inputVariables) {
             for (const varName of config.inputVariables) {
                 if (varName in context) {
@@ -227,7 +230,7 @@ if 'result' in globals():
 
                 if (code === 0) {
                     // Extract output if present
-                    let output: any = null;
+                    let output: JsonValue = null;
                     const outputMarker = '__FLOWMAESTRO_OUTPUT__';
                     const markerIndex = stdout.indexOf(outputMarker);
 
@@ -270,7 +273,7 @@ if 'result' in globals():
                 }
             });
         });
-    } catch (error: any) {
+    } catch (error: unknown) {
         // Ensure cleanup on error
         await unlink(tempFile).catch(() => {});
         throw error;

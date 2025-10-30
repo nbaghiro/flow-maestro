@@ -2,6 +2,8 @@
  * Trigger Types and Configurations for Test Scenarios
  */
 
+import type { JsonObject, JsonValue } from "@flowmaestro/shared";
+import type { LucideIcon } from "lucide-react";
 import {
     MessageSquare,
     Webhook,
@@ -33,7 +35,7 @@ export interface TriggerTypeMetadata {
     value: TriggerType;
     label: string;
     description: string;
-    icon: any;
+    icon: LucideIcon;
 }
 
 /**
@@ -104,7 +106,7 @@ export interface ChatMessage {
  */
 export interface ChatTriggerConfig {
     conversationFlow: ChatMessage[];
-    context?: Record<string, any>;
+    context?: JsonObject;
 }
 
 /**
@@ -113,7 +115,7 @@ export interface ChatTriggerConfig {
 export interface WebhookTriggerConfig {
     method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
     headers: Record<string, string>;
-    body: any;
+    body: JsonValue;
     queryParams?: Record<string, string>;
 }
 
@@ -123,7 +125,7 @@ export interface WebhookTriggerConfig {
 export interface APITriggerConfig {
     endpoint: string;
     method: string;
-    parameters: Record<string, any>;
+    parameters: JsonObject;
     authentication?: {
         type: "none" | "bearer" | "basic" | "api_key";
         token?: string;
@@ -138,8 +140,8 @@ export interface APITriggerConfig {
  * Form trigger configuration
  */
 export interface FormTriggerConfig {
-    fields: Record<string, any>;
-    submissionContext?: Record<string, any>;
+    fields: JsonObject;
+    submissionContext?: JsonObject;
 }
 
 /**
@@ -148,7 +150,7 @@ export interface FormTriggerConfig {
 export interface ScheduledTriggerConfig {
     simulatedTime: string; // ISO date string
     timezone: string;
-    mockExternalData?: Record<string, any>;
+    mockExternalData?: JsonObject;
 }
 
 /**
@@ -161,7 +163,7 @@ export interface FileUploadTriggerConfig {
         size: number;
         mockContent: string | ArrayBuffer;
     }>;
-    metadata?: Record<string, any>;
+    metadata?: JsonObject;
 }
 
 /**
@@ -169,7 +171,7 @@ export interface FileUploadTriggerConfig {
  */
 export interface EventTriggerConfig {
     eventType: string;
-    payload: any;
+    payload: JsonValue;
     source: string;
     timestamp?: string;
 }
@@ -178,7 +180,7 @@ export interface EventTriggerConfig {
  * Manual trigger configuration
  */
 export interface ManualTriggerConfig {
-    inputs: Record<string, any>;
+    inputs: JsonObject;
 }
 
 /**

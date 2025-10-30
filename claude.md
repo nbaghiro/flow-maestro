@@ -15,10 +15,56 @@ This document provides coding standards, architectural context, and best practic
 
 ### TypeScript Standards
 - **No `any` type**: Always use proper typing. Use `unknown` if type is truly unknown, then narrow with type guards
-- **Strict Mode**: TypeScript strict mode is enabled across all workspaces
+- **Strict Mode**: TypeScript strict mode is enabled across all workspaces with explicit flags:
+  - `noImplicitAny: true` - No implicit any types allowed
+  - `strictNullChecks: true` - Null and undefined must be explicitly handled
+  - `strictFunctionTypes: true` - Function types are checked strictly
+  - `strictBindCallApply: true` - bind, call, apply are type-checked
+  - `strictPropertyInitialization: true` - Class properties must be initialized
+  - `noImplicitThis: true` - `this` expressions must have explicit types
 - **Type Definitions**: Export interfaces and types for shared data structures
 - **Type Imports**: Use `import type` for type-only imports
 - **Generic Constraints**: Use proper generic constraints instead of `any`
+- **Compilation Checks**: ALWAYS run TypeScript compiler before committing changes
+
+### Pre-Commit Type Checking Protocol
+
+**CRITICAL**: Before committing any code changes, you MUST:
+
+1. **Run TypeScript Compiler** to check for errors:
+   ```bash
+   # Check all packages
+   npx tsc --noEmit
+
+   # Or check specific packages
+   cd backend && npx tsc --noEmit
+   cd frontend && npx tsc --noEmit
+   cd shared && npx tsc --noEmit
+   ```
+
+2. **Fix ALL Type Errors**: Do not commit code with TypeScript errors. Common issues:
+   - Implicit `any` types - add explicit type annotations
+   - Missing return types - add explicit return type declarations
+   - Undefined/null access - add null checks or optional chaining
+   - Type mismatches - ensure types align correctly
+   - Missing imports - import types from shared package
+
+3. **Address Type Warnings**: Fix warnings about:
+   - Unused variables or imports (remove or prefix with `_`)
+   - Unreachable code
+   - Deprecated API usage
+   - Type assertion usage (prefer type guards)
+
+4. **Run Linter** to catch additional issues:
+   ```bash
+   npm run lint
+   ```
+
+**Why This Matters**:
+- Type errors in production can cause runtime failures
+- Implicit `any` bypasses type safety and defeats the purpose of TypeScript
+- Type warnings indicate potential bugs or code quality issues
+- Consistent type checking prevents technical debt accumulation
 
 ### Examples
 

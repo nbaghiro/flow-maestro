@@ -72,7 +72,7 @@ export const workflowIdParamSchema = z.object({
 // Generate workflow request (AI generation)
 export const generateWorkflowSchema = z.object({
     prompt: z.string().min(10).max(2000),
-    credentialId: z.string().uuid()
+    connectionId: z.string().uuid()
 });
 
 export type CreateWorkflowRequest = z.infer<typeof createWorkflowSchema>;

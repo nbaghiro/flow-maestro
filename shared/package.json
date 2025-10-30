@@ -2,14 +2,10 @@
     "name": "@flowmaestro/shared",
     "version": "1.0.0",
     "description": "Shared types and utilities for FlowMaestro",
-    "main": "dist/index.js",
-    "types": "dist/index.d.ts",
+    "main": "src/index.ts",
+    "types": "src/index.ts",
     "exports": {
-        ".": {
-            "types": "./dist/index.d.ts",
-            "require": "./dist/index.js",
-            "import": "./dist/index.js"
-        }
+        ".": "./src/index.ts"
     },
     "scripts": {
         "build": "tsc",

@@ -2,6 +2,7 @@ import OpenAI from 'openai';
 import Anthropic from '@anthropic-ai/sdk';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { CohereClient } from 'cohere-ai';
+import type { JsonObject } from '@flowmaestro/shared';
 import { interpolateVariables } from './utils';
 import { ConnectionRepository } from '../../../storage/repositories/ConnectionRepository';
 import type { ApiKeyData } from '../../../storage/models/Connection';
@@ -21,23 +22,28 @@ const RETRY_CONFIG = {
 /**
  * Check if error is retryable (overload, rate limit, or temporary server errors)
  */
-function isRetryableError(error: any): boolean {
-    // HTTP status codes that should be retried
+function isRetryableError(error: unknown): boolean {
+    // Type guard: check if error is an object
+    if (typeof error !== 'object' || error === null) {
+        return false;
+    }
+
+    const err = error as Record<string, unknown>;
     const retryableStatusCodes = [429, 503, 529];
 
     // Check status code
-    if (error.status && retryableStatusCodes.includes(error.status)) {
+    if (typeof err.status === 'number' && retryableStatusCodes.includes(err.status)) {
         return true;
     }
 
     // Check error type for Anthropic SDK
-    if (error.type && ['overloaded_error', 'rate_limit_error'].includes(error.type)) {
+    if (typeof err.type === 'string' && ['overloaded_error', 'rate_limit_error'].includes(err.type)) {
         return true;
     }
 
     // Check for common error messages
-    if (error.message) {
-        const message = error.message.toLowerCase();
+    if (typeof err.message === 'string') {
+        const message = err.message.toLowerCase();
         if (message.includes('overloaded') ||
             message.includes('rate limit') ||
             message.includes('too many requests')) {
@@ -55,12 +61,12 @@ async function withRetry<T>(
     fn: () => Promise<T>,
     context: string
 ): Promise<T> {
-    let lastError: any;
+    let lastError: unknown;
 
     for (let attempt = 0; attempt <= RETRY_CONFIG.maxRetries; attempt++) {
         try {
             return await fn();
-        } catch (error: any) {
+        } catch (error: unknown) {
             lastError = error;
 
             // Don't retry if it's not a retryable error
@@ -80,8 +86,13 @@ async function withRetry<T>(
                 RETRY_CONFIG.maxDelayMs
             );
 
+            // Safely extract error details
+            const err = error as Record<string, unknown>;
+            const errorCode = err.status || err.type || 'unknown';
+            const errorMessage = typeof err.message === 'string' ? err.message : 'Unknown error';
+
             console.warn(
-                `[LLM] ${context} - Retryable error (${error.status || error.type}): ${error.message}. ` +
+                `[LLM] ${context} - Retryable error (${errorCode}): ${errorMessage}. ` +
                 `Retrying in ${delay}ms (attempt ${attempt + 1}/${RETRY_CONFIG.maxRetries})`
             );
 
@@ -157,8 +168,8 @@ async function getApiKey(connectionId: string | undefined, provider: string, env
  */
 export async function executeLLMNode(
     config: LLMNodeConfig,
-    context: Record<string, any>
-): Promise<LLMNodeResult> {
+    context: JsonObject
+): Promise<JsonObject> {
     // Interpolate variables in prompts
     const systemPrompt = config.systemPrompt
         ? interpolateVariables(config.systemPrompt, context)
@@ -189,10 +200,10 @@ export async function executeLLMNode(
 
     // Wrap result in outputVariable if specified
     if (config.outputVariable) {
-        return { [config.outputVariable]: result } as any;
+        return { [config.outputVariable]: result } as unknown as JsonObject;
     }
 
-    return result;
+    return result as unknown as JsonObject;
 }
 
 async function executeOpenAI(
@@ -246,7 +257,7 @@ async function executeAnthropic(
 
     return withRetry(async () => {
         const response = await anthropic.messages.create({
-            model: config.model,
+            model:  config.model,
             max_tokens: config.maxTokens ?? 1000,
             temperature: config.temperature ?? 0.7,
             system: systemPrompt,

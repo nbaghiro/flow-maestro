@@ -1,3 +1,4 @@
+import type { JsonObject, JsonValue } from "@flowmaestro/shared";
 import { redisEventBus } from "../../shared/events/RedisEventBus";
 
 /**
@@ -24,7 +25,7 @@ export interface EmitExecutionProgressInput {
 
 export interface EmitExecutionCompletedInput {
     executionId: string;
-    outputs: Record<string, any>;
+    outputs: JsonObject;
     duration: number;
 }
 
@@ -44,9 +45,9 @@ export interface EmitNodeStartedInput {
 export interface EmitNodeCompletedInput {
     executionId: string;
     nodeId: string;
-    output: any;
+    output: JsonValue;
     duration: number;
-    metadata?: any;
+    metadata?: JsonObject;
 }
 
 export interface EmitNodeFailedInput {
@@ -110,7 +111,7 @@ export async function emitExecutionFailed(input: EmitExecutionFailedInput): Prom
         executionId,
         status: "failed",
         error,
-        failedNodeId,
+        ...(failedNodeId && { failedNodeId }),
     });
 }
 
@@ -141,7 +142,7 @@ export async function emitNodeCompleted(input: EmitNodeCompletedInput): Promise<
         nodeId,
         output,
         duration,
-        metadata,
+        ...(metadata && { metadata }),
     });
 }
 

@@ -381,7 +381,7 @@ const ALL_PROVIDERS: Provider[] = [
 ];
 
 /**
- * Provider Card Component - matches the old IntegrationCard style
+ * Provider Card Component
  */
 interface ProviderCardProps {
     provider: Provider;

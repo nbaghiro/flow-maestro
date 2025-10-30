@@ -1,4 +1,5 @@
 import OpenAI from 'openai';
+import type { JsonObject, JsonValue } from '@flowmaestro/shared';
 import { CohereClient } from 'cohere-ai';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { interpolateVariables } from './utils';
@@ -38,13 +39,13 @@ export interface EmbeddingsNodeResult {
  */
 export async function executeEmbeddingsNode(
     config: EmbeddingsNodeConfig,
-    context: Record<string, any>
-): Promise<EmbeddingsNodeResult> {
+    context: JsonObject
+): Promise<JsonObject> {
     const startTime = Date.now();
 
     console.log(`[Embeddings] Provider: ${config.provider}`);
 
-    let result: EmbeddingsNodeResult;
+    let result: JsonObject;
 
     switch (config.provider) {
         case 'openai':
@@ -65,17 +66,17 @@ export async function executeEmbeddingsNode(
 
     const processingTime = Date.now() - startTime;
     result.metadata = {
-        ...result.metadata,
+        ...(result.metadata as JsonObject),
         processingTime,
     };
 
-    console.log(`[Embeddings] Generated ${result.embeddings.length} embeddings in ${processingTime}ms`);
+    console.log(`[Embeddings] Generated ${(result.embeddings as JsonValue[])?.length || 0} embeddings in ${processingTime}ms`);
 
     if (config.outputVariable) {
-        return { [config.outputVariable]: result } as any;
+        return { [config.outputVariable]: result } as unknown as JsonObject;
     }
 
-    return result;
+    return result as unknown as JsonObject;
 }
 
 /**
@@ -83,8 +84,8 @@ export async function executeEmbeddingsNode(
  */
 async function executeOpenAI(
     config: EmbeddingsNodeConfig,
-    context: Record<string, any>
-): Promise<EmbeddingsNodeResult> {
+    context: JsonObject
+): Promise<JsonObject> {
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
         throw new Error('OPENAI_API_KEY environment variable is not set');
@@ -133,7 +134,7 @@ async function executeOpenAI(
             tokensUsed: totalTokens,
             processingTime: 0,
         },
-    };
+    } as unknown as JsonObject;
 }
 
 /**
@@ -141,8 +142,8 @@ async function executeOpenAI(
  */
 async function executeCohere(
     config: EmbeddingsNodeConfig,
-    context: Record<string, any>
-): Promise<EmbeddingsNodeResult> {
+    context: JsonObject
+): Promise<JsonObject> {
     const apiKey = process.env.COHERE_API_KEY;
     if (!apiKey) {
         throw new Error('COHERE_API_KEY environment variable is not set');
@@ -177,7 +178,7 @@ async function executeCohere(
             inputCount: interpolatedInputs.length,
             processingTime: 0,
         },
-    };
+    } as unknown as JsonObject;
 }
 
 /**
@@ -185,8 +186,8 @@ async function executeCohere(
  */
 async function executeGoogle(
     config: EmbeddingsNodeConfig,
-    context: Record<string, any>
-): Promise<EmbeddingsNodeResult> {
+    context: JsonObject
+): Promise<JsonObject> {
     const apiKey = process.env.GOOGLE_API_KEY;
     if (!apiKey) {
         throw new Error('GOOGLE_API_KEY environment variable is not set');
@@ -222,7 +223,7 @@ async function executeGoogle(
             inputCount: interpolatedInputs.length,
             processingTime: 0,
         },
-    };
+    } as unknown as JsonObject;
 }
 
 /**

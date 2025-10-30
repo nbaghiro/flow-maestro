@@ -1,4 +1,48 @@
-// Workflow DSL Types
+// ============================================================================
+// UTILITY TYPES
+// ============================================================================
+
+/**
+ * Represents any value that can be safely serialized to JSON.
+ * Use this instead of `any` when dealing with JSON-serializable data.
+ */
+export type JsonValue =
+    | string
+    | number
+    | boolean
+    | null
+    | JsonValue[]
+    | { [key: string]: JsonValue };
+
+/**
+ * Represents a JSON object (key-value pairs).
+ */
+export type JsonObject = { [key: string]: JsonValue };
+
+/**
+ * Represents a JSON array.
+ */
+export type JsonArray = JsonValue[];
+
+/**
+ * Type guard to check if a value is a valid JsonValue.
+ */
+export function isJsonValue(value: unknown): value is JsonValue {
+    if (value === null) return true;
+    if (typeof value === "string") return true;
+    if (typeof value === "number") return isFinite(value);
+    if (typeof value === "boolean") return true;
+    if (Array.isArray(value)) return value.every(isJsonValue);
+    if (typeof value === "object") {
+        return Object.values(value).every(isJsonValue);
+    }
+    return false;
+}
+
+// ============================================================================
+// WORKFLOW DSL TYPES
+// ============================================================================
+
 export interface WorkflowDefinition {
     id?: string;
     name: string;
@@ -13,7 +57,7 @@ export interface WorkflowDefinition {
 export interface WorkflowNode {
     type: string;
     name: string;
-    config: Record<string, any>;
+    config: JsonObject;
     position: { x: number; y: number };
     onError?: ErrorHandlingConfig;
 }
@@ -33,7 +77,7 @@ export interface WorkflowSettings {
 
 export interface ErrorHandlingConfig {
     strategy: "continue" | "fallback" | "goto" | "fail";
-    fallbackValue?: any;
+    fallbackValue?: JsonValue;
     gotoNode?: string;
 }
 
@@ -45,9 +89,9 @@ export interface Execution {
     id: string;
     workflowId: string;
     status: ExecutionStatus;
-    inputs?: Record<string, any>;
-    outputs?: Record<string, any>;
-    currentState?: any;
+    inputs?: JsonObject;
+    outputs?: JsonObject;
+    currentState?: JsonValue;
     error?: string;
     startedAt?: Date;
     completedAt?: Date;
@@ -58,17 +102,20 @@ export interface ExecutionContext {
     executionId: string;
     workflowId: string;
     userId: string;
-    variables: Record<string, any>;
+    variables: JsonObject;
     nodeStatus: Record<string, NodeStatus>;
-    metadata: Record<string, any>;
+    metadata: JsonObject;
 }
 
-// Node Types
+// ============================================================================
+// NODE TYPES
+// ============================================================================
+
 export interface NodeExecutionResult {
     success: boolean;
-    output?: any;
+    output?: JsonValue;
     error?: string;
-    metadata?: Record<string, any>;
+    metadata?: JsonObject;
 }
 
 export interface NodeMetadata {
@@ -99,13 +146,16 @@ export interface NodeConfigField {
     options?: Array<{ label: string; value: string }>;
 }
 
-// Integration Types
+// ============================================================================
+// INTEGRATION TYPES
+// ============================================================================
+
 export interface Integration {
     id: string;
     name: string;
     type: string;
-    config: Record<string, any>;
-    credentials: Record<string, any>;
+    config: JsonObject;
+    credentials: JsonObject;
     userId: string;
     enabled: boolean;
     createdAt: Date;
@@ -132,18 +182,21 @@ export interface IntegrationConfig {
         };
     };
     nodeTypes: NodeMetadata[];
-    configSchema: Record<string, any>;
+    configSchema: JsonObject;
 }
 
-// API Types
-export interface ApiResponse<T = any> {
+// ============================================================================
+// API TYPES
+// ============================================================================
+
+export interface ApiResponse<T = JsonValue> {
     success: boolean;
     data?: T;
     error?: string;
     message?: string;
 }
 
-export interface PaginatedResponse<T = any> {
+export interface PaginatedResponse<T = JsonValue> {
     items: T[];
     total: number;
     page: number;
@@ -151,7 +204,10 @@ export interface PaginatedResponse<T = any> {
     hasMore: boolean;
 }
 
-// WebSocket Event Types
+// ============================================================================
+// WEBSOCKET EVENT TYPES
+// ============================================================================
+
 export type WebSocketEventType =
     | "connection:established"
     | "execution:started"
@@ -169,8 +225,32 @@ export type WebSocketEventType =
     | "kb:document:completed"
     | "kb:document:failed";
 
-export interface WebSocketEvent {
+/**
+ * Base WebSocket event interface.
+ * Use discriminated unions for specific event types.
+ */
+export interface BaseWebSocketEvent {
     type: WebSocketEventType;
     timestamp: number;
-    [key: string]: any;
 }
+
+/**
+ * Specific WebSocket event types with proper payloads.
+ * Using intersection types to allow additional properties while maintaining type safety.
+ */
+export type WebSocketEvent =
+    | ({ type: "connection:established"; timestamp: number; userId: string } & JsonObject)
+    | ({ type: "execution:started"; timestamp: number; executionId: string; workflowId?: string; workflowName?: string; totalNodes?: number } & JsonObject)
+    | ({ type: "execution:progress"; timestamp: number; executionId: string; progress?: number; completed?: number; total?: number; percentage?: number; currentNode?: string } & JsonObject)
+    | ({ type: "execution:completed"; timestamp: number; executionId: string; outputs?: JsonObject; duration?: number; status?: string } & JsonObject)
+    | ({ type: "execution:failed"; timestamp: number; executionId: string; error: string; failedNode?: string; failedNodeId?: string; status?: string } & JsonObject)
+    | ({ type: "node:started"; timestamp: number; executionId: string; nodeId: string; nodeName?: string; nodeType?: string } & JsonObject)
+    | ({ type: "node:completed"; timestamp: number; executionId: string; nodeId: string; output?: JsonValue; duration?: number; metadata?: JsonObject } & JsonObject)
+    | ({ type: "node:failed"; timestamp: number; executionId: string; nodeId: string; error: string; willRetry?: boolean } & JsonObject)
+    | ({ type: "node:retry"; timestamp: number; executionId: string; nodeId: string; attempt: number; maxAttempts: number } & JsonObject)
+    | ({ type: "node:stream"; timestamp: number; executionId: string; nodeId: string; chunk: string; isComplete: boolean } & JsonObject)
+    | ({ type: "user:input:required"; timestamp: number; executionId: string; nodeId: string; prompt: string; inputType: string } & JsonObject)
+    | ({ type: "user:input:response"; timestamp: number; executionId: string; nodeId: string; response: JsonValue } & JsonObject)
+    | ({ type: "kb:document:processing"; timestamp: number; documentId: string; fileName: string; progress: number } & JsonObject)
+    | ({ type: "kb:document:completed"; timestamp: number; documentId: string; fileName: string; chunksCreated: number } & JsonObject)
+    | ({ type: "kb:document:failed"; timestamp: number; documentId: string; fileName: string; error: string } & JsonObject);

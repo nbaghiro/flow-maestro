@@ -1,3 +1,4 @@
+import type { JsonObject, JsonValue } from '@flowmaestro/shared';
 import { interpolateVariables } from './utils';
 
 export interface EchoNodeConfig {
@@ -24,8 +25,8 @@ export interface EchoNodeConfig {
 
 export interface EchoNodeResult {
     mode: string;
-    output: any;
-    context?: Record<string, any>;
+    output: JsonValue;
+    context?: JsonObject;
     timestamp?: string;
     metadata?: {
         executionTime: number;
@@ -37,13 +38,13 @@ export interface EchoNodeResult {
  */
 export async function executeEchoNode(
     config: EchoNodeConfig,
-    context: Record<string, any>
-): Promise<EchoNodeResult> {
+    context: JsonObject
+): Promise<JsonObject> {
     const startTime = Date.now();
 
     console.log(`[Echo] Mode: ${config.mode}`);
 
-    let output: any;
+    let output: JsonValue;
 
     switch (config.mode) {
         case 'simple':
@@ -123,8 +124,8 @@ export async function executeEchoNode(
     };
 
     if (config.outputVariable) {
-        return { [config.outputVariable]: result } as any;
+        return { [config.outputVariable]: result } as unknown as JsonObject;
     }
 
-    return result;
+    return result as unknown as JsonObject;
 }

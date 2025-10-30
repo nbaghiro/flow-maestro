@@ -1,4 +1,5 @@
 import axios from 'axios';
+import type { JsonObject } from '@flowmaestro/shared';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { interpolateVariables } from './utils';
@@ -32,8 +33,8 @@ export interface FileOperationsNodeResult {
  */
 export async function executeFileOperationsNode(
     config: FileOperationsNodeConfig,
-    context: Record<string, any>
-): Promise<FileOperationsNodeResult> {
+    context: JsonObject
+): Promise<JsonObject> {
     console.log(`[FileOps] Operation: ${config.operation}`);
 
     let result: FileOperationsNodeResult;
@@ -60,16 +61,16 @@ export async function executeFileOperationsNode(
 
     // Wrap result in outputVariable if specified
     if (config.outputVariable) {
-        return { [config.outputVariable]: result };
+        return { [config.outputVariable]: result } as unknown as JsonObject;
     }
 
-    return result;
+    return result as unknown as JsonObject;
 }
 
 async function readFile(
     config: FileOperationsNodeConfig,
-    context: Record<string, any>
-): Promise<FileOperationsNodeResult> {
+    context: JsonObject
+): Promise<JsonObject> {
     const filePath = interpolateVariables(config.filePath || '', context);
 
     if (config.fileSource === 'url') {
@@ -81,7 +82,7 @@ async function readFile(
             metadata: {
                 size: response.data.length
             }
-        };
+        } as unknown as JsonObject;
     } else {
         // Read from local filesystem
         console.log(`[FileOps] Reading from path: ${filePath}`);
@@ -93,14 +94,14 @@ async function readFile(
             metadata: {
                 size: stats.size
             }
-        };
+        } as unknown as JsonObject;
     }
 }
 
 async function writeFile(
     config: FileOperationsNodeConfig,
-    context: Record<string, any>
-): Promise<FileOperationsNodeResult> {
+    context: JsonObject
+): Promise<JsonObject> {
     const content = interpolateVariables(config.content || '', context);
     const outputPath = interpolateVariables(config.outputPath || '', context);
 
@@ -120,13 +121,13 @@ async function writeFile(
             size: stats.size,
             format: config.format
         }
-    };
+    } as unknown as JsonObject;
 }
 
 async function parsePDF(
     config: FileOperationsNodeConfig,
-    context: Record<string, any>
-): Promise<FileOperationsNodeResult> {
+    context: JsonObject
+): Promise<JsonObject> {
     let buffer: Buffer;
 
     if (config.fileSource === 'url') {
@@ -170,28 +171,34 @@ async function parsePDF(
             pages: data.numpages,
             format: 'pdf'
         }
-    };
+    } as unknown as JsonObject;
 }
 
 async function parseCSV(
     config: FileOperationsNodeConfig,
-    context: Record<string, any>
-): Promise<FileOperationsNodeResult> {
+    context: JsonObject
+): Promise<JsonObject> {
     // First read the file
     const fileResult = await readFile(config, context);
-    const csvText = fileResult.content || '';
+    const content = fileResult.content;
 
-    // Simple CSV parsing (for production, use a library like papaparse)
-    const lines = csvText.split('\n').filter(line => line.trim());
-    if (lines.length === 0) {
-        return { content: JSON.stringify([]) };
+    if (typeof content !== 'string') {
+        throw new Error('CSV content must be a string');
     }
 
-    const headers = lines[0].split(',').map(h => h.trim());
-    const rows = lines.slice(1).map(line => {
-        const values = line.split(',').map(v => v.trim());
+    const csvText = content || '';
+
+    // Simple CSV parsing (for production, use a library like papaparse)
+    const lines = csvText.split('\n').filter((line: string) => line.trim());
+    if (lines.length === 0) {
+        return { content: JSON.stringify([]) } as unknown as JsonObject;
+    }
+
+    const headers = lines[0].split(',').map((h: string) => h.trim());
+    const rows = lines.slice(1).map((line: string) => {
+        const values = line.split(',').map((v: string) => v.trim());
         const obj: Record<string, string> = {};
-        headers.forEach((header, i) => {
+        headers.forEach((header: string, i: number) => {
             obj[header] = values[i] || '';
         });
         return obj;
@@ -203,15 +210,21 @@ async function parseCSV(
             size: csvText.length,
             format: 'csv'
         }
-    };
+    } as unknown as JsonObject;
 }
 
 async function parseJSONFile(
     config: FileOperationsNodeConfig,
-    context: Record<string, any>
-): Promise<FileOperationsNodeResult> {
+    context: JsonObject
+): Promise<JsonObject> {
     const fileResult = await readFile(config, context);
-    const jsonText = fileResult.content || '';
+    const content = fileResult.content;
+
+    if (typeof content !== 'string') {
+        throw new Error('JSON content must be a string');
+    }
+
+    const jsonText = content || '';
 
     try {
         const parsed = JSON.parse(jsonText);
@@ -221,7 +234,7 @@ async function parseJSONFile(
                 size: jsonText.length,
                 format: 'json'
             }
-        };
+        } as unknown as JsonObject;
     } catch (error) {
         throw new Error(`Invalid JSON in file: ${error}`);
     }

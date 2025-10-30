@@ -15,7 +15,6 @@ interface NewConnectionDialogProps {
     supportsApiKey?: boolean;
 }
 
-type AuthMethod = "oauth2" | "api_key";
 type DialogStep = "method-selection" | "api-key-form";
 
 /**
@@ -86,7 +85,7 @@ export function NewConnectionDialog({
     const handleOAuthSelect = async () => {
         setError(null);
         try {
-            const connection = await initiateOAuth(provider);
+            await initiateOAuth(provider);
             if (onSuccess) onSuccess();
             handleClose();
         } catch (err) {

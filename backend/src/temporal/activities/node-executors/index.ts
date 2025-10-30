@@ -1,3 +1,4 @@
+import type { JsonObject, JsonValue } from '@flowmaestro/shared';
 import { executeHTTPNode, HTTPNodeConfig, HTTPNodeResult } from './http-executor';
 import { executeLLMNode, LLMNodeConfig, LLMNodeResult } from './llm-executor';
 import { executeTransformNode, TransformNodeConfig, TransformNodeResult } from './transform-executor';
@@ -24,8 +25,8 @@ export type NodeConfig =
     | { type: 'fileOperations'; config: FileOperationsNodeConfig }
     | { type: 'variable'; config: VariableNodeConfig }
     | { type: 'output'; config: OutputNodeConfig }
-    | { type: 'input'; config: any } // Input is handled differently
-    | { type: string; config: any }; // Other node types not yet implemented
+    | { type: 'input'; config: JsonObject } // Input is handled differently
+    | { type: string; config: JsonObject }; // Other node types not yet implemented
 
 export type NodeResult =
     | HTTPNodeResult
@@ -33,46 +34,47 @@ export type NodeResult =
     | TransformNodeResult
     | FileOperationsNodeResult
     | VariableNodeResult
-    | { outputs: Record<string, any> };
+    | { outputs: JsonObject };
 
 export interface ExecuteNodeInput {
     nodeType: string;
-    nodeConfig: any;
-    context: Record<string, any>;
-    globalStore?: Map<string, any>;
+    nodeConfig: JsonObject;
+    context: JsonObject;
+    globalStore?: Map<string, JsonValue>;
 }
 
 /**
  * Main node executor - routes to appropriate node type executor
  */
-export async function executeNode(input: ExecuteNodeInput): Promise<NodeResult> {
+export async function executeNode(input: ExecuteNodeInput): Promise<JsonObject> {
     const { nodeType, nodeConfig, context, globalStore } = input;
 
     console.log(`[NodeExecutor] Executing ${nodeType} node`);
 
     switch (nodeType) {
         case 'http':
-            return await executeHTTPNode(nodeConfig as HTTPNodeConfig, context);
+            return await executeHTTPNode(nodeConfig as unknown as HTTPNodeConfig, context);
 
         case 'llm':
-            return await executeLLMNode(nodeConfig as LLMNodeConfig, context);
+            return await executeLLMNode(nodeConfig as unknown as LLMNodeConfig, context);
 
         case 'transform':
-            return await executeTransformNode(nodeConfig as TransformNodeConfig, context);
+            return await executeTransformNode(nodeConfig as unknown as TransformNodeConfig, context);
 
         case 'fileOperations':
-            return await executeFileOperationsNode(nodeConfig as FileOperationsNodeConfig, context);
+            return await executeFileOperationsNode(nodeConfig as unknown as FileOperationsNodeConfig, context);
 
         case 'variable':
-            return await executeVariableNode(nodeConfig as VariableNodeConfig, context, globalStore);
+            return await executeVariableNode(nodeConfig as unknown as VariableNodeConfig, context, globalStore);
 
         case 'output':
-            return await executeOutputNode(nodeConfig as OutputNodeConfig, context);
+            return await executeOutputNode(nodeConfig as unknown as OutputNodeConfig, context);
 
         case 'input':
             // Input nodes are handled at workflow start
             console.log('[NodeExecutor] Input node - returning stored input value');
-            return { [nodeConfig.inputName]: context[nodeConfig.inputName] };
+            const inputName = typeof nodeConfig.inputName === 'string' ? nodeConfig.inputName : 'input';
+            return { [inputName]: context[inputName] } as unknown as JsonObject;
 
         case 'conditional':
         case 'switch':
@@ -81,28 +83,28 @@ export async function executeNode(input: ExecuteNodeInput): Promise<NodeResult> 
             throw new Error(`${nodeType} nodes must be handled by workflow orchestrator`);
 
         case 'echo':
-            return await executeEchoNode(nodeConfig as EchoNodeConfig, context);
+            return await executeEchoNode(nodeConfig as unknown as EchoNodeConfig, context);
 
         case 'wait':
-            return await executeWaitNode(nodeConfig as WaitNodeConfig, context);
+            return await executeWaitNode(nodeConfig as unknown as WaitNodeConfig, context);
 
         case 'code':
-            return await executeCodeNode(nodeConfig as CodeNodeConfig, context);
+            return await executeCodeNode(nodeConfig as unknown as CodeNodeConfig, context);
 
         case 'vision':
-            return await executeVisionNode(nodeConfig as VisionNodeConfig, context);
+            return await executeVisionNode(nodeConfig as unknown as VisionNodeConfig, context);
 
         case 'audio':
-            return await executeAudioNode(nodeConfig as AudioNodeConfig, context);
+            return await executeAudioNode(nodeConfig as unknown as AudioNodeConfig, context);
 
         case 'embeddings':
-            return await executeEmbeddingsNode(nodeConfig as EmbeddingsNodeConfig, context);
+            return await executeEmbeddingsNode(nodeConfig as unknown as EmbeddingsNodeConfig, context);
 
         case 'database':
-            return await executeDatabaseNode(nodeConfig as DatabaseNodeConfig, context);
+            return await executeDatabaseNode(nodeConfig as unknown as DatabaseNodeConfig, context);
 
         case 'integration':
-            return await executeIntegrationNode(nodeConfig as IntegrationNodeConfig, context);
+            return await executeIntegrationNode(nodeConfig as unknown as IntegrationNodeConfig, context);
 
         case 'knowledgeBaseQuery':
             return await executeKnowledgeBaseQueryNode({
