@@ -6,13 +6,13 @@
 import { useState, useEffect } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { X, Sparkles, Loader2, RefreshCw } from "lucide-react";
-import { useCredentialStore } from "../stores/credentialStore";
+import { useConnectionStore } from "../stores/connectionStore";
 import { getRandomExamplePrompts } from "../lib/example-prompts";
 
 interface AIGenerateDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    onGenerate: (prompt: string, credentialId: string) => Promise<void>;
+    onGenerate: (prompt: string, connectionId: string) => Promise<void>;
 }
 
 export function AIGenerateDialog({
@@ -21,32 +21,33 @@ export function AIGenerateDialog({
     onGenerate,
 }: AIGenerateDialogProps) {
     const [prompt, setPrompt] = useState("");
-    const [selectedCredentialId, setSelectedCredentialId] = useState("");
+    const [selectedConnectionId, setSelectedConnectionId] = useState("");
     const [isGenerating, setIsGenerating] = useState(false);
     const [error, setError] = useState("");
     const [examplePrompts, setExamplePrompts] = useState<string[]>(() => getRandomExamplePrompts(4));
 
-    const { credentials, fetchCredentials } = useCredentialStore();
+    const { connections, fetchConnections } = useConnectionStore();
 
-    // Filter credentials for LLM providers only
-    const llmCredentials = credentials.filter(cred =>
-        ['openai', 'anthropic', 'google', 'cohere'].includes(cred.provider.toLowerCase())
-        && cred.status === 'active'
+    // Filter connections for LLM providers only (API key or OAuth)
+    const llmConnections = connections.filter(conn =>
+        ['openai', 'anthropic', 'google', 'cohere'].includes(conn.provider.toLowerCase())
+        && conn.status === 'active'
+        && (conn.connection_method === 'api_key' || conn.connection_method === 'oauth2')
     );
 
-    // Fetch credentials when dialog opens
+    // Fetch connections when dialog opens
     useEffect(() => {
         if (open) {
-            fetchCredentials();
+            fetchConnections();
         }
-    }, [open, fetchCredentials]);
+    }, [open, fetchConnections]);
 
-    // Auto-select first credential if none selected
+    // Auto-select first connection if none selected
     useEffect(() => {
-        if (llmCredentials.length > 0 && !selectedCredentialId) {
-            setSelectedCredentialId(llmCredentials[0].id);
+        if (llmConnections.length > 0 && !selectedConnectionId) {
+            setSelectedConnectionId(llmConnections[0].id);
         }
-    }, [llmCredentials, selectedCredentialId]);
+    }, [llmConnections, selectedConnectionId]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -62,8 +63,8 @@ export function AIGenerateDialog({
             return;
         }
 
-        if (!selectedCredentialId) {
-            setError("Please select an LLM credential");
+        if (!selectedConnectionId) {
+            setError("Please select an LLM connection");
             return;
         }
 
@@ -71,11 +72,11 @@ export function AIGenerateDialog({
         setError("");
 
         try {
-            await onGenerate(prompt, selectedCredentialId);
+            await onGenerate(prompt, selectedConnectionId);
 
             // Reset and close on success
             setPrompt("");
-            setSelectedCredentialId(llmCredentials[0]?.id || "");
+            setSelectedConnectionId(llmConnections[0]?.id || "");
             setError("");
             onOpenChange(false);
         } catch (error) {
@@ -152,33 +153,33 @@ export function AIGenerateDialog({
                             </p>
                         </div>
 
-                        {/* LLM Credential Selector */}
+                        {/* LLM Connection Selector */}
                         <div>
                             <label className="block text-sm font-medium mb-1.5">
-                                LLM Credential
+                                LLM Connection
                             </label>
-                            {llmCredentials.length === 0 ? (
+                            {llmConnections.length === 0 ? (
                                 <div className="px-3 py-2 border border-border rounded-lg bg-muted/50">
                                     <p className="text-sm text-muted-foreground">
-                                        No LLM credentials found. Please add an OpenAI, Anthropic, Google, or Cohere credential first.
+                                        No LLM connections found. Please add an OpenAI, Anthropic, Google, or Cohere connection first.
                                     </p>
                                 </div>
                             ) : (
                                 <select
-                                    value={selectedCredentialId}
-                                    onChange={(e) => setSelectedCredentialId(e.target.value)}
+                                    value={selectedConnectionId}
+                                    onChange={(e) => setSelectedConnectionId(e.target.value)}
                                     className="w-full pl-3 pr-10 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                                     disabled={isGenerating}
                                 >
-                                    {llmCredentials.map((cred) => (
-                                        <option key={cred.id} value={cred.id}>
-                                            {cred.name} ({cred.provider})
+                                    {llmConnections.map((conn) => (
+                                        <option key={conn.id} value={conn.id}>
+                                            {conn.name} ({conn.provider})
                                         </option>
                                     ))}
                                 </select>
                             )}
                             <p className="text-xs text-muted-foreground mt-1">
-                                This credential will be used to generate the workflow structure
+                                This connection will be used to generate the workflow structure
                             </p>
                         </div>
 
@@ -223,7 +224,7 @@ export function AIGenerateDialog({
                             <button
                                 type="submit"
                                 className="px-4 py-2 text-sm font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                                disabled={isGenerating || llmCredentials.length === 0}
+                                disabled={isGenerating || llmConnections.length === 0}
                             >
                                 {isGenerating ? (
                                     <>

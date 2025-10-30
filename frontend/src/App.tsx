@@ -2,8 +2,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { Login } from "./pages/Login";
 import { Register } from "./pages/Register";
 import { Workflows } from "./pages/Workflows";
-import { Credentials } from "./pages/Credentials";
-import { Integrations } from "./pages/Integrations";
+import { Connections } from "./pages/Connections";
 import { Templates } from "./pages/Templates";
 import { Settings } from "./pages/Settings";
 import { Account } from "./pages/Account";
@@ -30,8 +29,7 @@ function App() {
                 }
             >
                 <Route index element={<Workflows />} />
-                <Route path="credentials" element={<Credentials />} />
-                <Route path="integrations" element={<Integrations />} />
+                <Route path="connections" element={<Connections />} />
                 <Route path="knowledge-bases" element={<KnowledgeBaseList />} />
                 <Route path="knowledge-bases/:id" element={<KnowledgeBaseDetail />} />
                 <Route path="templates" element={<Templates />} />

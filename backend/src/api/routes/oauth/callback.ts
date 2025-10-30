@@ -1,6 +1,6 @@
 import { FastifyInstance } from "fastify";
 import { oauthService } from "../../../services/oauth/OAuthService";
-import { CredentialRepository } from "../../../storage/repositories/CredentialRepository";
+import { ConnectionRepository } from "../../../storage/repositories/ConnectionRepository";
 
 interface CallbackParams {
     provider: string;
@@ -139,9 +139,9 @@ export async function callbackRoute(fastify: FastifyInstance) {
 
                 fastify.log.info(`Successfully exchanged code for ${provider}, user: ${result.userId}`);
 
-                // Store credential in database
-                const credentialRepo = new CredentialRepository();
-                const credential = await credentialRepo.create({
+                // Store connection in database
+                const connectionRepo = new ConnectionRepository();
+                const connection = await connectionRepo.create({
                     user_id: result.userId,
                     name: `${provider} - ${
                         result.accountInfo.email ||
@@ -149,7 +149,7 @@ export async function callbackRoute(fastify: FastifyInstance) {
                         result.accountInfo.user ||
                         'Account'
                     }`,
-                    type: 'oauth2',
+                    connection_method: 'oauth2',
                     provider,
                     data: result.tokens,
                     metadata: {
@@ -162,7 +162,7 @@ export async function callbackRoute(fastify: FastifyInstance) {
                     status: 'active'
                 });
 
-                fastify.log.info(`Created credential ${credential.id} for ${provider}`);
+                fastify.log.info(`Created connection ${connection.id} for ${provider}`);
 
                 // Return success page that notifies parent window
                 return reply.type("text/html").send(`
@@ -254,7 +254,7 @@ export async function callbackRoute(fastify: FastifyInstance) {
                                 window.opener?.postMessage({
                                     type: 'oauth_success',
                                     provider: '${provider}',
-                                    credential: ${JSON.stringify(credential)}
+                                    connection: ${JSON.stringify(connection)}
                                 }, '*');
                                 setTimeout(() => window.close(), 2000);
                             </script>

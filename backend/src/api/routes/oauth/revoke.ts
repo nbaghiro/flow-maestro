@@ -1,75 +1,75 @@
 import { FastifyInstance } from "fastify";
 import { authMiddleware } from "../../middleware";
-import { CredentialRepository } from "../../../storage/repositories/CredentialRepository";
+import { ConnectionRepository } from "../../../storage/repositories/ConnectionRepository";
 import { oauthService } from "../../../services/oauth/OAuthService";
-import { OAuth2TokenData } from "../../../storage/models/Credential";
+import { OAuth2TokenData } from "../../../storage/models/Connection";
 
 interface RevokeParams {
     provider: string;
-    credentialId: string;
+    connectionId: string;
 }
 
 /**
- * POST /oauth/:provider/revoke/:credentialId
+ * POST /oauth/:provider/revoke/:connectionId
  *
- * Revoke an OAuth token and delete the credential.
+ * Revoke an OAuth token and delete the connection.
  *
  * This will:
  * 1. Revoke the token on the provider's side (if supported)
- * 2. Delete the credential from our database
+ * 2. Delete the connection from our database
  *
- * Requires authentication and credential ownership.
+ * Requires authentication and connection ownership.
  */
 export async function revokeRoute(fastify: FastifyInstance) {
     fastify.post<{ Params: RevokeParams }>(
-        "/:provider/revoke/:credentialId",
+        "/:provider/revoke/:connectionId",
         {
             preHandler: [authMiddleware]
         },
         async (request, reply) => {
-            const { provider, credentialId } = request.params;
+            const { provider, connectionId } = request.params;
             const userId = request.user!.id;
 
             try {
-                const credentialRepo = new CredentialRepository();
+                const connectionRepo = new ConnectionRepository();
 
                 // Verify ownership
-                const ownerId = await credentialRepo.getOwnerId(credentialId);
+                const ownerId = await connectionRepo.getOwnerId(connectionId);
                 if (ownerId !== userId) {
                     return reply.status(403).send({
                         success: false,
-                        error: "You don't have permission to revoke this credential"
+                        error: "You don't have permission to revoke this connection"
                     });
                 }
 
-                // Get credential with data
-                const credential = await credentialRepo.findByIdWithData(credentialId);
-                if (!credential) {
+                // Get connection with data
+                const connection = await connectionRepo.findByIdWithData(connectionId);
+                if (!connection) {
                     return reply.status(404).send({
                         success: false,
-                        error: "Credential not found"
+                        error: "Connection not found"
                     });
                 }
 
                 // Verify provider matches
-                if (credential.provider !== provider) {
+                if (connection.provider !== provider) {
                     return reply.status(400).send({
                         success: false,
-                        error: `Credential is for ${credential.provider}, not ${provider}`
+                        error: `Connection is for ${connection.provider}, not ${provider}`
                     });
                 }
 
-                if (credential.type !== 'oauth2') {
+                if (connection.connection_method !== 'oauth2') {
                     return reply.status(400).send({
                         success: false,
-                        error: "Credential is not an OAuth token"
+                        error: "Connection is not an OAuth token"
                     });
                 }
 
-                fastify.log.info(`Revoking OAuth token for credential ${credentialId}`);
+                fastify.log.info(`Revoking OAuth token for connection ${connectionId}`);
 
                 // Revoke on provider side
-                const tokenData = credential.data as OAuth2TokenData;
+                const tokenData = connection.data as OAuth2TokenData;
                 try {
                     await oauthService.revokeToken(provider, tokenData.access_token);
                     fastify.log.info(`Successfully revoked token on ${provider}'s side`);
@@ -79,19 +79,19 @@ export async function revokeRoute(fastify: FastifyInstance) {
                 }
 
                 // Delete from our database
-                await credentialRepo.delete(credentialId);
-                fastify.log.info(`Deleted credential ${credentialId} from database`);
+                await connectionRepo.delete(connectionId);
+                fastify.log.info(`Deleted connection ${connectionId} from database`);
 
                 return reply.send({
                     success: true,
-                    message: "Credential revoked successfully"
+                    message: "Connection revoked successfully"
                 });
             } catch (error: any) {
-                fastify.log.error(`Failed to revoke credential ${credentialId}:`, error);
+                fastify.log.error(`Failed to revoke connection ${connectionId}:`, error);
 
                 return reply.status(500).send({
                     success: false,
-                    error: error.message || "Failed to revoke credential"
+                    error: error.message || "Failed to revoke connection"
                 });
             }
         }

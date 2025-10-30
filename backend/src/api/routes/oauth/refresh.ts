@@ -1,15 +1,15 @@
 import { FastifyInstance } from "fastify";
 import { authMiddleware } from "../../middleware";
-import { CredentialRepository } from "../../../storage/repositories/CredentialRepository";
+import { ConnectionRepository } from "../../../storage/repositories/ConnectionRepository";
 import { forceRefreshToken } from "../../../services/oauth/TokenRefreshService";
 
 interface RefreshParams {
     provider: string;
-    credentialId: string;
+    connectionId: string;
 }
 
 /**
- * POST /oauth/:provider/refresh/:credentialId
+ * POST /oauth/:provider/refresh/:connectionId
  *
  * Manually refresh an OAuth token.
  *
@@ -18,68 +18,68 @@ interface RefreshParams {
  * - Forcing a refresh before expiry
  * - Recovering from expired tokens
  *
- * Requires authentication and credential ownership.
+ * Requires authentication and connection ownership.
  */
 export async function refreshRoute(fastify: FastifyInstance) {
     fastify.post<{ Params: RefreshParams }>(
-        "/:provider/refresh/:credentialId",
+        "/:provider/refresh/:connectionId",
         {
             preHandler: [authMiddleware]
         },
         async (request, reply) => {
-            const { provider, credentialId } = request.params;
+            const { provider, connectionId } = request.params;
             const userId = request.user!.id;
 
             try {
-                const credentialRepo = new CredentialRepository();
+                const connectionRepo = new ConnectionRepository();
 
                 // Verify ownership
-                const ownerId = await credentialRepo.getOwnerId(credentialId);
+                const ownerId = await connectionRepo.getOwnerId(connectionId);
                 if (ownerId !== userId) {
                     return reply.status(403).send({
                         success: false,
-                        error: "You don't have permission to refresh this credential"
+                        error: "You don't have permission to refresh this connection"
                     });
                 }
 
                 // Verify provider matches
-                const credential = await credentialRepo.findById(credentialId);
-                if (!credential) {
+                const connection = await connectionRepo.findById(connectionId);
+                if (!connection) {
                     return reply.status(404).send({
                         success: false,
-                        error: "Credential not found"
+                        error: "Connection not found"
                     });
                 }
 
-                if (credential.provider !== provider) {
+                if (connection.provider !== provider) {
                     return reply.status(400).send({
                         success: false,
-                        error: `Credential is for ${credential.provider}, not ${provider}`
+                        error: `Connection is for ${connection.provider}, not ${provider}`
                     });
                 }
 
-                if (credential.type !== 'oauth2') {
+                if (connection.connection_method !== 'oauth2') {
                     return reply.status(400).send({
                         success: false,
-                        error: "Credential is not an OAuth token"
+                        error: "Connection is not an OAuth token"
                     });
                 }
 
                 // Force refresh the token
-                await forceRefreshToken(credentialId);
+                await forceRefreshToken(connectionId);
 
-                fastify.log.info(`Successfully refreshed token for credential ${credentialId}`);
+                fastify.log.info(`Successfully refreshed token for connection ${connectionId}`);
 
-                // Get updated credential
-                const updatedCredential = await credentialRepo.findById(credentialId);
+                // Get updated connection
+                const updatedConnection = await connectionRepo.findById(connectionId);
 
                 return reply.send({
                     success: true,
                     message: "Token refreshed successfully",
-                    data: updatedCredential
+                    data: updatedConnection
                 });
             } catch (error: any) {
-                fastify.log.error(`Failed to refresh token for credential ${credentialId}:`, error);
+                fastify.log.error(`Failed to refresh token for connection ${connectionId}:`, error);
 
                 return reply.status(400).send({
                     success: false,

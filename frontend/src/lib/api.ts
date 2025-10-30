@@ -563,17 +563,28 @@ export async function getExecution(executionId: string): Promise<{ success: bool
     return response.json();
 }
 
-// ===== Credential API Functions =====
+// ===== Connection API Functions =====
 
-export type CredentialType = 'api_key' | 'oauth2' | 'basic_auth' | 'custom';
-export type CredentialStatus = 'active' | 'invalid' | 'expired' | 'revoked';
+export type ConnectionMethod = 'api_key' | 'oauth2' | 'mcp' | 'basic_auth' | 'custom';
+export type ConnectionStatus = 'active' | 'invalid' | 'expired' | 'revoked';
 
-export interface Credential {
+export interface MCPTool {
+    name: string;
+    description: string;
+    parameters: Array<{
+        name: string;
+        type: string;
+        description?: string;
+        required?: boolean;
+    }>;
+}
+
+export interface Connection {
     id: string;
     name: string;
-    type: CredentialType;
+    connection_method: ConnectionMethod;
     provider: string;
-    status: CredentialStatus;
+    status: ConnectionStatus;
     metadata?: {
         scopes?: string[];
         expires_at?: number;
@@ -582,32 +593,45 @@ export interface Credential {
             username?: string;
             workspace?: string;
         };
+        mcp_version?: string;
+        mcp_server_info?: Record<string, any>;
     };
+    mcp_server_url: string | null;
+    mcp_tools: MCPTool[] | null;
+    capabilities: Record<string, any>;
     last_tested_at: string | null;
     last_used_at: string | null;
     created_at: string;
     updated_at: string;
 }
 
-export interface CreateCredentialInput {
+export interface CreateConnectionInput {
     name: string;
-    type: CredentialType;
+    connection_method: ConnectionMethod;
     provider: string;
     data: {
         api_key?: string;
         api_secret?: string;
+        server_url?: string;
+        auth_type?: string;
+        bearer_token?: string;
+        username?: string;
+        password?: string;
         [key: string]: any;
     };
     metadata?: Record<string, any>;
+    mcp_server_url?: string;
+    mcp_tools?: MCPTool[];
+    capabilities?: Record<string, any>;
 }
 
 /**
- * Create a new credential
+ * Create a new connection
  */
-export async function createCredential(input: CreateCredentialInput): Promise<{ success: boolean; data: Credential; error?: string }> {
+export async function createConnection(input: CreateConnectionInput): Promise<{ success: boolean; data: Connection; error?: string }> {
     const token = getAuthToken();
 
-    const response = await fetch(`${API_BASE_URL}/api/credentials`, {
+    const response = await fetch(`${API_BASE_URL}/api/connections`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -625,22 +649,22 @@ export async function createCredential(input: CreateCredentialInput): Promise<{ 
 }
 
 /**
- * Get list of credentials
+ * Get list of connections
  */
-export async function getCredentials(params?: {
+export async function getConnections(params?: {
     provider?: string;
-    type?: CredentialType;
-    status?: CredentialStatus;
-}): Promise<{ success: boolean; data: { items: Credential[]; total: number }; error?: string }> {
+    connection_method?: ConnectionMethod;
+    status?: ConnectionStatus;
+}): Promise<{ success: boolean; data: Connection[]; pagination: { total: number; limit: number; offset: number }; error?: string }> {
     const token = getAuthToken();
 
     const queryParams = new URLSearchParams();
     if (params?.provider) queryParams.append('provider', params.provider);
-    if (params?.type) queryParams.append('type', params.type);
+    if (params?.connection_method) queryParams.append('connection_method', params.connection_method);
     if (params?.status) queryParams.append('status', params.status);
 
     const response = await fetch(
-        `${API_BASE_URL}/api/credentials${queryParams.toString() ? `?${queryParams.toString()}` : ''}`,
+        `${API_BASE_URL}/api/connections${queryParams.toString() ? `?${queryParams.toString()}` : ''}`,
         {
             method: 'GET',
             headers: {
@@ -659,12 +683,12 @@ export async function getCredentials(params?: {
 }
 
 /**
- * Get a specific credential by ID
+ * Get a specific connection by ID
  */
-export async function getCredential(credentialId: string): Promise<{ success: boolean; data: Credential; error?: string }> {
+export async function getConnection(connectionId: string): Promise<{ success: boolean; data: Connection; error?: string }> {
     const token = getAuthToken();
 
-    const response = await fetch(`${API_BASE_URL}/api/credentials/${credentialId}`, {
+    const response = await fetch(`${API_BASE_URL}/api/connections/${connectionId}`, {
         method: 'GET',
         headers: {
             'Content-Type': 'application/json',
@@ -681,22 +705,18 @@ export async function getCredential(credentialId: string): Promise<{ success: bo
 }
 
 /**
- * Test a credential connection without saving it first
+ * Test a connection without saving it first
  */
-export async function testCredentialConnection(provider: string, data: { api_key?: string; api_secret?: string; [key: string]: any }): Promise<{ success: boolean; data: { valid: boolean; message: string }; error?: string }> {
+export async function testConnectionBeforeSave(input: CreateConnectionInput): Promise<{ success: boolean; data: { test_result: any; connection_valid: boolean }; error?: string }> {
     const token = getAuthToken();
 
-    const response = await fetch(`${API_BASE_URL}/api/credentials/test-connection`, {
+    const response = await fetch(`${API_BASE_URL}/api/connections/test`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
             ...(token && { Authorization: `Bearer ${token}` }),
         },
-        body: JSON.stringify({
-            provider,
-            type: 'api_key',
-            data
-        }),
+        body: JSON.stringify(input),
     });
 
     if (!response.ok) {
@@ -708,12 +728,12 @@ export async function testCredentialConnection(provider: string, data: { api_key
 }
 
 /**
- * Test a credential
+ * Test an existing connection
  */
-export async function testCredential(credentialId: string): Promise<{ success: boolean; data: { valid: boolean; message: string }; error?: string }> {
+export async function testConnection(connectionId: string): Promise<{ success: boolean; data: { connection_id: string; test_result: any }; error?: string }> {
     const token = getAuthToken();
 
-    const response = await fetch(`${API_BASE_URL}/api/credentials/${credentialId}/test`, {
+    const response = await fetch(`${API_BASE_URL}/api/connections/${connectionId}/test`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -730,15 +750,15 @@ export async function testCredential(credentialId: string): Promise<{ success: b
 }
 
 /**
- * Update a credential
+ * Update a connection
  */
-export async function updateCredential(
-    credentialId: string,
-    input: Partial<CreateCredentialInput>
-): Promise<{ success: boolean; data: Credential; error?: string }> {
+export async function updateConnection(
+    connectionId: string,
+    input: Partial<CreateConnectionInput>
+): Promise<{ success: boolean; data: Connection; error?: string }> {
     const token = getAuthToken();
 
-    const response = await fetch(`${API_BASE_URL}/api/credentials/${credentialId}`, {
+    const response = await fetch(`${API_BASE_URL}/api/connections/${connectionId}`, {
         method: 'PUT',
         headers: {
             'Content-Type': 'application/json',
@@ -756,13 +776,107 @@ export async function updateCredential(
 }
 
 /**
- * Delete a credential
+ * Delete a connection
  */
-export async function deleteCredential(credentialId: string): Promise<{ success: boolean; error?: string }> {
+export async function deleteConnection(connectionId: string): Promise<{ success: boolean; message?: string; error?: string }> {
     const token = getAuthToken();
 
-    const response = await fetch(`${API_BASE_URL}/api/credentials/${credentialId}`, {
+    const response = await fetch(`${API_BASE_URL}/api/connections/${connectionId}`, {
         method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json',
+            ...(token && { Authorization: `Bearer ${token}` }),
+        },
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    return response.json();
+}
+
+// ===== MCP-Specific Connection Functions =====
+
+export interface MCPProvider {
+    name: string;
+    displayName: string;
+    description: string;
+    category: string;
+    requiresAuth: boolean;
+    configured: boolean;
+}
+
+export interface MCPDiscoveryRequest {
+    server_url: string;
+    auth_type: 'none' | 'api_key' | 'bearer' | 'basic';
+    api_key?: string;
+    bearer_token?: string;
+    username?: string;
+    password?: string;
+    timeout?: number;
+}
+
+/**
+ * Get list of known MCP providers
+ */
+export async function getMCPProviders(): Promise<{ success: boolean; data: MCPProvider[]; error?: string }> {
+    const response = await fetch(`${API_BASE_URL}/api/connections/mcp/providers`, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    return response.json();
+}
+
+/**
+ * Discover MCP tools from a server before saving
+ */
+export async function discoverMCPTools(request: MCPDiscoveryRequest): Promise<{
+    success: boolean;
+    data: { server_info: any; tools: MCPTool[]; tool_count: number };
+    error?: string
+}> {
+    const token = getAuthToken();
+
+    const response = await fetch(`${API_BASE_URL}/api/connections/mcp/discover`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            ...(token && { Authorization: `Bearer ${token}` }),
+        },
+        body: JSON.stringify(request),
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    return response.json();
+}
+
+/**
+ * Refresh MCP tools for an existing connection
+ */
+export async function refreshMCPTools(connectionId: string): Promise<{
+    success: boolean;
+    data: { connection_id: string; tools: MCPTool[]; tool_count: number };
+    message?: string;
+    error?: string
+}> {
+    const token = getAuthToken();
+
+    const response = await fetch(`${API_BASE_URL}/api/connections/${connectionId}/refresh-tools`, {
+        method: 'POST',
         headers: {
             'Content-Type': 'application/json',
             ...(token && { Authorization: `Bearer ${token}` }),
@@ -781,7 +895,7 @@ export async function deleteCredential(credentialId: string): Promise<{ success:
 
 export interface GenerateWorkflowRequest {
     prompt: string;
-    credentialId: string;
+    connectionId: string;
 }
 
 export interface GeneratedWorkflow {

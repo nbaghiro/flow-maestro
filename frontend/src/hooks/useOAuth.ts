@@ -9,7 +9,7 @@ interface OAuthProvider {
     configured: boolean;
 }
 
-interface OAuthCredential {
+interface OAuthConnection {
     id: string;
     name: string;
     provider: string;
@@ -26,7 +26,7 @@ interface OAuthCredential {
 interface OAuthMessageData {
     type: 'oauth_success' | 'oauth_error';
     provider: string;
-    credential?: OAuthCredential;
+    connection?: OAuthConnection;
     error?: string;
 }
 
@@ -72,7 +72,7 @@ export function useOAuth() {
      * Opens a popup window with the OAuth authorization URL,
      * then waits for the callback to post a message back.
      */
-    const initiateOAuth = async (provider: string): Promise<OAuthCredential> => {
+    const initiateOAuth = async (provider: string): Promise<OAuthConnection> => {
         setLoading(true);
 
         try {
@@ -138,7 +138,7 @@ export function useOAuth() {
     const waitForOAuthCallback = (
         popup: Window,
         provider: string
-    ): Promise<OAuthCredential> => {
+    ): Promise<OAuthConnection> => {
         return new Promise((resolve, reject) => {
             // Set timeout (5 minutes)
             const timeout = setTimeout(() => {
@@ -158,9 +158,9 @@ export function useOAuth() {
                     return;
                 }
 
-                if (data.type === 'oauth_success' && data.credential) {
+                if (data.type === 'oauth_success' && data.connection) {
                     cleanup();
-                    resolve(data.credential);
+                    resolve(data.connection);
                 } else if (data.type === 'oauth_error') {
                     cleanup();
                     reject(new Error(data.error || 'OAuth authorization failed'));
@@ -194,16 +194,16 @@ export function useOAuth() {
     };
 
     /**
-     * Revoke an OAuth credential
+     * Revoke an OAuth connection
      */
-    const revokeCredential = async (provider: string, credentialId: string): Promise<void> => {
+    const revokeConnection = async (provider: string, connectionId: string): Promise<void> => {
         const token = localStorage.getItem('token');
         if (!token) {
             throw new Error('Not authenticated');
         }
 
         const response = await fetch(
-            `${API_BASE_URL}/api/oauth/${provider}/revoke/${credentialId}`,
+            `${API_BASE_URL}/api/oauth/${provider}/revoke/${connectionId}`,
             {
                 method: 'POST',
                 headers: {
@@ -215,21 +215,21 @@ export function useOAuth() {
         const data = await response.json();
 
         if (!data.success) {
-            throw new Error(data.error || 'Failed to revoke credential');
+            throw new Error(data.error || 'Failed to revoke connection');
         }
     };
 
     /**
-     * Manually refresh a credential's token
+     * Manually refresh a connection's token
      */
-    const refreshCredential = async (provider: string, credentialId: string): Promise<void> => {
+    const refreshConnection = async (provider: string, connectionId: string): Promise<void> => {
         const token = localStorage.getItem('token');
         if (!token) {
             throw new Error('Not authenticated');
         }
 
         const response = await fetch(
-            `${API_BASE_URL}/api/oauth/${provider}/refresh/${credentialId}`,
+            `${API_BASE_URL}/api/oauth/${provider}/refresh/${connectionId}`,
             {
                 method: 'POST',
                 headers: {
@@ -241,7 +241,7 @@ export function useOAuth() {
         const data = await response.json();
 
         if (!data.success) {
-            throw new Error(data.error || 'Failed to refresh credential');
+            throw new Error(data.error || 'Failed to refresh connection');
         }
     };
 
@@ -250,7 +250,7 @@ export function useOAuth() {
         providers,
         fetchProviders,
         initiateOAuth,
-        revokeCredential,
-        refreshCredential,
+        revokeConnection,
+        refreshConnection,
     };
 }

@@ -1,5 +1,5 @@
 import OpenAI from "openai";
-import { CredentialRepository } from "../../storage/repositories/CredentialRepository";
+import { ConnectionRepository } from "../../storage/repositories/ConnectionRepository";
 
 export interface EmbeddingConfig {
     model: string; // e.g., "text-embedding-3-small"
@@ -17,10 +17,10 @@ export interface EmbeddingResult {
 }
 
 export class EmbeddingService {
-    private credentialRepository: CredentialRepository;
+    private connectionRepository: ConnectionRepository;
 
-    constructor(credentialRepository?: CredentialRepository) {
-        this.credentialRepository = credentialRepository || new CredentialRepository();
+    constructor(connectionRepository?: ConnectionRepository) {
+        this.connectionRepository = connectionRepository || new ConnectionRepository();
     }
 
     /**
@@ -134,37 +134,37 @@ export class EmbeddingService {
     }
 
     /**
-     * Get OpenAI API key from credentials or environment
+     * Get OpenAI API key from connections or environment
      */
     private async getOpenAIApiKey(userId?: string): Promise<string> {
-        // First, try to get from user credentials
+        // First, try to get from user connections
         if (userId) {
             try {
-                const credentials = await this.credentialRepository.findByProvider(
+                const connections = await this.connectionRepository.findByProvider(
                     userId,
                     "openai"
                 );
 
-                if (credentials.length > 0) {
-                    // Find active API key credential
-                    const apiKeyCredentialSummary = credentials.find(
-                        (c: any) => c.type === "api_key" && c.status === "active"
+                if (connections.length > 0) {
+                    // Find active API key connection
+                    const apiKeyConnectionSummary = connections.find(
+                        (c: any) => c.connection_method === "api_key" && c.status === "active"
                     );
 
-                    if (apiKeyCredentialSummary) {
-                        // Fetch full credential with decrypted data
-                        const apiKeyCredential = await this.credentialRepository.findByIdWithData(
-                            apiKeyCredentialSummary.id
+                    if (apiKeyConnectionSummary) {
+                        // Fetch full connection with decrypted data
+                        const apiKeyConnection = await this.connectionRepository.findByIdWithData(
+                            apiKeyConnectionSummary.id
                         );
 
-                        if (apiKeyCredential && apiKeyCredential.data && 'api_key' in apiKeyCredential.data) {
-                            return apiKeyCredential.data.api_key;
+                        if (apiKeyConnection && apiKeyConnection.data && 'api_key' in apiKeyConnection.data) {
+                            return apiKeyConnection.data.api_key;
                         }
                     }
                 }
             } catch (error) {
                 // Fall through to environment variable
-                console.warn("Could not retrieve OpenAI credentials from database:", error);
+                console.warn("Could not retrieve OpenAI connections from database:", error);
             }
         }
 
@@ -172,7 +172,7 @@ export class EmbeddingService {
         const envKey = process.env.OPENAI_API_KEY;
         if (!envKey) {
             throw new Error(
-                "OpenAI API key not found. Please add it to your credentials or set OPENAI_API_KEY environment variable."
+                "OpenAI API key not found. Please add it to your connections or set OPENAI_API_KEY environment variable."
             );
         }
 

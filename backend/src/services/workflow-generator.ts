@@ -1,9 +1,9 @@
 import { executeLLMNode, type LLMNodeConfig } from '../temporal/activities/node-executors/llm-executor';
-import { CredentialRepository } from '../storage/repositories/CredentialRepository';
+import { ConnectionRepository } from '../storage/repositories/ConnectionRepository';
 
 export interface WorkflowGenerationRequest {
     userPrompt: string;
-    credentialId: string;
+    connectionId: string;
     userId: string;
 }
 
@@ -45,7 +45,7 @@ Rules:
 - Ensure proper node connections (edges)
 - Include necessary error handling where appropriate
 - Keep workflows simple but complete (3-7 nodes typically)
-- Always use "\${userCredentialId}" for credentialId fields that require authentication
+- Always use "\${userConnectionId}" for connectionId fields that require authentication
 - Use variable interpolation syntax: \${variableName} for accessing data from previous nodes
 
 ## Available Node Types (16 total)
@@ -59,7 +59,7 @@ Config:
 {
   "provider": "openai" | "anthropic" | "google" | "cohere",
   "model": string,
-  "credentialId": "\${userCredentialId}",
+  "connectionId": "\${userConnectionId}",
   "prompt": string (supports \${variables}),
   "systemPrompt": string (optional),
   "temperature": number (0-1, default: 0.7),
@@ -81,7 +81,7 @@ Config:
   "headers": object,
   "body": any (for POST/PUT/PATCH),
   "queryParams": object,
-  "credentialId": "\${userCredentialId}" (optional, for API auth),
+  "connectionId": "\${userConnectionId}" (optional, for API auth),
   "timeout": number (ms, default: 30000)
 }
 
@@ -210,7 +210,7 @@ Config:
 {
   "mode": "generate" | "analyze",
   "provider": "openai" | "replicate",
-  "credentialId": "\${userCredentialId}",
+  "connectionId": "\${userConnectionId}",
   "prompt": string (for generation),
   "imageUrl": string (for analysis),
   "size": "256x256" | "512x512" | "1024x1024"
@@ -223,7 +223,7 @@ Config:
 {
   "mode": "transcribe" | "synthesize",
   "provider": "openai" | "google",
-  "credentialId": "\${userCredentialId}",
+  "connectionId": "\${userConnectionId}",
   "audioUrl": string (for transcription),
   "text": string (for synthesis),
   "voice": string,
@@ -236,7 +236,7 @@ Purpose: Query SQL/NoSQL databases
 Config:
 {
   "databaseType": "postgres" | "mysql" | "mongodb",
-  "credentialId": "\${userCredentialId}",
+  "connectionId": "\${userConnectionId}",
   "query": string,
   "parameters": object
 }
@@ -248,7 +248,7 @@ Config:
 {
   "service": "slack" | "email" | "googlesheets",
   "action": string (service-specific),
-  "credentialId": "\${userCredentialId}",
+  "connectionId": "\${userConnectionId}",
   "config": object (service-specific)
 }
 
@@ -259,7 +259,7 @@ Config:
 {
   "provider": "openai" | "cohere",
   "model": string,
-  "credentialId": "\${userCredentialId}",
+  "connectionId": "\${userConnectionId}",
   "text": string
 }
 
@@ -327,7 +327,7 @@ Output: Input node → LLM node (enhance prompt) → Vision node → Output node
 
 Remember:
 - Use descriptive labels ("Fetch Tech News" not "HTTP Node")
-- Use \${userCredentialId} for all credential fields
+- Use \${userConnectionId} for all connection fields
 - Keep it simple (3-7 nodes)
 - Always include proper edges connecting all nodes
 - Return ONLY the JSON, no explanations`;
@@ -344,19 +344,19 @@ export async function generateWorkflow(
     console.log('[Workflow Generator] Generating workflow for user:', request.userId);
     console.log('[Workflow Generator] User prompt:', request.userPrompt);
 
-    // Fetch credential to determine provider
-    const credentialRepository = new CredentialRepository();
-    const credential = await credentialRepository.findByIdWithData(request.credentialId);
+    // Fetch connection to determine provider
+    const connectionRepository = new ConnectionRepository();
+    const connection = await connectionRepository.findByIdWithData(request.connectionId);
 
-    if (!credential) {
-        throw new Error(`Credential with ID ${request.credentialId} not found`);
+    if (!connection) {
+        throw new Error(`Connection with ID ${request.connectionId} not found`);
     }
 
-    if (credential.status !== 'active') {
-        throw new Error(`Credential is not active (status: ${credential.status})`);
+    if (connection.status !== 'active') {
+        throw new Error(`Connection is not active (status: ${connection.status})`);
     }
 
-    const provider = credential.provider.toLowerCase();
+    const provider = connection.provider.toLowerCase();
 
     // Set appropriate model based on provider
     let model: string;
@@ -383,7 +383,7 @@ export async function generateWorkflow(
     const llmConfig: LLMNodeConfig = {
         provider: provider as any,
         model,
-        credentialId: request.credentialId,
+        connectionId: request.connectionId,
         systemPrompt,
         prompt: request.userPrompt,
         temperature: 0.7,

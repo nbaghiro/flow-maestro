@@ -4,7 +4,7 @@ import { authMiddleware, validateBody } from "../../middleware";
 import { executeLLMNode, type LLMNodeConfig } from "../../../temporal/activities/node-executors/llm-executor";
 
 const generatePromptsSchema = z.object({
-    credentialId: z.string().uuid(),
+    connectionId: z.string().uuid(),
 });
 
 export async function generatePromptsRoute(fastify: FastifyInstance) {
@@ -14,29 +14,29 @@ export async function generatePromptsRoute(fastify: FastifyInstance) {
             preHandler: [authMiddleware, validateBody(generatePromptsSchema)]
         },
         async (request, reply) => {
-            const { credentialId } = request.body as z.infer<typeof generatePromptsSchema>;
+            const { connectionId } = request.body as z.infer<typeof generatePromptsSchema>;
 
             try {
-                // Fetch credential to determine provider and model
-                const { CredentialRepository } = await import("../../../storage/repositories");
-                const credentialRepository = new CredentialRepository();
-                const credential = await credentialRepository.findByIdWithData(credentialId);
+                // Fetch connection to determine provider and model
+                const { ConnectionRepository } = await import("../../../storage/repositories");
+                const connectionRepository = new ConnectionRepository();
+                const connection = await connectionRepository.findByIdWithData(connectionId);
 
-                if (!credential) {
+                if (!connection) {
                     return reply.status(404).send({
                         success: false,
-                        error: "Credential not found"
+                        error: "Connection not found"
                     });
                 }
 
-                if (credential.status !== 'active') {
+                if (connection.status !== 'active') {
                     return reply.status(400).send({
                         success: false,
-                        error: "Credential is not active"
+                        error: "Connection is not active"
                     });
                 }
 
-                const provider = credential.provider.toLowerCase();
+                const provider = connection.provider.toLowerCase();
 
                 // Set default model based on provider
                 let model: string;
@@ -84,7 +84,7 @@ Example format:
                 const config: LLMNodeConfig = {
                     provider: provider as any,
                     model,
-                    credentialId,
+                    connectionId,
                     prompt,
                     systemPrompt,
                     temperature: 0.9,

@@ -8,7 +8,7 @@ export interface IntegrationNodeConfig {
     operation: string;
 
     // Authentication (prioritized in this order)
-    credentialId?: string;  // OAuth credential ID (preferred)
+    connectionId?: string;  // OAuth connection ID (preferred)
     apiKey?: string;        // Manual API key
     credentials?: any;      // Legacy credentials
 
@@ -79,13 +79,13 @@ async function executeSlack(
     config: IntegrationNodeConfig,
     context: Record<string, any>
 ): Promise<IntegrationNodeResult> {
-    // Get token in priority order: OAuth credential > API key > env var
+    // Get token in priority order: OAuth connection > API key > env var
     let token: string;
 
-    if (config.credentialId) {
-        // Use OAuth token from credential (auto-refreshes if needed!)
-        token = await getAccessToken(config.credentialId);
-        console.log(`[Integration/Slack] Using OAuth credential: ${config.credentialId}`);
+    if (config.connectionId) {
+        // Use OAuth token from connection (auto-refreshes if needed!)
+        token = await getAccessToken(config.connectionId);
+        console.log(`[Integration/Slack] Using OAuth connection: ${config.connectionId}`);
     } else if (config.apiKey) {
         token = config.apiKey;
         console.log(`[Integration/Slack] Using provided API key`);

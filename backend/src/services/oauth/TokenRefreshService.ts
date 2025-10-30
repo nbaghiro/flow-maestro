@@ -1,8 +1,8 @@
-import { CredentialRepository } from '../../storage/repositories/CredentialRepository';
+import { ConnectionRepository } from '../../storage/repositories/ConnectionRepository';
 import { oauthService } from './OAuthService';
-import { OAuth2TokenData } from '../../storage/models/Credential';
+import { OAuth2TokenData } from '../../storage/models/Connection';
 
-const credentialRepo = new CredentialRepository();
+const connectionRepo = new ConnectionRepository();
 
 /**
  * Get OAuth access token, automatically refreshing if needed
@@ -14,64 +14,64 @@ const credentialRepo = new CredentialRepository();
  * - Database updates
  * - Usage tracking
  *
- * @param credentialId - The credential ID to get token for
+ * @param connectionId - The connection ID to get token for
  * @returns Valid access token
- * @throws Error if credential not found or refresh fails
+ * @throws Error if connection not found or refresh fails
  */
-export async function getAccessToken(credentialId: string): Promise<string> {
-    const credential = await credentialRepo.findByIdWithData(credentialId);
+export async function getAccessToken(connectionId: string): Promise<string> {
+    const connection = await connectionRepo.findByIdWithData(connectionId);
 
-    if (!credential) {
-        throw new Error(`Credential not found: ${credentialId}`);
+    if (!connection) {
+        throw new Error(`Connection not found: ${connectionId}`);
     }
 
-    if (credential.type !== 'oauth2') {
-        throw new Error(`Credential ${credentialId} is not an OAuth token (type: ${credential.type})`);
+    if (connection.connection_method !== 'oauth2') {
+        throw new Error(`Connection ${connectionId} is not an OAuth token (method: ${connection.connection_method})`);
     }
 
-    const tokenData = credential.data as OAuth2TokenData;
+    const tokenData = connection.data as OAuth2TokenData;
 
     if (!tokenData.access_token) {
-        throw new Error(`Credential ${credentialId} is missing access_token`);
+        throw new Error(`Connection ${connectionId} is missing access_token`);
     }
 
     // Check if token is expiring soon (within 5 minutes)
-    const needsRefresh = credentialRepo.isExpired(credential);
+    const needsRefresh = connectionRepo.isExpired(connection);
 
     if (needsRefresh && tokenData.refresh_token) {
-        console.log(`[TokenRefresh] Token expiring soon for credential ${credentialId}, refreshing...`);
+        console.log(`[TokenRefresh] Token expiring soon for connection ${connectionId}, refreshing...`);
 
         try {
             // Refresh the token
             const newTokens = await oauthService.refreshAccessToken(
-                credential.provider,
+                connection.provider,
                 tokenData.refresh_token
             );
 
-            console.log(`[TokenRefresh] Successfully refreshed token for credential ${credentialId}`);
+            console.log(`[TokenRefresh] Successfully refreshed token for connection ${connectionId}`);
 
             // Update in database
-            await credentialRepo.updateTokens(credentialId, newTokens);
+            await connectionRepo.updateTokens(connectionId, newTokens);
 
             // Mark as used
-            await credentialRepo.markAsUsed(credentialId);
+            await connectionRepo.markAsUsed(connectionId);
 
             return newTokens.access_token;
         } catch (error) {
-            console.error(`[TokenRefresh] Failed to refresh token for credential ${credentialId}:`, error);
+            console.error(`[TokenRefresh] Failed to refresh token for connection ${connectionId}:`, error);
 
-            // Mark credential as expired
-            await credentialRepo.markAsTested(credentialId, 'expired');
+            // Mark connection as expired
+            await connectionRepo.markAsTested(connectionId, 'expired');
 
             throw new Error(
                 `Failed to refresh OAuth token: ${error instanceof Error ? error.message : 'Unknown error'}. ` +
-                `Please reconnect your ${credential.provider} account.`
+                `Please reconnect your ${connection.provider} account.`
             );
         }
     }
 
     // Token is still valid, just mark as used
-    await credentialRepo.markAsUsed(credentialId);
+    await connectionRepo.markAsUsed(connectionId);
 
     return tokenData.access_token;
 }
@@ -80,29 +80,29 @@ export async function getAccessToken(credentialId: string): Promise<string> {
  * Get OAuth token data with provider info
  * Useful when you need more than just the access token
  */
-export async function getTokenData(credentialId: string) {
-    const accessToken = await getAccessToken(credentialId);
-    const credential = await credentialRepo.findById(credentialId);
+export async function getTokenData(connectionId: string) {
+    const accessToken = await getAccessToken(connectionId);
+    const connection = await connectionRepo.findById(connectionId);
 
     return {
         accessToken,
-        provider: credential!.provider,
-        accountInfo: credential!.metadata.account_info
+        provider: connection!.provider,
+        accountInfo: connection!.metadata.account_info
     };
 }
 
 /**
- * Check if a credential needs refreshing
+ * Check if a connection needs refreshing
  * Can be used for background jobs or monitoring
  */
-export async function checkIfNeedsRefresh(credentialId: string): Promise<boolean> {
-    const credential = await credentialRepo.findById(credentialId);
+export async function checkIfNeedsRefresh(connectionId: string): Promise<boolean> {
+    const connection = await connectionRepo.findById(connectionId);
 
-    if (!credential || credential.type !== 'oauth2') {
+    if (!connection || connection.connection_method !== 'oauth2') {
         return false;
     }
 
-    return credentialRepo.isExpired(credential);
+    return connectionRepo.isExpired(connection);
 }
 
 /**
@@ -116,14 +116,14 @@ export async function checkIfNeedsRefresh(credentialId: string): Promise<boolean
 export async function refreshExpiringTokens(userId?: string): Promise<{
     refreshed: number;
     failed: number;
-    errors: Array<{ credentialId: string; error: string }>;
+    errors: Array<{ connectionId: string; error: string }>;
 }> {
     console.log('[TokenRefresh] Starting background token refresh job...');
 
     const results = {
         refreshed: 0,
         failed: 0,
-        errors: [] as Array<{ credentialId: string; error: string }>
+        errors: [] as Array<{ connectionId: string; error: string }>
     };
 
     try {
@@ -134,25 +134,25 @@ export async function refreshExpiringTokens(userId?: string): Promise<{
             return results;
         }
 
-        // Get expiring credentials for user
-        const expiringCredentials = await credentialRepo.findExpiringSoon(userId);
+        // Get expiring connections for user
+        const expiringConnections = await connectionRepo.findExpiringSoon(userId);
 
-        console.log(`[TokenRefresh] Found ${expiringCredentials.length} expiring credentials for user ${userId}`);
+        console.log(`[TokenRefresh] Found ${expiringConnections.length} expiring connections for user ${userId}`);
 
-        for (const credential of expiringCredentials) {
+        for (const connection of expiringConnections) {
             try {
                 // Trigger refresh by calling getAccessToken
-                await getAccessToken(credential.id);
+                await getAccessToken(connection.id);
                 results.refreshed++;
-                console.log(`[TokenRefresh] Successfully refreshed credential ${credential.id}`);
+                console.log(`[TokenRefresh] Successfully refreshed connection ${connection.id}`);
             } catch (error) {
                 results.failed++;
                 const errorMessage = error instanceof Error ? error.message : 'Unknown error';
                 results.errors.push({
-                    credentialId: credential.id,
+                    connectionId: connection.id,
                     error: errorMessage
                 });
-                console.error(`[TokenRefresh] Failed to refresh credential ${credential.id}:`, error);
+                console.error(`[TokenRefresh] Failed to refresh connection ${connection.id}:`, error);
             }
         }
 
@@ -171,30 +171,30 @@ export async function refreshExpiringTokens(userId?: string): Promise<{
  * Force refresh a token regardless of expiry status
  * Useful for testing or manual refresh
  */
-export async function forceRefreshToken(credentialId: string): Promise<void> {
-    const credential = await credentialRepo.findByIdWithData(credentialId);
+export async function forceRefreshToken(connectionId: string): Promise<void> {
+    const connection = await connectionRepo.findByIdWithData(connectionId);
 
-    if (!credential) {
-        throw new Error(`Credential not found: ${credentialId}`);
+    if (!connection) {
+        throw new Error(`Connection not found: ${connectionId}`);
     }
 
-    if (credential.type !== 'oauth2') {
-        throw new Error(`Credential ${credentialId} is not an OAuth token`);
+    if (connection.connection_method !== 'oauth2') {
+        throw new Error(`Connection ${connectionId} is not an OAuth token`);
     }
 
-    const tokenData = credential.data as OAuth2TokenData;
+    const tokenData = connection.data as OAuth2TokenData;
 
     if (!tokenData.refresh_token) {
-        throw new Error(`Credential ${credentialId} does not have a refresh token`);
+        throw new Error(`Connection ${connectionId} does not have a refresh token`);
     }
 
-    console.log(`[TokenRefresh] Force refreshing token for credential ${credentialId}`);
+    console.log(`[TokenRefresh] Force refreshing token for connection ${connectionId}`);
 
     const newTokens = await oauthService.refreshAccessToken(
-        credential.provider,
+        connection.provider,
         tokenData.refresh_token
     );
 
-    await credentialRepo.updateTokens(credentialId, newTokens);
-    console.log(`[TokenRefresh] Force refresh successful for credential ${credentialId}`);
+    await connectionRepo.updateTokens(connectionId, newTokens);
+    console.log(`[TokenRefresh] Force refresh successful for connection ${connectionId}`);
 }

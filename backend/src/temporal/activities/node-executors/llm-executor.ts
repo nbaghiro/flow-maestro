@@ -3,10 +3,10 @@ import Anthropic from '@anthropic-ai/sdk';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { CohereClient } from 'cohere-ai';
 import { interpolateVariables } from './utils';
-import { CredentialRepository } from '../../../storage/repositories/CredentialRepository';
-import type { ApiKeyData } from '../../../storage/models/Credential';
+import { ConnectionRepository } from '../../../storage/repositories/ConnectionRepository';
+import type { ApiKeyConnectionData } from '../../../storage/models/Connection';
 
-const credentialRepository = new CredentialRepository();
+const connectionRepository = new ConnectionRepository();
 
 /**
  * Retry configuration
@@ -96,7 +96,7 @@ async function withRetry<T>(
 export interface LLMNodeConfig {
     provider: 'openai' | 'anthropic' | 'google' | 'cohere';
     model: string;
-    credentialId?: string;
+    connectionId?: string;
     systemPrompt?: string;
     prompt: string;
     temperature?: number;
@@ -117,26 +117,26 @@ export interface LLMNodeResult {
 }
 
 /**
- * Get API key from credential or fall back to environment variable
+ * Get API key from connection or fall back to environment variable
  */
-async function getApiKey(credentialId: string | undefined, provider: string, envVarName: string): Promise<string> {
-    // Try to get from credential first
-    if (credentialId) {
-        const credential = await credentialRepository.findByIdWithData(credentialId);
-        if (!credential) {
-            throw new Error(`Credential with ID ${credentialId} not found`);
+async function getApiKey(connectionId: string | undefined, provider: string, envVarName: string): Promise<string> {
+    // Try to get from connection first
+    if (connectionId) {
+        const connection = await connectionRepository.findByIdWithData(connectionId);
+        if (!connection) {
+            throw new Error(`Connection with ID ${connectionId} not found`);
         }
-        if (credential.provider !== provider) {
-            throw new Error(`Credential provider mismatch: expected ${provider}, got ${credential.provider}`);
+        if (connection.provider !== provider) {
+            throw new Error(`Connection provider mismatch: expected ${provider}, got ${connection.provider}`);
         }
-        if (credential.status !== 'active') {
-            throw new Error(`Credential is not active (status: ${credential.status})`);
+        if (connection.status !== 'active') {
+            throw new Error(`Connection is not active (status: ${connection.status})`);
         }
-        const data = credential.data as ApiKeyData;
+        const data = connection.data as ApiKeyConnectionData;
         if (!data.api_key) {
-            throw new Error('API key not found in credential data');
+            throw new Error('API key not found in connection data');
         }
-        console.log(`[LLM] Using credential: ${credential.name} (${credential.id})`);
+        console.log(`[LLM] Using connection: ${connection.name} (${connection.id})`);
         return data.api_key;
     }
 
@@ -144,8 +144,8 @@ async function getApiKey(credentialId: string | undefined, provider: string, env
     const apiKey = process.env[envVarName];
     if (!apiKey) {
         throw new Error(
-            `No credential provided and ${envVarName} environment variable is not set. ` +
-            `Please add a credential in the Credentials page or set the ${envVarName} environment variable.`
+            `No connection provided and ${envVarName} environment variable is not set. ` +
+            `Please add a connection in the Connections page or set the ${envVarName} environment variable.`
         );
     }
     console.log(`[LLM] Using environment variable: ${envVarName}`);
@@ -200,7 +200,7 @@ async function executeOpenAI(
     systemPrompt: string | undefined,
     userPrompt: string
 ): Promise<LLMNodeResult> {
-    const apiKey = await getApiKey(config.credentialId, 'openai', 'OPENAI_API_KEY');
+    const apiKey = await getApiKey(config.connectionId, 'openai', 'OPENAI_API_KEY');
     const openai = new OpenAI({ apiKey });
 
     const messages: Array<{ role: 'system' | 'user'; content: string }> = [];
@@ -241,7 +241,7 @@ async function executeAnthropic(
     systemPrompt: string | undefined,
     userPrompt: string
 ): Promise<LLMNodeResult> {
-    const apiKey = await getApiKey(config.credentialId, 'anthropic', 'ANTHROPIC_API_KEY');
+    const apiKey = await getApiKey(config.connectionId, 'anthropic', 'ANTHROPIC_API_KEY');
     const anthropic = new Anthropic({ apiKey });
 
     return withRetry(async () => {
@@ -278,7 +278,7 @@ async function executeGoogle(
     systemPrompt: string | undefined,
     userPrompt: string
 ): Promise<LLMNodeResult> {
-    const apiKey = await getApiKey(config.credentialId, 'google', 'GOOGLE_API_KEY');
+    const apiKey = await getApiKey(config.connectionId, 'google', 'GOOGLE_API_KEY');
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({
         model: config.model,
@@ -314,7 +314,7 @@ async function executeCohere(
     systemPrompt: string | undefined,
     userPrompt: string
 ): Promise<LLMNodeResult> {
-    const apiKey = await getApiKey(config.credentialId, 'cohere', 'COHERE_API_KEY');
+    const apiKey = await getApiKey(config.connectionId, 'cohere', 'COHERE_API_KEY');
     const cohere = new CohereClient({ token: apiKey });
 
     // Combine system prompt with user prompt
