@@ -16,6 +16,7 @@ import { oauthRoutes } from "./routes/oauth";
 import { knowledgeBaseRoutes } from "./routes/knowledge-bases";
 import { db } from "../storage/database";
 import { eventBridge } from "../shared/websocket/EventBridge";
+import { redisEventBus } from "../shared/events/RedisEventBus";
 import { registerAllNodes } from "../shared/registry/register-nodes";
 
 export async function buildServer() {
@@ -62,8 +63,8 @@ export async function buildServer() {
         }
     });
 
-    // Initialize event bridge (connect orchestrator events to WebSocket)
-    eventBridge.initialize();
+    // Initialize event bridge (connect orchestrator events to WebSocket via Redis)
+    await eventBridge.initialize();
 
     // Health check route
     fastify.get("/health", async (_request, reply) => {
@@ -124,6 +125,7 @@ export async function startServer() {
             fastify.log.info(`Received ${signal}, closing server...`);
             await fastify.close();
             await db.close();
+            await redisEventBus.disconnect();
             process.exit(0);
         });
     });

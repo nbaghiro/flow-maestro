@@ -308,7 +308,6 @@ export async function deleteWorkflow(workflowId: string) {
     const response = await fetch(`${API_BASE_URL}/api/workflows/${workflowId}`, {
         method: 'DELETE',
         headers: {
-            'Content-Type': 'application/json',
             ...(token && { Authorization: `Bearer ${token}` }),
         },
     });
@@ -423,7 +422,6 @@ export async function deleteTrigger(triggerId: string): Promise<{ success: boole
     const response = await fetch(`${API_BASE_URL}/api/triggers/${triggerId}`, {
         method: 'DELETE',
         headers: {
-            'Content-Type': 'application/json',
             ...(token && { Authorization: `Bearer ${token}` }),
         },
     });
@@ -784,7 +782,6 @@ export async function deleteConnection(connectionId: string): Promise<{ success:
     const response = await fetch(`${API_BASE_URL}/api/connections/${connectionId}`, {
         method: 'DELETE',
         headers: {
-            'Content-Type': 'application/json',
             ...(token && { Authorization: `Bearer ${token}` }),
         },
     });

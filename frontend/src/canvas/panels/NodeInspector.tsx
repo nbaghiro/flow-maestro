@@ -140,7 +140,7 @@ export function NodeInspector() {
             </div>
 
             {/* Content */}
-            <div className="flex-1 overflow-y-auto">
+            <div key={node.id} className="flex-1 overflow-y-auto">
                 {renderConfig()}
             </div>
         </div>

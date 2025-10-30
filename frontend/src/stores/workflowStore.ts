@@ -12,6 +12,9 @@ export interface NodeExecutionState {
     output: any;
     error: string | null;
     duration: number | null;
+    input?: any;
+    metadata?: Record<string, any>;
+    retryCount?: number;
 }
 
 export interface ExecutionLog {

@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect } from "react";
-import { Plus, RefreshCw } from "lucide-react";
+import { RefreshCw, Zap } from "lucide-react";
 import { useTriggerStore } from "../../stores/triggerStore";
 import { getTriggers } from "../../lib/api";
 import { TriggerCard } from "./TriggerCard";
@@ -30,6 +30,16 @@ export function TriggerPanelContent({ workflowId }: TriggerPanelContentProps) {
         loadTriggerList();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [workflowId]);
+
+    // Listen for create trigger event
+    useEffect(() => {
+        const handleCreateTrigger = () => {
+            setShowCreateDialog(true);
+        };
+
+        window.addEventListener("trigger:create", handleCreateTrigger);
+        return () => window.removeEventListener("trigger:create", handleCreateTrigger);
+    }, []);
 
     const loadTriggerList = async () => {
         if (!workflowId) return;
@@ -57,28 +67,6 @@ export function TriggerPanelContent({ workflowId }: TriggerPanelContentProps) {
 
     return (
         <div className="h-full flex flex-col">
-            {/* Action Bar */}
-            <div className="flex-shrink-0 px-4 py-3 border-b border-border bg-muted/30">
-                <div className="flex items-center justify-between gap-2">
-                    <button
-                        onClick={loadTriggerList}
-                        disabled={loadingTriggers}
-                        className="p-2 hover:bg-muted rounded transition-colors disabled:opacity-50"
-                        title="Refresh triggers"
-                    >
-                        <RefreshCw className={`w-4 h-4 ${loadingTriggers ? "animate-spin" : ""}`} />
-                    </button>
-
-                    <button
-                        onClick={() => setShowCreateDialog(true)}
-                        className="flex-1 px-3 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 text-sm font-medium"
-                    >
-                        <Plus className="w-4 h-4" />
-                        Add Trigger
-                    </button>
-                </div>
-            </div>
-
             {/* Content Area */}
             <div className="flex-1 overflow-y-auto">
                 {error && (
@@ -95,18 +83,12 @@ export function TriggerPanelContent({ workflowId }: TriggerPanelContentProps) {
                 ) : triggers.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full text-center px-8">
                         <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
-                            <Plus className="w-8 h-8 text-muted-foreground" />
+                            <Zap className="w-8 h-8 text-muted-foreground" />
                         </div>
                         <h4 className="font-medium mb-2">No Triggers Yet</h4>
-                        <p className="text-sm text-muted-foreground mb-4">
-                            Add your first trigger to automate this workflow with schedules, webhooks, or events.
+                        <p className="text-sm text-muted-foreground">
+                            Click the + icon above to add your first trigger and automate this workflow.
                         </p>
-                        <button
-                            onClick={() => setShowCreateDialog(true)}
-                            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors text-sm font-medium"
-                        >
-                            Create Trigger
-                        </button>
                     </div>
                 ) : (
                     <div className="p-4 space-y-3">

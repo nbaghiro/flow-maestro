@@ -12,6 +12,7 @@ interface NodeExecutionModalProps {
     nodeName: string;
     executionState: NodeExecutionState;
     onClose: () => void;
+    nodePosition?: { x: number; y: number };
 }
 
 export function NodeExecutionModal({
@@ -19,7 +20,28 @@ export function NodeExecutionModal({
     nodeName,
     executionState,
     onClose,
+    nodePosition,
 }: NodeExecutionModalProps) {
+    // Calculate modal position
+    const getModalStyle = (): React.CSSProperties => {
+        if (!nodePosition) {
+            // Fallback to centered if no position provided
+            return {};
+        }
+
+        // Position above the node with some offset
+        const modalWidth = 600; // Approximate width
+        const modalHeight = 400; // Approximate max height
+        const offsetY = 20; // Space above the node
+
+        return {
+            position: "absolute",
+            left: `${nodePosition.x - modalWidth / 2}px`,
+            top: `${nodePosition.y - modalHeight - offsetY}px`,
+            transform: "none",
+        };
+    };
+
     // Get status info
     const getStatusInfo = () => {
         switch (executionState.status) {
@@ -86,9 +108,13 @@ export function NodeExecutionModal({
             />
 
             {/* Modal */}
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
+            <div className={cn(
+                "fixed z-50 p-4 pointer-events-none",
+                nodePosition ? "inset-0" : "inset-0 flex items-center justify-center"
+            )}>
                 <div
-                    className="bg-background border border-border rounded-lg shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col pointer-events-auto"
+                    className="bg-background border border-border rounded-lg shadow-2xl max-w-3xl w-full max-h-[80vh] overflow-hidden flex flex-col pointer-events-auto"
+                    style={getModalStyle()}
                     onClick={(e) => e.stopPropagation()}
                 >
                     {/* Header */}

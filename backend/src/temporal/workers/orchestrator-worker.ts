@@ -2,6 +2,7 @@ import { Worker, NativeConnection } from "@temporalio/worker";
 import path from "path";
 import * as activities from "../activities";
 import { registerAllNodes } from "../../shared/registry/register-nodes";
+import { redisEventBus } from "../../shared/events/RedisEventBus";
 
 /**
  * Orchestrator Worker
@@ -12,6 +13,15 @@ import { registerAllNodes } from "../../shared/registry/register-nodes";
 async function run() {
     // Register all node types
     registerAllNodes();
+
+    // Connect to Redis for cross-process event communication
+    try {
+        await redisEventBus.connect();
+        console.log("✅ Worker connected to Redis for event publishing");
+    } catch (error) {
+        console.error("❌ Failed to connect to Redis:", error);
+        console.warn("⚠️  Workflow events will not be published");
+    }
 
     // Connect to Temporal
     const connection = await NativeConnection.connect({
@@ -51,6 +61,17 @@ async function run() {
     console.log("🚀 Orchestrator worker starting...");
     console.log(`   Task Queue: flowmaestro-orchestrator`);
     console.log(`   Temporal Address: ${process.env.TEMPORAL_ADDRESS || "localhost:7233"}`);
+
+    // Graceful shutdown handler
+    const signals = ["SIGINT", "SIGTERM"];
+    signals.forEach((signal) => {
+        process.on(signal, async () => {
+            console.log(`\nReceived ${signal}, shutting down worker...`);
+            worker.shutdown();
+            await redisEventBus.disconnect();
+            process.exit(0);
+        });
+    });
 
     // Run the worker
     await worker.run();

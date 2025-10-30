@@ -1,8 +1,12 @@
-import { globalEventEmitter } from "../../shared/events/EventEmitter";
+import { redisEventBus } from "../../shared/events/RedisEventBus";
 
 /**
  * Activities for emitting orchestration events to WebSocket clients
  * These are side-effect activities called from the orchestrator workflow
+ *
+ * Events are published to Redis so they can be received by the API server
+ * process (which hosts WebSocket connections), even though activities run
+ * in the Temporal worker process.
  */
 
 export interface EmitExecutionStartedInput {
@@ -56,7 +60,13 @@ export interface EmitNodeFailedInput {
  */
 export async function emitExecutionStarted(input: EmitExecutionStartedInput): Promise<void> {
     const { executionId, workflowName, totalNodes } = input;
-    globalEventEmitter.emitExecutionStarted(executionId, workflowName, totalNodes);
+    await redisEventBus.publish("workflow:events:execution:started", {
+        type: "execution:started",
+        timestamp: Date.now(),
+        executionId,
+        workflowName,
+        totalNodes,
+    });
 }
 
 /**
@@ -64,7 +74,14 @@ export async function emitExecutionStarted(input: EmitExecutionStartedInput): Pr
  */
 export async function emitExecutionProgress(input: EmitExecutionProgressInput): Promise<void> {
     const { executionId, completed, total, percentage } = input;
-    globalEventEmitter.emitExecutionProgress(executionId, completed, total, percentage);
+    await redisEventBus.publish("workflow:events:execution:progress", {
+        type: "execution:progress",
+        timestamp: Date.now(),
+        executionId,
+        completed,
+        total,
+        percentage,
+    });
 }
 
 /**
@@ -72,7 +89,14 @@ export async function emitExecutionProgress(input: EmitExecutionProgressInput): 
  */
 export async function emitExecutionCompleted(input: EmitExecutionCompletedInput): Promise<void> {
     const { executionId, outputs, duration } = input;
-    globalEventEmitter.emitExecutionCompleted(executionId, outputs, duration);
+    await redisEventBus.publish("workflow:events:execution:completed", {
+        type: "execution:completed",
+        timestamp: Date.now(),
+        executionId,
+        status: "completed",
+        outputs,
+        duration,
+    });
 }
 
 /**
@@ -80,7 +104,14 @@ export async function emitExecutionCompleted(input: EmitExecutionCompletedInput)
  */
 export async function emitExecutionFailed(input: EmitExecutionFailedInput): Promise<void> {
     const { executionId, error, failedNodeId } = input;
-    globalEventEmitter.emitExecutionFailed(executionId, error, failedNodeId);
+    await redisEventBus.publish("workflow:events:execution:failed", {
+        type: "execution:failed",
+        timestamp: Date.now(),
+        executionId,
+        status: "failed",
+        error,
+        failedNodeId,
+    });
 }
 
 /**
@@ -88,7 +119,14 @@ export async function emitExecutionFailed(input: EmitExecutionFailedInput): Prom
  */
 export async function emitNodeStarted(input: EmitNodeStartedInput): Promise<void> {
     const { executionId, nodeId, nodeName, nodeType } = input;
-    globalEventEmitter.emitNodeStarted(executionId, nodeId, nodeName, nodeType);
+    await redisEventBus.publish("workflow:events:node:started", {
+        type: "node:started",
+        timestamp: Date.now(),
+        executionId,
+        nodeId,
+        nodeName,
+        nodeType,
+    });
 }
 
 /**
@@ -96,7 +134,15 @@ export async function emitNodeStarted(input: EmitNodeStartedInput): Promise<void
  */
 export async function emitNodeCompleted(input: EmitNodeCompletedInput): Promise<void> {
     const { executionId, nodeId, output, duration, metadata } = input;
-    globalEventEmitter.emitNodeCompleted(executionId, nodeId, output, duration, metadata);
+    await redisEventBus.publish("workflow:events:node:completed", {
+        type: "node:completed",
+        timestamp: Date.now(),
+        executionId,
+        nodeId,
+        output,
+        duration,
+        metadata,
+    });
 }
 
 /**
@@ -104,5 +150,11 @@ export async function emitNodeCompleted(input: EmitNodeCompletedInput): Promise<
  */
 export async function emitNodeFailed(input: EmitNodeFailedInput): Promise<void> {
     const { executionId, nodeId, error } = input;
-    globalEventEmitter.emitNodeFailed(executionId, nodeId, error);
+    await redisEventBus.publish("workflow:events:node:failed", {
+        type: "node:failed",
+        timestamp: Date.now(),
+        executionId,
+        nodeId,
+        error,
+    });
 }

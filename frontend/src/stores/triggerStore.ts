@@ -29,6 +29,7 @@ interface TriggerStore {
     addTrigger: (trigger: WorkflowTrigger) => void;
     updateTrigger: (id: string, updates: Partial<WorkflowTrigger>) => void;
     removeTrigger: (id: string) => void;
+    clearTriggers: () => void;
 }
 
 export const useTriggerStore = create<TriggerStore>((set) => ({
@@ -70,4 +71,11 @@ export const useTriggerStore = create<TriggerStore>((set) => ({
             triggers: state.triggers.filter((t) => t.id !== id),
             selectedTriggerId: state.selectedTriggerId === id ? null : state.selectedTriggerId,
         })),
+
+    clearTriggers: () =>
+        set({
+            triggers: [],
+            selectedTriggerId: null,
+            loadingTriggers: false,
+        }),
 }));

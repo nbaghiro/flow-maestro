@@ -1,4 +1,4 @@
-import { proxyActivities, workflowInfo } from '@temporalio/workflow';
+import { proxyActivities } from '@temporalio/workflow';
 import type * as activities from '../activities';
 
 const { executeNode } = proxyActivities<typeof activities>({
@@ -47,8 +47,10 @@ export interface WorkflowDefinition {
 }
 
 export interface OrchestratorInput {
+    executionId: string;
     workflowDefinition: WorkflowDefinition;
     inputs?: Record<string, any>;
+    userId?: string;
 }
 
 export interface OrchestratorResult {
@@ -61,12 +63,10 @@ export interface OrchestratorResult {
  * Main workflow orchestrator - executes a workflow definition
  */
 export async function orchestratorWorkflow(input: OrchestratorInput): Promise<OrchestratorResult> {
-    const { workflowDefinition, inputs = {} } = input;
+    const { executionId, workflowDefinition, inputs = {} } = input;
     const { nodes, edges } = workflowDefinition;
 
-    // Get execution metadata from Temporal
-    const info = workflowInfo();
-    const executionId = info.workflowId;
+    // Get workflow start time
     const workflowStartTime = Date.now();
 
     // Convert nodes Record to entries for processing

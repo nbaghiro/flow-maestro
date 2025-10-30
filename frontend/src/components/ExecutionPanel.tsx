@@ -6,7 +6,7 @@
 import { useRef, useEffect, useState } from "react";
 import { useTriggerStore } from "../stores/triggerStore";
 import { useWorkflowStore } from "../stores/workflowStore";
-import { ChevronLeft, ChevronRight, X, Zap, Play, History as HistoryIcon } from "lucide-react";
+import { ChevronLeft, ChevronRight, X, Zap, Play, History as HistoryIcon, Plus } from "lucide-react";
 import { cn } from "../lib/utils";
 import { ExecutionPanelContent } from "./execution/ExecutionPanelContent";
 
@@ -29,15 +29,30 @@ export function ExecutionPanel({ workflowId, renderButtonOnly, renderPanelOnly }
         setDrawerOpen,
         setDrawerWidth,
         triggers,
+        clearTriggers,
     } = useTriggerStore();
 
-    const { selectNode, currentExecution } = useWorkflowStore();
+    const { selectNode, selectedNode, currentExecution, clearExecution } = useWorkflowStore();
 
     const [isResizing, setIsResizing] = useState(false);
     const [activeTab, setActiveTab] = useState<TabType>("triggers");
     const drawerRef = useRef<HTMLDivElement>(null);
     const resizeStartX = useRef(0);
     const resizeStartWidth = useRef(DEFAULT_WIDTH);
+
+    // Clear execution and triggers when workflow changes
+    useEffect(() => {
+        clearExecution();
+        clearTriggers();
+        setActiveTab("triggers"); // Reset to triggers tab
+    }, [workflowId, clearExecution, clearTriggers]);
+
+    // Auto-close execution panel when a node is selected
+    useEffect(() => {
+        if (selectedNode && isDrawerOpen) {
+            setDrawerOpen(false);
+        }
+    }, [selectedNode, isDrawerOpen, setDrawerOpen]);
 
     // Auto-switch to execution tab when an execution starts
     useEffect(() => {
@@ -104,50 +119,65 @@ export function ExecutionPanel({ workflowId, renderButtonOnly, renderPanelOnly }
 
     // Render tabs
     const renderTabs = () => (
-        <div className="flex items-center gap-1 px-4 py-2 border-b border-border bg-muted/20">
-            <button
-                onClick={() => setActiveTab("triggers")}
-                className={cn(
-                    "flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors",
-                    activeTab === "triggers"
-                        ? "bg-background text-foreground shadow-sm"
-                        : "text-muted-foreground hover:text-foreground hover:bg-background/50"
-                )}
-            >
-                <Zap className="w-4 h-4" />
-                Triggers
-                {enabledCount > 0 && activeTab === "triggers" && (
-                    <span className="text-xs px-1.5 py-0.5 rounded-full bg-primary/10 text-primary">
-                        {enabledCount}
-                    </span>
-                )}
-            </button>
+        <div className="flex items-center justify-between gap-1 px-4 py-2 border-b border-border bg-muted/20">
+            <div className="flex items-center gap-1">
+                <button
+                    onClick={() => setActiveTab("triggers")}
+                    className={cn(
+                        "flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors",
+                        activeTab === "triggers"
+                            ? "bg-background text-foreground shadow-sm"
+                            : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+                    )}
+                >
+                    <Zap className="w-4 h-4" />
+                    Triggers
+                    {enabledCount > 0 && (
+                        <span className="text-xs px-1.5 py-0.5 rounded-full bg-primary/10 text-primary">
+                            {enabledCount}
+                        </span>
+                    )}
+                </button>
 
-            <button
-                onClick={() => setActiveTab("execution")}
-                className={cn(
-                    "flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors",
-                    activeTab === "execution"
-                        ? "bg-background text-foreground shadow-sm"
-                        : "text-muted-foreground hover:text-foreground hover:bg-background/50"
-                )}
-            >
-                <Play className="w-4 h-4" />
-                Execution
-            </button>
+                <button
+                    onClick={() => setActiveTab("execution")}
+                    className={cn(
+                        "flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors",
+                        activeTab === "execution"
+                            ? "bg-background text-foreground shadow-sm"
+                            : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+                    )}
+                >
+                    <Play className="w-4 h-4" />
+                    Execution
+                </button>
 
-            <button
-                onClick={() => setActiveTab("history")}
-                className={cn(
-                    "flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors",
-                    activeTab === "history"
-                        ? "bg-background text-foreground shadow-sm"
-                        : "text-muted-foreground hover:text-foreground hover:bg-background/50"
-                )}
-            >
-                <HistoryIcon className="w-4 h-4" />
-                History
-            </button>
+                <button
+                    onClick={() => setActiveTab("history")}
+                    className={cn(
+                        "flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors",
+                        activeTab === "history"
+                            ? "bg-background text-foreground shadow-sm"
+                            : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+                    )}
+                >
+                    <HistoryIcon className="w-4 h-4" />
+                    History
+                </button>
+            </div>
+
+            {activeTab === "triggers" && (
+                <button
+                    onClick={() => {
+                        // Trigger add new trigger action
+                        window.dispatchEvent(new CustomEvent("trigger:create"));
+                    }}
+                    className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-background rounded transition-colors"
+                    title="Add trigger"
+                >
+                    <Plus className="w-4 h-4" />
+                </button>
+            )}
         </div>
     );
 

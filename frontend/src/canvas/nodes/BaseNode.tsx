@@ -1,9 +1,9 @@
-import { ReactNode, useState } from "react";
-import { Handle, Position, useNodeId } from "reactflow";
+import { ReactNode, useState, useEffect } from "react";
+import { Handle, Position, useNodeId, useStore } from "reactflow";
 import { cn } from "../../lib/utils";
 import { LucideIcon } from "lucide-react";
-import { useWorkflowStore, NodeExecutionStatus } from "../../stores/workflowStore";
-import { NodeExecutionModal } from "../../components/execution/NodeExecutionModal";
+import { useWorkflowStore } from "../../stores/workflowStore";
+import { NodeExecutionPopover } from "../../components/execution/NodeExecutionPopover";
 
 export type NodeStatus = "idle" | "pending" | "running" | "success" | "error";
 
@@ -76,12 +76,23 @@ export function BaseNode({
     const nodeId = useNodeId();
     const { currentExecution } = useWorkflowStore();
     const categoryStyle = categoryConfig[category];
-    const [showModal, setShowModal] = useState(false);
+    const [showPopover, setShowPopover] = useState(false);
+
+    // Track viewport changes (zoom/pan) to auto-close popover
+    const viewport = useStore((state) => state.transform);
 
     // Get execution status for this node
     const executionState = nodeId && currentExecution
         ? currentExecution.nodeStates.get(nodeId)
         : null;
+
+    // Close popover when viewport changes (zoom or pan)
+    useEffect(() => {
+        if (showPopover) {
+            setShowPopover(false);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [viewport]);
 
     // Use execution status if available, otherwise use provided status
     const status: NodeStatus = executionState
@@ -124,24 +135,39 @@ export function BaseNode({
                     </div>
                     <span className="font-medium text-sm text-foreground">{label}</span>
                 </div>
-                <div
-                    className={cn(
-                        "w-2 h-2 rounded-full transition-all",
-                        statusConfig[status].color,
-                        executionState && "cursor-pointer hover:scale-125"
-                    )}
-                    title={getTooltipText()}
-                    onClick={(e) => {
-                        if (executionState) {
-                            e.stopPropagation();
-                            if (onStatusClick) {
-                                onStatusClick();
-                            } else {
-                                setShowModal(true);
-                            }
-                        }
-                    }}
-                />
+                {executionState && nodeId ? (
+                    <NodeExecutionPopover
+                        nodeId={nodeId}
+                        nodeName={label}
+                        executionState={executionState}
+                        open={showPopover}
+                        onOpenChange={setShowPopover}
+                    >
+                        <div
+                            className={cn(
+                                "w-2 h-2 rounded-full transition-all cursor-pointer hover:scale-125",
+                                statusConfig[status].color
+                            )}
+                            title={getTooltipText()}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                if (onStatusClick) {
+                                    onStatusClick();
+                                } else {
+                                    setShowPopover(true);
+                                }
+                            }}
+                        />
+                    </NodeExecutionPopover>
+                ) : (
+                    <div
+                        className={cn(
+                            "w-2 h-2 rounded-full transition-all",
+                            statusConfig[status].color
+                        )}
+                        title={getTooltipText()}
+                    />
+                )}
             </div>
 
             {/* Content */}
@@ -173,15 +199,6 @@ export function BaseNode({
                 </>
             )}
 
-            {/* Execution Modal */}
-            {showModal && executionState && nodeId && (
-                <NodeExecutionModal
-                    nodeId={nodeId}
-                    nodeName={label}
-                    executionState={executionState}
-                    onClose={() => setShowModal(false)}
-                />
-            )}
         </div>
     );
 }

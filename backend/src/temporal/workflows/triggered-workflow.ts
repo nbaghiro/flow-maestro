@@ -54,6 +54,7 @@ export async function triggeredWorkflow(
         let orchestratorResult: OrchestratorResult;
         try {
             orchestratorResult = await orchestratorWorkflow({
+                executionId: preparation.executionId,
                 workflowDefinition: preparation.workflowDefinition,
                 inputs: preparation.inputs
             });
