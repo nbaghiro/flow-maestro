@@ -91,11 +91,26 @@ export async function executeTriggerRoute(fastify: FastifyInstance) {
                 const client = await getTemporalClient();
                 const workflowId = `execution-${execution.id}`;
 
-                // Convert frontend workflow definition to backend format
-                const backendWorkflowDefinition = convertFrontendToBackend(
-                    workflow.definition as any,
-                    workflow.name
-                );
+                // Convert frontend workflow definition to backend format if needed
+                let backendWorkflowDefinition: any;
+                const workflowDef = workflow.definition as any;
+
+                // Check if already in backend format (nodes is an object/Record)
+                if (workflowDef.nodes && !Array.isArray(workflowDef.nodes)) {
+                    // Already in backend format
+                    backendWorkflowDefinition = {
+                        name: workflow.name,
+                        ...workflowDef,
+                    };
+                } else if (workflowDef.nodes && Array.isArray(workflowDef.nodes)) {
+                    // Frontend format, needs conversion
+                    backendWorkflowDefinition = convertFrontendToBackend(
+                        workflowDef,
+                        workflow.name
+                    );
+                } else {
+                    throw new Error("Invalid workflow definition format");
+                }
 
                 // Start the workflow (non-blocking)
                 await client.workflow.start('orchestratorWorkflow', {

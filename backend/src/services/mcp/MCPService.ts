@@ -2,10 +2,9 @@ import axios, { AxiosInstance, AxiosRequestConfig } from "axios";
 import type {
     MCPConnectionData,
     MCPTool,
-    MCPToolParameter,
     ConnectionWithData,
 } from "../../storage/models/Connection";
-import { getMCPProvider, validateServerUrl } from "./MCPProviderRegistry";
+import { validateServerUrl } from "./MCPProviderRegistry";
 
 /**
  * MCP Server Information Response

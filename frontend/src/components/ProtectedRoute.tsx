@@ -1,5 +1,8 @@
 import { Navigate } from "react-router-dom";
+import { useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
+import { wsClient } from "../lib/websocket";
+import { useExecutionEventHandlers } from "../hooks/useExecutionEventHandlers";
 import { Loader2 } from "lucide-react";
 
 interface ProtectedRouteProps {
@@ -8,6 +11,28 @@ interface ProtectedRouteProps {
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
     const { isAuthenticated, isLoading } = useAuth();
+
+    // Set up WebSocket event handlers for execution monitoring
+    useExecutionEventHandlers();
+
+    // Initialize WebSocket connection when authenticated
+    useEffect(() => {
+        if (isAuthenticated) {
+            const token = localStorage.getItem("auth_token");
+            if (token) {
+                wsClient.connect(token).catch((error) => {
+                    console.error("Failed to connect WebSocket:", error);
+                });
+            }
+        }
+
+        return () => {
+            // Disconnect when component unmounts or user logs out
+            if (!isAuthenticated) {
+                wsClient.disconnect();
+            }
+        };
+    }, [isAuthenticated]);
 
     if (isLoading) {
         return (

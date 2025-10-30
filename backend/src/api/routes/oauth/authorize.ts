@@ -35,7 +35,7 @@ export async function authorizeRoute(fastify: FastifyInstance) {
                     }
                 });
             } catch (error: any) {
-                fastify.log.error(`Failed to generate auth URL for ${provider}:`, error);
+                fastify.log.error(error, `Failed to generate auth URL for ${provider}`);
 
                 return reply.status(400).send({
                     success: false,

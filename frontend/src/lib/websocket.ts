@@ -16,6 +16,7 @@ export class WebSocketClient {
     private reconnectDelay = 1000;
     private eventHandlers: Map<string, Set<EventHandler>> = new Map();
     private connectionPromise: Promise<void> | null = null;
+    private shouldReconnect = true;
 
     private constructor() {}
 
@@ -34,6 +35,10 @@ export class WebSocketClient {
         if (this.connectionPromise) {
             return this.connectionPromise;
         }
+
+        // Store token and reset reconnection flags
+        this.shouldReconnect = true;
+        this.reconnectAttempts = 0;
 
         this.connectionPromise = new Promise((resolve, reject) => {
             const wsUrl = `${WS_URL}/ws?token=${encodeURIComponent(token)}`;
@@ -61,9 +66,17 @@ export class WebSocketClient {
                 reject(error);
             };
 
-            this.ws.onclose = () => {
-                console.log("WebSocket disconnected");
+            this.ws.onclose = (event) => {
+                console.log("WebSocket disconnected", { code: event.code, reason: event.reason });
                 this.connectionPromise = null;
+
+                // Don't reconnect if authentication failed (code 1008)
+                if (event.code === 1008) {
+                    console.error("WebSocket authentication failed, not reconnecting");
+                    this.shouldReconnect = false;
+                    return;
+                }
+
                 this.handleReconnect(token);
             };
         });
@@ -72,6 +85,7 @@ export class WebSocketClient {
     }
 
     disconnect(): void {
+        this.shouldReconnect = false; // Prevent reconnection
         if (this.ws) {
             this.ws.close();
             this.ws = null;
@@ -141,8 +155,15 @@ export class WebSocketClient {
     }
 
     private handleReconnect(token: string): void {
+        // Don't reconnect if explicitly disabled (e.g., auth failure or manual disconnect)
+        if (!this.shouldReconnect) {
+            console.log("Reconnection disabled, not attempting to reconnect");
+            return;
+        }
+
         if (this.reconnectAttempts >= this.maxReconnectAttempts) {
             console.error("Max reconnect attempts reached");
+            this.shouldReconnect = false;
             return;
         }
 

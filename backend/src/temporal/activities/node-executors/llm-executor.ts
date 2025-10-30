@@ -4,7 +4,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { CohereClient } from 'cohere-ai';
 import { interpolateVariables } from './utils';
 import { ConnectionRepository } from '../../../storage/repositories/ConnectionRepository';
-import type { ApiKeyConnectionData } from '../../../storage/models/Connection';
+import type { ApiKeyData } from '../../../storage/models/Connection';
 
 const connectionRepository = new ConnectionRepository();
 
@@ -132,7 +132,7 @@ async function getApiKey(connectionId: string | undefined, provider: string, env
         if (connection.status !== 'active') {
             throw new Error(`Connection is not active (status: ${connection.status})`);
         }
-        const data = connection.data as ApiKeyConnectionData;
+        const data = connection.data as ApiKeyData;
         if (!data.api_key) {
             throw new Error('API key not found in connection data');
         }

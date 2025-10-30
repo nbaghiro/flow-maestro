@@ -79,7 +79,7 @@ export async function refreshRoute(fastify: FastifyInstance) {
                     data: updatedConnection
                 });
             } catch (error: any) {
-                fastify.log.error(`Failed to refresh token for connection ${connectionId}:`, error);
+                fastify.log.error(error, `Failed to refresh token for connection ${connectionId}`);
 
                 return reply.status(400).send({
                     success: false,

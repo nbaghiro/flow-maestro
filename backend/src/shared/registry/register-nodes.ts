@@ -184,10 +184,10 @@ export function registerAllNodes(): void {
         },
         configForm: [
             {
-                key: "knowledgeBaseId",
-                type: "select",
+                field: "knowledgeBaseId",
+                type: "dropdown",
                 label: "Knowledge Base",
-                description: "Select which knowledge base to search",
+                placeholder: "Select which knowledge base to search",
                 required: true
             }
         ]

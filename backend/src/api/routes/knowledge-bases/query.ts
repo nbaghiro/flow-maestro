@@ -71,7 +71,7 @@ export async function queryKnowledgeBaseRoute(fastify: FastifyInstance) {
                     }
                 });
             } catch (error: any) {
-                fastify.log.error("Error querying knowledge base:", error);
+                fastify.log.error(error, "Error querying knowledge base");
                 return reply.status(500).send({
                     success: false,
                     error: `Failed to query knowledge base: ${error.message}`

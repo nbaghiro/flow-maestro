@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { FormField, FormSection } from "../../../components/FormField";
 import { OutputSettingsSection } from "../../../components/OutputSettingsSection";
 import { useQuery } from "@tanstack/react-query";
-import axios from "axios";
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
 interface KnowledgeBaseQueryNodeConfigProps {
     data: any;
@@ -15,6 +16,13 @@ interface KnowledgeBase {
     description: string;
 }
 
+/**
+ * Get auth token from localStorage
+ */
+function getAuthToken(): string | null {
+    return localStorage.getItem("auth_token");
+}
+
 export function KnowledgeBaseQueryNodeConfig({ data, onUpdate }: KnowledgeBaseQueryNodeConfigProps) {
     const [knowledgeBaseId, setKnowledgeBaseId] = useState(data.config?.knowledgeBaseId || "");
     const [queryText, setQueryText] = useState(data.config?.queryText || "");
@@ -24,8 +32,20 @@ export function KnowledgeBaseQueryNodeConfig({ data, onUpdate }: KnowledgeBaseQu
     const { data: kbData, isLoading } = useQuery({
         queryKey: ["knowledge-bases"],
         queryFn: async () => {
-            const response = await axios.get("/api/knowledge-bases");
-            return response.data.data as KnowledgeBase[];
+            const token = getAuthToken();
+            const response = await fetch(`${API_BASE_URL}/api/knowledge-bases`, {
+                headers: {
+                    "Content-Type": "application/json",
+                    ...(token && { Authorization: `Bearer ${token}` }),
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error("Failed to fetch knowledge bases");
+            }
+
+            const result = await response.json();
+            return result.data as KnowledgeBase[];
         },
     });
 

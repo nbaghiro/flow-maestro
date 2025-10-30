@@ -262,7 +262,7 @@ export async function callbackRoute(fastify: FastifyInstance) {
                     </html>
                 `);
             } catch (error: any) {
-                fastify.log.error(`OAuth callback failed for ${provider}:`, error);
+                fastify.log.error(error, `OAuth callback failed for ${provider}`);
 
                 return reply.type("text/html").send(`
                     <!DOCTYPE html>

@@ -16,14 +16,22 @@ export async function websocketRoutes(fastify: FastifyInstance) {
                 const token = query["token"] || request.headers.authorization?.replace("Bearer ", "");
 
                 if (!token) {
+                    fastify.log.warn("WebSocket connection rejected: No token provided");
                     socket.close(1008, "Authentication required");
                     return;
                 }
 
-                const decoded = await request.jwtVerify({ onlyCookie: false });
-                userId = (decoded as any).id;
+                // Manually verify the JWT token
+                const decoded = fastify.jwt.verify(token) as { id: string; email: string };
+                userId = decoded.id;
+
+                if (!userId) {
+                    fastify.log.warn("WebSocket connection rejected: Invalid token payload");
+                    socket.close(1008, "Invalid token");
+                    return;
+                }
             } catch (error: any) {
-                fastify.log.error({ error }, "WebSocket authentication failed");
+                fastify.log.error({ error: error.message }, "WebSocket authentication failed");
                 socket.close(1008, "Authentication failed");
                 return;
             }

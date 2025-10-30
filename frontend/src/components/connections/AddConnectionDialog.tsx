@@ -48,6 +48,7 @@ export function AddConnectionDialog({
     const [testing, setTesting] = useState(false);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [showSuccessDialog, setShowSuccessDialog] = useState(false);
 
     const { addConnection, testConnectionBeforeSaving } = useConnectionStore();
 
@@ -98,7 +99,7 @@ export function AddConnectionDialog({
             const isValid = await testConnectionBeforeSaving(input);
 
             if (isValid) {
-                alert("Connection test successful!");
+                setShowSuccessDialog(true);
             } else {
                 setError("Connection test failed. Please check your configuration.");
             }
@@ -437,6 +438,15 @@ export function AddConnectionDialog({
                     </div>
                 </div>
             )}
+
+            {/* Success Dialog */}
+            <Dialog
+                isOpen={showSuccessDialog}
+                onClose={() => setShowSuccessDialog(false)}
+                title="Success"
+            >
+                <p className="text-sm text-gray-700">Connection test successful!</p>
+            </Dialog>
         </Dialog>
     );
 }

@@ -8,7 +8,10 @@ import { WorkflowTrigger, ScheduleTriggerConfig, WebhookTriggerConfig, ManualTri
 import { Calendar, Webhook, Zap, Copy, Trash2, Power, PowerOff, MoreVertical, Play } from "lucide-react";
 import { getWebhookUrl, deleteTrigger, updateTrigger, executeTrigger } from "../../lib/api";
 import { useWorkflowStore } from "../../stores/workflowStore";
+import { wsClient } from "../../lib/websocket";
 import { cn } from "../../lib/utils";
+import { Dialog } from "../common/Dialog";
+import { ConfirmDialog } from "../common/ConfirmDialog";
 
 interface TriggerCardProps {
     trigger: WorkflowTrigger;
@@ -20,6 +23,11 @@ export function TriggerCard({ trigger, onUpdate }: TriggerCardProps) {
     const [isToggling, setIsToggling] = useState(false);
     const [isRunning, setIsRunning] = useState(false);
     const [showMenu, setShowMenu] = useState(false);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [showErrorDialog, setShowErrorDialog] = useState(false);
+    const [errorMessage, setErrorMessage] = useState("");
+    const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+    const [successMessage, setSuccessMessage] = useState("");
     const { startExecution } = useWorkflowStore();
 
     const getTriggerIcon = () => {
@@ -114,18 +122,20 @@ export function TriggerCard({ trigger, onUpdate }: TriggerCardProps) {
         // TODO: Show toast notification
     };
 
-    const handleDelete = async () => {
-        if (!confirm(`Are you sure you want to delete the trigger "${trigger.name}"?`)) {
-            return;
-        }
+    const handleDeleteClick = () => {
+        setShowDeleteConfirm(true);
+    };
 
+    const handleDeleteConfirm = async () => {
+        setShowDeleteConfirm(false);
         setIsDeleting(true);
         try {
             await deleteTrigger(trigger.id);
             onUpdate();
         } catch (error) {
             console.error("Failed to delete trigger:", error);
-            alert("Failed to delete trigger");
+            setErrorMessage("Failed to delete trigger");
+            setShowErrorDialog(true);
         } finally {
             setIsDeleting(false);
         }
@@ -138,7 +148,8 @@ export function TriggerCard({ trigger, onUpdate }: TriggerCardProps) {
             onUpdate();
         } catch (error) {
             console.error("Failed to toggle trigger:", error);
-            alert("Failed to update trigger");
+            setErrorMessage("Failed to update trigger");
+            setShowErrorDialog(true);
         } finally {
             setIsToggling(false);
         }
@@ -146,7 +157,8 @@ export function TriggerCard({ trigger, onUpdate }: TriggerCardProps) {
 
     const handleRun = async () => {
         if (!trigger.enabled) {
-            alert("Please enable the trigger first");
+            setErrorMessage("Please enable the trigger first");
+            setShowErrorDialog(true);
             return;
         }
 
@@ -165,13 +177,18 @@ export function TriggerCard({ trigger, onUpdate }: TriggerCardProps) {
                 // Start execution monitoring in the workflow store
                 startExecution(response.data.executionId, trigger.id);
 
+                // Subscribe to WebSocket events for this execution
+                wsClient.subscribeToExecution(response.data.executionId);
+
                 // Show success notification
-                alert(`Execution started successfully!\nExecution ID: ${response.data.executionId}`);
+                setSuccessMessage(`Execution started successfully!\nExecution ID: ${response.data.executionId}`);
+                setShowSuccessDialog(true);
                 onUpdate();
             }
         } catch (error) {
             console.error("Failed to execute trigger:", error);
-            alert("Failed to execute trigger: " + (error instanceof Error ? error.message : String(error)));
+            setErrorMessage("Failed to execute trigger: " + (error instanceof Error ? error.message : String(error)));
+            setShowErrorDialog(true);
         } finally {
             setIsRunning(false);
         }
@@ -234,7 +251,7 @@ export function TriggerCard({ trigger, onUpdate }: TriggerCardProps) {
                                         </button>
                                         <button
                                             onClick={() => {
-                                                handleDelete();
+                                                handleDeleteClick();
                                                 setShowMenu(false);
                                             }}
                                             disabled={isDeleting}
@@ -279,6 +296,36 @@ export function TriggerCard({ trigger, onUpdate }: TriggerCardProps) {
                     </div>
                 </div>
             </div>
+
+            {/* Delete Confirmation Dialog */}
+            <ConfirmDialog
+                isOpen={showDeleteConfirm}
+                onClose={() => setShowDeleteConfirm(false)}
+                onConfirm={handleDeleteConfirm}
+                title="Delete Trigger"
+                message={`Are you sure you want to delete the trigger "${trigger.name}"?`}
+                confirmText="Delete"
+                cancelText="Cancel"
+                variant="danger"
+            />
+
+            {/* Error Dialog */}
+            <Dialog
+                isOpen={showErrorDialog}
+                onClose={() => setShowErrorDialog(false)}
+                title="Error"
+            >
+                <p className="text-sm text-gray-700">{errorMessage}</p>
+            </Dialog>
+
+            {/* Success Dialog */}
+            <Dialog
+                isOpen={showSuccessDialog}
+                onClose={() => setShowSuccessDialog(false)}
+                title="Success"
+            >
+                <p className="text-sm text-gray-700 whitespace-pre-line">{successMessage}</p>
+            </Dialog>
         </div>
     );
 }

@@ -6,9 +6,6 @@ import {
     ApiKeyData,
     OAuth2TokenData,
     MCPConnectionData,
-    isMCPConnectionData,
-    isOAuth2TokenData,
-    isApiKeyData,
 } from "../storage/models/Connection";
 import { getMCPService } from "./mcp/MCPService";
 

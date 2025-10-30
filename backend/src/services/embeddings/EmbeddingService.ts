@@ -158,7 +158,7 @@ export class EmbeddingService {
                         );
 
                         if (apiKeyConnection && apiKeyConnection.data && 'api_key' in apiKeyConnection.data) {
-                            return apiKeyConnection.data.api_key;
+                            return apiKeyConnection.data.api_key as string;
                         }
                     }
                 }

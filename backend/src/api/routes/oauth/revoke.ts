@@ -87,7 +87,7 @@ export async function revokeRoute(fastify: FastifyInstance) {
                     message: "Connection revoked successfully"
                 });
             } catch (error: any) {
-                fastify.log.error(`Failed to revoke connection ${connectionId}:`, error);
+                fastify.log.error(error, `Failed to revoke connection ${connectionId}`);
 
                 return reply.status(500).send({
                     success: false,

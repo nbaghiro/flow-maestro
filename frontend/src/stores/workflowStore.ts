@@ -69,7 +69,7 @@ interface WorkflowStore {
     startExecution: (executionId: string, triggerId?: string) => void;
     updateExecutionStatus: (status: CurrentExecution["status"]) => void;
     updateNodeState: (nodeId: string, state: Partial<NodeExecutionState>) => void;
-    addExecutionLog: (log: Omit<ExecutionLog, "id" | "timestamp">) => void;
+    addExecutionLog: (log: Omit<ExecutionLog, "id">) => void;
     updateVariable: (key: string, value: any) => void;
     clearExecution: () => void;
 }
