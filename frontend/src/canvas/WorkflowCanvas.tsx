@@ -31,6 +31,10 @@ import HTTPNode from "./nodes/HTTPNode";
 import DatabaseNode from "./nodes/DatabaseNode";
 import IntegrationNode from "./nodes/IntegrationNode";
 import KnowledgeBaseQueryNode from "./nodes/KnowledgeBaseQueryNode";
+import { VoiceGreetNode } from "./nodes/VoiceGreetNode";
+import { VoiceListenNode } from "./nodes/VoiceListenNode";
+import { VoiceMenuNode } from "./nodes/VoiceMenuNode";
+import { VoiceHangupNode } from "./nodes/VoiceHangupNode";
 
 // Register node types
 const nodeTypes = {
@@ -51,6 +55,10 @@ const nodeTypes = {
     database: DatabaseNode,
     integration: IntegrationNode,
     knowledgeBaseQuery: KnowledgeBaseQueryNode,
+    voice_greet: VoiceGreetNode,
+    voice_listen: VoiceListenNode,
+    voice_menu: VoiceMenuNode,
+    voice_hangup: VoiceHangupNode,
 };
 
 export function WorkflowCanvas() {

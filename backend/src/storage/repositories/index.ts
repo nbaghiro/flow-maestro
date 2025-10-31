@@ -5,3 +5,5 @@ export * from "./ConnectionRepository";
 export * from "./KnowledgeBaseRepository";
 export * from "./KnowledgeDocumentRepository";
 export * from "./KnowledgeChunkRepository";
+export * from "./TriggerRepository";
+export * from "./CallExecutionRepository";

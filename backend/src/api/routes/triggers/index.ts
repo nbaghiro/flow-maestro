@@ -5,12 +5,14 @@ import { getTriggerRoute } from "./get";
 import { updateTriggerRoute } from "./update";
 import { deleteTriggerRoute } from "./delete";
 import { webhookReceiverRoute } from "./webhook";
+import { phoneCallWebhookRoute } from "./phone-call-webhook";
 import { executeTriggerRoute } from "./execute";
 
 export async function triggerRoutes(fastify: FastifyInstance) {
     // Webhook receiver routes (PUBLIC - no auth)
     fastify.register(async (instance) => {
         instance.register(webhookReceiverRoute);
+        instance.register(phoneCallWebhookRoute);
     }, { prefix: "/webhooks" });
 
     // Trigger management routes (requires auth)

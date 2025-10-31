@@ -22,6 +22,10 @@ import {
     Search,
     PanelLeftClose,
     PanelLeft,
+    MessageSquare,
+    Ear,
+    ListOrdered,
+    PhoneOff,
 } from "lucide-react";
 
 interface NodeDefinition {
@@ -159,6 +163,36 @@ const nodeLibrary: NodeDefinition[] = [
         category: "connect",
         description: "Connect to Slack, Email, Google Sheets, etc.",
     },
+
+    // Voice (4 nodes)
+    {
+        type: "voice_greet",
+        label: "Say Message",
+        icon: MessageSquare,
+        category: "voice",
+        description: "Play text-to-speech message to caller",
+    },
+    {
+        type: "voice_listen",
+        label: "Listen",
+        icon: Ear,
+        category: "voice",
+        description: "Capture caller's speech with speech-to-text",
+    },
+    {
+        type: "voice_menu",
+        label: "Menu",
+        icon: ListOrdered,
+        category: "voice",
+        description: "Present IVR menu with multiple options",
+    },
+    {
+        type: "voice_hangup",
+        label: "Hang Up",
+        icon: PhoneOff,
+        category: "voice",
+        description: "End the phone call",
+    },
 ];
 
 const categories = [
@@ -166,6 +200,7 @@ const categories = [
     { id: "logic", label: "Logic & Code", color: "text-purple-600", bgColor: "bg-purple-50" },
     { id: "data", label: "Data Operations", color: "text-green-600", bgColor: "bg-green-50" },
     { id: "connect", label: "Connect", color: "text-orange-600", bgColor: "bg-orange-50" },
+    { id: "voice", label: "Voice & Calls", color: "text-emerald-600", bgColor: "bg-emerald-50" },
 ];
 
 interface NodeLibraryProps {

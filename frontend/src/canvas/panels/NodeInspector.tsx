@@ -22,6 +22,11 @@ import { HTTPNodeConfig } from "./configs/HTTPNodeConfig";
 import { DatabaseNodeConfig } from "./configs/DatabaseNodeConfig";
 import { IntegrationNodeConfig } from "./configs/IntegrationNodeConfig";
 import { KnowledgeBaseQueryNodeConfig } from "./configs/KnowledgeBaseQueryNodeConfig";
+// Voice & Calls
+import { VoiceGreetNodeConfig } from "./configs/VoiceGreetNodeConfig";
+import { VoiceListenNodeConfig } from "./configs/VoiceListenNodeConfig";
+import { VoiceMenuNodeConfig } from "./configs/VoiceMenuNodeConfig";
+import { VoiceHangupNodeConfig } from "./configs/VoiceHangupNodeConfig";
 
 export function NodeInspector() {
     const { nodes, selectedNode, selectNode, updateNode } = useWorkflowStore();
@@ -96,6 +101,16 @@ export function NodeInspector() {
                 return <IntegrationNodeConfig data={node.data} onUpdate={handleUpdate} />;
             case "knowledgeBaseQuery":
                 return <KnowledgeBaseQueryNodeConfig data={node.data} onUpdate={handleUpdate} />;
+
+            // Voice & Calls
+            case "voice_greet":
+                return <VoiceGreetNodeConfig data={node.data} onUpdate={handleUpdate} />;
+            case "voice_listen":
+                return <VoiceListenNodeConfig data={node.data} onUpdate={handleUpdate} />;
+            case "voice_menu":
+                return <VoiceMenuNodeConfig data={node.data} onUpdate={handleUpdate} />;
+            case "voice_hangup":
+                return <VoiceHangupNodeConfig data={node.data} onUpdate={handleUpdate} />;
 
             default:
                 return (

@@ -4,7 +4,7 @@
 
 import type { JsonObject, JsonValue } from "@flowmaestro/shared";
 
-export type TriggerType = 'schedule' | 'webhook' | 'event' | 'manual';
+export type TriggerType = 'schedule' | 'webhook' | 'event' | 'manual' | 'phone_call';
 
 export interface ScheduleTriggerConfig {
     cronExpression: string;
@@ -35,11 +35,36 @@ export interface ManualTriggerConfig {
     description?: string;
 }
 
+export interface PhoneCallTriggerConfig {
+    phoneNumber: string;  // E.164 format: +15551234567
+    sipProvider: 'telnyx';
+    connectionId: string;
+    greetingMessage?: string;
+    language?: string;
+    maxCallDuration?: number;
+    enableRecording?: boolean;
+    businessHoursEnabled?: boolean;
+    businessHoursSchedule?: {
+        monday?: string;     // "9-17"
+        tuesday?: string;
+        wednesday?: string;
+        thursday?: string;
+        friday?: string;
+        saturday?: string;
+        sunday?: string;
+        timezone?: string;   // "America/New_York"
+    };
+    voiceProvider?: 'elevenlabs' | 'openai';
+    voiceId?: string;
+    sttProvider?: 'deepgram' | 'openai';
+}
+
 export type TriggerConfig =
     | ScheduleTriggerConfig
     | WebhookTriggerConfig
     | EventTriggerConfig
-    | ManualTriggerConfig;
+    | ManualTriggerConfig
+    | PhoneCallTriggerConfig;
 
 export interface WorkflowTrigger {
     id: string;

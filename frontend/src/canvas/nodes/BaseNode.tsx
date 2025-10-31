@@ -11,7 +11,7 @@ interface BaseNodeProps {
     icon: LucideIcon;
     label: string;
     status?: NodeStatus;
-    category?: "ai" | "logic" | "interaction" | "data" | "connect";
+    category?: "ai" | "logic" | "interaction" | "data" | "connect" | "voice";
     children?: ReactNode;
     selected?: boolean;
     hasInputHandle?: boolean;
@@ -58,6 +58,12 @@ const categoryConfig: Record<string, { borderColor: string; iconBg: string; icon
         iconBg: "bg-orange-50",
         iconColor: "text-orange-600",
         ringColor: "ring-orange-500",
+    },
+    voice: {
+        borderColor: "border-l-emerald-500",
+        iconBg: "bg-emerald-50",
+        iconColor: "text-emerald-600",
+        ringColor: "ring-emerald-500",
     },
 };
 

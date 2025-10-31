@@ -223,7 +223,13 @@ export type WebSocketEventType =
     | "user:input:response"
     | "kb:document:processing"
     | "kb:document:completed"
-    | "kb:document:failed";
+    | "kb:document:failed"
+    | "call:incoming"
+    | "call:ringing"
+    | "call:active"
+    | "call:transcript"
+    | "call:ended"
+    | "call:error";
 
 /**
  * Base WebSocket event interface.
@@ -253,4 +259,10 @@ export type WebSocketEvent =
     | ({ type: "user:input:response"; timestamp: number; executionId: string; nodeId: string; response: JsonValue } & JsonObject)
     | ({ type: "kb:document:processing"; timestamp: number; documentId: string; fileName: string; progress: number } & JsonObject)
     | ({ type: "kb:document:completed"; timestamp: number; documentId: string; fileName: string; chunksCreated: number } & JsonObject)
-    | ({ type: "kb:document:failed"; timestamp: number; documentId: string; fileName: string; error: string } & JsonObject);
+    | ({ type: "kb:document:failed"; timestamp: number; documentId: string; fileName: string; error: string } & JsonObject)
+    | ({ type: "call:incoming"; timestamp: number; callExecutionId: string; callerNumber: string; calledNumber: string } & JsonObject)
+    | ({ type: "call:ringing"; timestamp: number; callExecutionId: string; callerNumber: string } & JsonObject)
+    | ({ type: "call:active"; timestamp: number; callExecutionId: string; executionId?: string; answeredAt: number } & JsonObject)
+    | ({ type: "call:transcript"; timestamp: number; callExecutionId: string; speaker: string; text: string; isFinal: boolean; confidence?: number } & JsonObject)
+    | ({ type: "call:ended"; timestamp: number; callExecutionId: string; duration?: number; status: string; hangupCause?: string; recordingUrl?: string } & JsonObject)
+    | ({ type: "call:error"; timestamp: number; callExecutionId: string; error: string; errorCode?: string } & JsonObject);

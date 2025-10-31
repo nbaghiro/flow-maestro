@@ -3,7 +3,7 @@
  * Represents different trigger types that can initiate workflow execution
  */
 
-export type TriggerType = 'schedule' | 'webhook' | 'event' | 'manual';
+export type TriggerType = 'schedule' | 'webhook' | 'event' | 'manual' | 'phone_call';
 
 /**
  * Schedule trigger configuration (cron-based)
@@ -47,13 +47,52 @@ export interface ManualTriggerConfig {
 }
 
 /**
+ * Phone call trigger configuration (Telnyx + LiveKit)
+ */
+export interface PhoneCallTriggerConfig {
+    phoneNumber: string;  // E.164 format: +15551234567
+    sipProvider: 'telnyx';  // Only Telnyx supported for now
+    connectionId: string;  // Reference to connections table (Telnyx credentials)
+
+    // Call handling settings
+    greetingMessage?: string;
+    language?: string;  // Default: 'en-US'
+    maxCallDuration?: number;  // Seconds, default: 1800 (30 minutes)
+    enableRecording?: boolean;  // Default: false
+
+    // Business hours
+    businessHoursEnabled?: boolean;
+    businessHoursTimezone?: string;  // Default: 'America/New_York'
+    businessHoursSchedule?: {
+        monday?: string;     // "9-17" (9 AM to 5 PM)
+        tuesday?: string;
+        wednesday?: string;
+        thursday?: string;
+        friday?: string;
+        saturday?: string;
+        sunday?: string;
+    };
+
+    // Voice settings
+    voiceProvider?: 'elevenlabs' | 'openai';  // Default: 'elevenlabs'
+    voiceId?: string;  // ElevenLabs voice ID or OpenAI voice name
+    sttProvider?: 'deepgram' | 'openai';  // Default: 'deepgram'
+
+    // Advanced
+    voicemailEnabled?: boolean;
+    voicemailGreeting?: string;
+    failoverNumber?: string;  // Transfer here if workflow fails
+}
+
+/**
  * Union type for all trigger configurations
  */
 export type TriggerConfig =
     | ScheduleTriggerConfig
     | WebhookTriggerConfig
     | EventTriggerConfig
-    | ManualTriggerConfig;
+    | ManualTriggerConfig
+    | PhoneCallTriggerConfig;
 
 /**
  * Workflow Trigger Model
