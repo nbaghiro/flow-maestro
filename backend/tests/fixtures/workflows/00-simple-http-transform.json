@@ -1,0 +1,45 @@
+{
+    "name": "Simple HTTP Transform Test",
+    "description": "Minimal test - just HTTP and Transform",
+    "entryPoint": "input-1",
+    "nodes": {
+        "input-1": {
+            "type": "input",
+            "name": "Start",
+            "config": {},
+            "position": { "x": 100, "y": 100 }
+        },
+        "http-1": {
+            "type": "http",
+            "name": "Fetch User",
+            "config": {
+                "method": "GET",
+                "url": "https://jsonplaceholder.typicode.com/users/1"
+            },
+            "position": { "x": 300, "y": 100 }
+        },
+        "transform-1": {
+            "type": "transform",
+            "name": "Extract Name",
+            "config": {
+                "operation": "custom",
+                "inputData": "${data}",
+                "expression": "{ \"fullName\": name }",
+                "outputVariable": "result"
+            },
+            "position": { "x": 500, "y": 100 }
+        }
+    },
+    "edges": [
+        {
+            "id": "e1",
+            "source": "input-1",
+            "target": "http-1"
+        },
+        {
+            "id": "e2",
+            "source": "http-1",
+            "target": "transform-1"
+        }
+    ]
+}

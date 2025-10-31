@@ -496,24 +496,7 @@ docker-compose ps
 
 You should see all services in "Up" state with health checks passing.
 
-#### 5. Run Preflight Check
-
-```bash
-npm run preflight-check
-```
-
-This validates:
-- Node.js version compatibility
-- Docker installation and daemon status
-- Required ports availability
-- Database connectivity
-- Redis connectivity
-- Temporal connectivity
-- TypeScript availability
-
-If any checks fail, resolve the issues before proceeding.
-
-#### 6. Start Development Services
+#### 5. Start Development Services
 
 ```bash
 npm run dev
@@ -1831,10 +1814,6 @@ flowmaestro/
 │       └── dynamicconfig/
 │
 ├── scripts/                     # Utility Scripts
-│   ├── preflight-check.js
-│   ├── test-db.js
-│   ├── test-redis.js
-│   └── test-temporal.js
 │
 ├── infrastructure/              # Infrastructure as Code (Future)
 │   ├── terraform/

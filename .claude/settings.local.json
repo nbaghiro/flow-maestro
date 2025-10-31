@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(docker ps:*)",
+      "Bash(node:*)",
+      "Bash(awk:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npm run db:migrate:*)",
+      "WebSearch",
+      "Bash(git rm:*)",
+      "Bash(cat:*)",
+      "Bash(npm run build:*)",
+      "Bash(find:*)",
+      "Bash(npm install:*)",
+      "Bash(npm test:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
