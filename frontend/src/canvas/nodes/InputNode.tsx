@@ -6,16 +6,14 @@ import { Hand } from "lucide-react";
 interface InputNodeData {
     label: string;
     status?: "idle" | "pending" | "running" | "success" | "error";
-    config?: {
-        inputType?: string;
-        inputName?: string;
-        required?: boolean;
-    };
+    inputType?: string;
+    inputName?: string;
+    required?: boolean;
 }
 
 function InputNode({ data, selected }: NodeProps<InputNodeData>) {
-    const inputType = data.config?.inputType || "text";
-    const inputName = data.config?.inputName || "input";
+    const inputType = data.inputType || "text";
+    const inputName = data.inputName || "input";
 
     return (
         <BaseNode

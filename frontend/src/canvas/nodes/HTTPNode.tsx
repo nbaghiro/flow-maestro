@@ -6,15 +6,13 @@ import { Globe } from "lucide-react";
 interface HTTPNodeData {
     label: string;
     status?: "idle" | "pending" | "running" | "success" | "error";
-    config?: {
-        method?: string;
-        url?: string;
-    };
+    method?: string;
+    url?: string;
 }
 
 function HTTPNode({ data, selected }: NodeProps<HTTPNodeData>) {
-    const method = data.config?.method || "GET";
-    const url = data.config?.url || "https://api.example.com";
+    const method = data.method || "GET";
+    const url = data.url || "https://api.example.com";
 
     return (
         <BaseNode

@@ -45,14 +45,14 @@ const validationPresets = {
 };
 
 export function InputNodeConfig({ data, onUpdate }: InputNodeConfigProps) {
-    const [inputName, setInputName] = useState(data.config?.inputName || "");
-    const [inputType, setInputType] = useState(data.config?.inputType || "text");
-    const [description, setDescription] = useState(data.config?.description || "");
-    const [defaultValue, setDefaultValue] = useState(data.config?.defaultValue || "");
-    const [required, setRequired] = useState(data.config?.required ?? true);
-    const [validation, setValidation] = useState(data.config?.validation || "");
-    const [minValue, setMinValue] = useState(data.config?.minValue || "");
-    const [maxValue, setMaxValue] = useState(data.config?.maxValue || "");
+    const [inputName, setInputName] = useState(data.inputName || "");
+    const [inputType, setInputType] = useState(data.inputType || "text");
+    const [description, setDescription] = useState(data.description || "");
+    const [defaultValue, setDefaultValue] = useState(data.defaultValue || "");
+    const [required, setRequired] = useState(data.required ?? true);
+    const [validation, setValidation] = useState(data.validation || "");
+    const [minValue, setMinValue] = useState(data.minValue || "");
+    const [maxValue, setMaxValue] = useState(data.maxValue || "");
 
     useEffect(() => {
         onUpdate({

@@ -6,15 +6,13 @@ import { GitMerge } from "lucide-react";
 interface SwitchNodeData {
     label: string;
     status?: "idle" | "pending" | "running" | "success" | "error";
-    config?: {
-        variable?: string;
-        cases?: Array<{ value: string; label: string }>;
-    };
+    variable?: string;
+    cases?: Array<{ value: string; label: string }>;
 }
 
 function SwitchNode({ data, selected }: NodeProps<SwitchNodeData>) {
-    const variable = data.config?.variable || "${value}";
-    const caseCount = data.config?.cases?.length || 3;
+    const variable = data.variable || "${value}";
+    const caseCount = data.cases?.length || 3;
 
     return (
         <BaseNode

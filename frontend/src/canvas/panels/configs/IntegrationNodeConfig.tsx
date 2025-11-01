@@ -29,28 +29,28 @@ const emailProviders = [
 ];
 
 export function IntegrationNodeConfig({ data, onUpdate }: IntegrationNodeConfigProps) {
-    const [service, setService] = useState(data.config?.service || "slack");
-    const [action, setAction] = useState(data.config?.action || "sendMessage");
-    const [credentialsId, setCredentialsId] = useState(data.config?.credentialsId || "");
+    const [service, setService] = useState(data.service || "slack");
+    const [action, setAction] = useState(data.action || "sendMessage");
+    const [credentialsId, setCredentialsId] = useState(data.credentialsId || "");
 
     // Slack config
-    const [slackChannel, setSlackChannel] = useState(data.config?.slackChannel || "");
-    const [slackMessage, setSlackMessage] = useState(data.config?.slackMessage || "");
+    const [slackChannel, setSlackChannel] = useState(data.slackChannel || "");
+    const [slackMessage, setSlackMessage] = useState(data.slackMessage || "");
 
     // Discord config
-    const [discordWebhookUrl, setDiscordWebhookUrl] = useState(data.config?.discordWebhookUrl || "");
-    const [discordMessage, setDiscordMessage] = useState(data.config?.discordMessage || "");
+    const [discordWebhookUrl, setDiscordWebhookUrl] = useState(data.discordWebhookUrl || "");
+    const [discordMessage, setDiscordMessage] = useState(data.discordMessage || "");
 
     // Email config
-    const [emailProvider, setEmailProvider] = useState(data.config?.emailProvider || "smtp");
-    const [emailTo, setEmailTo] = useState(data.config?.emailTo || "");
-    const [emailSubject, setEmailSubject] = useState(data.config?.emailSubject || "");
-    const [emailBody, setEmailBody] = useState(data.config?.emailBody || "");
+    const [emailProvider, setEmailProvider] = useState(data.emailProvider || "smtp");
+    const [emailTo, setEmailTo] = useState(data.emailTo || "");
+    const [emailSubject, setEmailSubject] = useState(data.emailSubject || "");
+    const [emailBody, setEmailBody] = useState(data.emailBody || "");
 
     // Webhook config
-    const [webhookUrl, setWebhookUrl] = useState(data.config?.webhookUrl || "");
-    const [webhookPayload, setWebhookPayload] = useState(data.config?.webhookPayload || "");
-    const [outputVariable, setOutputVariable] = useState(data.config?.outputVariable || "");
+    const [webhookUrl, setWebhookUrl] = useState(data.webhookUrl || "");
+    const [webhookPayload, setWebhookPayload] = useState(data.webhookPayload || "");
+    const [outputVariable, setOutputVariable] = useState(data.outputVariable || "");
 
     useEffect(() => {
         const config: any = { service, action, credentialsId, outputVariable };

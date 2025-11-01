@@ -15,11 +15,11 @@ const languages = [
 ];
 
 export function CodeNodeConfig({ data, onUpdate }: CodeNodeConfigProps) {
-    const [language, setLanguage] = useState(data.config?.language || "javascript");
-    const [code, setCode] = useState(data.config?.code || "");
-    const [timeout, setTimeout] = useState(data.config?.timeout || 30);
-    const [memoryLimit, setMemoryLimit] = useState(data.config?.memoryLimit || 256);
-    const [outputVariable, setOutputVariable] = useState(data.config?.outputVariable || "");
+    const [language, setLanguage] = useState(data.language || "javascript");
+    const [code, setCode] = useState(data.code || "");
+    const [timeout, setTimeout] = useState(data.timeout || 30);
+    const [memoryLimit, setMemoryLimit] = useState(data.memoryLimit || 256);
+    const [outputVariable, setOutputVariable] = useState(data.outputVariable || "");
 
     useEffect(() => {
         onUpdate({

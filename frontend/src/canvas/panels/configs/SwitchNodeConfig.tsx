@@ -20,11 +20,11 @@ interface SwitchCase {
 }
 
 export function SwitchNodeConfig({ data, onUpdate }: SwitchNodeConfigProps) {
-    const [inputVariable, setInputVariable] = useState(data.config?.inputVariable || "");
-    const [matchType, setMatchType] = useState(data.config?.matchType || "exact");
-    const [cases, setCases] = useState<SwitchCase[]>(data.config?.cases || [{ value: "", label: "Case 1" }]);
-    const [hasDefault, setHasDefault] = useState(data.config?.hasDefault ?? true);
-    const [outputVariable, setOutputVariable] = useState(data.config?.outputVariable || "");
+    const [inputVariable, setInputVariable] = useState(data.inputVariable || "");
+    const [matchType, setMatchType] = useState(data.matchType || "exact");
+    const [cases, setCases] = useState<SwitchCase[]>(data.cases || [{ value: "", label: "Case 1" }]);
+    const [hasDefault, setHasDefault] = useState(data.hasDefault ?? true);
+    const [outputVariable, setOutputVariable] = useState(data.outputVariable || "");
 
     useEffect(() => {
         onUpdate({

@@ -3,15 +3,18 @@
  * Runs before all tests
  */
 
+import dotenv from "dotenv";
+import path from "path";
 import { Pool } from "pg";
 import { DatabaseHelper } from "./tests/helpers/DatabaseHelper";
+
+// Load environment variables from .env file
+dotenv.config({ path: path.resolve(__dirname, ".env") });
 
 // Set test environment variables
 process.env.NODE_ENV = "test";
 process.env.LOG_LEVEL = "error";
 process.env.JWT_SECRET = "test-jwt-secret-key-for-testing";
-process.env.ENCRYPTION_KEY =
-    "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
 
 // PostgreSQL test database configuration
 process.env.POSTGRES_HOST = process.env.POSTGRES_HOST || "localhost";

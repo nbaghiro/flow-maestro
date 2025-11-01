@@ -1,38 +1,12 @@
 import { useState, useEffect } from "react";
 import { FormField, FormSection } from "../../../components/FormField";
 import { OutputSettingsSection } from "../../../components/OutputSettingsSection";
+import { LLM_PROVIDERS, LLM_MODELS_BY_PROVIDER, getDefaultModelForProvider } from "@flowmaestro/shared";
 
 interface EmbeddingsNodeConfigProps {
     data: any;
     onUpdate: (config: any) => void;
 }
-
-const providers = [
-    { value: "openai", label: "OpenAI" },
-    { value: "cohere", label: "Cohere" },
-    { value: "google", label: "Google" },
-    { value: "huggingface", label: "HuggingFace" },
-];
-
-const modelsByProvider: Record<string, Array<{ value: string; label: string }>> = {
-    openai: [
-        { value: "text-embedding-3-small", label: "Text Embedding 3 Small" },
-        { value: "text-embedding-3-large", label: "Text Embedding 3 Large" },
-        { value: "text-embedding-ada-002", label: "Ada 002" },
-    ],
-    cohere: [
-        { value: "embed-english-v3.0", label: "Embed English v3" },
-        { value: "embed-multilingual-v3.0", label: "Embed Multilingual v3" },
-    ],
-    google: [
-        { value: "textembedding-gecko", label: "Text Embedding Gecko" },
-        { value: "textembedding-gecko-multilingual", label: "Gecko Multilingual" },
-    ],
-    huggingface: [
-        { value: "sentence-transformers/all-MiniLM-L6-v2", label: "MiniLM L6 v2" },
-        { value: "sentence-transformers/all-mpnet-base-v2", label: "MPNet Base v2" },
-    ],
-};
 
 const dimensionsByModel: Record<string, number> = {
     "text-embedding-3-small": 1536,
@@ -47,11 +21,11 @@ const dimensionsByModel: Record<string, number> = {
 };
 
 export function EmbeddingsNodeConfig({ data, onUpdate }: EmbeddingsNodeConfigProps) {
-    const [provider, setProvider] = useState(data.config?.provider || "openai");
-    const [model, setModel] = useState(data.config?.model || "text-embedding-3-small");
-    const [input, setInput] = useState(data.config?.input || "");
-    const [batchMode, setBatchMode] = useState(data.config?.batchMode || false);
-    const [outputVariable, setOutputVariable] = useState(data.config?.outputVariable || "");
+    const [provider, setProvider] = useState(data.provider || "openai");
+    const [model, setModel] = useState(data.model || getDefaultModelForProvider(data.provider || "openai"));
+    const [input, setInput] = useState(data.input || "");
+    const [batchMode, setBatchMode] = useState(data.batchMode || false);
+    const [outputVariable, setOutputVariable] = useState(data.outputVariable || "");
 
     const dimensions = dimensionsByModel[model] || 1536;
 
@@ -69,9 +43,9 @@ export function EmbeddingsNodeConfig({ data, onUpdate }: EmbeddingsNodeConfigPro
     const handleProviderChange = (newProvider: string) => {
         setProvider(newProvider);
         // Set default model for new provider
-        const models = modelsByProvider[newProvider];
-        if (models && models.length > 0) {
-            setModel(models[0].value);
+        const defaultModel = getDefaultModelForProvider(newProvider);
+        if (defaultModel) {
+            setModel(defaultModel);
         }
     };
 
@@ -84,7 +58,7 @@ export function EmbeddingsNodeConfig({ data, onUpdate }: EmbeddingsNodeConfigPro
                         onChange={(e) => handleProviderChange(e.target.value)}
                         className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                     >
-                        {providers.map((p) => (
+                        {LLM_PROVIDERS.map((p) => (
                             <option key={p.value} value={p.value}>
                                 {p.label}
                             </option>
@@ -98,7 +72,7 @@ export function EmbeddingsNodeConfig({ data, onUpdate }: EmbeddingsNodeConfigPro
                         onChange={(e) => setModel(e.target.value)}
                         className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                     >
-                        {modelsByProvider[provider]?.map((m) => (
+                        {LLM_MODELS_BY_PROVIDER[provider]?.map((m) => (
                             <option key={m.value} value={m.value}>
                                 {m.label}
                             </option>

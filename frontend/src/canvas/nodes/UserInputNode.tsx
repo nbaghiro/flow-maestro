@@ -6,18 +6,16 @@ import { Hand } from "lucide-react";
 interface UserInputNodeData {
     label: string;
     status?: "idle" | "pending" | "running" | "success" | "error";
-    config?: {
-        prompt?: string;
-        variableName?: string;
-        validationType?: string;
-        required?: boolean;
-    };
+    prompt?: string;
+    variableName?: string;
+    validationType?: string;
+    required?: boolean;
 }
 
 function UserInputNode({ data, selected }: NodeProps<UserInputNodeData>) {
-    const prompt = data.config?.prompt || "Enter your input";
-    const variableName = data.config?.variableName || "userInput";
-    const validationType = data.config?.validationType || "text";
+    const prompt = data.prompt || "Enter your input";
+    const variableName = data.variableName || "userInput";
+    const validationType = data.validationType || "text";
 
     return (
         <BaseNode

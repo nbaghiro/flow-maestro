@@ -22,13 +22,13 @@ const timeUnits = [
 ];
 
 export function WaitNodeConfig({ data, onUpdate }: WaitNodeConfigProps) {
-    const [waitType, setWaitType] = useState(data.config?.waitType || "duration");
-    const [duration, setDuration] = useState(data.config?.duration || 5);
-    const [unit, setUnit] = useState(data.config?.unit || "seconds");
-    const [timestamp, setTimestamp] = useState(data.config?.timestamp || "");
-    const [condition, setCondition] = useState(data.config?.condition || "");
-    const [pollingInterval, setPollingInterval] = useState(data.config?.pollingInterval || 5);
-    const [outputVariable, setOutputVariable] = useState(data.config?.outputVariable || "");
+    const [waitType, setWaitType] = useState(data.waitType || "duration");
+    const [duration, setDuration] = useState(data.duration || 5);
+    const [unit, setUnit] = useState(data.unit || "seconds");
+    const [timestamp, setTimestamp] = useState(data.timestamp || "");
+    const [condition, setCondition] = useState(data.condition || "");
+    const [pollingInterval, setPollingInterval] = useState(data.pollingInterval || 5);
+    const [outputVariable, setOutputVariable] = useState(data.outputVariable || "");
 
     useEffect(() => {
         onUpdate({

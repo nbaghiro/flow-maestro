@@ -6,17 +6,15 @@ import { Shuffle } from "lucide-react";
 interface TransformNodeData {
     label: string;
     status?: "idle" | "pending" | "running" | "success" | "error";
-    config?: {
-        operation?: "map" | "filter" | "reduce" | "sort" | "merge" | "extract" | "custom";
-        inputData?: string;
-        expression?: string;
-    };
+    operation?: "map" | "filter" | "reduce" | "sort" | "merge" | "extract" | "custom";
+    inputData?: string;
+    expression?: string;
 }
 
 function TransformNode({ data, selected }: NodeProps<TransformNodeData>) {
-    const operation = data.config?.operation || "map";
-    const inputData = data.config?.inputData || "";
-    const expression = data.config?.expression || "";
+    const operation = data.operation || "map";
+    const inputData = data.inputData || "";
+    const expression = data.expression || "";
 
     const getOperationLabel = () => {
         switch (operation) {

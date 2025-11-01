@@ -44,23 +44,23 @@ export function HTTPNodeConfig({ data, onUpdate }: HTTPNodeConfigProps) {
         return [];
     };
 
-    const [method, setMethod] = useState(data.config?.method || "GET");
-    const [url, setUrl] = useState(data.config?.url || "");
+    const [method, setMethod] = useState(data.method || "GET");
+    const [url, setUrl] = useState(data.url || "");
     const [headers, setHeaders] = useState<KeyValue[]>(
-        data.config?.headers
-            ? toKeyValueArray(data.config.headers).length > 0
-                ? toKeyValueArray(data.config.headers)
+        data.headers
+            ? toKeyValueArray(data.headers).length > 0
+                ? toKeyValueArray(data.headers)
                 : [{ key: "", value: "" }]
             : [{ key: "", value: "" }]
     );
-    const [queryParams, setQueryParams] = useState<KeyValue[]>(toKeyValueArray(data.config?.queryParams));
-    const [authType, setAuthType] = useState(data.config?.authType || "none");
-    const [authCredentials, setAuthCredentials] = useState(data.config?.authCredentials || "");
-    const [bodyType, setBodyType] = useState(data.config?.bodyType || "json");
-    const [body, setBody] = useState(data.config?.body || "");
-    const [timeout, setTimeout] = useState(data.config?.timeout || 30);
-    const [retryCount, setRetryCount] = useState(data.config?.retryCount || 3);
-    const [outputVariable, setOutputVariable] = useState(data.config?.outputVariable || "");
+    const [queryParams, setQueryParams] = useState<KeyValue[]>(toKeyValueArray(data.queryParams));
+    const [authType, setAuthType] = useState(data.authType || "none");
+    const [authCredentials, setAuthCredentials] = useState(data.authCredentials || "");
+    const [bodyType, setBodyType] = useState(data.bodyType || "json");
+    const [body, setBody] = useState(data.body || "");
+    const [timeout, setTimeout] = useState(data.timeout || 30);
+    const [retryCount, setRetryCount] = useState(data.retryCount || 3);
+    const [outputVariable, setOutputVariable] = useState(data.outputVariable || "");
 
     useEffect(() => {
         onUpdate({

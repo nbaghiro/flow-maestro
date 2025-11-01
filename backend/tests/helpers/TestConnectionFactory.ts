@@ -22,10 +22,12 @@ export class TestConnectionFactory {
         this.pool = pool;
         this.testUserId = testUserId;
 
-        // Use test encryption key
-        const testEncryptionKey =
-            "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
-        this.encryptionService = new EncryptionService(testEncryptionKey);
+        // Use encryption key from environment (same as worker uses)
+        const encryptionKey = process.env.ENCRYPTION_KEY;
+        if (!encryptionKey) {
+            throw new Error("ENCRYPTION_KEY environment variable is required for tests");
+        }
+        this.encryptionService = new EncryptionService(encryptionKey);
     }
 
     /**
@@ -60,7 +62,7 @@ export class TestConnectionFactory {
             provider: "openai",
             connectionMethod: "api_key",
             data: {
-                apiKey,
+                api_key: apiKey,
             },
         });
     }
@@ -76,7 +78,7 @@ export class TestConnectionFactory {
             provider: "anthropic",
             connectionMethod: "api_key",
             data: {
-                apiKey,
+                api_key: apiKey,
             },
         });
     }
@@ -90,7 +92,7 @@ export class TestConnectionFactory {
             provider: "google",
             connectionMethod: "api_key",
             data: {
-                apiKey,
+                api_key: apiKey,
             },
         });
     }

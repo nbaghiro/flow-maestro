@@ -1,5 +1,6 @@
 import { executeLLMNode, type LLMNodeConfig } from '../temporal/activities/node-executors/llm-executor';
 import { ConnectionRepository } from '../storage/repositories/ConnectionRepository';
+import { getDefaultModelForProvider } from '@flowmaestro/shared';
 
 export interface WorkflowGenerationRequest {
     userPrompt: string;
@@ -358,23 +359,10 @@ export async function generateWorkflow(
 
     const provider = connection.provider.toLowerCase();
 
-    // Set appropriate model based on provider
-    let model: string;
-    switch (provider) {
-        case 'openai':
-            model = 'gpt-4';
-            break;
-        case 'anthropic':
-            model = 'claude-3-opus-20240229';
-            break;
-        case 'google':
-            model = 'gemini-pro';
-            break;
-        case 'cohere':
-            model = 'command';
-            break;
-        default:
-            throw new Error(`Unsupported LLM provider: ${provider}`);
+    // Set appropriate model based on provider using shared registry
+    const model = getDefaultModelForProvider(provider);
+    if (!model) {
+        throw new Error(`Unsupported LLM provider: ${provider}`);
     }
 
     console.log('[Workflow Generator] Using provider:', provider, 'model:', model);

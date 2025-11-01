@@ -6,17 +6,15 @@ import { Variable } from "lucide-react";
 interface VariableNodeData {
     label: string;
     status?: "idle" | "pending" | "running" | "success" | "error";
-    config?: {
-        operation?: string;
-        variableName?: string;
-        value?: string;
-    };
+    operation?: string;
+    variableName?: string;
+    value?: string;
 }
 
 function VariableNode({ data, selected }: NodeProps<VariableNodeData>) {
-    const operation = data.config?.operation || "set";
-    const variableName = data.config?.variableName || "myVar";
-    const value = data.config?.value || "";
+    const operation = data.operation || "set";
+    const variableName = data.variableName || "myVar";
+    const value = data.value || "";
 
     return (
         <BaseNode

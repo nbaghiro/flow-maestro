@@ -6,18 +6,16 @@ import { Bot } from "lucide-react";
 interface LLMNodeData {
     label: string;
     status?: "idle" | "pending" | "running" | "success" | "error";
-    config?: {
-        provider?: string;
-        model?: string;
-        prompt?: string;
-    };
+    provider?: string;
+    model?: string;
+    prompt?: string;
 }
 
 function LLMNode({ data, selected }: NodeProps<LLMNodeData>) {
-    const provider = data.config?.provider || "OpenAI";
-    const model = data.config?.model || "gpt-4";
-    const promptPreview = data.config?.prompt
-        ? data.config.prompt.substring(0, 50) + (data.config.prompt.length > 50 ? "..." : "")
+    const provider = data.provider || "OpenAI";
+    const model = data.model || "gpt-4";
+    const promptPreview = data.prompt
+        ? data.prompt.substring(0, 50) + (data.prompt.length > 50 ? "..." : "")
         : "No prompt configured";
 
     return (

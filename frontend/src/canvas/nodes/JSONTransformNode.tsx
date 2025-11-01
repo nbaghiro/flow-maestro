@@ -6,17 +6,15 @@ import { Shuffle } from "lucide-react";
 interface JSONTransformNodeData {
     label: string;
     status?: "idle" | "pending" | "running" | "success" | "error";
-    config?: {
-        jsonPath?: string;
-        transformType?: string;
-        outputVariable?: string;
-    };
+    jsonPath?: string;
+    transformType?: string;
+    outputVariable?: string;
 }
 
 function JSONTransformNode({ data, selected }: NodeProps<JSONTransformNodeData>) {
-    const jsonPath = data.config?.jsonPath || "$.data";
-    const transformType = data.config?.transformType || "extract";
-    const outputVariable = data.config?.outputVariable || "transformed";
+    const jsonPath = data.jsonPath || "$.data";
+    const transformType = data.transformType || "extract";
+    const outputVariable = data.outputVariable || "transformed";
 
     return (
         <BaseNode

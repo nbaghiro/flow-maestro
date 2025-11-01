@@ -6,21 +6,19 @@ import { GitBranch, CheckCircle2, XCircle } from "lucide-react";
 interface ConditionalNodeData {
     label: string;
     status?: "idle" | "pending" | "running" | "success" | "error";
-    config?: {
-        conditionType?: "simple" | "expression";
-        leftValue?: string;
-        operator?: string;
-        rightValue?: string;
-        expression?: string;
-    };
+    conditionType?: "simple" | "expression";
+    leftValue?: string;
+    operator?: string;
+    rightValue?: string;
+    expression?: string;
 }
 
 function ConditionalNode({ data, selected }: NodeProps<ConditionalNodeData>) {
-    const conditionType = data.config?.conditionType || "simple";
-    const leftValue = data.config?.leftValue || "";
-    const operator = data.config?.operator || "==";
-    const rightValue = data.config?.rightValue || "";
-    const expression = data.config?.expression || "";
+    const conditionType = data.conditionType || "simple";
+    const leftValue = data.leftValue || "";
+    const operator = data.operator || "==";
+    const rightValue = data.rightValue || "";
+    const expression = data.expression || "";
 
     const renderCondition = () => {
         if (conditionType === "expression" && expression) {

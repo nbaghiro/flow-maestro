@@ -3,50 +3,23 @@ import { FormField, FormSection } from "../../../components/FormField";
 import { Slider } from "../../../components/Slider";
 import { OutputSettingsSection } from "../../../components/OutputSettingsSection";
 import { ConnectionPicker } from "../../../components/connections/ConnectionPicker";
+import { LLM_PROVIDERS, LLM_MODELS_BY_PROVIDER, getDefaultModelForProvider } from "@flowmaestro/shared";
 
 interface LLMNodeConfigProps {
     data: any;
     onUpdate: (config: any) => void;
 }
 
-const providers = [
-    { value: "openai", label: "OpenAI" },
-    { value: "anthropic", label: "Anthropic" },
-    { value: "google", label: "Google" },
-    { value: "cohere", label: "Cohere" },
-];
-
-const modelsByProvider: Record<string, Array<{ value: string; label: string }>> = {
-    openai: [
-        { value: "gpt-4", label: "GPT-4" },
-        { value: "gpt-4-turbo", label: "GPT-4 Turbo" },
-        { value: "gpt-3.5-turbo", label: "GPT-3.5 Turbo" },
-    ],
-    anthropic: [
-        { value: "claude-3-opus", label: "Claude 3 Opus" },
-        { value: "claude-3-sonnet", label: "Claude 3 Sonnet" },
-        { value: "claude-3-haiku", label: "Claude 3 Haiku" },
-    ],
-    google: [
-        { value: "gemini-pro", label: "Gemini Pro" },
-        { value: "gemini-ultra", label: "Gemini Ultra" },
-    ],
-    cohere: [
-        { value: "command", label: "Command" },
-        { value: "command-light", label: "Command Light" },
-    ],
-};
-
 export function LLMNodeConfig({ data, onUpdate }: LLMNodeConfigProps) {
-    const [provider, setProvider] = useState(data.config?.provider || "openai");
-    const [model, setModel] = useState(data.config?.model || "gpt-4");
-    const [connectionId, setConnectionId] = useState<string | null>(data.config?.connectionId || null);
-    const [systemPrompt, setSystemPrompt] = useState(data.config?.systemPrompt || "");
-    const [prompt, setPrompt] = useState(data.config?.prompt || "");
-    const [temperature, setTemperature] = useState(data.config?.temperature || 0.7);
-    const [maxTokens, setMaxTokens] = useState(data.config?.maxTokens || 1000);
-    const [topP, setTopP] = useState(data.config?.topP || 1);
-    const [outputVariable, setOutputVariable] = useState(data.config?.outputVariable || "");
+    const [provider, setProvider] = useState(data.provider || "openai");
+    const [model, setModel] = useState(data.model || getDefaultModelForProvider(data.provider || "openai"));
+    const [connectionId, setConnectionId] = useState<string | null>(data.connectionId || null);
+    const [systemPrompt, setSystemPrompt] = useState(data.systemPrompt || "");
+    const [prompt, setPrompt] = useState(data.prompt || "");
+    const [temperature, setTemperature] = useState(data.temperature || 0.7);
+    const [maxTokens, setMaxTokens] = useState(data.maxTokens || 1000);
+    const [topP, setTopP] = useState(data.topP || 1);
+    const [outputVariable, setOutputVariable] = useState(data.outputVariable || "");
 
     useEffect(() => {
         onUpdate({
@@ -65,9 +38,9 @@ export function LLMNodeConfig({ data, onUpdate }: LLMNodeConfigProps) {
     const handleProviderChange = (newProvider: string) => {
         setProvider(newProvider);
         // Set default model for new provider
-        const models = modelsByProvider[newProvider];
-        if (models && models.length > 0) {
-            setModel(models[0].value);
+        const defaultModel = getDefaultModelForProvider(newProvider);
+        if (defaultModel) {
+            setModel(defaultModel);
         }
         // Reset connection since it's provider-specific
         setConnectionId(null);
@@ -82,7 +55,7 @@ export function LLMNodeConfig({ data, onUpdate }: LLMNodeConfigProps) {
                         onChange={(e) => handleProviderChange(e.target.value)}
                         className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                     >
-                        {providers.map((p) => (
+                        {LLM_PROVIDERS.map((p) => (
                             <option key={p.value} value={p.value}>
                                 {p.label}
                             </option>
@@ -96,7 +69,7 @@ export function LLMNodeConfig({ data, onUpdate }: LLMNodeConfigProps) {
                         onChange={(e) => setModel(e.target.value)}
                         className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                     >
-                        {modelsByProvider[provider]?.map((m) => (
+                        {LLM_MODELS_BY_PROVIDER[provider]?.map((m) => (
                             <option key={m.value} value={m.value}>
                                 {m.label}
                             </option>

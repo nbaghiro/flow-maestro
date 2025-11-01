@@ -6,15 +6,13 @@ import { Code2 } from "lucide-react";
 interface CodeNodeData {
     label: string;
     status?: "idle" | "pending" | "running" | "success" | "error";
-    config?: {
-        language?: string;
-        code?: string;
-    };
+    language?: string;
+    code?: string;
 }
 
 function CodeNode({ data, selected }: NodeProps<CodeNodeData>) {
-    const language = data.config?.language || "javascript";
-    const hasCode = data.config?.code && data.config.code.length > 0;
+    const language = data.language || "javascript";
+    const hasCode = data.code && data.code.length > 0;
 
     return (
         <BaseNode

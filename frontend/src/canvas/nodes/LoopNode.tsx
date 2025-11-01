@@ -6,24 +6,22 @@ import { Repeat } from "lucide-react";
 interface LoopNodeData {
     label: string;
     status?: "idle" | "pending" | "running" | "success" | "error";
-    config?: {
-        loopType?: "forEach" | "while" | "times";
-        arrayVariable?: string;
-        itemVariable?: string;
-        indexVariable?: string;
-        condition?: string;
-        count?: number;
-        maxIterations?: number;
-    };
+    loopType?: "forEach" | "while" | "times";
+    arrayVariable?: string;
+    itemVariable?: string;
+    indexVariable?: string;
+    condition?: string;
+    count?: number;
+    maxIterations?: number;
 }
 
 function LoopNode({ data, selected }: NodeProps<LoopNodeData>) {
-    const loopType = data.config?.loopType || "forEach";
-    const arrayVariable = data.config?.arrayVariable || "${items}";
-    const itemVariable = data.config?.itemVariable || "item";
-    const indexVariable = data.config?.indexVariable || "index";
-    const condition = data.config?.condition || "";
-    const count = data.config?.count || 10;
+    const loopType = data.loopType || "forEach";
+    const arrayVariable = data.arrayVariable || "${items}";
+    const itemVariable = data.itemVariable || "item";
+    const indexVariable = data.indexVariable || "index";
+    const condition = data.condition || "";
+    const count = data.count || 10;
 
     const renderLoopDetails = () => {
         switch (loopType) {

@@ -6,15 +6,13 @@ import { Mic } from "lucide-react";
 interface AudioNodeData {
     label: string;
     status?: "idle" | "pending" | "running" | "success" | "error";
-    config?: {
-        operation?: string;
-        model?: string;
-    };
+    operation?: string;
+    model?: string;
 }
 
 function AudioNode({ data, selected }: NodeProps<AudioNodeData>) {
-    const operation = data.config?.operation || "transcribe";
-    const model = data.config?.model || "whisper-1";
+    const operation = data.operation || "transcribe";
+    const model = data.model || "whisper-1";
 
     return (
         <BaseNode

@@ -85,8 +85,63 @@ export function FlowBuilder() {
             const hasChanges = currentState !== lastSavedState;
             setHasUnsavedChanges(hasChanges);
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [nodes, edges, workflowName, isLoading, lastSavedState]);
+
+    // Debug method to log the complete workflow JSON structure
+    // This can be called from browser console: window.debugWorkflow()
+    const logWorkflowStructure = () => {
+        // Convert React Flow nodes to backend format (keyed by node id)
+        const nodesMap: Record<string, any> = {};
+        nodes.forEach(node => {
+            // Extract label and onError from node.data, rest goes into config
+            const { label, onError, ...config } = node.data || {};
+
+            // Only include onError if it has a valid strategy
+            const nodeData: any = {
+                type: node.type || "default",
+                name: label || node.id,
+                config: config,
+                position: node.position,
+            };
+
+            // Only add onError if it exists and has a strategy
+            if (onError && onError.strategy) {
+                nodeData.onError = onError;
+            }
+
+            nodesMap[node.id] = nodeData;
+        });
+
+        // Find entry point (first Input node or first node)
+        const inputNode = nodes.find(n => n.type === "input");
+        const entryPoint = inputNode?.id || (nodes.length > 0 ? nodes[0].id : "");
+
+        const workflowStructure = {
+            name: workflowName,
+            description: workflowDescription,
+            nodes: nodesMap,
+            edges: edges.map(edge => ({
+                id: edge.id,
+                source: edge.source,
+                target: edge.target,
+                sourceHandle: edge.sourceHandle,
+            })),
+            entryPoint,
+            aiGenerated: aiGenerated,
+            aiPrompt: aiPrompt,
+        };
+
+        return workflowStructure;
+    };
+
+    // Expose debug method to window for browser console access
+    useEffect(() => {
+        (window as any).debugWorkflow = logWorkflowStructure;
+
+        return () => {
+            delete (window as any).debugWorkflow;
+        };
+    }, [nodes, edges, workflowName, workflowDescription, aiGenerated, aiPrompt]);
 
     const loadWorkflow = async () => {
         if (!workflowId) return;

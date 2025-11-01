@@ -29,13 +29,13 @@ const returnFormats = [
 ];
 
 export function DatabaseNodeConfig({ data, onUpdate }: DatabaseNodeConfigProps) {
-    const [operation, setOperation] = useState(data.config?.operation || "query");
-    const [databaseType, setDatabaseType] = useState(data.config?.databaseType || "postgresql");
-    const [connectionId, setConnectionId] = useState(data.config?.connectionId || "");
-    const [query, setQuery] = useState(data.config?.query || "");
-    const [parameters, setParameters] = useState(data.config?.parameters || "");
-    const [returnFormat, setReturnFormat] = useState(data.config?.returnFormat || "array");
-    const [outputVariable, setOutputVariable] = useState(data.config?.outputVariable || "");
+    const [operation, setOperation] = useState(data.operation || "query");
+    const [databaseType, setDatabaseType] = useState(data.databaseType || "postgresql");
+    const [connectionId, setConnectionId] = useState(data.connectionId || "");
+    const [query, setQuery] = useState(data.query || "");
+    const [parameters, setParameters] = useState(data.parameters || "");
+    const [returnFormat, setReturnFormat] = useState(data.returnFormat || "array");
+    const [outputVariable, setOutputVariable] = useState(data.outputVariable || "");
 
     useEffect(() => {
         onUpdate({

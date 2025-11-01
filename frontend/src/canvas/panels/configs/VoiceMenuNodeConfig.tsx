@@ -22,21 +22,21 @@ const inputMethods = [
 ];
 
 export function VoiceMenuNodeConfig({ data, onUpdate }: VoiceMenuNodeConfigProps) {
-    const [prompt, setPrompt] = useState(data.config?.prompt || "Please select an option");
+    const [prompt, setPrompt] = useState(data.prompt || "Please select an option");
     const [options, setOptions] = useState<MenuOption[]>(
-        data.config?.options || [
+        data.options || [
             { key: "1", label: "Option 1", value: "option1" },
             { key: "2", label: "Option 2", value: "option2" },
         ]
     );
-    const [inputMethod, setInputMethod] = useState(data.config?.inputMethod || "both");
-    const [timeoutSeconds, setTimeoutSeconds] = useState(data.config?.timeoutSeconds || 10);
-    const [maxRetries, setMaxRetries] = useState(data.config?.maxRetries || 2);
+    const [inputMethod, setInputMethod] = useState(data.inputMethod || "both");
+    const [timeoutSeconds, setTimeoutSeconds] = useState(data.timeoutSeconds || 10);
+    const [maxRetries, setMaxRetries] = useState(data.maxRetries || 2);
     const [invalidInputMessage, setInvalidInputMessage] = useState(
-        data.config?.invalidInputMessage || "I didn't understand that. Please try again."
+        data.invalidInputMessage || "I didn't understand that. Please try again."
     );
     const [retryMessage, setRetryMessage] = useState(
-        data.config?.retryMessage || "Let me repeat the options."
+        data.retryMessage || "Let me repeat the options."
     );
 
     useEffect(() => {

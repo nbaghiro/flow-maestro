@@ -69,6 +69,17 @@ npm run test:coverage
 
 ## Test Workflows
 
+### Workflow 0: Simple HTTP + Transform
+**File**: `tests/integration/workflows/00-simple-http-transform.test.ts`
+
+**What it tests**:
+- HTTP executor (fetching from JSONPlaceholder API)
+- Transform executor (JSONata data transformation)
+- Basic workflow execution
+
+**Test cases**:
+- ✅ Execute HTTP and Transform nodes
+
 ### Workflow 1: HTTP + Transform + Database
 **File**: `tests/integration/workflows/01-http-transform-database.test.ts`
 
@@ -92,6 +103,36 @@ npm run test:coverage
 - ✅ Handle HTTP errors gracefully (404)
 - ✅ Store multiple users correctly
 - ✅ Complete within reasonable time (<15s)
+
+### Workflow 2: LLM Chained Providers (OpenAI → Anthropic)
+**File**: `tests/integration/workflows/02-llm-chained-providers.test.ts`
+
+**What it tests**:
+- LLM executor with OpenAI (gpt-4o-mini)
+- LLM executor with Anthropic (claude-haiku-4-5)
+- Variable interpolation between LLM calls
+- Transform executor with JSONata custom expressions
+- Output node with JSON formatting
+- Real API integration and response handling
+
+**Workflow flow**:
+1. Input (topic)
+2. OpenAI LLM → Generate sentence about topic
+3. Anthropic LLM → Refine sentence with humor (uses ${openai_response.text})
+4. Transform → Combine results with token usage stats
+5. Output → Return final JSON result
+
+**Test cases**:
+- ✅ Chain OpenAI and Anthropic LLM calls with variable interpolation
+- ✅ Handle variable interpolation correctly
+- ✅ Use correct models (gpt-4o-mini and claude-haiku-4-5)
+
+**Prerequisites**:
+- Set `OPENAI_API_KEY` environment variable
+- Set `ANTHROPIC_API_KEY` environment variable
+- Tests will be skipped if API keys are not available
+
+**Note**: This test makes real API calls and incurs small costs (~$0.001 per run)
 
 ## Writing New Tests
 
@@ -231,22 +272,25 @@ npm run docker:up
 ## Next Steps
 
 ### Planned Workflows
-1. ✅ **Workflow 1**: HTTP + Transform + Database
-2. 🔄 **Workflow 2**: File Operations + Transform + Code
-3. 🔄 **Workflow 3**: Knowledge Base RAG
-4. 🔄 **Workflow 4**: Conditional Logic
-5. 🔄 **Workflow 5**: Loop Processing
-6. 🔄 **Workflow 6**: Error Handling & Retries
-7. 🔄 **Workflow 7**: Switch Logic
-8. 🔄 **Workflow 8**: Variable Operations
-9. 🔄 **Workflow 9**: LLM Integration (Real OpenAI/Anthropic)
-10. 🔄 **Workflow 10**: Multi-Provider AI
-11. 🔄 **Workflow 11**: Embeddings + RAG (Real API)
-12. 🔄 **Workflow 12**: Integration Services (Real Slack)
+1. ✅ **Workflow 0**: Simple HTTP + Transform
+2. ✅ **Workflow 1**: HTTP + Transform + Database
+3. ✅ **Workflow 2**: LLM Chained Providers (OpenAI → Anthropic)
+4. 🔄 **Workflow 3**: File Operations + Transform + Code
+5. 🔄 **Workflow 4**: Knowledge Base RAG
+6. 🔄 **Workflow 5**: Conditional Logic
+7. 🔄 **Workflow 6**: Loop Processing
+8. 🔄 **Workflow 7**: Error Handling & Retries
+9. 🔄 **Workflow 8**: Switch Logic
+10. 🔄 **Workflow 9**: Variable Operations
+11. 🔄 **Workflow 10**: Embeddings + RAG (Real API)
+12. 🔄 **Workflow 11**: Integration Services (Real Slack)
 
 ### To Do
-- [ ] Validate Workflow 1 passes all tests
-- [ ] Build remaining 11 workflows
+- [x] Validate Workflow 0 passes all tests
+- [x] Validate Workflow 1 passes all tests
+- [x] Build Workflow 2 (LLM Chained Providers)
+- [ ] Validate Workflow 2 passes with real API keys
+- [ ] Build remaining 9 workflows
 - [ ] Add file fixtures (PDFs, CSVs) for file operation tests
 - [ ] Add mock response fixtures for deterministic LLM tests
 - [ ] Create test script that checks prerequisites automatically
@@ -278,5 +322,5 @@ For issues or questions about testing:
 
 ---
 
-**Status**: 🚧 Work in Progress (1/12 workflows completed)
-**Last Updated**: 2025-10-31
+**Status**: 🚧 Work in Progress (3/12 workflows completed)
+**Last Updated**: 2025-11-01

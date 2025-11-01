@@ -6,15 +6,13 @@ import { Plug } from "lucide-react";
 interface IntegrationNodeData {
     label: string;
     status?: "idle" | "pending" | "running" | "success" | "error";
-    config?: {
-        service?: string;
-        action?: string;
-    };
+    service?: string;
+    action?: string;
 }
 
 function IntegrationNode({ data, selected }: NodeProps<IntegrationNodeData>) {
-    const service = data.config?.service || "slack";
-    const action = data.config?.action || "send_message";
+    const service = data.service || "slack";
+    const action = data.action || "send_message";
 
     return (
         <BaseNode

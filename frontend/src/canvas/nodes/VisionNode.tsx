@@ -6,15 +6,13 @@ import { Eye } from "lucide-react";
 interface VisionNodeData {
     label: string;
     status?: "idle" | "pending" | "running" | "success" | "error";
-    config?: {
-        operation?: string;
-        model?: string;
-    };
+    operation?: string;
+    model?: string;
 }
 
 function VisionNode({ data, selected }: NodeProps<VisionNodeData>) {
-    const operation = data.config?.operation || "analyze";
-    const model = data.config?.model || "gpt-4-vision";
+    const operation = data.operation || "analyze";
+    const model = data.model || "gpt-4-vision";
 
     return (
         <BaseNode

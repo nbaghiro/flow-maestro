@@ -48,7 +48,7 @@ export async function executeTransformNode(
             result = await executeExtract(inputData, config.expression);
             break;
         case 'custom':
-            result = await executeJSONata(inputData, config.expression);
+            result = await executeJSONata(inputData, config.expression, context);
             break;
         case 'parseXML':
             if (typeof inputData !== 'string') {
@@ -174,9 +174,10 @@ async function executeExtract(data: JsonValue, expression: string): Promise<Json
     return getNestedValue(data, expression);
 }
 
-async function executeJSONata(data: JsonValue, expression: string): Promise<JsonValue> {
+async function executeJSONata(data: JsonValue, expression: string, context: JsonObject): Promise<JsonValue> {
     const expr = jsonata(expression);
-    return await expr.evaluate(data);
+    // Evaluate with full context so expressions can reference all variables
+    return await expr.evaluate({ ...context, $data: data });
 }
 
 async function parseXML(xmlString: string): Promise<JsonValue> {

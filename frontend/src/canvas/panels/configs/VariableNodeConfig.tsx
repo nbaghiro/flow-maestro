@@ -27,11 +27,11 @@ const valueTypes = [
 ];
 
 export function VariableNodeConfig({ data, onUpdate }: VariableNodeConfigProps) {
-    const [operation, setOperation] = useState(data.config?.operation || "set");
-    const [variableName, setVariableName] = useState(data.config?.variableName || "");
-    const [value, setValue] = useState(data.config?.value || "");
-    const [scope, setScope] = useState(data.config?.scope || "workflow");
-    const [valueType, setValueType] = useState(data.config?.valueType || "auto");
+    const [operation, setOperation] = useState(data.operation || "set");
+    const [variableName, setVariableName] = useState(data.variableName || "");
+    const [value, setValue] = useState(data.value || "");
+    const [scope, setScope] = useState(data.scope || "workflow");
+    const [valueType, setValueType] = useState(data.valueType || "auto");
 
     useEffect(() => {
         onUpdate({

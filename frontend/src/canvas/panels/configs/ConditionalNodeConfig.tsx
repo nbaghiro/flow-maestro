@@ -27,12 +27,12 @@ const operators = [
 ];
 
 export function ConditionalNodeConfig({ data, onUpdate }: ConditionalNodeConfigProps) {
-    const [conditionType, setConditionType] = useState(data.config?.conditionType || "simple");
-    const [leftValue, setLeftValue] = useState(data.config?.leftValue || "");
-    const [operator, setOperator] = useState(data.config?.operator || "==");
-    const [rightValue, setRightValue] = useState(data.config?.rightValue || "");
-    const [expression, setExpression] = useState(data.config?.expression || "");
-    const [outputVariable, setOutputVariable] = useState(data.config?.outputVariable || "");
+    const [conditionType, setConditionType] = useState(data.conditionType || "simple");
+    const [leftValue, setLeftValue] = useState(data.leftValue || "");
+    const [operator, setOperator] = useState(data.operator || "==");
+    const [rightValue, setRightValue] = useState(data.rightValue || "");
+    const [expression, setExpression] = useState(data.expression || "");
+    const [outputVariable, setOutputVariable] = useState(data.outputVariable || "");
 
     useEffect(() => {
         onUpdate({

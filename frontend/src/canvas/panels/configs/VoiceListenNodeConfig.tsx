@@ -30,11 +30,11 @@ const languages = [
 ];
 
 export function VoiceListenNodeConfig({ data, onUpdate }: VoiceListenNodeConfigProps) {
-    const [outputVariable, setOutputVariable] = useState(data.config?.outputVariable || "userSpeech");
-    const [maxDuration, setMaxDuration] = useState(data.config?.maxDuration || 30);
-    const [endSilenceMs, setEndSilenceMs] = useState(data.config?.endSilenceMs || 1500);
-    const [language, setLanguage] = useState(data.config?.language || "en-US");
-    const [sttProvider, setSttProvider] = useState(data.config?.sttProvider || "deepgram");
+    const [outputVariable, setOutputVariable] = useState(data.outputVariable || "userSpeech");
+    const [maxDuration, setMaxDuration] = useState(data.maxDuration || 30);
+    const [endSilenceMs, setEndSilenceMs] = useState(data.endSilenceMs || 1500);
+    const [language, setLanguage] = useState(data.language || "en-US");
+    const [sttProvider, setSttProvider] = useState(data.sttProvider || "deepgram");
 
     useEffect(() => {
         onUpdate({

@@ -27,10 +27,9 @@ export async function executeOutputNode(
 
     console.log(`[Output] Set output '${config.outputName}' (${config.format})`);
 
+    // Return outputs directly at top level (like other executors do with outputVariable)
     return {
-        outputs: {
-            [config.outputName]: value
-        }
+        [config.outputName]: value
     } as unknown as JsonObject;
 }
 

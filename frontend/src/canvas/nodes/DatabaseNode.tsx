@@ -6,15 +6,13 @@ import { Database } from "lucide-react";
 interface DatabaseNodeData {
     label: string;
     status?: "idle" | "pending" | "running" | "success" | "error";
-    config?: {
-        operation?: string;
-        dbType?: string;
-    };
+    operation?: string;
+    dbType?: string;
 }
 
 function DatabaseNode({ data, selected }: NodeProps<DatabaseNodeData>) {
-    const operation = data.config?.operation || "query";
-    const dbType = data.config?.dbType || "postgresql";
+    const operation = data.operation || "query";
+    const dbType = data.dbType || "postgresql";
 
     return (
         <BaseNode

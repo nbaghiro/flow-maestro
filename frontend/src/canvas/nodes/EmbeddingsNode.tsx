@@ -6,15 +6,13 @@ import { Sparkles } from "lucide-react";
 interface EmbeddingsNodeData {
     label: string;
     status?: "idle" | "pending" | "running" | "success" | "error";
-    config?: {
-        model?: string;
-        dimensions?: number;
-    };
+    model?: string;
+    dimensions?: number;
 }
 
 function EmbeddingsNode({ data, selected }: NodeProps<EmbeddingsNodeData>) {
-    const model = data.config?.model || "text-embedding-3-small";
-    const dimensions = data.config?.dimensions || 1536;
+    const model = data.model || "text-embedding-3-small";
+    const dimensions = data.dimensions || 1536;
 
     return (
         <BaseNode

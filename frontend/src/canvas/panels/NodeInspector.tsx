@@ -50,7 +50,7 @@ export function NodeInspector() {
     };
 
     const handleUpdate = (config: any) => {
-        updateNode(node.id, { config });
+        updateNode(node.id, config);
     };
 
     const handleNameChange = (newName: string) => {

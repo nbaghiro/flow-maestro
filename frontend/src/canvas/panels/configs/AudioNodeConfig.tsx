@@ -2,33 +2,12 @@ import { useState, useEffect } from "react";
 import { FormField, FormSection } from "../../../components/FormField";
 import { Slider } from "../../../components/Slider";
 import { OutputSettingsSection } from "../../../components/OutputSettingsSection";
+import { LLM_PROVIDERS, LLM_MODELS_BY_PROVIDER, getDefaultModelForProvider } from "@flowmaestro/shared";
 
 interface AudioNodeConfigProps {
     data: any;
     onUpdate: (config: any) => void;
 }
-
-const providers = [
-    { value: "openai", label: "OpenAI" },
-    { value: "elevenlabs", label: "ElevenLabs" },
-    { value: "google", label: "Google" },
-];
-
-const modelsByProvider: Record<string, Array<{ value: string; label: string }>> = {
-    openai: [
-        { value: "whisper-1", label: "Whisper (Transcription)" },
-        { value: "tts-1", label: "TTS-1 (Text-to-Speech)" },
-        { value: "tts-1-hd", label: "TTS-1 HD (High Quality)" },
-    ],
-    elevenlabs: [
-        { value: "eleven_multilingual_v2", label: "Multilingual v2" },
-        { value: "eleven_turbo_v2", label: "Turbo v2" },
-    ],
-    google: [
-        { value: "chirp", label: "Chirp (Transcription)" },
-        { value: "wavenet", label: "WaveNet (TTS)" },
-    ],
-};
 
 const operations = [
     { value: "transcribe", label: "Transcribe Audio" },
@@ -45,15 +24,15 @@ const voices = [
 ];
 
 export function AudioNodeConfig({ data, onUpdate }: AudioNodeConfigProps) {
-    const [operation, setOperation] = useState(data.config?.operation || "transcribe");
-    const [provider, setProvider] = useState(data.config?.provider || "openai");
-    const [model, setModel] = useState(data.config?.model || "whisper-1");
-    const [audioInput, setAudioInput] = useState(data.config?.audioInput || "");
-    const [textInput, setTextInput] = useState(data.config?.textInput || "");
-    const [voice, setVoice] = useState(data.config?.voice || "alloy");
-    const [speed, setSpeed] = useState(data.config?.speed || 1.0);
-    const [language, setLanguage] = useState(data.config?.language || "en");
-    const [outputVariable, setOutputVariable] = useState(data.config?.outputVariable || "");
+    const [operation, setOperation] = useState(data.operation || "transcribe");
+    const [provider, setProvider] = useState(data.provider || "openai");
+    const [model, setModel] = useState(data.model || getDefaultModelForProvider(data.provider || "openai"));
+    const [audioInput, setAudioInput] = useState(data.audioInput || "");
+    const [textInput, setTextInput] = useState(data.textInput || "");
+    const [voice, setVoice] = useState(data.voice || "alloy");
+    const [speed, setSpeed] = useState(data.speed || 1.0);
+    const [language, setLanguage] = useState(data.language || "en");
+    const [outputVariable, setOutputVariable] = useState(data.outputVariable || "");
 
     useEffect(() => {
         onUpdate({
@@ -72,9 +51,9 @@ export function AudioNodeConfig({ data, onUpdate }: AudioNodeConfigProps) {
     const handleProviderChange = (newProvider: string) => {
         setProvider(newProvider);
         // Set default model for new provider
-        const models = modelsByProvider[newProvider];
-        if (models && models.length > 0) {
-            setModel(models[0].value);
+        const defaultModel = getDefaultModelForProvider(newProvider);
+        if (defaultModel) {
+            setModel(defaultModel);
         }
     };
 
@@ -103,7 +82,7 @@ export function AudioNodeConfig({ data, onUpdate }: AudioNodeConfigProps) {
                         onChange={(e) => handleProviderChange(e.target.value)}
                         className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                     >
-                        {providers.map((p) => (
+                        {LLM_PROVIDERS.map((p) => (
                             <option key={p.value} value={p.value}>
                                 {p.label}
                             </option>
@@ -117,7 +96,7 @@ export function AudioNodeConfig({ data, onUpdate }: AudioNodeConfigProps) {
                         onChange={(e) => setModel(e.target.value)}
                         className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                     >
-                        {modelsByProvider[provider]?.map((m) => (
+                        {LLM_MODELS_BY_PROVIDER[provider]?.map((m) => (
                             <option key={m.value} value={m.value}>
                                 {m.label}
                             </option>

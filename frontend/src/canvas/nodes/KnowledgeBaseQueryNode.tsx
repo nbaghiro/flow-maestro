@@ -6,17 +6,15 @@ import { BookOpen } from "lucide-react";
 interface KnowledgeBaseQueryNodeData {
     label: string;
     status?: "idle" | "pending" | "running" | "success" | "error";
-    config?: {
-        knowledgeBaseId?: string;
-        knowledgeBaseName?: string;
-        queryText?: string;
-    };
+    knowledgeBaseId?: string;
+    knowledgeBaseName?: string;
+    queryText?: string;
 }
 
 function KnowledgeBaseQueryNode({ data, selected }: NodeProps<KnowledgeBaseQueryNodeData>) {
-    const kbName = data.config?.knowledgeBaseName || "No KB selected";
-    const queryPreview = data.config?.queryText
-        ? data.config.queryText.substring(0, 30) + (data.config.queryText.length > 30 ? "..." : "")
+    const kbName = data.knowledgeBaseName || "No KB selected";
+    const queryPreview = data.queryText
+        ? data.queryText.substring(0, 30) + (data.queryText.length > 30 ? "..." : "")
         : "No query set";
 
     return (
@@ -36,7 +34,7 @@ function KnowledgeBaseQueryNode({ data, selected }: NodeProps<KnowledgeBaseQuery
                 </div>
                 <div className="flex items-center justify-between">
                     <span className="text-xs text-muted-foreground">Query:</span>
-                    <span className="text-xs font-medium truncate max-w-[120px]" title={data.config?.queryText}>
+                    <span className="text-xs font-medium truncate max-w-[120px]" title={data.queryText}>
                         {queryPreview}
                     </span>
                 </div>

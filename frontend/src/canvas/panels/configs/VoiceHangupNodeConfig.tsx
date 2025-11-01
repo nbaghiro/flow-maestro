@@ -16,9 +16,9 @@ const hangupReasons = [
 ];
 
 export function VoiceHangupNodeConfig({ data, onUpdate }: VoiceHangupNodeConfigProps) {
-    const [farewellMessage, setFarewellMessage] = useState(data.config?.farewellMessage || "");
-    const [reason, setReason] = useState(data.config?.reason || "normal");
-    const [enableFarewell, setEnableFarewell] = useState(!!data.config?.farewellMessage);
+    const [farewellMessage, setFarewellMessage] = useState(data.farewellMessage || "");
+    const [reason, setReason] = useState(data.reason || "normal");
+    const [enableFarewell, setEnableFarewell] = useState(!!data.farewellMessage);
 
     useEffect(() => {
         onUpdate({

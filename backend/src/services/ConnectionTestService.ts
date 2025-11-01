@@ -8,6 +8,7 @@ import {
     MCPConnectionData,
 } from "../storage/models/Connection";
 import { getMCPService } from "./mcp/MCPService";
+import { getDefaultModelForProvider } from "@flowmaestro/shared";
 
 export interface ConnectionTestResult {
     success: boolean;
@@ -137,9 +138,10 @@ export class ConnectionTestService {
         const anthropic = new Anthropic({ apiKey: data.api_key });
 
         try {
-            // Send a minimal test message
+            // Send a minimal test message using the fastest model
+            const model = getDefaultModelForProvider("anthropic");
             const response = await anthropic.messages.create({
-                model: "claude-3-haiku-20240307",
+                model: model || "claude-3-5-haiku-20241022",
                 max_tokens: 10,
                 messages: [{ role: "user", content: "Hi" }],
             });

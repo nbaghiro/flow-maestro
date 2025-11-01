@@ -6,15 +6,13 @@ import { Clock } from "lucide-react";
 interface WaitNodeData {
     label: string;
     status?: "idle" | "pending" | "running" | "success" | "error";
-    config?: {
-        duration?: number;
-        unit?: string;
-    };
+    duration?: number;
+    unit?: string;
 }
 
 function WaitNode({ data, selected }: NodeProps<WaitNodeData>) {
-    const duration = data.config?.duration || 5;
-    const unit = data.config?.unit || "seconds";
+    const duration = data.duration || 5;
+    const unit = data.unit || "seconds";
 
     return (
         <BaseNode

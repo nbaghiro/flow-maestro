@@ -31,11 +31,11 @@ const voicesByProvider: Record<string, Array<{ value: string; label: string }>> 
 };
 
 export function VoiceGreetNodeConfig({ data, onUpdate }: VoiceGreetNodeConfigProps) {
-    const [message, setMessage] = useState(data.config?.message || "Hello! How can I help you today?");
-    const [voiceProvider, setVoiceProvider] = useState(data.config?.voiceProvider || "elevenlabs");
-    const [voice, setVoice] = useState(data.config?.voice || "rachel");
-    const [speed, setSpeed] = useState(data.config?.speed || 1.0);
-    const [interruptible, setInterruptible] = useState(data.config?.interruptible !== false);
+    const [message, setMessage] = useState(data.message || "Hello! How can I help you today?");
+    const [voiceProvider, setVoiceProvider] = useState(data.voiceProvider || "elevenlabs");
+    const [voice, setVoice] = useState(data.voice || "rachel");
+    const [speed, setSpeed] = useState(data.speed || 1.0);
+    const [interruptible, setInterruptible] = useState(data.interruptible !== false);
 
     useEffect(() => {
         onUpdate({

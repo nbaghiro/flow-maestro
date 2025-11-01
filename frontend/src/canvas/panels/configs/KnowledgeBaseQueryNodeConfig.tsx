@@ -24,9 +24,9 @@ function getAuthToken(): string | null {
 }
 
 export function KnowledgeBaseQueryNodeConfig({ data, onUpdate }: KnowledgeBaseQueryNodeConfigProps) {
-    const [knowledgeBaseId, setKnowledgeBaseId] = useState(data.config?.knowledgeBaseId || "");
-    const [queryText, setQueryText] = useState(data.config?.queryText || "");
-    const [outputVariable, setOutputVariable] = useState(data.config?.outputVariable || "");
+    const [knowledgeBaseId, setKnowledgeBaseId] = useState(data.knowledgeBaseId || "");
+    const [queryText, setQueryText] = useState(data.queryText || "");
+    const [outputVariable, setOutputVariable] = useState(data.outputVariable || "");
 
     // Fetch available knowledge bases
     const { data: kbData, isLoading } = useQuery({

@@ -6,16 +6,14 @@ import { Send, FileText } from "lucide-react";
 interface OutputNodeData {
     label: string;
     status?: "idle" | "pending" | "running" | "success" | "error";
-    config?: {
-        template?: string;
-        format?: string;
-    };
+    value?: string;
+    format?: string;
 }
 
 function OutputNode({ data, selected }: NodeProps<OutputNodeData>) {
-    const template = data.config?.template || "No output template";
-    const format = data.config?.format || "text";
-    const templatePreview = template.substring(0, 60) + (template.length > 60 ? "..." : "");
+    const value = data.value || "No output template";
+    const format = data.format || "text";
+    const valuePreview = value.substring(0, 60) + (value.length > 60 ? "..." : "");
 
     return (
         <BaseNode
@@ -36,7 +34,7 @@ function OutputNode({ data, selected }: NodeProps<OutputNodeData>) {
                 </div>
                 <div className="pt-1.5 mt-1.5 border-t border-border">
                     <div className="text-xs text-muted-foreground italic line-clamp-2">
-                        {templatePreview}
+                        {valuePreview}
                     </div>
                 </div>
             </div>

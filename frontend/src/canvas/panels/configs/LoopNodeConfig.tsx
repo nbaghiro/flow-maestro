@@ -16,16 +16,16 @@ const loopTypes = [
 ];
 
 export function LoopNodeConfig({ data, onUpdate }: LoopNodeConfigProps) {
-    const [loopType, setLoopType] = useState(data.config?.loopType || "forEach");
-    const [arrayVariable, setArrayVariable] = useState(data.config?.arrayVariable || "");
-    const [itemVariable, setItemVariable] = useState(data.config?.itemVariable || "item");
-    const [indexVariable, setIndexVariable] = useState(data.config?.indexVariable || "index");
-    const [condition, setCondition] = useState(data.config?.condition || "");
-    const [count, setCount] = useState(data.config?.count || 10);
-    const [maxIterations, setMaxIterations] = useState(data.config?.maxIterations || 1000);
-    const [outputVariable, setOutputVariable] = useState(data.config?.outputVariable || "");
+    const [loopType, setLoopType] = useState(data.loopType || "forEach");
+    const [arrayVariable, setArrayVariable] = useState(data.arrayVariable || "");
+    const [itemVariable, setItemVariable] = useState(data.itemVariable || "item");
+    const [indexVariable, setIndexVariable] = useState(data.indexVariable || "index");
+    const [condition, setCondition] = useState(data.condition || "");
+    const [count, setCount] = useState(data.count || 10);
+    const [maxIterations, setMaxIterations] = useState(data.maxIterations || 1000);
+    const [outputVariable, setOutputVariable] = useState(data.outputVariable || "");
     const [initialVariables, setInitialVariables] = useState<Record<string, any>>(
-        data.config?.initialVariables || {}
+        data.initialVariables || {}
     );
     const [showVariableDialog, setShowVariableDialog] = useState(false);
 

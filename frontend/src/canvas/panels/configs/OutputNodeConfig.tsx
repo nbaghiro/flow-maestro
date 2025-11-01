@@ -14,10 +14,10 @@ const formats = [
 ];
 
 export function OutputNodeConfig({ data, onUpdate }: OutputNodeConfigProps) {
-    const [outputName, setOutputName] = useState(data.config?.outputName || "result");
-    const [value, setValue] = useState(data.config?.value || "");
-    const [format, setFormat] = useState(data.config?.format || "json");
-    const [description, setDescription] = useState(data.config?.description || "");
+    const [outputName, setOutputName] = useState(data.outputName || "result");
+    const [value, setValue] = useState(data.value || "");
+    const [format, setFormat] = useState(data.format || "json");
+    const [description, setDescription] = useState(data.description || "");
 
     useEffect(() => {
         onUpdate({
