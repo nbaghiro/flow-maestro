@@ -238,11 +238,32 @@ export async function getWorkflow(workflowId: string) {
     return response.json();
 }
 
+export interface WorkflowDefinition {
+    name?: string;
+    description?: string;
+    nodes: Record<string, WorkflowNode>;
+    edges: WorkflowEdge[];
+    entryPoint: string;
+}
+
 /**
  * Create a new workflow
  */
-export async function createWorkflow(name: string, description?: string) {
+export async function createWorkflow(name: string, description?: string, definition?: WorkflowDefinition) {
     const token = getAuthToken();
+
+    const workflowDefinition: WorkflowDefinition = definition || {
+        name,
+        nodes: {},
+        edges: [],
+        entryPoint: '',
+    };
+
+    const requestBody = {
+        name,
+        description,
+        definition: workflowDefinition,
+    };
 
     const response = await fetch(`${API_BASE_URL}/api/workflows`, {
         method: 'POST',
@@ -250,16 +271,7 @@ export async function createWorkflow(name: string, description?: string) {
             'Content-Type': 'application/json',
             ...(token && { Authorization: `Bearer ${token}` }),
         },
-        body: JSON.stringify({
-            name,
-            description,
-            definition: {
-                name,
-                nodes: {},
-                edges: [],
-                entryPoint: '',
-            },
-        }),
+        body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {

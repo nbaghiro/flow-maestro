@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { getWorkflows, createWorkflow, generateWorkflow, updateWorkflow } from "../lib/api";
+import { getWorkflows, createWorkflow, generateWorkflow, updateWorkflow, type WorkflowDefinition } from "../lib/api";
 import { useAuth } from "../contexts/AuthContext";
 import { CreateWorkflowDialog } from "../components/CreateWorkflowDialog";
 import { AIGenerateDialog } from "../components/AIGenerateDialog";
@@ -40,10 +40,12 @@ export function WorkflowLibrary() {
         }
     };
 
-    const handleCreateWorkflow = async (name: string, description?: string) => {
-        const response = await createWorkflow(name, description);
+    const handleCreateWorkflow = async (name: string, description?: string, definition?: WorkflowDefinition) => {
+        const response = await createWorkflow(name, description, definition);
+
         if (response.success && response.data) {
-            navigate(`/builder/${response.data.id}`);
+            const workflowId = response.data.id;
+            navigate(`/builder/${workflowId}`);
         }
     };
 

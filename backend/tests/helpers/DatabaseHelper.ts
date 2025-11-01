@@ -4,10 +4,12 @@
  */
 
 import { Pool, QueryResultRow } from "pg";
+import { randomUUID } from "crypto";
 
 export class DatabaseHelper {
     private pool: Pool;
     private testSchema: string = "test_schema";
+    private testUserId: string | null = null;
 
     constructor(pool: Pool) {
         this.pool = pool;
@@ -29,21 +31,32 @@ export class DatabaseHelper {
     }
 
     /**
-     * Seed test user and return user ID
+     * Seed test user with unique ID and return user ID
+     * Creates a new test user for each test run to ensure isolation
      */
     async seedTestUser(): Promise<string> {
+        // Generate unique UUID for test user
+        const testUserId = randomUUID();
+        // Use timestamp and random string for identifiable email
+        const timestamp = Date.now();
+        const randomStr = Math.random().toString(36).substring(2, 9);
+        const testEmail = `test-${timestamp}-${randomStr}@flowmaestro.test`;
+
         const result = await this.pool.query<{ id: string }>(
-            `INSERT INTO flowmaestro.users (id, email, password_hash, name)
-             VALUES (
-                 '00000000-0000-0000-0000-000000000001',
-                 'test@flowmaestro.dev',
-                 '$2a$10$abcdefghijklmnopqrstuv',
-                 'Test User'
-             )
-             ON CONFLICT (id) DO UPDATE SET email = EXCLUDED.email
-             RETURNING id`
+            `INSERT INTO users (id, email, password_hash, name)
+             VALUES ($1, $2, $3, $4)
+             RETURNING id`,
+            [
+                testUserId,
+                testEmail,
+                '$2a$10$abcdefghijklmnopqrstuv', // Dummy hash for test user
+                `Test User (${timestamp})`
+            ]
         );
-        return result.rows[0].id;
+
+        this.testUserId = result.rows[0].id;
+        console.log(`✅ Created test user: ${testEmail} (ID: ${this.testUserId})`);
+        return this.testUserId;
     }
 
     /**
@@ -55,7 +68,7 @@ export class DatabaseHelper {
         definition: object
     ): Promise<string> {
         const result = await this.pool.query<{ id: string }>(
-            `INSERT INTO flowmaestro.workflows (user_id, name, description, definition)
+            `INSERT INTO workflows (user_id, name, description, definition)
              VALUES ($1, $2, $3, $4)
              RETURNING id`,
             [userId, name, "Test workflow", JSON.stringify(definition)]
@@ -71,7 +84,7 @@ export class DatabaseHelper {
         inputs: object = {}
     ): Promise<string> {
         const result = await this.pool.query<{ id: string }>(
-            `INSERT INTO flowmaestro.executions (workflow_id, status, inputs, outputs, current_state)
+            `INSERT INTO executions (workflow_id, status, inputs, outputs, current_state)
              VALUES ($1, 'running', $2, '{}', '{}')
              RETURNING id`,
             [workflowId, JSON.stringify(inputs)]
@@ -84,7 +97,7 @@ export class DatabaseHelper {
      */
     async getExecution(executionId: string): Promise<any> {
         const result = await this.pool.query(
-            `SELECT * FROM flowmaestro.executions WHERE id = $1`,
+            `SELECT * FROM executions WHERE id = $1`,
             [executionId]
         );
         return result.rows[0] || null;
@@ -95,7 +108,7 @@ export class DatabaseHelper {
      */
     async getExecutionLogs(executionId: string): Promise<any[]> {
         const result = await this.pool.query(
-            `SELECT * FROM flowmaestro.execution_logs
+            `SELECT * FROM execution_logs
              WHERE execution_id = $1
              ORDER BY created_at ASC`,
             [executionId]
@@ -104,23 +117,63 @@ export class DatabaseHelper {
     }
 
     /**
-     * Clean up all test data
+     * Clean up ONLY test user's data (user-scoped cleanup for safety)
      */
     async cleanup(): Promise<void> {
-        // Delete in reverse order of foreign key dependencies
-        // Use schema-qualified table names to avoid search_path issues
-        // Wrap in try-catch to handle cases where tables might not exist yet
+        if (!this.testUserId) {
+            console.warn('No test user ID set, skipping cleanup');
+            return;
+        }
+
+        // Safety check: Verify this is a test user by checking email domain
+        const userCheck = await this.pool.query<{ email: string }>(
+            `SELECT email FROM users WHERE id = $1`,
+            [this.testUserId]
+        );
+
+        if (userCheck.rows.length === 0) {
+            console.warn(`Test user ${this.testUserId} not found, skipping cleanup`);
+            return;
+        }
+
+        const email = userCheck.rows[0].email;
+        if (!email.endsWith('@flowmaestro.test')) {
+            throw new Error(
+                `SAFETY CHECK FAILED: Attempted to cleanup non-test user: ${email}. ` +
+                `Test user emails must end with "@flowmaestro.test"`
+            );
+        }
+
         try {
-            await this.pool.query(`DELETE FROM flowmaestro.execution_logs`);
-            await this.pool.query(`DELETE FROM flowmaestro.executions`);
-            await this.pool.query(`DELETE FROM flowmaestro.workflows`);
-            await this.pool.query(`DELETE FROM flowmaestro.knowledge_chunks`);
-            await this.pool.query(`DELETE FROM flowmaestro.knowledge_documents`);
-            await this.pool.query(`DELETE FROM flowmaestro.knowledge_bases`);
-            await this.pool.query(`DELETE FROM flowmaestro.connections WHERE user_id = '00000000-0000-0000-0000-000000000001'`);
+            // Delete user-owned data in order (CASCADE should handle some dependencies)
+            // Workflows CASCADE to executions → execution_logs
+            await this.pool.query(
+                `DELETE FROM workflows WHERE user_id = $1`,
+                [this.testUserId]
+            );
+
+            // Knowledge bases CASCADE to documents → chunks
+            await this.pool.query(
+                `DELETE FROM knowledge_bases WHERE user_id = $1`,
+                [this.testUserId]
+            );
+
+            // Connections
+            await this.pool.query(
+                `DELETE FROM connections WHERE user_id = $1`,
+                [this.testUserId]
+            );
+
+            // Finally delete the test user
+            await this.pool.query(
+                `DELETE FROM users WHERE id = $1`,
+                [this.testUserId]
+            );
+
+            console.log(`✅ Cleaned up test user: ${this.testUserId}`);
         } catch (error) {
-            // Ignore errors during cleanup - tables might not exist
-            console.error('Cleanup warning:', error instanceof Error ? error.message : error);
+            console.error(`Cleanup error for user ${this.testUserId}:`, error instanceof Error ? error.message : error);
+            // Don't throw - allow tests to continue even if cleanup fails
         }
     }
 
@@ -163,7 +216,7 @@ export class DatabaseHelper {
     ): Promise<string> {
         // Create knowledge base
         const kbResult = await this.pool.query<{ id: string }>(
-            `INSERT INTO flowmaestro.knowledge_bases (user_id, name, description, config)
+            `INSERT INTO knowledge_bases (user_id, name, description, config)
              VALUES ($1, $2, $3, $4)
              RETURNING id`,
             [
@@ -186,7 +239,7 @@ export class DatabaseHelper {
 
             // Create document
             const docResult = await this.pool.query<{ id: string }>(
-                `INSERT INTO flowmaestro.knowledge_documents
+                `INSERT INTO knowledge_documents
                  (knowledge_base_id, name, source_type, content, status)
                  VALUES ($1, $2, 'text', $3, 'ready')
                  RETURNING id`,
@@ -197,7 +250,7 @@ export class DatabaseHelper {
 
             // Create chunk with embedding
             await this.pool.query(
-                `INSERT INTO flowmaestro.knowledge_chunks
+                `INSERT INTO knowledge_chunks
                  (document_id, knowledge_base_id, chunk_index, content, embedding)
                  VALUES ($1, $2, $3, $4, $5)`,
                 [docId, kbId, 0, doc.content, JSON.stringify(doc.embedding)]

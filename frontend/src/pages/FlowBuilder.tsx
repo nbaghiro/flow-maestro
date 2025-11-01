@@ -93,6 +93,7 @@ export function FlowBuilder() {
 
         try {
             const response = await getWorkflow(workflowId);
+
             if (response.success && response.data) {
                 setWorkflowName(response.data.name);
                 setWorkflowDescription(response.data.description || "");
@@ -108,17 +109,19 @@ export function FlowBuilder() {
                     const definition = response.data.definition;
 
                     // Convert backend nodes format to React Flow format
-                    if (definition.nodes) {
-                        const flowNodes = Object.entries(definition.nodes).map(([id, node]: [string, any]) => ({
-                            id,
-                            type: node.type,
-                            position: node.position,
-                            data: {
-                                label: node.name,
-                                ...node.config,
-                                onError: node.onError,
-                            },
-                        }));
+                    if (definition.nodes && Object.keys(definition.nodes).length > 0) {
+                        const flowNodes = Object.entries(definition.nodes).map(([id, node]: [string, any]) => {
+                            return {
+                                id,
+                                type: node.type,
+                                position: node.position,
+                                data: {
+                                    label: node.name,
+                                    ...node.config,
+                                    onError: node.onError,
+                                },
+                            };
+                        });
 
                         // Set nodes in the store
                         useWorkflowStore.getState().setNodes(flowNodes);
@@ -128,16 +131,10 @@ export function FlowBuilder() {
                     if (definition.edges && definition.edges.length > 0) {
                         useWorkflowStore.getState().setEdges(definition.edges);
                     }
-
-                    console.log('Workflow loaded:', {
-                        name: response.data.name,
-                        nodesCount: definition.nodes ? Object.keys(definition.nodes).length : 0,
-                        edgesCount: definition.edges ? definition.edges.length : 0,
-                    });
                 }
             }
         } catch (error) {
-            console.error("Failed to load workflow:", error);
+            console.error("[FlowBuilder] Failed to load workflow:", error);
         } finally {
             setIsLoading(false);
         }
