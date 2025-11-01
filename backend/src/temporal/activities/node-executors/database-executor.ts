@@ -134,9 +134,11 @@ async function executePostgreSQL(
         if (config.operation === 'query') {
             // Execute SELECT query
             const query = interpolateVariables(config.query || '', context);
-            const parameters = config.parameters?.map(p =>
-                typeof p === 'string' ? interpolateVariables(p, context) : p
-            ) || [];
+            const parameters = Array.isArray(config.parameters)
+                ? config.parameters.map(p =>
+                    typeof p === 'string' ? interpolateVariables(p, context) : p
+                )
+                : [];
 
             console.log(`[Database/PostgreSQL] Executing query: ${query.substring(0, 100)}...`);
 
@@ -160,9 +162,11 @@ async function executePostgreSQL(
         } else if (config.operation === 'insert') {
             // Execute INSERT
             const query = interpolateVariables(config.query || '', context);
-            const parameters = config.parameters?.map(p =>
-                typeof p === 'string' ? interpolateVariables(p, context) : p
-            ) || [];
+            const parameters = Array.isArray(config.parameters)
+                ? config.parameters.map(p =>
+                    typeof p === 'string' ? interpolateVariables(p, context) : p
+                )
+                : [];
 
             console.log(`[Database/PostgreSQL] Executing insert`);
 
@@ -181,9 +185,11 @@ async function executePostgreSQL(
         } else if (config.operation === 'update' || config.operation === 'delete') {
             // Execute UPDATE or DELETE
             const query = interpolateVariables(config.query || '', context);
-            const parameters = config.parameters?.map(p =>
-                typeof p === 'string' ? interpolateVariables(p, context) : p
-            ) || [];
+            const parameters = Array.isArray(config.parameters)
+                ? config.parameters.map(p =>
+                    typeof p === 'string' ? interpolateVariables(p, context) : p
+                )
+                : [];
 
             console.log(`[Database/PostgreSQL] Executing ${config.operation}`);
 

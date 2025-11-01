@@ -65,7 +65,7 @@ export async function orchestratorWorkflow(input: OrchestratorInput): Promise<Or
 
     // Build execution graph
     const nodeMap = new Map<string, WorkflowNode>();
-    const outgoingEdges = new Map<string, string[]>();
+    const outgoingEdges = new Map<string, Array<{ target: string; sourceHandle?: string }>>();
     const incomingEdges = new Map<string, string[]>();
 
     // Initialize maps from nodes Record
@@ -76,7 +76,10 @@ export async function orchestratorWorkflow(input: OrchestratorInput): Promise<Or
     });
 
     edges.forEach(edge => {
-        outgoingEdges.get(edge.source)?.push(edge.target);
+        outgoingEdges.get(edge.source)?.push({
+            target: edge.target,
+            sourceHandle: edge.sourceHandle,
+        });
         incomingEdges.get(edge.target)?.push(edge.source);
     });
 
@@ -90,12 +93,38 @@ export async function orchestratorWorkflow(input: OrchestratorInput): Promise<Or
     // Execution context - stores all node outputs
     const context: JsonObject = { ...inputs };
     const executed = new Set<string>();
+    const skipped = new Set<string>();
     const errors: Record<string, string> = {};
     let completedNodeCount = 0;
 
+    // Helper function to recursively mark a node and its descendants as skipped
+    function markNodeAsSkipped(nodeId: string): void {
+        if (skipped.has(nodeId) || executed.has(nodeId)) {
+            return; // Already processed
+        }
+
+        // Check if this node has multiple incoming edges (converging node)
+        const incomingPaths = incomingEdges.get(nodeId) || [];
+        if (incomingPaths.length > 1) {
+            // Don't mark converging nodes as skipped
+            // They will handle their own execution based on dependency checks
+            console.log(`[Orchestrator] Not marking ${nodeId} as skipped (converging node with ${incomingPaths.length} incoming paths)`);
+            return;
+        }
+
+        skipped.add(nodeId);
+        console.log(`[Orchestrator] Marking ${nodeId} as skipped`);
+
+        // Recursively mark all dependent nodes as skipped
+        const dependents = outgoingEdges.get(nodeId) || [];
+        for (const edge of dependents) {
+            markNodeAsSkipped(edge.target);
+        }
+    }
+
     // Execute nodes in topological order
     async function executeNodeAndDependents(nodeId: string): Promise<void> {
-        if (executed.has(nodeId)) {
+        if (executed.has(nodeId) || skipped.has(nodeId)) {
             return;
         }
 
@@ -110,15 +139,16 @@ export async function orchestratorWorkflow(input: OrchestratorInput): Promise<Or
         // Wait for all dependencies to complete
         const dependencies = incomingEdges.get(nodeId) || [];
         for (const depId of dependencies) {
-            if (!executed.has(depId)) {
+            if (!executed.has(depId) && !skipped.has(depId)) {
                 await executeNodeAndDependents(depId);
             }
         }
 
-        // Skip if dependency failed
-        if (dependencies.some(depId => errors[depId])) {
-            console.log(`[Orchestrator] Skipping ${nodeId} due to failed dependency`);
-            errors[nodeId] = 'Dependency failed';
+        // Skip if ALL dependencies failed or were skipped
+        // (For converging nodes from conditional branches, at least one path must succeed)
+        if (dependencies.length > 0 && dependencies.every(depId => errors[depId] || skipped.has(depId))) {
+            console.log(`[Orchestrator] Skipping ${nodeId} - all dependencies failed or skipped`);
+            errors[nodeId] = 'All dependencies failed or skipped';
             return;
         }
 
@@ -137,10 +167,47 @@ export async function orchestratorWorkflow(input: OrchestratorInput): Promise<Or
         try {
             // Handle input nodes specially
             if (node.type === 'input') {
-                const inputName = typeof node.config.inputName === 'string' ? node.config.inputName : 'input';
-                const inputValue = inputs[inputName];
-                context[inputName] = inputValue;
-                console.log(`[Orchestrator] Input node ${nodeId}: ${inputName} = ${JSON.stringify(inputValue)}`);
+                if (node.config.inputName && typeof node.config.inputName === 'string') {
+                    // Named input - store specific input value
+                    const inputName = node.config.inputName;
+                    const inputValue = inputs[inputName];
+                    context[inputName] = inputValue;
+                    console.log(`[Orchestrator] Input node ${nodeId}: ${inputName} = ${JSON.stringify(inputValue)}`);
+                } else {
+                    // No input name specified - this is the workflow entry point, merge all inputs
+                    Object.assign(context, inputs);
+                    console.log(`[Orchestrator] Input node ${nodeId}: merged all inputs into context`);
+                }
+            } else if (node.type === 'conditional') {
+                // Handle conditional nodes in the orchestrator (not via activity)
+                // Import and execute conditional logic inline
+                const leftValue = typeof node.config.leftValue === 'string' ? node.config.leftValue : '';
+                const rightValue = typeof node.config.rightValue === 'string' ? node.config.rightValue : '';
+                const operator = typeof node.config.operator === 'string' ? node.config.operator : '==';
+
+                // Simple variable interpolation for conditional
+                const interpolate = (str: string): string => {
+                    return str.replace(/\$\{([^}]+)\}/g, (_, key) => {
+                        const value = context[key.trim()];
+                        return value !== undefined ? String(value) : '';
+                    });
+                };
+
+                const leftInterpolated = interpolate(leftValue);
+                const rightInterpolated = interpolate(rightValue);
+
+                // Simple equality check (case-insensitive for strings)
+                const conditionMet = leftInterpolated.toLowerCase() === rightInterpolated.toLowerCase();
+                const branch = conditionMet ? 'true' : 'false';
+
+                console.log(`[Orchestrator] Conditional: "${leftInterpolated}" ${operator} "${rightInterpolated}" = ${conditionMet} (branch: ${branch})`);
+
+                // Store result in context
+                context.conditionMet = conditionMet;
+                context.branch = branch;
+                context.leftValue = leftInterpolated;
+                context.rightValue = rightInterpolated;
+                context.operator = operator;
             } else {
                 // Execute the node using the activity
                 const result = await executeNode({
@@ -174,9 +241,37 @@ export async function orchestratorWorkflow(input: OrchestratorInput): Promise<Or
             });
 
             // Execute dependent nodes
-            const dependents = outgoingEdges.get(nodeId) || [];
-            for (const dependentId of dependents) {
-                await executeNodeAndDependents(dependentId);
+            const dependentEdges = outgoingEdges.get(nodeId) || [];
+
+            // Handle conditional branching
+            if (node.type === 'conditional') {
+                // Get the branch result from context
+                const branch = context.branch as string | undefined;
+                console.log(`[Orchestrator] Conditional node ${nodeId} branch: ${branch}`);
+
+                // PHASE 1: Mark all skipped branches FIRST (synchronous)
+                // This prevents race condition where converging nodes try to pull skipped dependencies
+                for (const edge of dependentEdges) {
+                    const shouldExecute = !edge.sourceHandle || edge.sourceHandle === branch;
+                    if (!shouldExecute) {
+                        console.log(`[Orchestrator] Marking ${edge.sourceHandle} branch to ${edge.target} as skipped (branch is ${branch})`);
+                        markNodeAsSkipped(edge.target);
+                    }
+                }
+
+                // PHASE 2: Execute active branches AFTER all skipping is complete
+                for (const edge of dependentEdges) {
+                    const shouldExecute = !edge.sourceHandle || edge.sourceHandle === branch;
+                    if (shouldExecute) {
+                        console.log(`[Orchestrator] Following ${edge.sourceHandle || 'unconditional'} branch to ${edge.target}`);
+                        await executeNodeAndDependents(edge.target);
+                    }
+                }
+            } else {
+                // Normal execution - execute all dependent nodes
+                for (const edge of dependentEdges) {
+                    await executeNodeAndDependents(edge.target);
+                }
             }
         } catch (error: unknown) {
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';

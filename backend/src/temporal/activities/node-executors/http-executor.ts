@@ -13,6 +13,7 @@ export interface HTTPNodeConfig {
     body?: string;
     timeout?: number;
     retryCount?: number;
+    outputVariable?: string;
 }
 
 export interface HTTPNodeResult {
@@ -114,13 +115,19 @@ export async function executeHTTPNode(
 
             console.log(`[HTTP] Response: ${response.status} ${response.statusText} (${responseTime}ms)`);
 
-            return {
+            const result = {
                 status: response.status,
                 statusText: response.statusText,
                 headers: response.headers as Record<string, string>,
                 data: response.data,
                 responseTime
-            } as unknown as JsonObject;
+            };
+
+            if (config.outputVariable) {
+                return { [config.outputVariable]: result } as unknown as JsonObject;
+            }
+
+            return result as unknown as JsonObject;
         } catch (error) {
             lastError = error as Error;
             console.error(`[HTTP] Attempt ${attempt + 1} failed:`, error);
