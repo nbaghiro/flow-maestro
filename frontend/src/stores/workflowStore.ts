@@ -68,7 +68,7 @@ interface WorkflowStore {
     selectNode: (nodeId: string | null) => void;
     setAIMetadata: (aiGenerated: boolean, aiPrompt: string | null) => void;
     executeWorkflow: (inputs?: JsonObject) => Promise<void>;
-    generateWorkflowFromAI: (prompt: string, connectionId: string) => Promise<void>;
+    generateWorkflowFromAI: (prompt: string, connectionId: string, model: string) => Promise<void>;
 
     // Execution state management
     startExecution: (executionId: string, triggerId?: string) => void;
@@ -188,11 +188,11 @@ export const useWorkflowStore = create<WorkflowStore>((set, get) => ({
         }
     },
 
-    generateWorkflowFromAI: async (prompt: string, connectionId: string) => {
+    generateWorkflowFromAI: async (prompt: string, connectionId: string, model: string) => {
         console.log('[Workflow] Generating workflow from AI prompt:', prompt);
 
         try {
-            const response = await generateWorkflow({ prompt, connectionId });
+            const response = await generateWorkflow({ prompt, connectionId, model });
 
             if (response.success && response.data) {
                 console.log('[Workflow] AI generated workflow with', response.data.nodes.length, 'nodes');

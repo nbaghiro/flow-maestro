@@ -45,6 +45,8 @@ export interface EmitNodeStartedInput {
 export interface EmitNodeCompletedInput {
     executionId: string;
     nodeId: string;
+    nodeName: string;
+    nodeType: string;
     output: JsonValue;
     duration: number;
     metadata?: JsonObject;
@@ -53,6 +55,8 @@ export interface EmitNodeCompletedInput {
 export interface EmitNodeFailedInput {
     executionId: string;
     nodeId: string;
+    nodeName: string;
+    nodeType: string;
     error: string;
 }
 
@@ -134,12 +138,14 @@ export async function emitNodeStarted(input: EmitNodeStartedInput): Promise<void
  * Emit node completed event
  */
 export async function emitNodeCompleted(input: EmitNodeCompletedInput): Promise<void> {
-    const { executionId, nodeId, output, duration, metadata } = input;
+    const { executionId, nodeId, nodeName, nodeType, output, duration, metadata } = input;
     await redisEventBus.publish("workflow:events:node:completed", {
         type: "node:completed",
         timestamp: Date.now(),
         executionId,
         nodeId,
+        nodeName,
+        nodeType,
         output,
         duration,
         ...(metadata && { metadata }),
@@ -150,12 +156,14 @@ export async function emitNodeCompleted(input: EmitNodeCompletedInput): Promise<
  * Emit node failed event
  */
 export async function emitNodeFailed(input: EmitNodeFailedInput): Promise<void> {
-    const { executionId, nodeId, error } = input;
+    const { executionId, nodeId, nodeName, nodeType, error } = input;
     await redisEventBus.publish("workflow:events:node:failed", {
         type: "node:failed",
         timestamp: Date.now(),
         executionId,
         nodeId,
+        nodeName,
+        nodeType,
         error,
     });
 }

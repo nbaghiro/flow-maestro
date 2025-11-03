@@ -49,9 +49,9 @@ export function WorkflowLibrary() {
         }
     };
 
-    const handleGenerateWorkflow = async (prompt: string, connectionId: string) => {
+    const handleGenerateWorkflow = async (prompt: string, connectionId: string, model: string) => {
         // Generate workflow using AI
-        const generateResponse = await generateWorkflow({ prompt, connectionId });
+        const generateResponse = await generateWorkflow({ prompt, connectionId, model });
 
         if (generateResponse.success && generateResponse.data) {
             const { nodes, edges, metadata } = generateResponse.data;
