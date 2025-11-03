@@ -229,7 +229,15 @@ export type WebSocketEventType =
     | "call:active"
     | "call:transcript"
     | "call:ended"
-    | "call:error";
+    | "call:error"
+    | "agent:execution:started"
+    | "agent:message:new"
+    | "agent:thinking"
+    | "agent:tool:call:started"
+    | "agent:tool:call:completed"
+    | "agent:tool:call:failed"
+    | "agent:execution:completed"
+    | "agent:execution:failed";
 
 /**
  * Base WebSocket event interface.
@@ -265,4 +273,12 @@ export type WebSocketEvent =
     | ({ type: "call:active"; timestamp: number; callExecutionId: string; executionId?: string; answeredAt: number } & JsonObject)
     | ({ type: "call:transcript"; timestamp: number; callExecutionId: string; speaker: string; text: string; isFinal: boolean; confidence?: number } & JsonObject)
     | ({ type: "call:ended"; timestamp: number; callExecutionId: string; duration?: number; status: string; hangupCause?: string; recordingUrl?: string } & JsonObject)
-    | ({ type: "call:error"; timestamp: number; callExecutionId: string; error: string; errorCode?: string } & JsonObject);
+    | ({ type: "call:error"; timestamp: number; callExecutionId: string; error: string; errorCode?: string } & JsonObject)
+    | ({ type: "agent:execution:started"; timestamp: number; executionId: string; agentId: string; agentName: string } & JsonObject)
+    | ({ type: "agent:message:new"; timestamp: number; executionId: string; message: JsonObject } & JsonObject)
+    | ({ type: "agent:thinking"; timestamp: number; executionId: string } & JsonObject)
+    | ({ type: "agent:tool:call:started"; timestamp: number; executionId: string; toolName: string; arguments: JsonObject } & JsonObject)
+    | ({ type: "agent:tool:call:completed"; timestamp: number; executionId: string; toolName: string; result: JsonObject } & JsonObject)
+    | ({ type: "agent:tool:call:failed"; timestamp: number; executionId: string; toolName: string; error: string } & JsonObject)
+    | ({ type: "agent:execution:completed"; timestamp: number; executionId: string; finalMessage: string; iterations: number } & JsonObject)
+    | ({ type: "agent:execution:failed"; timestamp: number; executionId: string; error: string } & JsonObject);

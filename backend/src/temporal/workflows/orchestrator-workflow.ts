@@ -226,6 +226,8 @@ export async function orchestratorWorkflow(input: OrchestratorInput): Promise<Or
             await emitNodeCompleted({
                 executionId,
                 nodeId,
+                nodeName: node.name || nodeId,
+                nodeType: node.type,
                 output: context,
                 duration: nodeDuration,
             });
@@ -282,6 +284,8 @@ export async function orchestratorWorkflow(input: OrchestratorInput): Promise<Or
             await emitNodeFailed({
                 executionId,
                 nodeId,
+                nodeName: node.name || nodeId,
+                nodeType: node.type,
                 error: errorMessage,
             });
 

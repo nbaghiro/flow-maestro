@@ -9,6 +9,8 @@ import { Account } from "./pages/Account";
 import { Workspace } from "./pages/Workspace";
 import { FlowBuilder } from "./pages/FlowBuilder";
 import { KnowledgeBaseList, KnowledgeBaseDetail } from "./pages/KnowledgeBases";
+import { Agents } from "./pages/Agents";
+import { AgentBuilder } from "./pages/AgentBuilder";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { AppLayout } from "./components/layout/AppLayout";
 
@@ -29,6 +31,7 @@ function App() {
                 }
             >
                 <Route index element={<Workflows />} />
+                <Route path="agents" element={<Agents />} />
                 <Route path="connections" element={<Connections />} />
                 <Route path="knowledge-bases" element={<KnowledgeBaseList />} />
                 <Route path="knowledge-bases/:id" element={<KnowledgeBaseDetail />} />
@@ -44,6 +47,25 @@ function App() {
                 element={
                     <ProtectedRoute>
                         <FlowBuilder />
+                    </ProtectedRoute>
+                }
+            />
+
+            {/* Full-screen agent builder without sidebar */}
+            <Route
+                path="/agents/:agentId"
+                element={
+                    <ProtectedRoute>
+                        <AgentBuilder />
+                    </ProtectedRoute>
+                }
+            />
+
+            <Route
+                path="/agents/:agentId/test"
+                element={
+                    <ProtectedRoute>
+                        <AgentBuilder />
                     </ProtectedRoute>
                 }
             />

@@ -579,6 +579,36 @@ export async function getExecution(executionId: string): Promise<{ success: bool
     return response.json();
 }
 
+/**
+ * Submit user input to a running workflow execution
+ */
+export async function submitUserInput(
+    executionId: string,
+    userResponse: string,
+    nodeId?: string
+): Promise<{ success: boolean; message?: string; error?: string }> {
+    const token = getAuthToken();
+
+    const response = await fetch(`${API_BASE_URL}/api/executions/${executionId}/submit-input`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            ...(token && { Authorization: `Bearer ${token}` }),
+        },
+        body: JSON.stringify({
+            userResponse,
+            nodeId,
+        }),
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    return response.json();
+}
+
 // ===== Connection API Functions =====
 
 export type ConnectionMethod = 'api_key' | 'oauth2' | 'mcp' | 'basic_auth' | 'custom';
@@ -910,6 +940,7 @@ export async function refreshMCPTools(connectionId: string): Promise<{
 export interface GenerateWorkflowRequest {
     prompt: string;
     connectionId: string;
+    model: string;
 }
 
 export interface GeneratedWorkflow {
@@ -958,6 +989,291 @@ export async function generateWorkflow(
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.error?.message || errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    return response.json();
+}
+
+
+// ===== Agent API Functions =====
+
+export interface Tool {
+    name: string;
+    description: string;
+    type: "workflow" | "function" | "knowledge_base";
+    schema: JsonObject;
+    config: JsonObject;
+}
+
+export interface MemoryConfig {
+    type: "buffer" | "summary" | "vector";
+    max_messages: number;
+}
+
+export interface Agent {
+    id: string;
+    user_id: string;
+    name: string;
+    description?: string;
+    model: string;
+    provider: "openai" | "anthropic" | "google" | "cohere";
+    connection_id: string | null;
+    system_prompt: string;
+    temperature: number;
+    max_tokens: number;
+    max_iterations: number;
+    available_tools: Tool[];
+    memory_config: MemoryConfig;
+    created_at: string;
+    updated_at: string;
+    deleted_at: string | null;
+}
+
+export interface CreateAgentRequest {
+    name: string;
+    description?: string;
+    model: string;
+    provider: "openai" | "anthropic" | "google" | "cohere";
+    connection_id?: string | null;
+    system_prompt?: string;
+    temperature?: number;
+    max_tokens?: number;
+    max_iterations?: number;
+    available_tools?: Tool[];
+    memory_config?: MemoryConfig;
+}
+
+export interface UpdateAgentRequest {
+    name?: string;
+    description?: string;
+    model?: string;
+    provider?: "openai" | "anthropic" | "google" | "cohere";
+    connection_id?: string | null;
+    system_prompt?: string;
+    temperature?: number;
+    max_tokens?: number;
+    max_iterations?: number;
+    available_tools?: Tool[];
+    memory_config?: MemoryConfig;
+}
+
+export interface AgentExecution {
+    id: string;
+    agent_id: string;
+    user_id: string;
+    status: "running" | "completed" | "failed";
+    conversation_history: ConversationMessage[];
+    iterations: number;
+    error: string | null;
+    started_at: string;
+    completed_at: string | null;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface ConversationMessage {
+    id: string;
+    role: "user" | "assistant" | "system" | "tool";
+    content: string;
+    tool_calls?: Array<{
+        id: string;
+        name: string;
+        arguments: JsonObject;
+    }>;
+    tool_name?: string;
+    tool_call_id?: string;
+    timestamp: string;
+}
+
+/**
+ * Create a new agent
+ */
+export async function createAgent(
+    data: CreateAgentRequest
+): Promise<{ success: boolean; data: Agent; error?: string }> {
+    const token = getAuthToken();
+
+    const response = await fetch(`${API_BASE_URL}/api/agents`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            ...(token && { Authorization: `Bearer ${token}` }),
+        },
+        body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    return response.json();
+}
+
+/**
+ * Get all agents for the current user
+ */
+export async function getAgents(): Promise<{ success: boolean; data: { agents: Agent[]; total: number }; error?: string }> {
+    const token = getAuthToken();
+
+    const response = await fetch(`${API_BASE_URL}/api/agents`, {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json",
+            ...(token && { Authorization: `Bearer ${token}` }),
+        },
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    return response.json();
+}
+
+/**
+ * Get a specific agent by ID
+ */
+export async function getAgent(agentId: string): Promise<{ success: boolean; data: Agent; error?: string }> {
+    const token = getAuthToken();
+
+    const response = await fetch(`${API_BASE_URL}/api/agents/${agentId}`, {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json",
+            ...(token && { Authorization: `Bearer ${token}` }),
+        },
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    return response.json();
+}
+
+/**
+ * Update an agent
+ */
+export async function updateAgent(
+    agentId: string,
+    data: UpdateAgentRequest
+): Promise<{ success: boolean; data: Agent; error?: string }> {
+    const token = getAuthToken();
+
+    const response = await fetch(`${API_BASE_URL}/api/agents/${agentId}`, {
+        method: "PUT",
+        headers: {
+            "Content-Type": "application/json",
+            ...(token && { Authorization: `Bearer ${token}` }),
+        },
+        body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    return response.json();
+}
+
+/**
+ * Delete an agent
+ */
+export async function deleteAgent(agentId: string): Promise<{ success: boolean; message?: string; error?: string }> {
+    const token = getAuthToken();
+
+    const response = await fetch(`${API_BASE_URL}/api/agents/${agentId}`, {
+        method: "DELETE",
+        headers: {
+            ...(token && { Authorization: `Bearer ${token}` }),
+        },
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    return response.json();
+}
+
+/**
+ * Execute an agent with an initial message
+ */
+export async function executeAgent(
+    agentId: string,
+    message: string
+): Promise<{ success: boolean; data: { executionId: string; agentId: string; status: string }; error?: string }> {
+    const token = getAuthToken();
+
+    const response = await fetch(`${API_BASE_URL}/api/agents/${agentId}/execute`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            ...(token && { Authorization: `Bearer ${token}` }),
+        },
+        body: JSON.stringify({ message }),
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    return response.json();
+}
+
+/**
+ * Send a message to a running agent execution
+ */
+export async function sendAgentMessage(
+    agentId: string,
+    executionId: string,
+    message: string
+): Promise<{ success: boolean; message?: string; error?: string }> {
+    const token = getAuthToken();
+
+    const response = await fetch(`${API_BASE_URL}/api/agents/${agentId}/executions/${executionId}/message`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            ...(token && { Authorization: `Bearer ${token}` }),
+        },
+        body: JSON.stringify({ message }),
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    return response.json();
+}
+
+/**
+ * Get agent execution details
+ */
+export async function getAgentExecution(
+    agentId: string,
+    executionId: string
+): Promise<{ success: boolean; data: AgentExecution; error?: string }> {
+    const token = getAuthToken();
+
+    const response = await fetch(`${API_BASE_URL}/api/agents/${agentId}/executions/${executionId}`, {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json",
+            ...(token && { Authorization: `Bearer ${token}` }),
+        },
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
     }
 
     return response.json();

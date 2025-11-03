@@ -14,6 +14,7 @@ import { websocketRoutes } from "./routes/websocket";
 import { triggerRoutes } from "./routes/triggers";
 import { oauthRoutes } from "./routes/oauth";
 import { knowledgeBaseRoutes } from "./routes/knowledge-bases";
+import { agentRoutes } from "./routes/agents";
 import { db } from "../storage/database";
 import { eventBridge } from "../shared/websocket/EventBridge";
 import { redisEventBus } from "../shared/events/RedisEventBus";
@@ -94,6 +95,7 @@ export async function buildServer() {
     await fastify.register(oauthRoutes, { prefix: "/api/oauth" });
     await fastify.register(nodeRoutes, { prefix: "/api/nodes" });
     await fastify.register(knowledgeBaseRoutes, { prefix: "/api/knowledge-bases" });
+    await fastify.register(agentRoutes, { prefix: "/api/agents" });
     await fastify.register(triggerRoutes, { prefix: "/api" });
     await fastify.register(websocketRoutes);
 

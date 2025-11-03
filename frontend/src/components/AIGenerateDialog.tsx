@@ -7,12 +7,12 @@ import { useState, useEffect } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { X, Sparkles, Loader2, RefreshCw } from "lucide-react";
 import { useConnectionStore } from "../stores/connectionStore";
-import { getRandomExamplePrompts } from "@flowmaestro/shared";
+import { getRandomExamplePrompts, getModelsForProvider, getDefaultModelForProvider } from "@flowmaestro/shared";
 
 interface AIGenerateDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    onGenerate: (prompt: string, connectionId: string) => Promise<void>;
+    onGenerate: (prompt: string, connectionId: string, model: string) => Promise<void>;
 }
 
 export function AIGenerateDialog({
@@ -22,6 +22,7 @@ export function AIGenerateDialog({
 }: AIGenerateDialogProps) {
     const [prompt, setPrompt] = useState("");
     const [selectedConnectionId, setSelectedConnectionId] = useState("");
+    const [selectedModel, setSelectedModel] = useState("");
     const [isGenerating, setIsGenerating] = useState(false);
     const [error, setError] = useState("");
     const [examplePrompts, setExamplePrompts] = useState<string[]>(() => getRandomExamplePrompts(4));
@@ -34,6 +35,14 @@ export function AIGenerateDialog({
         && conn.status === 'active'
         && (conn.connection_method === 'api_key' || conn.connection_method === 'oauth2')
     );
+
+    // Get selected connection
+    const selectedConnection = llmConnections.find(conn => conn.id === selectedConnectionId);
+
+    // Get available models for selected connection's provider
+    const availableModels = selectedConnection
+        ? getModelsForProvider(selectedConnection.provider.toLowerCase())
+        : [];
 
     // Fetch connections when dialog opens
     useEffect(() => {
@@ -48,6 +57,14 @@ export function AIGenerateDialog({
             setSelectedConnectionId(llmConnections[0].id);
         }
     }, [llmConnections, selectedConnectionId]);
+
+    // Auto-select default model when connection changes
+    useEffect(() => {
+        if (selectedConnection) {
+            const defaultModel = getDefaultModelForProvider(selectedConnection.provider.toLowerCase());
+            setSelectedModel(defaultModel);
+        }
+    }, [selectedConnection]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -68,15 +85,21 @@ export function AIGenerateDialog({
             return;
         }
 
+        if (!selectedModel) {
+            setError("Please select a model");
+            return;
+        }
+
         setIsGenerating(true);
         setError("");
 
         try {
-            await onGenerate(prompt, selectedConnectionId);
+            await onGenerate(prompt, selectedConnectionId, selectedModel);
 
             // Reset and close on success
             setPrompt("");
             setSelectedConnectionId(llmConnections[0]?.id || "");
+            setSelectedModel("");
             setError("");
             onOpenChange(false);
         } catch (error) {
@@ -182,6 +205,30 @@ export function AIGenerateDialog({
                                 This connection will be used to generate the workflow structure
                             </p>
                         </div>
+
+                        {/* Model Selector */}
+                        {selectedConnection && availableModels.length > 0 && (
+                            <div>
+                                <label className="block text-sm font-medium mb-1.5">
+                                    Model
+                                </label>
+                                <select
+                                    value={selectedModel}
+                                    onChange={(e) => setSelectedModel(e.target.value)}
+                                    className="w-full pl-3 pr-10 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                                    disabled={isGenerating}
+                                >
+                                    {availableModels.map((model) => (
+                                        <option key={model.value} value={model.value}>
+                                            {model.label}
+                                        </option>
+                                    ))}
+                                </select>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                    Select the model to use for generating the workflow
+                                </p>
+                            </div>
+                        )}
 
                         {/* Examples Section */}
                         <div className="px-3 py-2 bg-muted/30 rounded-lg border border-border">

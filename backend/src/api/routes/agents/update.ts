@@ -1,0 +1,80 @@
+import { FastifyRequest, FastifyReply } from "fastify";
+import { z } from "zod";
+import { AgentRepository } from "../../../storage/repositories/AgentRepository";
+import { Tool, MemoryConfig } from "../../../storage/models/Agent";
+import { NotFoundError, BadRequestError } from "../../middleware";
+
+const updateAgentParamsSchema = z.object({
+    id: z.string().uuid(),
+});
+
+const toolSchema = z.object({
+    name: z.string().min(1),
+    description: z.string(),
+    type: z.enum(["workflow", "function", "knowledge_base"]),
+    schema: z.record(z.any()),
+    config: z.record(z.any()),
+});
+
+const updateAgentSchema = z.object({
+    name: z.string().min(1).max(100).optional(),
+    description: z.string().optional(),
+    model: z.string().min(1).optional(),
+    provider: z.enum(["openai", "anthropic", "google", "cohere"]).optional(),
+    connection_id: z.string().uuid().nullable().optional(),
+    system_prompt: z.string().optional(),
+    temperature: z.number().min(0).max(2).optional(),
+    max_tokens: z.number().min(1).max(100000).optional(),
+    max_iterations: z.number().min(1).max(1000).optional(),
+    available_tools: z.array(toolSchema).optional(),
+    memory_config: z.object({
+        type: z.enum(["buffer", "summary", "vector"]),
+        max_messages: z.number().min(1).max(1000),
+    }).optional(),
+});
+
+export async function updateAgentHandler(
+    request: FastifyRequest,
+    reply: FastifyReply
+): Promise<void> {
+    const userId = request.user!.id;
+    const { id } = updateAgentParamsSchema.parse(request.params);
+    const body = updateAgentSchema.parse(request.body);
+
+    const agentRepo = new AgentRepository();
+
+    // Check if agent exists and belongs to user
+    const existingAgent = await agentRepo.findByIdAndUserId(id, userId);
+    if (!existingAgent) {
+        throw new NotFoundError("Agent not found");
+    }
+
+    try {
+        const updated = await agentRepo.update(id, {
+            ...(body.name && { name: body.name }),
+            ...(body.description !== undefined && { description: body.description }),
+            ...(body.model && { model: body.model }),
+            ...(body.provider && { provider: body.provider }),
+            ...(body.connection_id !== undefined && { connection_id: body.connection_id || undefined }),
+            ...(body.system_prompt && { system_prompt: body.system_prompt }),
+            ...(body.temperature !== undefined && { temperature: body.temperature }),
+            ...(body.max_tokens && { max_tokens: body.max_tokens }),
+            ...(body.max_iterations && { max_iterations: body.max_iterations }),
+            ...(body.available_tools && { available_tools: body.available_tools as Tool[] }),
+            ...(body.memory_config && { memory_config: body.memory_config as MemoryConfig }),
+        });
+
+        if (!updated) {
+            throw new NotFoundError("Agent not found");
+        }
+
+        reply.send({
+            success: true,
+            data: updated,
+        });
+    } catch (error) {
+        throw new BadRequestError(
+            error instanceof Error ? error.message : "Failed to update agent"
+        );
+    }
+}
