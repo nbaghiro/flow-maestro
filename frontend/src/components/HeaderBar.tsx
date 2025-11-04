@@ -1,4 +1,15 @@
-import { Save, Play, Download, Settings, ChevronDown, Loader2, CheckCircle, XCircle, LogOut, User } from "lucide-react";
+import {
+    Save,
+    Play,
+    Download,
+    Settings,
+    ChevronDown,
+    Loader2,
+    CheckCircle,
+    XCircle,
+    LogOut,
+    User
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useWorkflowStore } from "../stores/workflowStore";
 import { useAuth } from "../contexts/AuthContext";
@@ -114,7 +125,7 @@ export function HeaderBar() {
                         ) : (
                             <Play className="w-4 h-4" />
                         )}
-                        {isExecuting ? 'Running...' : 'Run'}
+                        {isExecuting ? "Running..." : "Run"}
                     </button>
                 </div>
             </div>

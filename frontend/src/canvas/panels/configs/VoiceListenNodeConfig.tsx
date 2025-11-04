@@ -9,7 +9,7 @@ interface VoiceListenNodeConfigProps {
 
 const sttProviders = [
     { value: "deepgram", label: "Deepgram (Recommended)" },
-    { value: "openai", label: "OpenAI Whisper" },
+    { value: "openai", label: "OpenAI Whisper" }
 ];
 
 const languages = [
@@ -26,7 +26,7 @@ const languages = [
     { value: "zh-CN", label: "Chinese (Simplified)" },
     { value: "ar", label: "Arabic" },
     { value: "hi", label: "Hindi" },
-    { value: "ru", label: "Russian" },
+    { value: "ru", label: "Russian" }
 ];
 
 export function VoiceListenNodeConfig({ data, onUpdate }: VoiceListenNodeConfigProps) {
@@ -42,7 +42,7 @@ export function VoiceListenNodeConfig({ data, onUpdate }: VoiceListenNodeConfigP
             maxDuration,
             endSilenceMs,
             language,
-            sttProvider,
+            sttProvider
         });
     }, [outputVariable, maxDuration, endSilenceMs, language, sttProvider, onUpdate]);
 
@@ -127,8 +127,10 @@ export function VoiceListenNodeConfig({ data, onUpdate }: VoiceListenNodeConfigP
             <div className="p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900 rounded-lg text-xs">
                 <p className="text-blue-800 dark:text-blue-200">
                     <strong>Tip:</strong> The transcribed text will be stored in the variable{" "}
-                    <code className="bg-blue-100 dark:bg-blue-900 px-1 rounded">{outputVariable}</code>
-                    {" "}and can be used in subsequent nodes with{" "}
+                    <code className="bg-blue-100 dark:bg-blue-900 px-1 rounded">
+                        {outputVariable}
+                    </code>{" "}
+                    and can be used in subsequent nodes with{" "}
                     <code className="bg-blue-100 dark:bg-blue-900 px-1 rounded">{`{${outputVariable}}`}</code>
                 </p>
             </div>

@@ -11,7 +11,7 @@ interface CodeNodeConfigProps {
 const languages = [
     { value: "javascript", label: "JavaScript" },
     { value: "typescript", label: "TypeScript" },
-    { value: "python", label: "Python" },
+    { value: "python", label: "Python" }
 ];
 
 export function CodeNodeConfig({ data, onUpdate }: CodeNodeConfigProps) {
@@ -27,7 +27,7 @@ export function CodeNodeConfig({ data, onUpdate }: CodeNodeConfigProps) {
             code,
             timeout,
             memoryLimit,
-            outputVariable,
+            outputVariable
         });
     }, [language, code, timeout, memoryLimit, outputVariable]);
 
@@ -99,16 +99,14 @@ return result`;
                     <p className="text-xs text-blue-800">
                         <strong>Available:</strong> All standard library functions
                         <br />
-                        <strong>Restricted:</strong> Network access, file system, subprocess execution
+                        <strong>Restricted:</strong> Network access, file system, subprocess
+                        execution
                     </p>
                 </div>
             </FormSection>
 
             <FormSection title="Resource Limits">
-                <FormField
-                    label="Timeout (seconds)"
-                    description="Maximum execution time"
-                >
+                <FormField label="Timeout (seconds)" description="Maximum execution time">
                     <input
                         type="number"
                         value={timeout}
@@ -119,10 +117,7 @@ return result`;
                     />
                 </FormField>
 
-                <FormField
-                    label="Memory Limit (MB)"
-                    description="Maximum memory allocation"
-                >
+                <FormField label="Memory Limit (MB)" description="Maximum memory allocation">
                     <input
                         type="number"
                         value={memoryLimit}
@@ -140,7 +135,9 @@ return result`;
                     <div className="px-3 py-2 bg-muted rounded-lg">
                         <p className="text-xs font-semibold text-foreground mb-1">Input Access</p>
                         <code className="text-xs text-muted-foreground font-mono">
-                            {language === "python" ? "inputs['variableName']" : "inputs.variableName"}
+                            {language === "python"
+                                ? "inputs['variableName']"
+                                : "inputs.variableName"}
                         </code>
                     </div>
 

@@ -7,7 +7,11 @@ import { useState, useEffect } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { X, Sparkles, Loader2, RefreshCw } from "lucide-react";
 import { useConnectionStore } from "../stores/connectionStore";
-import { getRandomExamplePrompts, getModelsForProvider, getDefaultModelForProvider } from "@flowmaestro/shared";
+import {
+    getRandomExamplePrompts,
+    getModelsForProvider,
+    getDefaultModelForProvider
+} from "@flowmaestro/shared";
 
 interface AIGenerateDialogProps {
     open: boolean;
@@ -15,29 +19,28 @@ interface AIGenerateDialogProps {
     onGenerate: (prompt: string, connectionId: string, model: string) => Promise<void>;
 }
 
-export function AIGenerateDialog({
-    open,
-    onOpenChange,
-    onGenerate,
-}: AIGenerateDialogProps) {
+export function AIGenerateDialog({ open, onOpenChange, onGenerate }: AIGenerateDialogProps) {
     const [prompt, setPrompt] = useState("");
     const [selectedConnectionId, setSelectedConnectionId] = useState("");
     const [selectedModel, setSelectedModel] = useState("");
     const [isGenerating, setIsGenerating] = useState(false);
     const [error, setError] = useState("");
-    const [examplePrompts, setExamplePrompts] = useState<string[]>(() => getRandomExamplePrompts(4));
+    const [examplePrompts, setExamplePrompts] = useState<string[]>(() =>
+        getRandomExamplePrompts(4)
+    );
 
     const { connections, fetchConnections } = useConnectionStore();
 
     // Filter connections for LLM providers only (API key or OAuth)
-    const llmConnections = connections.filter(conn =>
-        ['openai', 'anthropic', 'google', 'cohere'].includes(conn.provider.toLowerCase())
-        && conn.status === 'active'
-        && (conn.connection_method === 'api_key' || conn.connection_method === 'oauth2')
+    const llmConnections = connections.filter(
+        (conn) =>
+            ["openai", "anthropic", "google", "cohere"].includes(conn.provider.toLowerCase()) &&
+            conn.status === "active" &&
+            (conn.connection_method === "api_key" || conn.connection_method === "oauth2")
     );
 
     // Get selected connection
-    const selectedConnection = llmConnections.find(conn => conn.id === selectedConnectionId);
+    const selectedConnection = llmConnections.find((conn) => conn.id === selectedConnectionId);
 
     // Get available models for selected connection's provider
     const availableModels = selectedConnection
@@ -61,7 +64,9 @@ export function AIGenerateDialog({
     // Auto-select default model when connection changes
     useEffect(() => {
         if (selectedConnection) {
-            const defaultModel = getDefaultModelForProvider(selectedConnection.provider.toLowerCase());
+            const defaultModel = getDefaultModelForProvider(
+                selectedConnection.provider.toLowerCase()
+            );
             setSelectedModel(defaultModel);
         }
     }, [selectedConnection]);
@@ -103,11 +108,11 @@ export function AIGenerateDialog({
             setError("");
             onOpenChange(false);
         } catch (error) {
-            console.error('Failed to generate workflow:', error);
+            console.error("Failed to generate workflow:", error);
             setError(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to generate workflow. Please try again.'
+                    : "Failed to generate workflow. Please try again."
             );
         } finally {
             setIsGenerating(false);
@@ -138,7 +143,8 @@ export function AIGenerateDialog({
                                 Generate Workflow with AI
                             </Dialog.Title>
                             <Dialog.Description className="text-sm text-muted-foreground mt-1">
-                                Describe your workflow in natural language and AI will generate the nodes and connections
+                                Describe your workflow in natural language and AI will generate the
+                                nodes and connections
                             </Dialog.Description>
                         </div>
                         <Dialog.Close asChild>
@@ -172,7 +178,8 @@ export function AIGenerateDialog({
                                 disabled={isGenerating}
                             />
                             <p className="text-xs text-muted-foreground mt-1">
-                                Be specific about what you want the workflow to do. Include data sources, transformations, and outputs.
+                                Be specific about what you want the workflow to do. Include data
+                                sources, transformations, and outputs.
                             </p>
                         </div>
 
@@ -184,7 +191,8 @@ export function AIGenerateDialog({
                             {llmConnections.length === 0 ? (
                                 <div className="px-3 py-2 border border-border rounded-lg bg-muted/50">
                                     <p className="text-sm text-muted-foreground">
-                                        No LLM connections found. Please add an OpenAI, Anthropic, Google, or Cohere connection first.
+                                        No LLM connections found. Please add an OpenAI, Anthropic,
+                                        Google, or Cohere connection first.
                                     </p>
                                 </div>
                             ) : (
@@ -209,9 +217,7 @@ export function AIGenerateDialog({
                         {/* Model Selector */}
                         {selectedConnection && availableModels.length > 0 && (
                             <div>
-                                <label className="block text-sm font-medium mb-1.5">
-                                    Model
-                                </label>
+                                <label className="block text-sm font-medium mb-1.5">Model</label>
                                 <select
                                     value={selectedModel}
                                     onChange={(e) => setSelectedModel(e.target.value)}

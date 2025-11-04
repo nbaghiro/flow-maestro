@@ -18,7 +18,7 @@ interface MenuOption {
 const inputMethods = [
     { value: "both", label: "Voice or DTMF (Recommended)" },
     { value: "voice", label: "Voice Only" },
-    { value: "dtmf", label: "DTMF (Keypad) Only" },
+    { value: "dtmf", label: "DTMF (Keypad) Only" }
 ];
 
 export function VoiceMenuNodeConfig({ data, onUpdate }: VoiceMenuNodeConfigProps) {
@@ -26,7 +26,7 @@ export function VoiceMenuNodeConfig({ data, onUpdate }: VoiceMenuNodeConfigProps
     const [options, setOptions] = useState<MenuOption[]>(
         data.options || [
             { key: "1", label: "Option 1", value: "option1" },
-            { key: "2", label: "Option 2", value: "option2" },
+            { key: "2", label: "Option 2", value: "option2" }
         ]
     );
     const [inputMethod, setInputMethod] = useState(data.inputMethod || "both");
@@ -47,9 +47,18 @@ export function VoiceMenuNodeConfig({ data, onUpdate }: VoiceMenuNodeConfigProps
             timeoutSeconds,
             maxRetries,
             invalidInputMessage,
-            retryMessage,
+            retryMessage
         });
-    }, [prompt, options, inputMethod, timeoutSeconds, maxRetries, invalidInputMessage, retryMessage, onUpdate]);
+    }, [
+        prompt,
+        options,
+        inputMethod,
+        timeoutSeconds,
+        maxRetries,
+        invalidInputMessage,
+        retryMessage,
+        onUpdate
+    ]);
 
     const addOption = () => {
         const newKey = (options.length + 1).toString();
@@ -58,8 +67,8 @@ export function VoiceMenuNodeConfig({ data, onUpdate }: VoiceMenuNodeConfigProps
             {
                 key: newKey,
                 label: `Option ${newKey}`,
-                value: `option${newKey}`,
-            },
+                value: `option${newKey}`
+            }
         ]);
     };
 
@@ -94,7 +103,10 @@ export function VoiceMenuNodeConfig({ data, onUpdate }: VoiceMenuNodeConfigProps
             <FormSection title="Menu Options">
                 <div className="space-y-3">
                     {options.map((option, index) => (
-                        <div key={index} className="p-3 border border-border rounded-lg bg-muted/30">
+                        <div
+                            key={index}
+                            className="p-3 border border-border rounded-lg bg-muted/30"
+                        >
                             <div className="flex items-start justify-between mb-2">
                                 <span className="text-xs font-medium text-muted-foreground">
                                     Option {index + 1}
@@ -120,7 +132,9 @@ export function VoiceMenuNodeConfig({ data, onUpdate }: VoiceMenuNodeConfigProps
                                         <input
                                             type="text"
                                             value={option.key}
-                                            onChange={(e) => updateOption(index, "key", e.target.value)}
+                                            onChange={(e) =>
+                                                updateOption(index, "key", e.target.value)
+                                            }
                                             className="w-full px-2 py-1.5 text-sm border border-border rounded focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                                             placeholder="1"
                                         />
@@ -132,7 +146,9 @@ export function VoiceMenuNodeConfig({ data, onUpdate }: VoiceMenuNodeConfigProps
                                         <input
                                             type="text"
                                             value={option.value || ""}
-                                            onChange={(e) => updateOption(index, "value", e.target.value)}
+                                            onChange={(e) =>
+                                                updateOption(index, "value", e.target.value)
+                                            }
                                             className="w-full px-2 py-1.5 text-sm border border-border rounded focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                                             placeholder="sales"
                                         />
@@ -146,7 +162,9 @@ export function VoiceMenuNodeConfig({ data, onUpdate }: VoiceMenuNodeConfigProps
                                     <input
                                         type="text"
                                         value={option.label}
-                                        onChange={(e) => updateOption(index, "label", e.target.value)}
+                                        onChange={(e) =>
+                                            updateOption(index, "label", e.target.value)
+                                        }
                                         className="w-full px-2 py-1.5 text-sm border border-border rounded focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                                         placeholder="Sales Department"
                                     />
@@ -159,7 +177,9 @@ export function VoiceMenuNodeConfig({ data, onUpdate }: VoiceMenuNodeConfigProps
                                     <input
                                         type="text"
                                         value={option.description || ""}
-                                        onChange={(e) => updateOption(index, "description", e.target.value)}
+                                        onChange={(e) =>
+                                            updateOption(index, "description", e.target.value)
+                                        }
                                         className="w-full px-2 py-1.5 text-sm border border-border rounded focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                                         placeholder="For new sales inquiries"
                                     />
@@ -219,13 +239,7 @@ export function VoiceMenuNodeConfig({ data, onUpdate }: VoiceMenuNodeConfigProps
                 </FormField>
 
                 <FormField label="Max Retries">
-                    <Slider
-                        value={maxRetries}
-                        onChange={setMaxRetries}
-                        min={0}
-                        max={5}
-                        step={1}
-                    />
+                    <Slider value={maxRetries} onChange={setMaxRetries} min={0} max={5} step={1} />
                     <p className="text-xs text-muted-foreground mt-1">
                         Number of times to retry on invalid input or timeout (0-5 retries)
                     </p>

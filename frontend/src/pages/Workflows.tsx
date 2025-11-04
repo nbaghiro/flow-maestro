@@ -1,12 +1,29 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { getWorkflows, createWorkflow, generateWorkflow, updateWorkflow, deleteWorkflow, getWorkflow, type WorkflowDefinition } from "../lib/api";
+import {
+    getWorkflows,
+    createWorkflow,
+    generateWorkflow,
+    updateWorkflow,
+    deleteWorkflow,
+    getWorkflow,
+    type WorkflowDefinition
+} from "../lib/api";
 import { CreateWorkflowDialog } from "../components/CreateWorkflowDialog";
 import { AIGenerateDialog } from "../components/AIGenerateDialog";
 import { ErrorDialog } from "../components/ErrorDialog";
 import { convertToReactFlowFormat } from "../lib/workflow-layout";
 import { PageHeader } from "../components/common/PageHeader";
-import { Plus, FileText, Calendar, Loader2, Sparkles, Trash2, MoreVertical, Copy } from "lucide-react";
+import {
+    Plus,
+    FileText,
+    Calendar,
+    Loader2,
+    Sparkles,
+    Trash2,
+    MoreVertical,
+    Copy
+} from "lucide-react";
 
 interface Workflow {
     id: string;
@@ -60,7 +77,11 @@ export function Workflows() {
         }
     };
 
-    const handleCreateWorkflow = async (name: string, description?: string, definition?: WorkflowDefinition) => {
+    const handleCreateWorkflow = async (
+        name: string,
+        description?: string,
+        definition?: WorkflowDefinition
+    ) => {
         const response = await createWorkflow(name, description, definition);
 
         if (response.success && response.data) {
@@ -92,37 +113,37 @@ export function Workflows() {
 
                 // Convert React Flow format back to backend format for saving
                 const nodesMap: Record<string, any> = {};
-                flowNodes.forEach(node => {
+                flowNodes.forEach((node) => {
                     const { label, onError, ...config } = (node.data || {}) as any;
                     nodesMap[node.id] = {
-                        type: node.type || 'default',
+                        type: node.type || "default",
                         name: label || node.id,
                         config: config,
                         position: node.position,
-                        ...(onError && { onError }),
+                        ...(onError && { onError })
                     };
                 });
 
                 // Find entry point
-                const inputNode = flowNodes.find(n => n.type === 'input');
-                const entryPoint = inputNode?.id || (flowNodes.length > 0 ? flowNodes[0].id : '');
+                const inputNode = flowNodes.find((n) => n.type === "input");
+                const entryPoint = inputNode?.id || (flowNodes.length > 0 ? flowNodes[0].id : "");
 
                 const workflowDefinition = {
                     name: workflowName,
                     nodes: nodesMap,
-                    edges: flowEdges.map(edge => ({
+                    edges: flowEdges.map((edge) => ({
                         id: edge.id,
                         source: edge.source,
                         target: edge.target,
-                        sourceHandle: edge.sourceHandle,
+                        sourceHandle: edge.sourceHandle
                     })),
-                    entryPoint,
+                    entryPoint
                 };
 
                 // Update workflow with the generated definition
                 await updateWorkflow(workflowId, {
                     name: workflowName,
-                    definition: workflowDefinition,
+                    definition: workflowDefinition
                 });
 
                 // Navigate to the builder with the new workflow
@@ -148,7 +169,7 @@ export function Workflows() {
             console.error("Failed to delete workflow:", error);
             setError({
                 title: "Delete Failed",
-                message: error.message || "Failed to delete workflow. Please try again.",
+                message: error.message || "Failed to delete workflow. Please try again."
             });
         } finally {
             setIsDeleting(false);
@@ -174,32 +195,34 @@ export function Workflows() {
             const newDefinition = originalWorkflow.definition
                 ? { ...originalWorkflow.definition, name: newName }
                 : {
-                    name: newName,
-                    nodes: {},
-                    edges: [],
-                    entryPoint: '',
-                };
+                      name: newName,
+                      nodes: {},
+                      edges: [],
+                      entryPoint: ""
+                  };
 
             // Create workflow directly with the full definition using fetch
-            const token = localStorage.getItem('auth_token');
-            const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+            const token = localStorage.getItem("auth_token");
+            const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
             const createResponse = await fetch(`${API_BASE_URL}/api/workflows`, {
-                method: 'POST',
+                method: "POST",
                 headers: {
-                    'Content-Type': 'application/json',
-                    ...(token && { Authorization: `Bearer ${token}` }),
+                    "Content-Type": "application/json",
+                    ...(token && { Authorization: `Bearer ${token}` })
                 },
                 body: JSON.stringify({
                     name: newName,
                     description: workflow.description,
-                    definition: newDefinition,
-                }),
+                    definition: newDefinition
+                })
             });
 
             if (!createResponse.ok) {
                 const errorData = await createResponse.json().catch(() => ({}));
-                throw new Error(errorData.error || `HTTP ${createResponse.status}: ${createResponse.statusText}`);
+                throw new Error(
+                    errorData.error || `HTTP ${createResponse.status}: ${createResponse.statusText}`
+                );
             }
 
             const createData = await createResponse.json();
@@ -215,7 +238,7 @@ export function Workflows() {
             console.error("Failed to duplicate workflow:", error);
             setError({
                 title: "Duplicate Failed",
-                message: error.message || "Failed to duplicate workflow. Please try again.",
+                message: error.message || "Failed to duplicate workflow. Please try again."
             });
         }
     };
@@ -225,7 +248,7 @@ export function Workflows() {
         return date.toLocaleDateString("en-US", {
             month: "short",
             day: "numeric",
-            year: "numeric",
+            year: "numeric"
         });
     };
 
@@ -266,9 +289,7 @@ export function Workflows() {
             ) : workflows.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed border-border rounded-lg bg-white">
                     <FileText className="w-12 h-12 text-muted-foreground mb-4" />
-                    <h3 className="text-lg font-semibold text-foreground mb-2">
-                        No workflows yet
-                    </h3>
+                    <h3 className="text-lg font-semibold text-foreground mb-2">No workflows yet</h3>
                     <p className="text-sm text-muted-foreground mb-6 text-center max-w-md">
                         Get started by creating your first workflow. Build complex AI-powered
                         workflows with our drag-and-drop canvas.
@@ -300,11 +321,18 @@ export function Workflows() {
                                         </span>
 
                                         {/* Menu Button */}
-                                        <div className="relative" ref={openMenuId === workflow.id ? menuRef : null}>
+                                        <div
+                                            className="relative"
+                                            ref={openMenuId === workflow.id ? menuRef : null}
+                                        >
                                             <button
                                                 onClick={(e) => {
                                                     e.stopPropagation();
-                                                    setOpenMenuId(openMenuId === workflow.id ? null : workflow.id);
+                                                    setOpenMenuId(
+                                                        openMenuId === workflow.id
+                                                            ? null
+                                                            : workflow.id
+                                                    );
                                                 }}
                                                 className="p-1 text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors"
                                                 title="More options"
@@ -386,7 +414,8 @@ export function Workflows() {
                             Delete Workflow
                         </h3>
                         <p className="text-sm text-muted-foreground mb-6">
-                            Are you sure you want to delete "{workflowToDelete.name}"? This action cannot be undone.
+                            Are you sure you want to delete "{workflowToDelete.name}"? This action
+                            cannot be undone.
                         </p>
                         <div className="flex items-center justify-end gap-3">
                             <button

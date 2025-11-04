@@ -24,7 +24,7 @@ export function WorkflowSettingsDialog({
     workflowDescription,
     aiGenerated,
     aiPrompt,
-    onSave,
+    onSave
 }: WorkflowSettingsDialogProps) {
     const [name, setName] = useState(workflowName);
     const [description, setDescription] = useState(workflowDescription);
@@ -105,9 +105,7 @@ export function WorkflowSettingsDialog({
 
                         {/* Workflow Description */}
                         <div>
-                            <label className="block text-sm font-medium mb-1.5">
-                                Description
-                            </label>
+                            <label className="block text-sm font-medium mb-1.5">Description</label>
                             <textarea
                                 value={description}
                                 onChange={(e) => setDescription(e.target.value)}
@@ -122,7 +120,9 @@ export function WorkflowSettingsDialog({
                             <div className="pt-3 border-t border-border">
                                 <div className="flex items-center gap-2 mb-2">
                                     <Sparkles className="w-4 h-4 text-primary" />
-                                    <span className="text-sm font-medium">AI Generated Workflow</span>
+                                    <span className="text-sm font-medium">
+                                        AI Generated Workflow
+                                    </span>
                                 </div>
 
                                 {aiPrompt && (

@@ -8,6 +8,8 @@ import { deleteAgentHandler } from "./delete";
 import { executeAgentHandler } from "./execute";
 import { sendMessageHandler } from "./send-message";
 import { getExecutionHandler } from "./get-execution";
+import { addToolHandler } from "./add-tool";
+import { removeToolHandler } from "./remove-tool";
 
 export async function agentRoutes(fastify: FastifyInstance) {
     // All agent routes require authentication
@@ -19,6 +21,10 @@ export async function agentRoutes(fastify: FastifyInstance) {
     fastify.get("/:id", getAgentHandler);
     fastify.put("/:id", updateAgentHandler);
     fastify.delete("/:id", deleteAgentHandler);
+
+    // Tool management
+    fastify.post("/:id/tools", addToolHandler);
+    fastify.delete("/:id/tools/:toolId", removeToolHandler);
 
     // Agent execution
     fastify.post("/:id/execute", executeAgentHandler);

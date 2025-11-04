@@ -12,7 +12,7 @@ export function Account() {
             description: "Manage your personal information",
             fields: [
                 { label: "Name", value: user?.name || "Not set" },
-                { label: "Email", value: user?.email || "Not set" },
+                { label: "Email", value: user?.email || "Not set" }
             ]
         },
         {
@@ -21,7 +21,7 @@ export function Account() {
             description: "Password and authentication settings",
             fields: [
                 { label: "Password", value: "••••••••" },
-                { label: "Two-factor authentication", value: "Disabled" },
+                { label: "Two-factor authentication", value: "Disabled" }
             ]
         },
         {
@@ -30,9 +30,9 @@ export function Account() {
             description: "Communication and privacy preferences",
             fields: [
                 { label: "Email notifications", value: "Enabled" },
-                { label: "Privacy settings", value: "Default" },
+                { label: "Privacy settings", value: "Default" }
             ]
-        },
+        }
     ];
 
     return (
@@ -46,7 +46,10 @@ export function Account() {
                 {accountSections.map((section) => {
                     const Icon = section.icon;
                     return (
-                        <div key={section.title} className="bg-white border border-border rounded-lg p-6">
+                        <div
+                            key={section.title}
+                            className="bg-white border border-border rounded-lg p-6"
+                        >
                             <div className="flex items-start gap-4">
                                 <div className="p-2 bg-primary/10 text-primary rounded-lg">
                                     <Icon className="w-5 h-5" />
@@ -60,9 +63,16 @@ export function Account() {
                                     </p>
                                     <div className="space-y-3">
                                         {section.fields.map((field) => (
-                                            <div key={field.label} className="flex items-center justify-between py-2">
-                                                <span className="text-sm text-muted-foreground">{field.label}</span>
-                                                <span className="text-sm text-foreground font-medium">{field.value}</span>
+                                            <div
+                                                key={field.label}
+                                                className="flex items-center justify-between py-2"
+                                            >
+                                                <span className="text-sm text-muted-foreground">
+                                                    {field.label}
+                                                </span>
+                                                <span className="text-sm text-foreground font-medium">
+                                                    {field.value}
+                                                </span>
                                             </div>
                                         ))}
                                     </div>

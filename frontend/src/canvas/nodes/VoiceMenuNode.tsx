@@ -38,7 +38,7 @@ export function VoiceMenuNode(props: NodeProps) {
                             id={option.key}
                             className="!w-3 !h-3 !bg-emerald-500 !border-2 !border-white"
                             style={{
-                                top: `${((index + 1) * 100) / (options.length + 1)}%`,
+                                top: `${((index + 1) * 100) / (options.length + 1)}%`
                             }}
                         />
                     ))}

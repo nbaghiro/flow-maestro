@@ -14,7 +14,16 @@
       "Bash(npm install:*)",
       "Bash(npm test:*)",
       "Bash(npx jest:*)",
-      "WebFetch(domain:core.telegram.org)"
+      "WebFetch(domain:core.telegram.org)",
+      "Bash(npm run lint)",
+      "WebFetch(domain:registry.modelcontextprotocol.io)",
+      "Bash(curl:*)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:developers.notion.com)",
+      "WebFetch(domain:mcp.pipedream.com)",
+      "WebFetch(domain:pipedream.com)",
+      "Bash(npx eslint:*)",
+      "Bash(npx prettier:*)"
     ],
     "deny": [],
     "ask": []

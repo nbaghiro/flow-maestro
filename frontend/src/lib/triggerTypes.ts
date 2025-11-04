@@ -4,16 +4,7 @@
 
 import type { JsonObject, JsonValue } from "@flowmaestro/shared";
 import type { LucideIcon } from "lucide-react";
-import {
-    MessageSquare,
-    Webhook,
-    Code,
-    FileText,
-    Clock,
-    Upload,
-    Zap,
-    Play,
-} from "lucide-react";
+import { MessageSquare, Webhook, Code, FileText, Clock, Upload, Zap, Play } from "lucide-react";
 
 /**
  * Available trigger types
@@ -46,50 +37,50 @@ export const TRIGGER_TYPES: TriggerTypeMetadata[] = [
         value: "manual",
         label: "Manual",
         description: "Run workflow manually with simple inputs",
-        icon: Play,
+        icon: Play
     },
     {
         value: "chat",
         label: "Chat Conversation",
         description: "Test conversational workflows with message exchanges",
-        icon: MessageSquare,
+        icon: MessageSquare
     },
     {
         value: "webhook",
         label: "Webhook",
         description: "Simulate incoming webhook with HTTP request",
-        icon: Webhook,
+        icon: Webhook
     },
     {
         value: "api",
         label: "API Call",
         description: "Test API endpoint with custom parameters",
-        icon: Code,
+        icon: Code
     },
     {
         value: "form",
         label: "Form Submission",
         description: "Submit form data from workflow inputs",
-        icon: FileText,
+        icon: FileText
     },
     {
         value: "scheduled",
         label: "Scheduled Run",
         description: "Simulate scheduled execution with time context",
-        icon: Clock,
+        icon: Clock
     },
     {
         value: "fileUpload",
         label: "File Upload",
         description: "Test workflow with uploaded files",
-        icon: Upload,
+        icon: Upload
     },
     {
         value: "event",
         label: "Event",
         description: "Trigger from external event or system notification",
-        icon: Zap,
-    },
+        icon: Zap
+    }
 ];
 
 /**
@@ -205,11 +196,9 @@ export function getDefaultTriggerConfig(triggerType: TriggerType): TriggerConfig
         case "chat":
             return {
                 chat: {
-                    conversationFlow: [
-                        { role: "user", message: "", waitForResponse: true },
-                    ],
-                    context: {},
-                },
+                    conversationFlow: [{ role: "user", message: "", waitForResponse: true }],
+                    context: {}
+                }
             };
 
         case "webhook":
@@ -218,8 +207,8 @@ export function getDefaultTriggerConfig(triggerType: TriggerType): TriggerConfig
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: {},
-                    queryParams: {},
-                },
+                    queryParams: {}
+                }
             };
 
         case "api":
@@ -228,16 +217,16 @@ export function getDefaultTriggerConfig(triggerType: TriggerType): TriggerConfig
                     endpoint: "",
                     method: "POST",
                     parameters: {},
-                    authentication: { type: "none" },
-                },
+                    authentication: { type: "none" }
+                }
             };
 
         case "form":
             return {
                 form: {
                     fields: {},
-                    submissionContext: {},
-                },
+                    submissionContext: {}
+                }
             };
 
         case "scheduled":
@@ -245,16 +234,16 @@ export function getDefaultTriggerConfig(triggerType: TriggerType): TriggerConfig
                 scheduled: {
                     simulatedTime: new Date().toISOString(),
                     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-                    mockExternalData: {},
-                },
+                    mockExternalData: {}
+                }
             };
 
         case "fileUpload":
             return {
                 fileUpload: {
                     files: [],
-                    metadata: {},
-                },
+                    metadata: {}
+                }
             };
 
         case "event":
@@ -263,16 +252,16 @@ export function getDefaultTriggerConfig(triggerType: TriggerType): TriggerConfig
                     eventType: "",
                     payload: {},
                     source: "",
-                    timestamp: new Date().toISOString(),
-                },
+                    timestamp: new Date().toISOString()
+                }
             };
 
         case "manual":
         default:
             return {
                 manual: {
-                    inputs: {},
-                },
+                    inputs: {}
+                }
             };
     }
 }

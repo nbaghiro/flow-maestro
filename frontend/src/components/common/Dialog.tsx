@@ -21,7 +21,7 @@ export function Dialog({
     title,
     description,
     children,
-    maxWidth = "md",
+    maxWidth = "md"
 }: DialogProps) {
     // Close on Escape key
     useEffect(() => {
@@ -53,16 +53,13 @@ export function Dialog({
     const maxWidthClasses = {
         sm: "max-w-sm",
         md: "max-w-md",
-        lg: "max-w-lg",
+        lg: "max-w-lg"
     };
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
             {/* Backdrop */}
-            <div
-                className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-                onClick={onClose}
-            />
+            <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
 
             {/* Dialog */}
             <div
@@ -71,14 +68,8 @@ export function Dialog({
                 {/* Header */}
                 <div className="flex items-start justify-between p-6 pb-4 border-b border-gray-200">
                     <div className="flex-1">
-                        <h2 className="text-lg font-semibold text-gray-900">
-                            {title}
-                        </h2>
-                        {description && (
-                            <p className="mt-1 text-sm text-gray-600">
-                                {description}
-                            </p>
-                        )}
+                        <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
+                        {description && <p className="mt-1 text-sm text-gray-600">{description}</p>}
                     </div>
                     <button
                         onClick={onClose}

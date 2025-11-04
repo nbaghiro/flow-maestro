@@ -51,7 +51,7 @@ export function Agents() {
         return date.toLocaleDateString("en-US", {
             month: "short",
             day: "numeric",
-            year: "numeric",
+            year: "numeric"
         });
     };
 
@@ -59,7 +59,7 @@ export function Agents() {
         <div className="max-w-7xl mx-auto px-6 py-8">
             <PageHeader
                 title="Agents"
-                description={`Create and manage AI agents that can use tools and workflows`}
+                description={"Create and manage AI agents that can use tools and workflows"}
                 action={
                     <button
                         onClick={() => navigate("/agents/new")}
@@ -89,11 +89,10 @@ export function Agents() {
             ) : agents.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed border-border rounded-lg bg-white">
                     <Bot className="w-12 h-12 text-muted-foreground mb-4" />
-                    <h3 className="text-lg font-semibold text-foreground mb-2">
-                        No agents yet
-                    </h3>
+                    <h3 className="text-lg font-semibold text-foreground mb-2">No agents yet</h3>
                     <p className="text-sm text-muted-foreground mb-6 text-center max-w-md">
-                        Create your first AI agent to automate tasks, answer questions, or execute workflows.
+                        Create your first AI agent to automate tasks, answer questions, or execute
+                        workflows.
                     </p>
                     <button
                         onClick={() => navigate("/agents/new")}
@@ -125,11 +124,16 @@ export function Agents() {
                                         </span>
 
                                         {/* Menu Button */}
-                                        <div className="relative" ref={openMenuId === agent.id ? menuRef : null}>
+                                        <div
+                                            className="relative"
+                                            ref={openMenuId === agent.id ? menuRef : null}
+                                        >
                                             <button
                                                 onClick={(e) => {
                                                     e.stopPropagation();
-                                                    setOpenMenuId(openMenuId === agent.id ? null : agent.id);
+                                                    setOpenMenuId(
+                                                        openMenuId === agent.id ? null : agent.id
+                                                    );
                                                 }}
                                                 className="p-1 text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors"
                                                 title="More options"
@@ -194,11 +198,10 @@ export function Agents() {
             {agentToDelete && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
                     <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
-                        <h3 className="text-lg font-semibold text-foreground mb-2">
-                            Delete Agent
-                        </h3>
+                        <h3 className="text-lg font-semibold text-foreground mb-2">Delete Agent</h3>
                         <p className="text-sm text-muted-foreground mb-6">
-                            Are you sure you want to delete "{agentToDelete.name}"? This action cannot be undone.
+                            Are you sure you want to delete "{agentToDelete.name}"? This action
+                            cannot be undone.
                         </p>
                         <div className="flex items-center justify-end gap-3">
                             <button

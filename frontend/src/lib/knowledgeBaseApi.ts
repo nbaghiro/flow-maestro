@@ -2,10 +2,10 @@
  * Knowledge Base API Client
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
 function getAuthToken(): string | null {
-    return localStorage.getItem('auth_token');
+    return localStorage.getItem("auth_token");
 }
 
 export interface KnowledgeBase {
@@ -28,14 +28,14 @@ export interface KnowledgeDocument {
     id: string;
     knowledge_base_id: string;
     name: string;
-    source_type: 'file' | 'url';
+    source_type: "file" | "url";
     source_url: string | null;
     file_path: string | null;
     file_type: string;
     file_size: bigint | null;
     content: string | null;
     metadata: Record<string, any>;
-    status: 'pending' | 'processing' | 'ready' | 'failed';
+    status: "pending" | "processing" | "ready" | "failed";
     error_message: string | null;
     processing_started_at: string | null;
     processing_completed_at: string | null;
@@ -65,13 +65,13 @@ export interface ChunkSearchResult {
 export interface CreateKnowledgeBaseInput {
     name: string;
     description?: string;
-    config?: Partial<KnowledgeBase['config']>;
+    config?: Partial<KnowledgeBase["config"]>;
 }
 
 export interface UpdateKnowledgeBaseInput {
     name?: string;
     description?: string;
-    config?: Partial<KnowledgeBase['config']>;
+    config?: Partial<KnowledgeBase["config"]>;
 }
 
 export interface QueryKnowledgeBaseInput {
@@ -91,11 +91,11 @@ export async function getKnowledgeBases(): Promise<ApiResponse<KnowledgeBase[]>>
     const token = getAuthToken();
 
     const response = await fetch(`${API_BASE_URL}/api/knowledge-bases`, {
-        method: 'GET',
+        method: "GET",
         headers: {
-            'Content-Type': 'application/json',
-            ...(token && { Authorization: `Bearer ${token}` }),
-        },
+            "Content-Type": "application/json",
+            ...(token && { Authorization: `Bearer ${token}` })
+        }
     });
 
     if (!response.ok) {
@@ -112,11 +112,11 @@ export async function getKnowledgeBase(id: string): Promise<ApiResponse<Knowledg
     const token = getAuthToken();
 
     const response = await fetch(`${API_BASE_URL}/api/knowledge-bases/${id}`, {
-        method: 'GET',
+        method: "GET",
         headers: {
-            'Content-Type': 'application/json',
-            ...(token && { Authorization: `Bearer ${token}` }),
-        },
+            "Content-Type": "application/json",
+            ...(token && { Authorization: `Bearer ${token}` })
+        }
     });
 
     if (!response.ok) {
@@ -135,12 +135,12 @@ export async function createKnowledgeBase(
     const token = getAuthToken();
 
     const response = await fetch(`${API_BASE_URL}/api/knowledge-bases`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-            'Content-Type': 'application/json',
-            ...(token && { Authorization: `Bearer ${token}` }),
+            "Content-Type": "application/json",
+            ...(token && { Authorization: `Bearer ${token}` })
         },
-        body: JSON.stringify(input),
+        body: JSON.stringify(input)
     });
 
     if (!response.ok) {
@@ -160,12 +160,12 @@ export async function updateKnowledgeBase(
     const token = getAuthToken();
 
     const response = await fetch(`${API_BASE_URL}/api/knowledge-bases/${id}`, {
-        method: 'PUT',
+        method: "PUT",
         headers: {
-            'Content-Type': 'application/json',
-            ...(token && { Authorization: `Bearer ${token}` }),
+            "Content-Type": "application/json",
+            ...(token && { Authorization: `Bearer ${token}` })
         },
-        body: JSON.stringify(input),
+        body: JSON.stringify(input)
     });
 
     if (!response.ok) {
@@ -182,10 +182,10 @@ export async function deleteKnowledgeBase(id: string): Promise<ApiResponse> {
     const token = getAuthToken();
 
     const response = await fetch(`${API_BASE_URL}/api/knowledge-bases/${id}`, {
-        method: 'DELETE',
+        method: "DELETE",
         headers: {
-            ...(token && { Authorization: `Bearer ${token}` }),
-        },
+            ...(token && { Authorization: `Bearer ${token}` })
+        }
     });
 
     if (!response.ok) {
@@ -202,11 +202,11 @@ export async function getKnowledgeBaseStats(id: string): Promise<ApiResponse<Kno
     const token = getAuthToken();
 
     const response = await fetch(`${API_BASE_URL}/api/knowledge-bases/${id}/stats`, {
-        method: 'GET',
+        method: "GET",
         headers: {
-            'Content-Type': 'application/json',
-            ...(token && { Authorization: `Bearer ${token}` }),
-        },
+            "Content-Type": "application/json",
+            ...(token && { Authorization: `Bearer ${token}` })
+        }
     });
 
     if (!response.ok) {
@@ -223,11 +223,11 @@ export async function getKnowledgeDocuments(id: string): Promise<ApiResponse<Kno
     const token = getAuthToken();
 
     const response = await fetch(`${API_BASE_URL}/api/knowledge-bases/${id}/documents`, {
-        method: 'GET',
+        method: "GET",
         headers: {
-            'Content-Type': 'application/json',
-            ...(token && { Authorization: `Bearer ${token}` }),
-        },
+            "Content-Type": "application/json",
+            ...(token && { Authorization: `Bearer ${token}` })
+        }
     });
 
     if (!response.ok) {
@@ -243,14 +243,14 @@ export async function getKnowledgeDocuments(id: string): Promise<ApiResponse<Kno
 export async function uploadDocument(id: string, file: File): Promise<ApiResponse> {
     const token = getAuthToken();
     const formData = new FormData();
-    formData.append('file', file);
+    formData.append("file", file);
 
     const response = await fetch(`${API_BASE_URL}/api/knowledge-bases/${id}/documents/upload`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-            ...(token && { Authorization: `Bearer ${token}` }),
+            ...(token && { Authorization: `Bearer ${token}` })
         },
-        body: formData,
+        body: formData
     });
 
     if (!response.ok) {
@@ -271,12 +271,12 @@ export async function addUrlToKnowledgeBase(
     const token = getAuthToken();
 
     const response = await fetch(`${API_BASE_URL}/api/knowledge-bases/${id}/documents/url`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-            'Content-Type': 'application/json',
-            ...(token && { Authorization: `Bearer ${token}` }),
+            "Content-Type": "application/json",
+            ...(token && { Authorization: `Bearer ${token}` })
         },
-        body: JSON.stringify({ url, name }),
+        body: JSON.stringify({ url, name })
     });
 
     if (!response.ok) {
@@ -296,12 +296,12 @@ export async function queryKnowledgeBase(
     const token = getAuthToken();
 
     const response = await fetch(`${API_BASE_URL}/api/knowledge-bases/${id}/query`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-            'Content-Type': 'application/json',
-            ...(token && { Authorization: `Bearer ${token}` }),
+            "Content-Type": "application/json",
+            ...(token && { Authorization: `Bearer ${token}` })
         },
-        body: JSON.stringify(input),
+        body: JSON.stringify(input)
     });
 
     if (!response.ok) {
@@ -318,10 +318,10 @@ export async function deleteDocument(kbId: string, docId: string): Promise<ApiRe
     const token = getAuthToken();
 
     const response = await fetch(`${API_BASE_URL}/api/knowledge-bases/${kbId}/documents/${docId}`, {
-        method: 'DELETE',
+        method: "DELETE",
         headers: {
-            ...(token && { Authorization: `Bearer ${token}` }),
-        },
+            ...(token && { Authorization: `Bearer ${token}` })
+        }
     });
 
     if (!response.ok) {
@@ -337,13 +337,16 @@ export async function deleteDocument(kbId: string, docId: string): Promise<ApiRe
 export async function reprocessDocument(kbId: string, docId: string): Promise<ApiResponse> {
     const token = getAuthToken();
 
-    const response = await fetch(`${API_BASE_URL}/api/knowledge-bases/${kbId}/documents/${docId}/reprocess`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            ...(token && { Authorization: `Bearer ${token}` }),
-        },
-    });
+    const response = await fetch(
+        `${API_BASE_URL}/api/knowledge-bases/${kbId}/documents/${docId}/reprocess`,
+        {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                ...(token && { Authorization: `Bearer ${token}` })
+            }
+        }
+    );
 
     if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);

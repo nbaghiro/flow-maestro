@@ -15,12 +15,7 @@ interface TriggerPanelContentProps {
 }
 
 export function TriggerPanelContent({ workflowId }: TriggerPanelContentProps) {
-    const {
-        triggers,
-        loadingTriggers,
-        setTriggers,
-        setLoadingTriggers,
-    } = useTriggerStore();
+    const { triggers, loadingTriggers, setTriggers, setLoadingTriggers } = useTriggerStore();
 
     const [showCreateDialog, setShowCreateDialog] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -87,7 +82,8 @@ export function TriggerPanelContent({ workflowId }: TriggerPanelContentProps) {
                         </div>
                         <h4 className="font-medium mb-2">No Triggers Yet</h4>
                         <p className="text-sm text-muted-foreground">
-                            Click the + icon above to add your first trigger and automate this workflow.
+                            Click the + icon above to add your first trigger and automate this
+                            workflow.
                         </p>
                     </div>
                 ) : (

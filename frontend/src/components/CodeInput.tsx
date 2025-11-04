@@ -26,7 +26,7 @@ export const CodeInput: FC<CodeInputProps> = ({
     placeholder = "",
     rows = 6,
     className = "",
-    disabled = false,
+    disabled = false
 }) => {
     // Map our language types to the library's supported languages
     const getEditorLanguage = (lang: CodeLanguage): string => {
@@ -65,14 +65,15 @@ export const CodeInput: FC<CodeInputProps> = ({
                 style={{
                     fontSize: 12,
                     lineHeight: 1.5,
-                    fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace',
-                    borderRadius: '0.5rem',
-                    border: '1px solid hsl(var(--border))',
-                    backgroundColor: disabled ? 'hsl(var(--muted))' : 'white',
+                    fontFamily:
+                        'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace',
+                    borderRadius: "0.5rem",
+                    border: "1px solid hsl(var(--border))",
+                    backgroundColor: disabled ? "hsl(var(--muted))" : "white"
                 }}
                 data-color-mode="light"
                 className={`w-full focus-within:outline-none focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary transition-all ${
-                    disabled ? 'cursor-not-allowed opacity-60' : ''
+                    disabled ? "cursor-not-allowed opacity-60" : ""
                 }`}
             />
         </div>

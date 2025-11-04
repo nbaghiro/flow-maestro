@@ -56,26 +56,24 @@ export const useTriggerStore = create<TriggerStore>((set) => ({
 
     addTrigger: (trigger) =>
         set((state) => ({
-            triggers: [...state.triggers, trigger],
+            triggers: [...state.triggers, trigger]
         })),
 
     updateTrigger: (id, updates) =>
         set((state) => ({
-            triggers: state.triggers.map((t) =>
-                t.id === id ? { ...t, ...updates } : t
-            ),
+            triggers: state.triggers.map((t) => (t.id === id ? { ...t, ...updates } : t))
         })),
 
     removeTrigger: (id) =>
         set((state) => ({
             triggers: state.triggers.filter((t) => t.id !== id),
-            selectedTriggerId: state.selectedTriggerId === id ? null : state.selectedTriggerId,
+            selectedTriggerId: state.selectedTriggerId === id ? null : state.selectedTriggerId
         })),
 
     clearTriggers: () =>
         set({
             triggers: [],
             selectedTriggerId: null,
-            loadingTriggers: false,
-        }),
+            loadingTriggers: false
+        })
 }));

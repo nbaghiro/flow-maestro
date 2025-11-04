@@ -1,0 +1,282 @@
+{
+    "name": "Slack Customer Support Ticket Processor",
+    "description": "Processes support messages from Slack: AI classification → conditional routing → database storage → Slack reply",
+    "entryPoint": "input-1",
+    "nodes": {
+        "input-1": {
+            "type": "input",
+            "name": "Support Message Input",
+            "config": {},
+            "position": { "x": 100, "y": 300 }
+        },
+        "llm-1": {
+            "type": "llm",
+            "name": "AI Triage & Categorization",
+            "config": {
+                "provider": "anthropic",
+                "model": "claude-haiku-4-5-20251001",
+                "connectionId": "ANTHROPIC_CONNECTION_ID",
+                "systemPrompt": "You are a support ticket classifier. Analyze messages and respond with ONLY valid JSON.",
+                "prompt": "Analyze this support message and respond with JSON only (no markdown, no explanation):\n\nMessage: ${message}\n\nRespond with:\n{\n  \"urgency\": \"high\" | \"medium\" | \"low\",\n  \"category\": string (e.g. \"payment\", \"bug\", \"feature-request\"),\n  \"summary\": string (brief 1-sentence summary)\n}\n\nClassification rules:\n- High: system outages, payment/billing issues, security concerns, data loss\n- Medium: bugs affecting features, incorrect data, performance issues\n- Low: feature requests, minor UI issues, general questions, documentation\n\nRespond with JSON only:",
+                "temperature": 0.3,
+                "maxTokens": 200,
+                "outputVariable": "llm_analysis"
+            },
+            "position": { "x": 300, "y": 300 }
+        },
+        "conditional-1": {
+            "type": "conditional",
+            "name": "Route by Urgency",
+            "config": {
+                "leftValue": "${llm_analysis.urgency}",
+                "operator": "==",
+                "rightValue": "high"
+            },
+            "position": { "x": 550, "y": 300 }
+        },
+        "database-high-1": {
+            "type": "database",
+            "name": "Store High Priority Ticket",
+            "config": {
+                "provider": "postgresql",
+                "operation": "query",
+                "connectionId": "PG_CONNECTION_ID",
+                "query": "INSERT INTO support_tickets (ticket_number, user_id, category, urgency, message, channel_id, thread_ts, status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *",
+                "parameters": [
+                    "${ticket_number}",
+                    "${userId}",
+                    "${llm_analysis.category}",
+                    "high",
+                    "${message}",
+                    "${channel}",
+                    "${threadTs}",
+                    "open"
+                ],
+                "outputVariable": "ticket_record"
+            },
+            "position": { "x": 800, "y": 150 }
+        },
+        "webhook-1": {
+            "type": "http",
+            "name": "Alert PagerDuty",
+            "config": {
+                "method": "POST",
+                "url": "${pagerduty_webhook_url}",
+                "headers": [
+                    { "key": "Content-Type", "value": "application/json" }
+                ],
+                "body": {
+                    "severity": "error",
+                    "source": "flowmaestro_support",
+                    "summary": "${llm_analysis.summary}",
+                    "ticket_number": "${ticket_number}",
+                    "category": "${llm_analysis.category}"
+                },
+                "timeout": 5000,
+                "retryCount": 2,
+                "outputVariable": "pagerduty_response"
+            },
+            "position": { "x": 1050, "y": 100 }
+        },
+        "transform-high": {
+            "type": "transform",
+            "name": "Format High Priority Response",
+            "config": {
+                "operation": "custom",
+                "inputData": "${ticket_record}",
+                "expression": "{ \"ticket_number\": ticket_record.rows[0].ticket_number, \"urgency\": \"high\", \"category\": ticket_record.rows[0].category, \"status\": \"escalated\", \"message\": \"High priority ticket created and escalated to on-call team\" }",
+                "outputVariable": "response_data"
+            },
+            "position": { "x": 1300, "y": 150 }
+        },
+        "conditional-2": {
+            "type": "conditional",
+            "name": "Check Medium Priority",
+            "config": {
+                "leftValue": "${llm_analysis.urgency}",
+                "operator": "==",
+                "rightValue": "medium"
+            },
+            "position": { "x": 550, "y": 450 }
+        },
+        "database-medium-1": {
+            "type": "database",
+            "name": "Store Medium Priority Ticket",
+            "config": {
+                "provider": "postgresql",
+                "operation": "query",
+                "connectionId": "PG_CONNECTION_ID",
+                "query": "INSERT INTO support_tickets (ticket_number, user_id, category, urgency, message, channel_id, thread_ts, status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *",
+                "parameters": [
+                    "${ticket_number}",
+                    "${userId}",
+                    "${llm_analysis.category}",
+                    "medium",
+                    "${message}",
+                    "${channel}",
+                    "${threadTs}",
+                    "open"
+                ],
+                "outputVariable": "ticket_record"
+            },
+            "position": { "x": 800, "y": 400 }
+        },
+        "transform-medium": {
+            "type": "transform",
+            "name": "Format Medium Priority Response",
+            "config": {
+                "operation": "custom",
+                "inputData": "${ticket_record}",
+                "expression": "{ \"ticket_number\": ticket_record.rows[0].ticket_number, \"urgency\": \"medium\", \"category\": ticket_record.rows[0].category, \"status\": \"assigned\", \"message\": \"Ticket created and assigned to support team\" }",
+                "outputVariable": "response_data"
+            },
+            "position": { "x": 1050, "y": 400 }
+        },
+        "database-low-1": {
+            "type": "database",
+            "name": "Store Low Priority in Backlog",
+            "config": {
+                "provider": "mongodb",
+                "operation": "insert",
+                "connectionId": "MONGO_CONNECTION_ID",
+                "database": "flowmaestro_test",
+                "collection": "support_backlog",
+                "document": {
+                    "ticket_number": "${ticket_number}",
+                    "user_id": "${userId}",
+                    "category": "${llm_analysis.category}",
+                    "urgency": "low",
+                    "message": "${message}",
+                    "channel_id": "${channel}",
+                    "thread_ts": "${threadTs}",
+                    "status": "backlog",
+                    "created_at": "${$now()}"
+                },
+                "outputVariable": "backlog_record"
+            },
+            "position": { "x": 800, "y": 600 }
+        },
+        "transform-low": {
+            "type": "transform",
+            "name": "Format Low Priority Response",
+            "config": {
+                "operation": "custom",
+                "inputData": "${backlog_record}",
+                "expression": "{ \"ticket_number\": ticket_number, \"urgency\": \"low\", \"category\": llm_analysis.category, \"status\": \"backlog\", \"message\": \"Request added to backlog for review\" }",
+                "outputVariable": "response_data"
+            },
+            "position": { "x": 1050, "y": 600 }
+        },
+        "integration-1": {
+            "type": "integration",
+            "name": "Send Slack Reply",
+            "config": {
+                "service": "slack",
+                "operation": "send_message",
+                "connectionId": "SLACK_CONNECTION_ID",
+                "config": {
+                    "channel": "${channel}",
+                    "text": "✅ Ticket #${response_data.ticket_number} created - ${response_data.category} (${response_data.urgency} priority)\n${response_data.message}",
+                    "threadTs": "${threadTs}",
+                    "blocks": [
+                        {
+                            "type": "section",
+                            "text": {
+                                "type": "mrkdwn",
+                                "text": "*Ticket Created*\n\n• *Ticket #:* ${response_data.ticket_number}\n• *Category:* ${response_data.category}\n• *Priority:* ${response_data.urgency}\n• *Status:* ${response_data.status}\n\n_${response_data.message}_"
+                            }
+                        }
+                    ]
+                },
+                "outputVariable": "slack_response"
+            },
+            "position": { "x": 1550, "y": 300 }
+        },
+        "output-1": {
+            "type": "output",
+            "name": "Final Result",
+            "config": {
+                "value": "{ \"success\": true, \"ticket\": response_data, \"slack\": slack_response, \"llm_analysis\": llm_analysis }",
+                "format": "json",
+                "outputName": "result"
+            },
+            "position": { "x": 1800, "y": 300 }
+        }
+    },
+    "edges": [
+        {
+            "id": "e1",
+            "source": "input-1",
+            "target": "llm-1"
+        },
+        {
+            "id": "e2",
+            "source": "llm-1",
+            "target": "conditional-1"
+        },
+        {
+            "id": "e3-high-true",
+            "source": "conditional-1",
+            "target": "database-high-1",
+            "sourceHandle": "true"
+        },
+        {
+            "id": "e4-high-db-webhook",
+            "source": "database-high-1",
+            "target": "webhook-1"
+        },
+        {
+            "id": "e5-webhook-transform",
+            "source": "webhook-1",
+            "target": "transform-high"
+        },
+        {
+            "id": "e6-high-to-slack",
+            "source": "transform-high",
+            "target": "integration-1"
+        },
+        {
+            "id": "e7-high-false",
+            "source": "conditional-1",
+            "target": "conditional-2",
+            "sourceHandle": "false"
+        },
+        {
+            "id": "e8-medium-true",
+            "source": "conditional-2",
+            "target": "database-medium-1",
+            "sourceHandle": "true"
+        },
+        {
+            "id": "e9-medium-transform",
+            "source": "database-medium-1",
+            "target": "transform-medium"
+        },
+        {
+            "id": "e10-medium-to-slack",
+            "source": "transform-medium",
+            "target": "integration-1"
+        },
+        {
+            "id": "e11-low",
+            "source": "conditional-2",
+            "target": "database-low-1",
+            "sourceHandle": "false"
+        },
+        {
+            "id": "e12-low-transform",
+            "source": "database-low-1",
+            "target": "transform-low"
+        },
+        {
+            "id": "e13-low-to-slack",
+            "source": "transform-low",
+            "target": "integration-1"
+        },
+        {
+            "id": "e14-slack-output",
+            "source": "integration-1",
+            "target": "output-1"
+        }
+    ]
+}

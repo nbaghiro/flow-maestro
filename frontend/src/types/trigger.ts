@@ -4,7 +4,7 @@
 
 import type { JsonObject, JsonValue } from "@flowmaestro/shared";
 
-export type TriggerType = 'schedule' | 'webhook' | 'event' | 'manual' | 'phone_call';
+export type TriggerType = "schedule" | "webhook" | "event" | "manual" | "phone_call";
 
 export interface ScheduleTriggerConfig {
     cronExpression: string;
@@ -14,11 +14,11 @@ export interface ScheduleTriggerConfig {
 }
 
 export interface WebhookTriggerConfig {
-    method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH' | 'ANY';
-    authType?: 'none' | 'api_key' | 'hmac' | 'bearer';
+    method?: "GET" | "POST" | "PUT" | "DELETE" | "PATCH" | "ANY";
+    authType?: "none" | "api_key" | "hmac" | "bearer";
     requireSignature?: boolean;
     allowedOrigins?: string[];
-    responseFormat?: 'json' | 'text';
+    responseFormat?: "json" | "text";
     customHeaders?: Record<string, string>;
 }
 
@@ -31,13 +31,13 @@ export interface EventTriggerConfig {
 export interface ManualTriggerConfig {
     requireInputs?: boolean;
     inputSchema?: JsonObject;
-    inputs?: JsonObject;  // Actual input values for the trigger
+    inputs?: JsonObject; // Actual input values for the trigger
     description?: string;
 }
 
 export interface PhoneCallTriggerConfig {
-    phoneNumber: string;  // E.164 format: +15551234567
-    sipProvider: 'telnyx';
+    phoneNumber: string; // E.164 format: +15551234567
+    sipProvider: "telnyx";
     connectionId: string;
     greetingMessage?: string;
     language?: string;
@@ -45,18 +45,18 @@ export interface PhoneCallTriggerConfig {
     enableRecording?: boolean;
     businessHoursEnabled?: boolean;
     businessHoursSchedule?: {
-        monday?: string;     // "9-17"
+        monday?: string; // "9-17"
         tuesday?: string;
         wednesday?: string;
         thursday?: string;
         friday?: string;
         saturday?: string;
         sunday?: string;
-        timezone?: string;   // "America/New_York"
+        timezone?: string; // "America/New_York"
     };
-    voiceProvider?: 'elevenlabs' | 'openai';
+    voiceProvider?: "elevenlabs" | "openai";
     voiceId?: string;
-    sttProvider?: 'deepgram' | 'openai';
+    sttProvider?: "deepgram" | "openai";
 }
 
 export type TriggerConfig =

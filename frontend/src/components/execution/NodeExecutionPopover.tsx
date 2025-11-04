@@ -24,7 +24,7 @@ export function NodeExecutionPopover({
     executionState,
     open,
     onOpenChange,
-    children,
+    children
 }: NodeExecutionPopoverProps) {
     // Get status info
     const getStatusInfo = () => {
@@ -34,35 +34,35 @@ export function NodeExecutionPopover({
                     icon: <Clock className="w-4 h-4" />,
                     color: "text-yellow-600",
                     bg: "bg-yellow-50 dark:bg-yellow-900/20",
-                    label: "Pending",
+                    label: "Pending"
                 };
             case "running":
                 return {
                     icon: <Clock className="w-4 h-4 animate-spin" />,
                     color: "text-blue-600",
                     bg: "bg-blue-50 dark:bg-blue-900/20",
-                    label: "Running",
+                    label: "Running"
                 };
             case "success":
                 return {
                     icon: <CheckCircle2 className="w-4 h-4" />,
                     color: "text-green-600",
                     bg: "bg-green-50 dark:bg-green-900/20",
-                    label: "Success",
+                    label: "Success"
                 };
             case "error":
                 return {
                     icon: <XCircle className="w-4 h-4" />,
                     color: "text-red-600",
                     bg: "bg-red-50 dark:bg-red-900/20",
-                    label: "Error",
+                    label: "Error"
                 };
             default:
                 return {
                     icon: <AlertCircle className="w-4 h-4" />,
                     color: "text-gray-600",
                     bg: "bg-gray-50 dark:bg-gray-900/20",
-                    label: "Idle",
+                    label: "Idle"
                 };
         }
     };
@@ -85,9 +85,7 @@ export function NodeExecutionPopover({
 
     return (
         <Popover.Root open={open} onOpenChange={onOpenChange}>
-            <Popover.Trigger asChild>
-                {children}
-            </Popover.Trigger>
+            <Popover.Trigger asChild>{children}</Popover.Trigger>
 
             <Popover.Portal>
                 <Popover.Content
@@ -115,7 +113,8 @@ export function NodeExecutionPopover({
                                 <div>
                                     <h3 className="font-semibold text-sm">{nodeName}</h3>
                                     <p className="text-xs text-muted-foreground">
-                                        {statusInfo.label} • {formatDuration(executionState.duration)}
+                                        {statusInfo.label} •{" "}
+                                        {formatDuration(executionState.duration)}
                                     </p>
                                 </div>
                             </div>
@@ -177,31 +176,37 @@ export function NodeExecutionPopover({
                         )}
 
                         {/* Metadata */}
-                        {executionState.metadata && Object.keys(executionState.metadata).length > 0 && (
-                            <div className="px-3 py-2">
-                                <h5 className="font-medium text-xs mb-1.5">Metadata</h5>
-                                <div className="space-y-1">
-                                    {Object.entries(executionState.metadata).map(([key, value]) => (
-                                        <div key={key} className="flex gap-2 text-xs">
-                                            <span className="font-mono text-primary font-medium">
-                                                {key}:
-                                            </span>
-                                            <span className="font-mono text-muted-foreground truncate">
-                                                {typeof value === "object"
-                                                    ? JSON.stringify(value)
-                                                    : String(value)}
-                                            </span>
-                                        </div>
-                                    ))}
+                        {executionState.metadata &&
+                            Object.keys(executionState.metadata).length > 0 && (
+                                <div className="px-3 py-2">
+                                    <h5 className="font-medium text-xs mb-1.5">Metadata</h5>
+                                    <div className="space-y-1">
+                                        {Object.entries(executionState.metadata).map(
+                                            ([key, value]) => (
+                                                <div key={key} className="flex gap-2 text-xs">
+                                                    <span className="font-mono text-primary font-medium">
+                                                        {key}:
+                                                    </span>
+                                                    <span className="font-mono text-muted-foreground truncate">
+                                                        {typeof value === "object"
+                                                            ? JSON.stringify(value)
+                                                            : String(value)}
+                                                    </span>
+                                                </div>
+                                            )
+                                        )}
+                                    </div>
                                 </div>
-                            </div>
-                        )}
+                            )}
 
                         {/* No data message */}
                         {!executionState.error &&
-                            (!executionState.input || Object.keys(executionState.input).length === 0) &&
-                            (!executionState.output || Object.keys(executionState.output).length === 0) &&
-                            (!executionState.metadata || Object.keys(executionState.metadata).length === 0) && (
+                            (!executionState.input ||
+                                Object.keys(executionState.input).length === 0) &&
+                            (!executionState.output ||
+                                Object.keys(executionState.output).length === 0) &&
+                            (!executionState.metadata ||
+                                Object.keys(executionState.metadata).length === 0) && (
                                 <div className="px-3 py-8 text-center text-muted-foreground">
                                     <AlertCircle className="w-8 h-8 mx-auto mb-2 opacity-50" />
                                     <p className="text-xs">No execution data available</p>

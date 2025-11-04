@@ -1,2 +1,2 @@
-export { KnowledgeBaseList } from './KnowledgeBaseList';
-export { KnowledgeBaseDetail } from './KnowledgeBaseDetail';
+export { KnowledgeBaseList } from "./KnowledgeBaseList";
+export { KnowledgeBaseDetail } from "./KnowledgeBaseDetail";

@@ -2,20 +2,15 @@
  * API Client for FlowMaestro Backend
  */
 
-import type {
-    JsonObject,
-    JsonValue,
-    WorkflowNode,
-    WorkflowEdge,
-} from "@flowmaestro/shared";
+import type { JsonObject, JsonValue, WorkflowNode, WorkflowEdge } from "@flowmaestro/shared";
 import type {
     WorkflowTrigger,
     TriggerWithScheduleInfo,
     CreateTriggerInput,
-    UpdateTriggerInput,
-} from '../types/trigger';
+    UpdateTriggerInput
+} from "../types/trigger";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
 interface ExecuteWorkflowRequest {
     workflowDefinition: {
@@ -78,7 +73,7 @@ interface UserResponse {
  * Get auth token from localStorage
  */
 function getAuthToken(): string | null {
-    return localStorage.getItem('auth_token');
+    return localStorage.getItem("auth_token");
 }
 
 /**
@@ -92,15 +87,15 @@ export async function executeWorkflow(
     const token = getAuthToken();
 
     const response = await fetch(`${API_BASE_URL}/api/workflows/execute`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-            'Content-Type': 'application/json',
-            ...(token && { Authorization: `Bearer ${token}` }),
+            "Content-Type": "application/json",
+            ...(token && { Authorization: `Bearer ${token}` })
         },
         body: JSON.stringify({
             workflowDefinition: { nodes, edges },
-            inputs,
-        } as ExecuteWorkflowRequest),
+            inputs
+        } as ExecuteWorkflowRequest)
     });
 
     if (!response.ok) {
@@ -115,14 +110,14 @@ export async function executeWorkflow(
  * Save auth token to localStorage
  */
 export function setAuthToken(token: string): void {
-    localStorage.setItem('auth_token', token);
+    localStorage.setItem("auth_token", token);
 }
 
 /**
  * Remove auth token from localStorage
  */
 export function clearAuthToken(): void {
-    localStorage.removeItem('auth_token');
+    localStorage.removeItem("auth_token");
 }
 
 /**
@@ -130,11 +125,11 @@ export function clearAuthToken(): void {
  */
 export async function login(email: string, password: string): Promise<AuthResponse> {
     const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json"
         },
-        body: JSON.stringify({ email, password } as LoginRequest),
+        body: JSON.stringify({ email, password } as LoginRequest)
     });
 
     if (!response.ok) {
@@ -148,13 +143,17 @@ export async function login(email: string, password: string): Promise<AuthRespon
 /**
  * Register a new user
  */
-export async function register(email: string, password: string, name?: string): Promise<AuthResponse> {
+export async function register(
+    email: string,
+    password: string,
+    name?: string
+): Promise<AuthResponse> {
     const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json"
         },
-        body: JSON.stringify({ email, password, name } as RegisterRequest),
+        body: JSON.stringify({ email, password, name } as RegisterRequest)
     });
 
     if (!response.ok) {
@@ -176,11 +175,11 @@ export async function getCurrentUser(): Promise<UserResponse> {
     }
 
     const response = await fetch(`${API_BASE_URL}/api/auth/me`, {
-        method: 'GET',
+        method: "GET",
         headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-        },
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`
+        }
     });
 
     if (!response.ok) {
@@ -197,16 +196,13 @@ export async function getCurrentUser(): Promise<UserResponse> {
 export async function getWorkflows(limit = 50, offset = 0) {
     const token = getAuthToken();
 
-    const response = await fetch(
-        `${API_BASE_URL}/api/workflows?limit=${limit}&offset=${offset}`,
-        {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                ...(token && { Authorization: `Bearer ${token}` }),
-            },
+    const response = await fetch(`${API_BASE_URL}/api/workflows?limit=${limit}&offset=${offset}`, {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json",
+            ...(token && { Authorization: `Bearer ${token}` })
         }
-    );
+    });
 
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -223,11 +219,11 @@ export async function getWorkflow(workflowId: string) {
     const token = getAuthToken();
 
     const response = await fetch(`${API_BASE_URL}/api/workflows/${workflowId}`, {
-        method: 'GET',
+        method: "GET",
         headers: {
-            'Content-Type': 'application/json',
-            ...(token && { Authorization: `Bearer ${token}` }),
-        },
+            "Content-Type": "application/json",
+            ...(token && { Authorization: `Bearer ${token}` })
+        }
     });
 
     if (!response.ok) {
@@ -249,29 +245,33 @@ export interface WorkflowDefinition {
 /**
  * Create a new workflow
  */
-export async function createWorkflow(name: string, description?: string, definition?: WorkflowDefinition) {
+export async function createWorkflow(
+    name: string,
+    description?: string,
+    definition?: WorkflowDefinition
+) {
     const token = getAuthToken();
 
     const workflowDefinition: WorkflowDefinition = definition || {
         name,
         nodes: {},
         edges: [],
-        entryPoint: '',
+        entryPoint: ""
     };
 
     const requestBody = {
         name,
         description,
-        definition: workflowDefinition,
+        definition: workflowDefinition
     };
 
     const response = await fetch(`${API_BASE_URL}/api/workflows`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-            'Content-Type': 'application/json',
-            ...(token && { Authorization: `Bearer ${token}` }),
+            "Content-Type": "application/json",
+            ...(token && { Authorization: `Bearer ${token}` })
         },
-        body: JSON.stringify(requestBody),
+        body: JSON.stringify(requestBody)
     });
 
     if (!response.ok) {
@@ -301,12 +301,12 @@ export async function updateWorkflow(
     const token = getAuthToken();
 
     const response = await fetch(`${API_BASE_URL}/api/workflows/${workflowId}`, {
-        method: 'PUT',
+        method: "PUT",
         headers: {
-            'Content-Type': 'application/json',
-            ...(token && { Authorization: `Bearer ${token}` }),
+            "Content-Type": "application/json",
+            ...(token && { Authorization: `Bearer ${token}` })
         },
-        body: JSON.stringify(updates),
+        body: JSON.stringify(updates)
     });
 
     if (!response.ok) {
@@ -324,10 +324,10 @@ export async function deleteWorkflow(workflowId: string) {
     const token = getAuthToken();
 
     const response = await fetch(`${API_BASE_URL}/api/workflows/${workflowId}`, {
-        method: 'DELETE',
+        method: "DELETE",
         headers: {
-            ...(token && { Authorization: `Bearer ${token}` }),
-        },
+            ...(token && { Authorization: `Bearer ${token}` })
+        }
     });
 
     if (!response.ok) {
@@ -344,16 +344,18 @@ export async function deleteWorkflow(workflowId: string) {
 /**
  * Create a new trigger for a workflow
  */
-export async function createTrigger(input: CreateTriggerInput): Promise<{ success: boolean; data: WorkflowTrigger; error?: string }> {
+export async function createTrigger(
+    input: CreateTriggerInput
+): Promise<{ success: boolean; data: WorkflowTrigger; error?: string }> {
     const token = getAuthToken();
 
     const response = await fetch(`${API_BASE_URL}/api/triggers`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-            'Content-Type': 'application/json',
-            ...(token && { Authorization: `Bearer ${token}` }),
+            "Content-Type": "application/json",
+            ...(token && { Authorization: `Bearer ${token}` })
         },
-        body: JSON.stringify(input),
+        body: JSON.stringify(input)
     });
 
     if (!response.ok) {
@@ -367,15 +369,17 @@ export async function createTrigger(input: CreateTriggerInput): Promise<{ succes
 /**
  * Get list of triggers for a workflow
  */
-export async function getTriggers(workflowId: string): Promise<{ success: boolean; data: WorkflowTrigger[]; error?: string }> {
+export async function getTriggers(
+    workflowId: string
+): Promise<{ success: boolean; data: WorkflowTrigger[]; error?: string }> {
     const token = getAuthToken();
 
     const response = await fetch(`${API_BASE_URL}/api/triggers?workflowId=${workflowId}`, {
-        method: 'GET',
+        method: "GET",
         headers: {
-            'Content-Type': 'application/json',
-            ...(token && { Authorization: `Bearer ${token}` }),
-        },
+            "Content-Type": "application/json",
+            ...(token && { Authorization: `Bearer ${token}` })
+        }
     });
 
     if (!response.ok) {
@@ -389,15 +393,17 @@ export async function getTriggers(workflowId: string): Promise<{ success: boolea
 /**
  * Get a specific trigger by ID
  */
-export async function getTrigger(triggerId: string): Promise<{ success: boolean; data: TriggerWithScheduleInfo; error?: string }> {
+export async function getTrigger(
+    triggerId: string
+): Promise<{ success: boolean; data: TriggerWithScheduleInfo; error?: string }> {
     const token = getAuthToken();
 
     const response = await fetch(`${API_BASE_URL}/api/triggers/${triggerId}`, {
-        method: 'GET',
+        method: "GET",
         headers: {
-            'Content-Type': 'application/json',
-            ...(token && { Authorization: `Bearer ${token}` }),
-        },
+            "Content-Type": "application/json",
+            ...(token && { Authorization: `Bearer ${token}` })
+        }
     });
 
     if (!response.ok) {
@@ -411,16 +417,19 @@ export async function getTrigger(triggerId: string): Promise<{ success: boolean;
 /**
  * Update a trigger
  */
-export async function updateTrigger(triggerId: string, input: UpdateTriggerInput): Promise<{ success: boolean; data: WorkflowTrigger; error?: string }> {
+export async function updateTrigger(
+    triggerId: string,
+    input: UpdateTriggerInput
+): Promise<{ success: boolean; data: WorkflowTrigger; error?: string }> {
     const token = getAuthToken();
 
     const response = await fetch(`${API_BASE_URL}/api/triggers/${triggerId}`, {
-        method: 'PUT',
+        method: "PUT",
         headers: {
-            'Content-Type': 'application/json',
-            ...(token && { Authorization: `Bearer ${token}` }),
+            "Content-Type": "application/json",
+            ...(token && { Authorization: `Bearer ${token}` })
         },
-        body: JSON.stringify(input),
+        body: JSON.stringify(input)
     });
 
     if (!response.ok) {
@@ -434,14 +443,16 @@ export async function updateTrigger(triggerId: string, input: UpdateTriggerInput
 /**
  * Delete a trigger
  */
-export async function deleteTrigger(triggerId: string): Promise<{ success: boolean; message?: string; error?: string }> {
+export async function deleteTrigger(
+    triggerId: string
+): Promise<{ success: boolean; message?: string; error?: string }> {
     const token = getAuthToken();
 
     const response = await fetch(`${API_BASE_URL}/api/triggers/${triggerId}`, {
-        method: 'DELETE',
+        method: "DELETE",
         headers: {
-            ...(token && { Authorization: `Bearer ${token}` }),
-        },
+            ...(token && { Authorization: `Bearer ${token}` })
+        }
     });
 
     if (!response.ok) {
@@ -455,7 +466,10 @@ export async function deleteTrigger(triggerId: string): Promise<{ success: boole
 /**
  * Execute a trigger
  */
-export async function executeTrigger(triggerId: string, inputs?: JsonObject): Promise<{
+export async function executeTrigger(
+    triggerId: string,
+    inputs?: JsonObject
+): Promise<{
     success: boolean;
     data?: {
         executionId: string;
@@ -469,12 +483,12 @@ export async function executeTrigger(triggerId: string, inputs?: JsonObject): Pr
     const token = getAuthToken();
 
     const response = await fetch(`${API_BASE_URL}/api/triggers/${triggerId}/execute`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-            'Content-Type': 'application/json',
-            ...(token && { Authorization: `Bearer ${token}` }),
+            "Content-Type": "application/json",
+            ...(token && { Authorization: `Bearer ${token}` })
         },
-        body: JSON.stringify({ inputs }),
+        body: JSON.stringify({ inputs })
     });
 
     if (!response.ok) {
@@ -533,19 +547,19 @@ export async function getExecutions(
     const token = getAuthToken();
 
     const queryParams = new URLSearchParams();
-    if (workflowId) queryParams.append('workflowId', workflowId);
-    if (params?.status) queryParams.append('status', params.status);
-    if (params?.limit) queryParams.append('limit', params.limit.toString());
-    if (params?.offset) queryParams.append('offset', params.offset.toString());
+    if (workflowId) queryParams.append("workflowId", workflowId);
+    if (params?.status) queryParams.append("status", params.status);
+    if (params?.limit) queryParams.append("limit", params.limit.toString());
+    if (params?.offset) queryParams.append("offset", params.offset.toString());
 
     const response = await fetch(
-        `${API_BASE_URL}/api/executions${queryParams.toString() ? `?${queryParams.toString()}` : ''}`,
+        `${API_BASE_URL}/api/executions${queryParams.toString() ? `?${queryParams.toString()}` : ""}`,
         {
-            method: 'GET',
+            method: "GET",
             headers: {
-                'Content-Type': 'application/json',
-                ...(token && { Authorization: `Bearer ${token}` }),
-            },
+                "Content-Type": "application/json",
+                ...(token && { Authorization: `Bearer ${token}` })
+            }
         }
     );
 
@@ -560,15 +574,17 @@ export async function getExecutions(
 /**
  * Get a specific execution by ID
  */
-export async function getExecution(executionId: string): Promise<{ success: boolean; data: Execution; error?: string }> {
+export async function getExecution(
+    executionId: string
+): Promise<{ success: boolean; data: Execution; error?: string }> {
     const token = getAuthToken();
 
     const response = await fetch(`${API_BASE_URL}/api/executions/${executionId}`, {
-        method: 'GET',
+        method: "GET",
         headers: {
-            'Content-Type': 'application/json',
-            ...(token && { Authorization: `Bearer ${token}` }),
-        },
+            "Content-Type": "application/json",
+            ...(token && { Authorization: `Bearer ${token}` })
+        }
     });
 
     if (!response.ok) {
@@ -593,12 +609,12 @@ export async function submitUserInput(
         method: "POST",
         headers: {
             "Content-Type": "application/json",
-            ...(token && { Authorization: `Bearer ${token}` }),
+            ...(token && { Authorization: `Bearer ${token}` })
         },
         body: JSON.stringify({
             userResponse,
-            nodeId,
-        }),
+            nodeId
+        })
     });
 
     if (!response.ok) {
@@ -611,8 +627,8 @@ export async function submitUserInput(
 
 // ===== Connection API Functions =====
 
-export type ConnectionMethod = 'api_key' | 'oauth2' | 'mcp' | 'basic_auth' | 'custom';
-export type ConnectionStatus = 'active' | 'invalid' | 'expired' | 'revoked';
+export type ConnectionMethod = "api_key" | "oauth2" | "mcp" | "basic_auth" | "custom";
+export type ConnectionStatus = "active" | "invalid" | "expired" | "revoked";
 
 export interface MCPTool {
     name: string;
@@ -673,16 +689,18 @@ export interface CreateConnectionInput {
 /**
  * Create a new connection
  */
-export async function createConnection(input: CreateConnectionInput): Promise<{ success: boolean; data: Connection; error?: string }> {
+export async function createConnection(
+    input: CreateConnectionInput
+): Promise<{ success: boolean; data: Connection; error?: string }> {
     const token = getAuthToken();
 
     const response = await fetch(`${API_BASE_URL}/api/connections`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-            'Content-Type': 'application/json',
-            ...(token && { Authorization: `Bearer ${token}` }),
+            "Content-Type": "application/json",
+            ...(token && { Authorization: `Bearer ${token}` })
         },
-        body: JSON.stringify(input),
+        body: JSON.stringify(input)
     });
 
     if (!response.ok) {
@@ -700,22 +718,28 @@ export async function getConnections(params?: {
     provider?: string;
     connection_method?: ConnectionMethod;
     status?: ConnectionStatus;
-}): Promise<{ success: boolean; data: Connection[]; pagination: { total: number; limit: number; offset: number }; error?: string }> {
+}): Promise<{
+    success: boolean;
+    data: Connection[];
+    pagination: { total: number; limit: number; offset: number };
+    error?: string;
+}> {
     const token = getAuthToken();
 
     const queryParams = new URLSearchParams();
-    if (params?.provider) queryParams.append('provider', params.provider);
-    if (params?.connection_method) queryParams.append('connection_method', params.connection_method);
-    if (params?.status) queryParams.append('status', params.status);
+    if (params?.provider) queryParams.append("provider", params.provider);
+    if (params?.connection_method)
+        queryParams.append("connection_method", params.connection_method);
+    if (params?.status) queryParams.append("status", params.status);
 
     const response = await fetch(
-        `${API_BASE_URL}/api/connections${queryParams.toString() ? `?${queryParams.toString()}` : ''}`,
+        `${API_BASE_URL}/api/connections${queryParams.toString() ? `?${queryParams.toString()}` : ""}`,
         {
-            method: 'GET',
+            method: "GET",
             headers: {
-                'Content-Type': 'application/json',
-                ...(token && { Authorization: `Bearer ${token}` }),
-            },
+                "Content-Type": "application/json",
+                ...(token && { Authorization: `Bearer ${token}` })
+            }
         }
     );
 
@@ -730,15 +754,17 @@ export async function getConnections(params?: {
 /**
  * Get a specific connection by ID
  */
-export async function getConnection(connectionId: string): Promise<{ success: boolean; data: Connection; error?: string }> {
+export async function getConnection(
+    connectionId: string
+): Promise<{ success: boolean; data: Connection; error?: string }> {
     const token = getAuthToken();
 
     const response = await fetch(`${API_BASE_URL}/api/connections/${connectionId}`, {
-        method: 'GET',
+        method: "GET",
         headers: {
-            'Content-Type': 'application/json',
-            ...(token && { Authorization: `Bearer ${token}` }),
-        },
+            "Content-Type": "application/json",
+            ...(token && { Authorization: `Bearer ${token}` })
+        }
     });
 
     if (!response.ok) {
@@ -752,16 +778,20 @@ export async function getConnection(connectionId: string): Promise<{ success: bo
 /**
  * Test a connection without saving it first
  */
-export async function testConnectionBeforeSave(input: CreateConnectionInput): Promise<{ success: boolean; data: { test_result: JsonValue; connection_valid: boolean }; error?: string }> {
+export async function testConnectionBeforeSave(input: CreateConnectionInput): Promise<{
+    success: boolean;
+    data: { test_result: JsonValue; connection_valid: boolean };
+    error?: string;
+}> {
     const token = getAuthToken();
 
     const response = await fetch(`${API_BASE_URL}/api/connections/test`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-            'Content-Type': 'application/json',
-            ...(token && { Authorization: `Bearer ${token}` }),
+            "Content-Type": "application/json",
+            ...(token && { Authorization: `Bearer ${token}` })
         },
-        body: JSON.stringify(input),
+        body: JSON.stringify(input)
     });
 
     if (!response.ok) {
@@ -775,15 +805,19 @@ export async function testConnectionBeforeSave(input: CreateConnectionInput): Pr
 /**
  * Test an existing connection
  */
-export async function testConnection(connectionId: string): Promise<{ success: boolean; data: { connection_id: string; test_result: JsonValue }; error?: string }> {
+export async function testConnection(connectionId: string): Promise<{
+    success: boolean;
+    data: { connection_id: string; test_result: JsonValue };
+    error?: string;
+}> {
     const token = getAuthToken();
 
     const response = await fetch(`${API_BASE_URL}/api/connections/${connectionId}/test`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-            'Content-Type': 'application/json',
-            ...(token && { Authorization: `Bearer ${token}` }),
-        },
+            "Content-Type": "application/json",
+            ...(token && { Authorization: `Bearer ${token}` })
+        }
     });
 
     if (!response.ok) {
@@ -804,12 +838,12 @@ export async function updateConnection(
     const token = getAuthToken();
 
     const response = await fetch(`${API_BASE_URL}/api/connections/${connectionId}`, {
-        method: 'PUT',
+        method: "PUT",
         headers: {
-            'Content-Type': 'application/json',
-            ...(token && { Authorization: `Bearer ${token}` }),
+            "Content-Type": "application/json",
+            ...(token && { Authorization: `Bearer ${token}` })
         },
-        body: JSON.stringify(input),
+        body: JSON.stringify(input)
     });
 
     if (!response.ok) {
@@ -823,14 +857,16 @@ export async function updateConnection(
 /**
  * Delete a connection
  */
-export async function deleteConnection(connectionId: string): Promise<{ success: boolean; message?: string; error?: string }> {
+export async function deleteConnection(
+    connectionId: string
+): Promise<{ success: boolean; message?: string; error?: string }> {
     const token = getAuthToken();
 
     const response = await fetch(`${API_BASE_URL}/api/connections/${connectionId}`, {
-        method: 'DELETE',
+        method: "DELETE",
         headers: {
-            ...(token && { Authorization: `Bearer ${token}` }),
-        },
+            ...(token && { Authorization: `Bearer ${token}` })
+        }
     });
 
     if (!response.ok) {
@@ -854,7 +890,7 @@ export interface MCPProvider {
 
 export interface MCPDiscoveryRequest {
     server_url: string;
-    auth_type: 'none' | 'api_key' | 'bearer' | 'basic';
+    auth_type: "none" | "api_key" | "bearer" | "basic";
     api_key?: string;
     bearer_token?: string;
     username?: string;
@@ -865,12 +901,16 @@ export interface MCPDiscoveryRequest {
 /**
  * Get list of known MCP providers
  */
-export async function getMCPProviders(): Promise<{ success: boolean; data: MCPProvider[]; error?: string }> {
+export async function getMCPProviders(): Promise<{
+    success: boolean;
+    data: MCPProvider[];
+    error?: string;
+}> {
     const response = await fetch(`${API_BASE_URL}/api/connections/mcp/providers`, {
-        method: 'GET',
+        method: "GET",
         headers: {
-            'Content-Type': 'application/json',
-        },
+            "Content-Type": "application/json"
+        }
     });
 
     if (!response.ok) {
@@ -887,17 +927,17 @@ export async function getMCPProviders(): Promise<{ success: boolean; data: MCPPr
 export async function discoverMCPTools(request: MCPDiscoveryRequest): Promise<{
     success: boolean;
     data: { server_info: JsonObject; tools: MCPTool[]; tool_count: number };
-    error?: string
+    error?: string;
 }> {
     const token = getAuthToken();
 
     const response = await fetch(`${API_BASE_URL}/api/connections/mcp/discover`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-            'Content-Type': 'application/json',
-            ...(token && { Authorization: `Bearer ${token}` }),
+            "Content-Type": "application/json",
+            ...(token && { Authorization: `Bearer ${token}` })
         },
-        body: JSON.stringify(request),
+        body: JSON.stringify(request)
     });
 
     if (!response.ok) {
@@ -915,16 +955,16 @@ export async function refreshMCPTools(connectionId: string): Promise<{
     success: boolean;
     data: { connection_id: string; tools: MCPTool[]; tool_count: number };
     message?: string;
-    error?: string
+    error?: string;
 }> {
     const token = getAuthToken();
 
     const response = await fetch(`${API_BASE_URL}/api/connections/${connectionId}/refresh-tools`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-            'Content-Type': 'application/json',
-            ...(token && { Authorization: `Bearer ${token}` }),
-        },
+            "Content-Type": "application/json",
+            ...(token && { Authorization: `Bearer ${token}` })
+        }
     });
 
     if (!response.ok) {
@@ -978,31 +1018,41 @@ export async function generateWorkflow(
     const token = getAuthToken();
 
     const response = await fetch(`${API_BASE_URL}/api/workflows/generate`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-            'Content-Type': 'application/json',
-            ...(token && { Authorization: `Bearer ${token}` }),
+            "Content-Type": "application/json",
+            ...(token && { Authorization: `Bearer ${token}` })
         },
-        body: JSON.stringify(request),
+        body: JSON.stringify(request)
     });
 
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error?.message || errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+        throw new Error(
+            errorData.error?.message ||
+                errorData.error ||
+                `HTTP ${response.status}: ${response.statusText}`
+        );
     }
 
     return response.json();
 }
 
-
 // ===== Agent API Functions =====
 
 export interface Tool {
+    id: string;
     name: string;
     description: string;
     type: "workflow" | "function" | "knowledge_base";
     schema: JsonObject;
-    config: JsonObject;
+    config: ToolConfig;
+}
+
+export interface ToolConfig {
+    workflowId?: string;
+    functionName?: string;
+    knowledgeBaseId?: string;
 }
 
 export interface MemoryConfig {
@@ -1097,9 +1147,9 @@ export async function createAgent(
         method: "POST",
         headers: {
             "Content-Type": "application/json",
-            ...(token && { Authorization: `Bearer ${token}` }),
+            ...(token && { Authorization: `Bearer ${token}` })
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify(data)
     });
 
     if (!response.ok) {
@@ -1113,15 +1163,19 @@ export async function createAgent(
 /**
  * Get all agents for the current user
  */
-export async function getAgents(): Promise<{ success: boolean; data: { agents: Agent[]; total: number }; error?: string }> {
+export async function getAgents(): Promise<{
+    success: boolean;
+    data: { agents: Agent[]; total: number };
+    error?: string;
+}> {
     const token = getAuthToken();
 
     const response = await fetch(`${API_BASE_URL}/api/agents`, {
         method: "GET",
         headers: {
             "Content-Type": "application/json",
-            ...(token && { Authorization: `Bearer ${token}` }),
-        },
+            ...(token && { Authorization: `Bearer ${token}` })
+        }
     });
 
     if (!response.ok) {
@@ -1135,15 +1189,17 @@ export async function getAgents(): Promise<{ success: boolean; data: { agents: A
 /**
  * Get a specific agent by ID
  */
-export async function getAgent(agentId: string): Promise<{ success: boolean; data: Agent; error?: string }> {
+export async function getAgent(
+    agentId: string
+): Promise<{ success: boolean; data: Agent; error?: string }> {
     const token = getAuthToken();
 
     const response = await fetch(`${API_BASE_URL}/api/agents/${agentId}`, {
         method: "GET",
         headers: {
             "Content-Type": "application/json",
-            ...(token && { Authorization: `Bearer ${token}` }),
-        },
+            ...(token && { Authorization: `Bearer ${token}` })
+        }
     });
 
     if (!response.ok) {
@@ -1167,9 +1223,9 @@ export async function updateAgent(
         method: "PUT",
         headers: {
             "Content-Type": "application/json",
-            ...(token && { Authorization: `Bearer ${token}` }),
+            ...(token && { Authorization: `Bearer ${token}` })
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify(data)
     });
 
     if (!response.ok) {
@@ -1183,14 +1239,16 @@ export async function updateAgent(
 /**
  * Delete an agent
  */
-export async function deleteAgent(agentId: string): Promise<{ success: boolean; message?: string; error?: string }> {
+export async function deleteAgent(
+    agentId: string
+): Promise<{ success: boolean; message?: string; error?: string }> {
     const token = getAuthToken();
 
     const response = await fetch(`${API_BASE_URL}/api/agents/${agentId}`, {
         method: "DELETE",
         headers: {
-            ...(token && { Authorization: `Bearer ${token}` }),
-        },
+            ...(token && { Authorization: `Bearer ${token}` })
+        }
     });
 
     if (!response.ok) {
@@ -1207,16 +1265,20 @@ export async function deleteAgent(agentId: string): Promise<{ success: boolean; 
 export async function executeAgent(
     agentId: string,
     message: string
-): Promise<{ success: boolean; data: { executionId: string; agentId: string; status: string }; error?: string }> {
+): Promise<{
+    success: boolean;
+    data: { executionId: string; agentId: string; status: string };
+    error?: string;
+}> {
     const token = getAuthToken();
 
     const response = await fetch(`${API_BASE_URL}/api/agents/${agentId}/execute`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
-            ...(token && { Authorization: `Bearer ${token}` }),
+            ...(token && { Authorization: `Bearer ${token}` })
         },
-        body: JSON.stringify({ message }),
+        body: JSON.stringify({ message })
     });
 
     if (!response.ok) {
@@ -1237,14 +1299,17 @@ export async function sendAgentMessage(
 ): Promise<{ success: boolean; message?: string; error?: string }> {
     const token = getAuthToken();
 
-    const response = await fetch(`${API_BASE_URL}/api/agents/${agentId}/executions/${executionId}/message`, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            ...(token && { Authorization: `Bearer ${token}` }),
-        },
-        body: JSON.stringify({ message }),
-    });
+    const response = await fetch(
+        `${API_BASE_URL}/api/agents/${agentId}/executions/${executionId}/message`,
+        {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                ...(token && { Authorization: `Bearer ${token}` })
+            },
+            body: JSON.stringify({ message })
+        }
+    );
 
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -1263,12 +1328,49 @@ export async function getAgentExecution(
 ): Promise<{ success: boolean; data: AgentExecution; error?: string }> {
     const token = getAuthToken();
 
-    const response = await fetch(`${API_BASE_URL}/api/agents/${agentId}/executions/${executionId}`, {
-        method: "GET",
+    const response = await fetch(
+        `${API_BASE_URL}/api/agents/${agentId}/executions/${executionId}`,
+        {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                ...(token && { Authorization: `Bearer ${token}` })
+            }
+        }
+    );
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    return response.json();
+}
+
+/**
+ * Add a tool to an agent
+ */
+export interface AddToolRequest {
+    type: "workflow" | "function" | "knowledge_base";
+    name: string;
+    description: string;
+    schema: JsonObject;
+    config: ToolConfig;
+}
+
+export async function addAgentTool(
+    agentId: string,
+    data: AddToolRequest
+): Promise<{ success: boolean; data: { tool: Tool; agent: Agent }; error?: string }> {
+    const token = getAuthToken();
+
+    const response = await fetch(`${API_BASE_URL}/api/agents/${agentId}/tools`, {
+        method: "POST",
         headers: {
             "Content-Type": "application/json",
-            ...(token && { Authorization: `Bearer ${token}` }),
+            ...(token && { Authorization: `Bearer ${token}` })
         },
+        body: JSON.stringify(data)
     });
 
     if (!response.ok) {
@@ -1277,4 +1379,90 @@ export async function getAgentExecution(
     }
 
     return response.json();
+}
+
+/**
+ * Remove a tool from an agent
+ */
+export async function removeAgentTool(
+    agentId: string,
+    toolId: string
+): Promise<{ success: boolean; data: { agent: Agent }; error?: string }> {
+    const token = getAuthToken();
+
+    const response = await fetch(`${API_BASE_URL}/api/agents/${agentId}/tools/${toolId}`, {
+        method: "DELETE",
+        headers: {
+            ...(token && { Authorization: `Bearer ${token}` })
+        }
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    return response.json();
+}
+
+// ===== MCP Registry API Functions =====
+
+export interface MCPRegistryServer {
+    id: string;
+    name: string;
+    description: string;
+    serverUrl: string;
+    authType: string;
+    capabilities?: string[];
+    version?: string;
+    provider?: string;
+}
+
+export interface MCPRegistryResponse {
+    servers: MCPRegistryServer[];
+    total: number;
+    query?: string;
+}
+
+/**
+ * Get all MCP servers from the public registry
+ */
+export async function getMCPRegistryServers(): Promise<MCPRegistryServer[]> {
+    const response = await fetch(`${API_BASE_URL}/api/mcp/registry/servers`, {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json"
+        }
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data.data.servers || [];
+}
+
+/**
+ * Search MCP servers in the registry
+ */
+export async function searchMCPRegistry(query: string): Promise<MCPRegistryServer[]> {
+    const response = await fetch(
+        `${API_BASE_URL}/api/mcp/registry/search?q=${encodeURIComponent(query)}`,
+        {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json"
+            }
+        }
+    );
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data.data.servers || [];
 }

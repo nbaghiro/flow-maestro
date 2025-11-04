@@ -10,12 +10,7 @@ interface AgentChatProps {
 }
 
 export function AgentChat({ agent }: AgentChatProps) {
-    const {
-        currentExecution,
-        executeAgent,
-        sendMessage,
-        clearExecution,
-    } = useAgentStore();
+    const { currentExecution, executeAgent, sendMessage, clearExecution } = useAgentStore();
 
     const [input, setInput] = useState("");
     const [isSending, setIsSending] = useState(false);
@@ -173,8 +168,8 @@ export function AgentChat({ agent }: AgentChatProps) {
                                         message.role === "user"
                                             ? "bg-primary text-primary-foreground"
                                             : message.role === "system"
-                                            ? "bg-muted/50 text-muted-foreground text-sm italic"
-                                            : "bg-muted text-foreground"
+                                              ? "bg-muted/50 text-muted-foreground text-sm italic"
+                                              : "bg-muted text-foreground"
                                     )}
                                 >
                                     <div className="whitespace-pre-wrap break-words">

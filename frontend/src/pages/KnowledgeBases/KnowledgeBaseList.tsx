@@ -5,7 +5,8 @@ import { BookOpen, Plus, Trash2, FileText, Loader2 } from "lucide-react";
 
 export function KnowledgeBaseList() {
     const navigate = useNavigate();
-    const { knowledgeBases, loading, error, fetchKnowledgeBases, deleteKB } = useKnowledgeBaseStore();
+    const { knowledgeBases, loading, error, fetchKnowledgeBases, deleteKB } =
+        useKnowledgeBaseStore();
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [newKBName, setNewKBName] = useState("");
     const [newKBDescription, setNewKBDescription] = useState("");
@@ -23,7 +24,7 @@ export function KnowledgeBaseList() {
         try {
             const kb = await createKB({
                 name: newKBName,
-                description: newKBDescription || undefined,
+                description: newKBDescription || undefined
             });
             setShowCreateModal(false);
             setNewKBName("");
@@ -124,7 +125,9 @@ export function KnowledgeBaseList() {
                                     className="p-1 hover:bg-red-50 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                     title="Delete"
                                 >
-                                    <Trash2 className={`w-4 h-4 text-red-600 ${deletingId === kb.id ? 'animate-pulse' : ''}`} />
+                                    <Trash2
+                                        className={`w-4 h-4 text-red-600 ${deletingId === kb.id ? "animate-pulse" : ""}`}
+                                    />
                                 </button>
                             </div>
 
@@ -139,9 +142,7 @@ export function KnowledgeBaseList() {
                                     <FileText className="w-3 h-3" />
                                     <span>Documents</span>
                                 </div>
-                                <div>
-                                    {kb.config.embeddingModel}
-                                </div>
+                                <div>{kb.config.embeddingModel}</div>
                             </div>
 
                             <div className="mt-3 text-xs text-muted-foreground">
@@ -172,7 +173,9 @@ export function KnowledgeBaseList() {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium mb-1">Description</label>
+                                <label className="block text-sm font-medium mb-1">
+                                    Description
+                                </label>
                                 <textarea
                                     value={newKBDescription}
                                     onChange={(e) => setNewKBDescription(e.target.value)}
@@ -212,7 +215,8 @@ export function KnowledgeBaseList() {
                     <div className="bg-white rounded-lg p-6 w-full max-w-md">
                         <h2 className="text-lg font-semibold mb-4">Delete Knowledge Base</h2>
                         <p className="text-muted-foreground mb-6">
-                            Are you sure you want to delete <strong>{deleteConfirm.name}</strong>? This will delete all documents and embeddings.
+                            Are you sure you want to delete <strong>{deleteConfirm.name}</strong>?
+                            This will delete all documents and embeddings.
                         </p>
                         <div className="flex items-center gap-2">
                             <button

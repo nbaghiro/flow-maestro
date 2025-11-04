@@ -1,6 +1,12 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { getWorkflows, createWorkflow, generateWorkflow, updateWorkflow, type WorkflowDefinition } from "../lib/api";
+import {
+    getWorkflows,
+    createWorkflow,
+    generateWorkflow,
+    updateWorkflow,
+    type WorkflowDefinition
+} from "../lib/api";
 import { useAuth } from "../contexts/AuthContext";
 import { CreateWorkflowDialog } from "../components/CreateWorkflowDialog";
 import { AIGenerateDialog } from "../components/AIGenerateDialog";
@@ -40,7 +46,11 @@ export function WorkflowLibrary() {
         }
     };
 
-    const handleCreateWorkflow = async (name: string, description?: string, definition?: WorkflowDefinition) => {
+    const handleCreateWorkflow = async (
+        name: string,
+        description?: string,
+        definition?: WorkflowDefinition
+    ) => {
         const response = await createWorkflow(name, description, definition);
 
         if (response.success && response.data) {
@@ -72,37 +82,37 @@ export function WorkflowLibrary() {
 
                 // Convert React Flow format back to backend format for saving
                 const nodesMap: Record<string, any> = {};
-                flowNodes.forEach(node => {
+                flowNodes.forEach((node) => {
                     const { label, onError, ...config } = (node.data || {}) as any;
                     nodesMap[node.id] = {
-                        type: node.type || 'default',
+                        type: node.type || "default",
                         name: label || node.id,
                         config: config,
                         position: node.position,
-                        ...(onError && { onError }),
+                        ...(onError && { onError })
                     };
                 });
 
                 // Find entry point
-                const inputNode = flowNodes.find(n => n.type === 'input');
-                const entryPoint = inputNode?.id || (flowNodes.length > 0 ? flowNodes[0].id : '');
+                const inputNode = flowNodes.find((n) => n.type === "input");
+                const entryPoint = inputNode?.id || (flowNodes.length > 0 ? flowNodes[0].id : "");
 
                 const workflowDefinition = {
                     name: workflowName,
                     nodes: nodesMap,
-                    edges: flowEdges.map(edge => ({
+                    edges: flowEdges.map((edge) => ({
                         id: edge.id,
                         source: edge.source,
                         target: edge.target,
-                        sourceHandle: edge.sourceHandle,
+                        sourceHandle: edge.sourceHandle
                     })),
-                    entryPoint,
+                    entryPoint
                 };
 
                 // Update workflow with the generated definition
                 await updateWorkflow(workflowId, {
                     name: workflowName,
-                    definition: workflowDefinition,
+                    definition: workflowDefinition
                 });
 
                 // Navigate to the builder with the new workflow
@@ -125,7 +135,7 @@ export function WorkflowLibrary() {
         return date.toLocaleDateString("en-US", {
             month: "short",
             day: "numeric",
-            year: "numeric",
+            year: "numeric"
         });
     };
 

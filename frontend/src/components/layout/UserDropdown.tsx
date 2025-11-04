@@ -32,7 +32,7 @@ export function UserDropdown() {
     };
 
     const getInitials = (email: string): string => {
-        const parts = email.split('@')[0].split('.');
+        const parts = email.split("@")[0].split(".");
         if (parts.length >= 2) {
             return (parts[0][0] + parts[1][0]).toUpperCase();
         }
@@ -53,20 +53,24 @@ export function UserDropdown() {
                     {getInitials(user.email)}
                 </div>
                 <div className="hidden md:block text-left">
-                    <div className="text-sm font-medium text-foreground">{user.name || 'User'}</div>
+                    <div className="text-sm font-medium text-foreground">{user.name || "User"}</div>
                     <div className="text-xs text-muted-foreground">{user.email}</div>
                 </div>
-                <ChevronDown className={cn(
-                    "w-4 h-4 text-muted-foreground transition-transform",
-                    isOpen && "rotate-180"
-                )} />
+                <ChevronDown
+                    className={cn(
+                        "w-4 h-4 text-muted-foreground transition-transform",
+                        isOpen && "rotate-180"
+                    )}
+                />
             </button>
 
             {isOpen && (
                 <div className="absolute right-0 mt-2 w-56 bg-popover border border-border rounded-lg shadow-lg py-1 z-50">
                     {/* User info */}
                     <div className="px-3 py-2 border-b border-border">
-                        <div className="text-sm font-medium text-foreground">{user.name || 'User'}</div>
+                        <div className="text-sm font-medium text-foreground">
+                            {user.name || "User"}
+                        </div>
                         <div className="text-xs text-muted-foreground truncate">{user.email}</div>
                     </div>
 
@@ -75,7 +79,7 @@ export function UserDropdown() {
                         <button
                             onClick={() => {
                                 setIsOpen(false);
-                                navigate('/account');
+                                navigate("/account");
                             }}
                             className="w-full flex items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-muted transition-colors"
                         >
@@ -86,7 +90,7 @@ export function UserDropdown() {
                         <button
                             onClick={() => {
                                 setIsOpen(false);
-                                navigate('/settings');
+                                navigate("/settings");
                             }}
                             className="w-full flex items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-muted transition-colors"
                         >

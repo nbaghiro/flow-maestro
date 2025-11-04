@@ -26,13 +26,13 @@ function UserInputNode({ data, selected }: NodeProps<UserInputNodeData>) {
             selected={selected}
         >
             <div className="space-y-2">
-                <div className="text-xs italic text-muted-foreground line-clamp-2">
-                    "{prompt}"
-                </div>
+                <div className="text-xs italic text-muted-foreground line-clamp-2">"{prompt}"</div>
                 <div className="pt-1.5 mt-1.5 border-t border-border space-y-1.5">
                     <div className="flex items-center justify-between">
                         <span className="text-xs text-muted-foreground">Variable:</span>
-                        <span className="text-xs font-mono bg-muted px-1.5 py-0.5 rounded">${variableName}</span>
+                        <span className="text-xs font-mono bg-muted px-1.5 py-0.5 rounded">
+                            ${variableName}
+                        </span>
                     </div>
                     <div className="flex items-center justify-between">
                         <span className="text-xs text-muted-foreground">Type:</span>

@@ -2,7 +2,11 @@ import { useState, useEffect } from "react";
 import { FormField, FormSection } from "../../../components/FormField";
 import { Slider } from "../../../components/Slider";
 import { OutputSettingsSection } from "../../../components/OutputSettingsSection";
-import { LLM_PROVIDERS, LLM_MODELS_BY_PROVIDER, getDefaultModelForProvider } from "@flowmaestro/shared";
+import {
+    LLM_PROVIDERS,
+    LLM_MODELS_BY_PROVIDER,
+    getDefaultModelForProvider
+} from "@flowmaestro/shared";
 
 interface AudioNodeConfigProps {
     data: any;
@@ -11,7 +15,7 @@ interface AudioNodeConfigProps {
 
 const operations = [
     { value: "transcribe", label: "Transcribe Audio" },
-    { value: "tts", label: "Text-to-Speech" },
+    { value: "tts", label: "Text-to-Speech" }
 ];
 
 const voices = [
@@ -20,13 +24,15 @@ const voices = [
     { value: "fable", label: "Fable" },
     { value: "onyx", label: "Onyx" },
     { value: "nova", label: "Nova" },
-    { value: "shimmer", label: "Shimmer" },
+    { value: "shimmer", label: "Shimmer" }
 ];
 
 export function AudioNodeConfig({ data, onUpdate }: AudioNodeConfigProps) {
     const [operation, setOperation] = useState(data.operation || "transcribe");
     const [provider, setProvider] = useState(data.provider || "openai");
-    const [model, setModel] = useState(data.model || getDefaultModelForProvider(data.provider || "openai"));
+    const [model, setModel] = useState(
+        data.model || getDefaultModelForProvider(data.provider || "openai")
+    );
     const [audioInput, setAudioInput] = useState(data.audioInput || "");
     const [textInput, setTextInput] = useState(data.textInput || "");
     const [voice, setVoice] = useState(data.voice || "alloy");
@@ -44,7 +50,7 @@ export function AudioNodeConfig({ data, onUpdate }: AudioNodeConfigProps) {
             voice,
             speed,
             language,
-            outputVariable,
+            outputVariable
         });
     }, [operation, provider, model, audioInput, textInput, voice, speed, language, outputVariable]);
 
@@ -137,10 +143,7 @@ export function AudioNodeConfig({ data, onUpdate }: AudioNodeConfigProps) {
 
             {operation === "tts" && (
                 <FormSection title="Text-to-Speech">
-                    <FormField
-                        label="Text Input"
-                        description="Text to convert to speech"
-                    >
+                    <FormField label="Text Input" description="Text to convert to speech">
                         <textarea
                             value={textInput}
                             onChange={(e) => setTextInput(e.target.value)}
@@ -164,10 +167,7 @@ export function AudioNodeConfig({ data, onUpdate }: AudioNodeConfigProps) {
                         </select>
                     </FormField>
 
-                    <FormField
-                        label="Speed"
-                        description="Speaking rate (0.25 = slow, 4.0 = fast)"
-                    >
+                    <FormField label="Speed" description="Speaking rate (0.25 = slow, 4.0 = fast)">
                         <Slider
                             value={speed}
                             onChange={setSpeed}

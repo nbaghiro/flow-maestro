@@ -36,7 +36,9 @@ function LoopNode({ data, selected }: NodeProps<LoopNodeData>) {
                         </div>
                         <div className="flex items-center justify-between">
                             <span className="text-xs text-muted-foreground">Item:</span>
-                            <span className="text-xs font-mono bg-muted px-1.5 py-0.5 rounded">${itemVariable}</span>
+                            <span className="text-xs font-mono bg-muted px-1.5 py-0.5 rounded">
+                                ${itemVariable}
+                            </span>
                         </div>
                     </>
                 );
@@ -44,7 +46,9 @@ function LoopNode({ data, selected }: NodeProps<LoopNodeData>) {
                 return (
                     <>
                         <div className="flex items-start gap-2">
-                            <span className="text-xs text-muted-foreground whitespace-nowrap">While:</span>
+                            <span className="text-xs text-muted-foreground whitespace-nowrap">
+                                While:
+                            </span>
                             <span className="text-xs font-mono bg-muted px-1.5 py-0.5 rounded line-clamp-2 flex-1">
                                 {condition || "No condition set"}
                             </span>
@@ -60,7 +64,9 @@ function LoopNode({ data, selected }: NodeProps<LoopNodeData>) {
                         </div>
                         <div className="flex items-center justify-between">
                             <span className="text-xs text-muted-foreground">Index:</span>
-                            <span className="text-xs font-mono bg-muted px-1.5 py-0.5 rounded">${indexVariable}</span>
+                            <span className="text-xs font-mono bg-muted px-1.5 py-0.5 rounded">
+                                ${indexVariable}
+                            </span>
                         </div>
                     </>
                 );

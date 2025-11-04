@@ -3,7 +3,11 @@ import { FormField, FormSection } from "../../../components/FormField";
 import { Slider } from "../../../components/Slider";
 import { OutputSettingsSection } from "../../../components/OutputSettingsSection";
 import { ConnectionPicker } from "../../../components/connections/ConnectionPicker";
-import { LLM_PROVIDERS, LLM_MODELS_BY_PROVIDER, getDefaultModelForProvider } from "@flowmaestro/shared";
+import {
+    LLM_PROVIDERS,
+    LLM_MODELS_BY_PROVIDER,
+    getDefaultModelForProvider
+} from "@flowmaestro/shared";
 
 interface LLMNodeConfigProps {
     data: any;
@@ -12,7 +16,9 @@ interface LLMNodeConfigProps {
 
 export function LLMNodeConfig({ data, onUpdate }: LLMNodeConfigProps) {
     const [provider, setProvider] = useState(data.provider || "openai");
-    const [model, setModel] = useState(data.model || getDefaultModelForProvider(data.provider || "openai"));
+    const [model, setModel] = useState(
+        data.model || getDefaultModelForProvider(data.provider || "openai")
+    );
     const [connectionId, setConnectionId] = useState<string | null>(data.connectionId || null);
     const [systemPrompt, setSystemPrompt] = useState(data.systemPrompt || "");
     const [prompt, setPrompt] = useState(data.prompt || "");
@@ -31,9 +37,19 @@ export function LLMNodeConfig({ data, onUpdate }: LLMNodeConfigProps) {
             temperature,
             maxTokens,
             topP,
-            outputVariable,
+            outputVariable
         });
-    }, [provider, model, connectionId, systemPrompt, prompt, temperature, maxTokens, topP, outputVariable]);
+    }, [
+        provider,
+        model,
+        connectionId,
+        systemPrompt,
+        prompt,
+        temperature,
+        maxTokens,
+        topP,
+        outputVariable
+    ]);
 
     const handleProviderChange = (newProvider: string) => {
         setProvider(newProvider);
@@ -130,10 +146,7 @@ export function LLMNodeConfig({ data, onUpdate }: LLMNodeConfigProps) {
                     />
                 </FormField>
 
-                <FormField
-                    label="Max Tokens"
-                    description="Maximum length of the response"
-                >
+                <FormField label="Max Tokens" description="Maximum length of the response">
                     <input
                         type="number"
                         value={maxTokens}
@@ -144,17 +157,8 @@ export function LLMNodeConfig({ data, onUpdate }: LLMNodeConfigProps) {
                     />
                 </FormField>
 
-                <FormField
-                    label="Top P"
-                    description="Nucleus sampling threshold"
-                >
-                    <Slider
-                        value={topP}
-                        onChange={setTopP}
-                        min={0}
-                        max={1}
-                        step={0.05}
-                    />
+                <FormField label="Top P" description="Nucleus sampling threshold">
+                    <Slider value={topP} onChange={setTopP} min={0} max={1} step={0.05} />
                 </FormField>
             </FormSection>
 

@@ -2,7 +2,11 @@ import { useState, useEffect } from "react";
 import { FormField, FormSection } from "../../../components/FormField";
 import { Slider } from "../../../components/Slider";
 import { OutputSettingsSection } from "../../../components/OutputSettingsSection";
-import { LLM_PROVIDERS, LLM_MODELS_BY_PROVIDER, getDefaultModelForProvider } from "@flowmaestro/shared";
+import {
+    LLM_PROVIDERS,
+    LLM_MODELS_BY_PROVIDER,
+    getDefaultModelForProvider
+} from "@flowmaestro/shared";
 
 interface VisionNodeConfigProps {
     data: any;
@@ -11,13 +15,15 @@ interface VisionNodeConfigProps {
 
 const operations = [
     { value: "analyze", label: "Analyze Image" },
-    { value: "generate", label: "Generate Image" },
+    { value: "generate", label: "Generate Image" }
 ];
 
 export function VisionNodeConfig({ data, onUpdate }: VisionNodeConfigProps) {
     const [operation, setOperation] = useState(data.operation || "analyze");
     const [provider, setProvider] = useState(data.provider || "openai");
-    const [model, setModel] = useState(data.model || getDefaultModelForProvider(data.provider || "openai"));
+    const [model, setModel] = useState(
+        data.model || getDefaultModelForProvider(data.provider || "openai")
+    );
     const [prompt, setPrompt] = useState(data.prompt || "");
     const [imageInput, setImageInput] = useState(data.imageInput || "");
     const [temperature, setTemperature] = useState(data.temperature || 0.7);
@@ -33,7 +39,7 @@ export function VisionNodeConfig({ data, onUpdate }: VisionNodeConfigProps) {
             imageInput,
             temperature,
             maxTokens,
-            outputVariable,
+            outputVariable
         });
     }, [operation, provider, model, prompt, imageInput, temperature, maxTokens, outputVariable]);
 
@@ -155,10 +161,7 @@ export function VisionNodeConfig({ data, onUpdate }: VisionNodeConfigProps) {
                     />
                 </FormField>
 
-                <FormField
-                    label="Max Tokens"
-                    description="Maximum length of the response"
-                >
+                <FormField label="Max Tokens" description="Maximum length of the response">
                     <input
                         type="number"
                         value={maxTokens}

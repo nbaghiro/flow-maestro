@@ -14,7 +14,7 @@ import {
     Clock,
     Trash2,
     RefreshCw,
-    Search,
+    Search
 } from "lucide-react";
 
 export function KnowledgeBaseDetail() {
@@ -33,7 +33,7 @@ export function KnowledgeBaseDetail() {
         deleteDoc,
         reprocessDoc,
         query,
-        deleteKB,
+        deleteKB
     } = useKnowledgeBaseStore();
 
     const [showUrlModal, setShowUrlModal] = useState(false);
@@ -129,7 +129,7 @@ export function KnowledgeBaseDetail() {
         setShowSearchResults(true);
         try {
             const results = await query(id, {
-                query: searchQuery,
+                query: searchQuery
             });
             setSearchResults(results);
         } catch (error) {
@@ -317,7 +317,8 @@ export function KnowledgeBaseDetail() {
                                     Search Results
                                     {searchResults.length > 0 && (
                                         <span className="text-sm text-muted-foreground ml-2">
-                                            ({searchResults.length} {searchResults.length === 1 ? 'result' : 'results'})
+                                            ({searchResults.length}{" "}
+                                            {searchResults.length === 1 ? "result" : "results"})
                                         </span>
                                     )}
                                 </h3>
@@ -332,14 +333,17 @@ export function KnowledgeBaseDetail() {
                             {searching ? (
                                 <div className="text-center py-8">
                                     <Loader2 className="w-6 h-6 mx-auto animate-spin text-primary" />
-                                    <p className="text-sm text-muted-foreground mt-2">Searching...</p>
+                                    <p className="text-sm text-muted-foreground mt-2">
+                                        Searching...
+                                    </p>
                                 </div>
                             ) : searchResults.length === 0 ? (
                                 <div className="text-center py-8">
                                     <FileText className="w-12 h-12 mx-auto text-muted-foreground mb-2" />
                                     <p className="text-muted-foreground">No results found</p>
                                     <p className="text-sm text-muted-foreground mt-1">
-                                        Try adjusting your query or lowering the similarity threshold
+                                        Try adjusting your query or lowering the similarity
+                                        threshold
                                     </p>
                                 </div>
                             ) : (
@@ -363,7 +367,8 @@ export function KnowledgeBaseDetail() {
                                                 </div>
                                                 <div className="flex items-center gap-2">
                                                     <div className="text-xs font-medium text-primary">
-                                                        {(result.similarity * 100).toFixed(1)}% match
+                                                        {(result.similarity * 100).toFixed(1)}%
+                                                        match
                                                     </div>
                                                 </div>
                                             </div>
@@ -372,20 +377,21 @@ export function KnowledgeBaseDetail() {
                                                 {result.content}
                                             </div>
 
-                                            {result.metadata && Object.keys(result.metadata).length > 0 && (
-                                                <div className="mt-2 flex flex-wrap gap-2">
-                                                    {result.metadata.page && (
-                                                        <span className="text-xs px-2 py-1 bg-muted rounded">
-                                                            Page {result.metadata.page}
-                                                        </span>
-                                                    )}
-                                                    {result.metadata.section && (
-                                                        <span className="text-xs px-2 py-1 bg-muted rounded">
-                                                            {result.metadata.section}
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            )}
+                                            {result.metadata &&
+                                                Object.keys(result.metadata).length > 0 && (
+                                                    <div className="mt-2 flex flex-wrap gap-2">
+                                                        {result.metadata.page && (
+                                                            <span className="text-xs px-2 py-1 bg-muted rounded">
+                                                                Page {result.metadata.page}
+                                                            </span>
+                                                        )}
+                                                        {result.metadata.section && (
+                                                            <span className="text-xs px-2 py-1 bg-muted rounded">
+                                                                {result.metadata.section}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                )}
                                         </div>
                                     ))}
                                 </div>
@@ -394,8 +400,8 @@ export function KnowledgeBaseDetail() {
                     )}
 
                     <div className="text-xs text-muted-foreground">
-                        <strong>Tip:</strong> Use semantic search to find relevant information across all your documents.
-                        Press Enter to search.
+                        <strong>Tip:</strong> Use semantic search to find relevant information
+                        across all your documents. Press Enter to search.
                     </div>
                 </div>
             </div>
@@ -509,7 +515,9 @@ export function KnowledgeBaseDetail() {
                                     <div className="flex items-center gap-3 ml-4">
                                         <div className="flex items-center gap-2">
                                             {getStatusIcon(doc.status)}
-                                            <span className="text-sm">{getStatusText(doc.status)}</span>
+                                            <span className="text-sm">
+                                                {getStatusText(doc.status)}
+                                            </span>
                                         </div>
 
                                         <div className="flex items-center gap-1">
@@ -607,7 +615,8 @@ export function KnowledgeBaseDetail() {
                     <div className="bg-white rounded-lg p-6 w-full max-w-md">
                         <h2 className="text-lg font-semibold mb-4">Delete Document</h2>
                         <p className="text-muted-foreground mb-6">
-                            Are you sure you want to delete this document? This action cannot be undone and will remove all associated chunks and embeddings.
+                            Are you sure you want to delete this document? This action cannot be
+                            undone and will remove all associated chunks and embeddings.
                         </p>
                         <div className="flex items-center gap-2">
                             <button
@@ -642,7 +651,9 @@ export function KnowledgeBaseDetail() {
                     <div className="bg-white rounded-lg p-6 w-full max-w-md">
                         <h2 className="text-lg font-semibold mb-4">Delete Knowledge Base</h2>
                         <p className="text-muted-foreground mb-6">
-                            Are you sure you want to delete <strong>{currentKB?.name}</strong>? This action cannot be undone and will permanently delete all documents, chunks, and embeddings in this knowledge base.
+                            Are you sure you want to delete <strong>{currentKB?.name}</strong>? This
+                            action cannot be undone and will permanently delete all documents,
+                            chunks, and embeddings in this knowledge base.
                         </p>
                         <div className="flex items-center gap-2">
                             <button

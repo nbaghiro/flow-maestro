@@ -12,7 +12,7 @@ const inputTypes = [
     { value: "number", label: "Number" },
     { value: "boolean", label: "Boolean" },
     { value: "json", label: "JSON" },
-    { value: "file", label: "File" },
+    { value: "file", label: "File" }
 ];
 
 // Common validation patterns
@@ -20,28 +20,28 @@ const validationPresets = {
     email: {
         pattern: "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$",
         label: "Email",
-        description: "Valid email address",
+        description: "Valid email address"
     },
     phone: {
         pattern: "^\\+?[1-9]\\d{1,14}$",
         label: "Phone",
-        description: "International phone number",
+        description: "International phone number"
     },
     url: {
         pattern: "^https?://.*",
         label: "URL",
-        description: "Web URL (http/https)",
+        description: "Web URL (http/https)"
     },
     alphanumeric: {
         pattern: "^[A-Za-z0-9]+$",
         label: "Alphanumeric",
-        description: "Letters and numbers only",
+        description: "Letters and numbers only"
     },
     numbersOnly: {
         pattern: "^\\d+$",
         label: "Numbers Only",
-        description: "Digits only",
-    },
+        description: "Digits only"
+    }
 };
 
 export function InputNodeConfig({ data, onUpdate }: InputNodeConfigProps) {
@@ -62,7 +62,7 @@ export function InputNodeConfig({ data, onUpdate }: InputNodeConfigProps) {
             defaultValue,
             required,
             validation,
-            ...(inputType === "number" && { minValue, maxValue }),
+            ...(inputType === "number" && { minValue, maxValue })
         });
     }, [inputName, inputType, description, defaultValue, required, validation, minValue, maxValue]);
 
@@ -73,10 +73,7 @@ export function InputNodeConfig({ data, onUpdate }: InputNodeConfigProps) {
     return (
         <div>
             <FormSection title="Input Configuration">
-                <FormField
-                    label="Input Name"
-                    description="Variable name for this input"
-                >
+                <FormField label="Input Name" description="Variable name for this input">
                     <input
                         type="text"
                         value={inputName}
@@ -134,8 +131,11 @@ export function InputNodeConfig({ data, onUpdate }: InputNodeConfigProps) {
                         <div className="flex items-start gap-2 text-xs text-muted-foreground">
                             <Info className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
                             <div>
-                                <strong>Checked:</strong> Workflow execution fails if value not provided<br />
-                                <strong>Unchecked:</strong> Workflow uses default value or continues without this input
+                                <strong>Checked:</strong> Workflow execution fails if value not
+                                provided
+                                <br />
+                                <strong>Unchecked:</strong> Workflow uses default value or continues
+                                without this input
                             </div>
                         </div>
                     }
@@ -147,9 +147,7 @@ export function InputNodeConfig({ data, onUpdate }: InputNodeConfigProps) {
                             onChange={(e) => setRequired(e.target.checked)}
                             className="w-4 h-4 rounded border-border text-primary focus:ring-2 focus:ring-primary/20"
                         />
-                        <span className="text-sm font-medium">
-                            This input must be provided
-                        </span>
+                        <span className="text-sm font-medium">This input must be provided</span>
                     </label>
                 </FormField>
             </FormSection>
@@ -193,7 +191,8 @@ export function InputNodeConfig({ data, onUpdate }: InputNodeConfigProps) {
                         {validation && (
                             <div className="px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg">
                                 <p className="text-xs text-blue-800">
-                                    <strong>Pattern:</strong> <code className="font-mono">{validation}</code>
+                                    <strong>Pattern:</strong>{" "}
+                                    <code className="font-mono">{validation}</code>
                                 </p>
                             </div>
                         )}
@@ -204,10 +203,7 @@ export function InputNodeConfig({ data, onUpdate }: InputNodeConfigProps) {
                 {inputType === "number" && (
                     <>
                         <div className="grid grid-cols-2 gap-3">
-                            <FormField
-                                label="Minimum Value"
-                                description="Smallest allowed number"
-                            >
+                            <FormField label="Minimum Value" description="Smallest allowed number">
                                 <input
                                     type="number"
                                     value={minValue}
@@ -217,10 +213,7 @@ export function InputNodeConfig({ data, onUpdate }: InputNodeConfigProps) {
                                 />
                             </FormField>
 
-                            <FormField
-                                label="Maximum Value"
-                                description="Largest allowed number"
-                            >
+                            <FormField label="Maximum Value" description="Largest allowed number">
                                 <input
                                     type="number"
                                     value={maxValue}
@@ -278,7 +271,8 @@ export function InputNodeConfig({ data, onUpdate }: InputNodeConfigProps) {
                 {inputType === "file" && (
                     <div className="px-3 py-2 bg-muted rounded-lg">
                         <p className="text-xs text-muted-foreground">
-                            File inputs accept file uploads. Additional validation can be configured for file types and size limits.
+                            File inputs accept file uploads. Additional validation can be configured
+                            for file types and size limits.
                         </p>
                     </div>
                 )}

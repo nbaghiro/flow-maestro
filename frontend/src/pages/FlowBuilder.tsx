@@ -12,7 +12,7 @@ import { ExecutionPanel } from "../components/ExecutionPanel";
 import { AIGenerateButton } from "../components/AIGenerateButton";
 import { WorkflowSettingsDialog } from "../components/WorkflowSettingsDialog";
 
-type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
+type SaveStatus = "idle" | "saving" | "saved" | "error";
 
 export function FlowBuilder() {
     const { workflowId } = useParams<{ workflowId: string }>();
@@ -21,7 +21,7 @@ export function FlowBuilder() {
     const [workflowDescription, setWorkflowDescription] = useState("");
     const [isLoading, setIsLoading] = useState(true);
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-    const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
+    const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
     const [lastSavedState, setLastSavedState] = useState<string>("");
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const { selectedNode, nodes, edges, aiGenerated, aiPrompt, setAIMetadata } = useWorkflowStore();
@@ -35,21 +35,21 @@ export function FlowBuilder() {
     // Helper function to create a serialized snapshot of the workflow state
     // This mirrors exactly what we save to the backend for accurate comparison
     const getWorkflowStateSnapshot = () => {
-        const nodesSnapshot = nodes.map(node => {
+        const nodesSnapshot = nodes.map((node) => {
             // Extract label and onError from node.data, rest goes into config
             const { label, onError, ...config } = node.data || {};
 
             const nodeData: any = {
                 id: node.id,
-                type: node.type || 'default',
+                type: node.type || "default",
                 name: label || node.id,
                 // Only include non-empty config
                 config: Object.keys(config).length > 0 ? config : {},
                 // Normalize position to only x and y
                 position: {
                     x: node.position.x,
-                    y: node.position.y,
-                },
+                    y: node.position.y
+                }
             };
 
             // Only include onError if it exists and has a strategy
@@ -60,11 +60,11 @@ export function FlowBuilder() {
             return nodeData;
         });
 
-        const edgesSnapshot = edges.map(edge => ({
+        const edgesSnapshot = edges.map((edge) => ({
             id: edge.id,
             source: edge.source,
             target: edge.target,
-            ...(edge.sourceHandle && { sourceHandle: edge.sourceHandle }),
+            ...(edge.sourceHandle && { sourceHandle: edge.sourceHandle })
         }));
 
         // Sort nodes and edges by id for consistent comparison
@@ -74,7 +74,7 @@ export function FlowBuilder() {
         return JSON.stringify({
             name: workflowName,
             nodes: sortedNodes,
-            edges: sortedEdges,
+            edges: sortedEdges
         });
     };
 
@@ -92,7 +92,7 @@ export function FlowBuilder() {
     const logWorkflowStructure = () => {
         // Convert React Flow nodes to backend format (keyed by node id)
         const nodesMap: Record<string, any> = {};
-        nodes.forEach(node => {
+        nodes.forEach((node) => {
             // Extract label and onError from node.data, rest goes into config
             const { label, onError, ...config } = node.data || {};
 
@@ -101,7 +101,7 @@ export function FlowBuilder() {
                 type: node.type || "default",
                 name: label || node.id,
                 config: config,
-                position: node.position,
+                position: node.position
             };
 
             // Only add onError if it exists and has a strategy
@@ -113,22 +113,22 @@ export function FlowBuilder() {
         });
 
         // Find entry point (first Input node or first node)
-        const inputNode = nodes.find(n => n.type === "input");
+        const inputNode = nodes.find((n) => n.type === "input");
         const entryPoint = inputNode?.id || (nodes.length > 0 ? nodes[0].id : "");
 
         const workflowStructure = {
             name: workflowName,
             description: workflowDescription,
             nodes: nodesMap,
-            edges: edges.map(edge => ({
+            edges: edges.map((edge) => ({
                 id: edge.id,
                 source: edge.source,
                 target: edge.target,
-                sourceHandle: edge.sourceHandle,
+                sourceHandle: edge.sourceHandle
             })),
             entryPoint,
             aiGenerated: aiGenerated,
-            aiPrompt: aiPrompt,
+            aiPrompt: aiPrompt
         };
 
         return workflowStructure;
@@ -154,10 +154,7 @@ export function FlowBuilder() {
                 setWorkflowDescription(response.data.description || "");
 
                 // Load AI metadata
-                setAIMetadata(
-                    response.data.ai_generated || false,
-                    response.data.ai_prompt || null
-                );
+                setAIMetadata(response.data.ai_generated || false, response.data.ai_prompt || null);
 
                 // Load workflow definition (nodes, edges) into the canvas
                 if (response.data.definition) {
@@ -165,18 +162,20 @@ export function FlowBuilder() {
 
                     // Convert backend nodes format to React Flow format
                     if (definition.nodes && Object.keys(definition.nodes).length > 0) {
-                        const flowNodes = Object.entries(definition.nodes).map(([id, node]: [string, any]) => {
-                            return {
-                                id,
-                                type: node.type,
-                                position: node.position,
-                                data: {
-                                    label: node.name,
-                                    ...node.config,
-                                    onError: node.onError,
-                                },
-                            };
-                        });
+                        const flowNodes = Object.entries(definition.nodes).map(
+                            ([id, node]: [string, any]) => {
+                                return {
+                                    id,
+                                    type: node.type,
+                                    position: node.position,
+                                    data: {
+                                        label: node.name,
+                                        ...node.config,
+                                        onError: node.onError
+                                    }
+                                };
+                            }
+                        );
 
                         // Set nodes in the store
                         useWorkflowStore.getState().setNodes(flowNodes);
@@ -197,7 +196,11 @@ export function FlowBuilder() {
 
     // Set initial saved state after workflow is loaded
     useEffect(() => {
-        if (!isLoading && lastSavedState === "" && (nodes.length > 0 || workflowName !== "Untitled Workflow")) {
+        if (
+            !isLoading &&
+            lastSavedState === "" &&
+            (nodes.length > 0 || workflowName !== "Untitled Workflow")
+        ) {
             const initialState = getWorkflowStateSnapshot();
             setLastSavedState(initialState);
         }
@@ -206,21 +209,21 @@ export function FlowBuilder() {
     const handleSave = async () => {
         if (!workflowId) return;
 
-        setSaveStatus('saving');
+        setSaveStatus("saving");
 
         try {
             // Convert React Flow nodes to backend format (keyed by node id)
             const nodesMap: Record<string, any> = {};
-            nodes.forEach(node => {
+            nodes.forEach((node) => {
                 // Extract label and onError from node.data, rest goes into config
                 const { label, onError, ...config } = node.data || {};
 
                 // Only include onError if it has a valid strategy
                 const nodeData: any = {
-                    type: node.type || 'default',
+                    type: node.type || "default",
                     name: label || node.id,
                     config: config,
-                    position: node.position,
+                    position: node.position
                 };
 
                 // Only add onError if it exists and has a strategy
@@ -232,42 +235,42 @@ export function FlowBuilder() {
             });
 
             // Find entry point (first Input node or first node)
-            const inputNode = nodes.find(n => n.type === 'input');
-            const entryPoint = inputNode?.id || (nodes.length > 0 ? nodes[0].id : '');
+            const inputNode = nodes.find((n) => n.type === "input");
+            const entryPoint = inputNode?.id || (nodes.length > 0 ? nodes[0].id : "");
 
             // Don't save if there are no nodes
             if (!entryPoint || nodes.length === 0) {
-                console.error('Cannot save workflow with no nodes');
-                setSaveStatus('error');
-                setTimeout(() => setSaveStatus('idle'), 3000);
+                console.error("Cannot save workflow with no nodes");
+                setSaveStatus("error");
+                setTimeout(() => setSaveStatus("idle"), 3000);
                 return;
             }
 
             const workflowDefinition = {
                 name: workflowName,
                 nodes: nodesMap,
-                edges: edges.map(edge => ({
+                edges: edges.map((edge) => ({
                     id: edge.id,
                     source: edge.source,
                     target: edge.target,
-                    sourceHandle: edge.sourceHandle,
+                    sourceHandle: edge.sourceHandle
                 })),
-                entryPoint,
+                entryPoint
             };
 
-            console.log('Saving workflow:', {
+            console.log("Saving workflow:", {
                 name: workflowName,
                 nodesCount: Object.keys(nodesMap).length,
                 edgesCount: edges.length,
-                entryPoint,
+                entryPoint
             });
 
-            console.log('Full workflow definition:', JSON.stringify(workflowDefinition, null, 2));
+            console.log("Full workflow definition:", JSON.stringify(workflowDefinition, null, 2));
 
             // Build update payload, only including non-empty fields
             const updatePayload: any = {
                 name: workflowName,
-                definition: workflowDefinition,
+                definition: workflowDefinition
             };
 
             // Only include description if it's not empty
@@ -285,25 +288,25 @@ export function FlowBuilder() {
 
             await updateWorkflow(workflowId, updatePayload);
 
-            setSaveStatus('saved');
+            setSaveStatus("saved");
 
             // Update saved state snapshot
             const savedState = getWorkflowStateSnapshot();
             setLastSavedState(savedState);
 
-            console.log('Workflow saved successfully');
+            console.log("Workflow saved successfully");
 
             // Reset to idle after 2 seconds
             setTimeout(() => {
-                setSaveStatus('idle');
+                setSaveStatus("idle");
             }, 2000);
         } catch (error: any) {
             console.error("Failed to save workflow:", error);
-            setSaveStatus('error');
+            setSaveStatus("error");
 
             // Reset to idle after 3 seconds
             setTimeout(() => {
-                setSaveStatus('idle');
+                setSaveStatus("idle");
             }, 3000);
         }
     };
@@ -319,14 +322,14 @@ export function FlowBuilder() {
             // Update backend
             await updateWorkflow(workflowId, {
                 name,
-                description,
+                description
             });
 
             // Update local state
             setWorkflowName(name);
             setWorkflowDescription(description);
         } catch (error) {
-            console.error('Failed to save workflow settings:', error);
+            console.error("Failed to save workflow settings:", error);
             // Re-throw so the dialog can display the error
             throw error;
         }
@@ -379,7 +382,9 @@ export function FlowBuilder() {
                     <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40">
                         <div className="flex items-center gap-2">
                             <AIGenerateButton />
-                            {workflowId && <ExecutionPanel workflowId={workflowId} renderButtonOnly />}
+                            {workflowId && (
+                                <ExecutionPanel workflowId={workflowId} renderButtonOnly />
+                            )}
                         </div>
                     </div>
 

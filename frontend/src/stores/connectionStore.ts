@@ -10,7 +10,7 @@ import {
     discoverMCPTools,
     refreshMCPTools,
     CreateConnectionInput,
-    MCPDiscoveryRequest,
+    MCPDiscoveryRequest
 } from "../lib/api";
 
 interface ConnectionStore {
@@ -52,9 +52,8 @@ export const useConnectionStore = create<ConnectionStore>((set, get) => ({
             }
         } catch (error) {
             set({
-                error:
-                    error instanceof Error ? error.message : "Failed to fetch connections",
-                loading: false,
+                error: error instanceof Error ? error.message : "Failed to fetch connections",
+                loading: false
             });
         }
     },
@@ -66,16 +65,15 @@ export const useConnectionStore = create<ConnectionStore>((set, get) => ({
             if (response.success && response.data) {
                 set((state) => ({
                     connections: [...state.connections, response.data],
-                    loading: false,
+                    loading: false
                 }));
                 return response.data;
             }
             throw new Error("Failed to create connection");
         } catch (error) {
             set({
-                error:
-                    error instanceof Error ? error.message : "Failed to create connection",
-                loading: false,
+                error: error instanceof Error ? error.message : "Failed to create connection",
+                loading: false
             });
             throw error;
         }
@@ -102,10 +100,10 @@ export const useConnectionStore = create<ConnectionStore>((set, get) => ({
                             ? {
                                   ...conn,
                                   status: newStatus,
-                                  last_tested_at: new Date().toISOString(),
+                                  last_tested_at: new Date().toISOString()
                               }
                             : conn
-                    ),
+                    )
                 }));
                 return (
                     typeof testResult === "object" &&
@@ -141,14 +139,13 @@ export const useConnectionStore = create<ConnectionStore>((set, get) => ({
                     connections: state.connections.map((conn) =>
                         conn.id === id ? response.data : conn
                     ),
-                    loading: false,
+                    loading: false
                 }));
             }
         } catch (error) {
             set({
-                error:
-                    error instanceof Error ? error.message : "Failed to update connection",
-                loading: false,
+                error: error instanceof Error ? error.message : "Failed to update connection",
+                loading: false
             });
             throw error;
         }
@@ -160,13 +157,12 @@ export const useConnectionStore = create<ConnectionStore>((set, get) => ({
             await deleteConnection(id);
             set((state) => ({
                 connections: state.connections.filter((conn) => conn.id !== id),
-                loading: false,
+                loading: false
             }));
         } catch (error) {
             set({
-                error:
-                    error instanceof Error ? error.message : "Failed to delete connection",
-                loading: false,
+                error: error instanceof Error ? error.message : "Failed to delete connection",
+                loading: false
             });
             throw error;
         }
@@ -186,14 +182,13 @@ export const useConnectionStore = create<ConnectionStore>((set, get) => ({
             if (response.success && response.data) {
                 return {
                     tools: response.data.tools,
-                    server_info: response.data.server_info,
+                    server_info: response.data.server_info
                 };
             }
             throw new Error("Failed to discover MCP tools");
         } catch (error) {
             set({
-                error:
-                    error instanceof Error ? error.message : "Failed to discover MCP tools",
+                error: error instanceof Error ? error.message : "Failed to discover MCP tools"
             });
             throw error;
         }
@@ -207,24 +202,19 @@ export const useConnectionStore = create<ConnectionStore>((set, get) => ({
                 // Update the connection with refreshed tools
                 set((state) => ({
                     connections: state.connections.map((conn) =>
-                        conn.id === id
-                            ? { ...conn, mcp_tools: response.data.tools }
-                            : conn
+                        conn.id === id ? { ...conn, mcp_tools: response.data.tools } : conn
                     ),
-                    loading: false,
+                    loading: false
                 }));
             }
         } catch (error) {
             set({
-                error:
-                    error instanceof Error
-                        ? error.message
-                        : "Failed to refresh MCP tools",
-                loading: false,
+                error: error instanceof Error ? error.message : "Failed to refresh MCP tools",
+                loading: false
             });
             throw error;
         }
     },
 
-    clearError: () => set({ error: null }),
+    clearError: () => set({ error: null })
 }));

@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState } from "react";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
 interface OAuthProvider {
     name: string;
@@ -24,7 +24,7 @@ interface OAuthConnection {
 }
 
 interface OAuthMessageData {
-    type: 'oauth_success' | 'oauth_error';
+    type: "oauth_success" | "oauth_error";
     provider: string;
     connection?: OAuthConnection;
     error?: string;
@@ -47,14 +47,14 @@ export function useOAuth() {
      * Fetch available OAuth providers
      */
     const fetchProviders = async () => {
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem("token");
         if (!token) return;
 
         try {
             const response = await fetch(`${API_BASE_URL}/api/oauth/providers`, {
                 headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
+                    Authorization: `Bearer ${token}`
+                }
             });
 
             const data = await response.json();
@@ -62,7 +62,7 @@ export function useOAuth() {
                 setProviders(data.data);
             }
         } catch (error) {
-            console.error('Failed to fetch OAuth providers:', error);
+            console.error("Failed to fetch OAuth providers:", error);
         }
     };
 
@@ -76,25 +76,22 @@ export function useOAuth() {
         setLoading(true);
 
         try {
-            const token = localStorage.getItem('token');
+            const token = localStorage.getItem("token");
             if (!token) {
-                throw new Error('Not authenticated');
+                throw new Error("Not authenticated");
             }
 
             // Get authorization URL from backend
-            const response = await fetch(
-                `${API_BASE_URL}/api/oauth/${provider}/authorize`,
-                {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                    },
+            const response = await fetch(`${API_BASE_URL}/api/oauth/${provider}/authorize`, {
+                headers: {
+                    Authorization: `Bearer ${token}`
                 }
-            );
+            });
 
             const data = await response.json();
 
             if (!data.success || !data.data?.authUrl) {
-                throw new Error(data.error || 'Failed to get authorization URL');
+                throw new Error(data.error || "Failed to get authorization URL");
             }
 
             const authUrl = data.data.authUrl;
@@ -103,7 +100,7 @@ export function useOAuth() {
             const popup = openOAuthPopup(authUrl, provider);
 
             if (!popup) {
-                throw new Error('Failed to open popup window');
+                throw new Error("Failed to open popup window");
             }
 
             // Wait for callback message
@@ -135,16 +132,16 @@ export function useOAuth() {
     /**
      * Wait for OAuth callback message from popup
      */
-    const waitForOAuthCallback = (
-        popup: Window,
-        provider: string
-    ): Promise<OAuthConnection> => {
+    const waitForOAuthCallback = (popup: Window, provider: string): Promise<OAuthConnection> => {
         return new Promise((resolve, reject) => {
             // Set timeout (5 minutes)
-            const timeout = setTimeout(() => {
-                cleanup();
-                reject(new Error('OAuth flow timed out'));
-            }, 5 * 60 * 1000);
+            const timeout = setTimeout(
+                () => {
+                    cleanup();
+                    reject(new Error("OAuth flow timed out"));
+                },
+                5 * 60 * 1000
+            );
 
             // Listen for messages from popup
             const messageHandler = (event: MessageEvent) => {
@@ -158,12 +155,12 @@ export function useOAuth() {
                     return;
                 }
 
-                if (data.type === 'oauth_success' && data.connection) {
+                if (data.type === "oauth_success" && data.connection) {
                     cleanup();
                     resolve(data.connection);
-                } else if (data.type === 'oauth_error') {
+                } else if (data.type === "oauth_error") {
                     cleanup();
-                    reject(new Error(data.error || 'OAuth authorization failed'));
+                    reject(new Error(data.error || "OAuth authorization failed"));
                 }
             };
 
@@ -171,7 +168,7 @@ export function useOAuth() {
             const checkPopupClosed = setInterval(() => {
                 if (popup.closed) {
                     cleanup();
-                    reject(new Error('OAuth popup was closed'));
+                    reject(new Error("OAuth popup was closed"));
                 }
             }, 500);
 
@@ -179,7 +176,7 @@ export function useOAuth() {
             const cleanup = () => {
                 clearTimeout(timeout);
                 clearInterval(checkPopupClosed);
-                window.removeEventListener('message', messageHandler);
+                window.removeEventListener("message", messageHandler);
                 setLoading(false);
 
                 // Close popup if still open
@@ -189,7 +186,7 @@ export function useOAuth() {
             };
 
             // Register message listener
-            window.addEventListener('message', messageHandler);
+            window.addEventListener("message", messageHandler);
         });
     };
 
@@ -197,25 +194,25 @@ export function useOAuth() {
      * Revoke an OAuth connection
      */
     const revokeConnection = async (provider: string, connectionId: string): Promise<void> => {
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem("token");
         if (!token) {
-            throw new Error('Not authenticated');
+            throw new Error("Not authenticated");
         }
 
         const response = await fetch(
             `${API_BASE_URL}/api/oauth/${provider}/revoke/${connectionId}`,
             {
-                method: 'POST',
+                method: "POST",
                 headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
+                    Authorization: `Bearer ${token}`
+                }
             }
         );
 
         const data = await response.json();
 
         if (!data.success) {
-            throw new Error(data.error || 'Failed to revoke connection');
+            throw new Error(data.error || "Failed to revoke connection");
         }
     };
 
@@ -223,25 +220,25 @@ export function useOAuth() {
      * Manually refresh a connection's token
      */
     const refreshConnection = async (provider: string, connectionId: string): Promise<void> => {
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem("token");
         if (!token) {
-            throw new Error('Not authenticated');
+            throw new Error("Not authenticated");
         }
 
         const response = await fetch(
             `${API_BASE_URL}/api/oauth/${provider}/refresh/${connectionId}`,
             {
-                method: 'POST',
+                method: "POST",
                 headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
+                    Authorization: `Bearer ${token}`
+                }
             }
         );
 
         const data = await response.json();
 
         if (!data.success) {
-            throw new Error(data.error || 'Failed to refresh connection');
+            throw new Error(data.error || "Failed to refresh connection");
         }
     };
 
@@ -251,6 +248,6 @@ export function useOAuth() {
         fetchProviders,
         initiateOAuth,
         revokeConnection,
-        refreshConnection,
+        refreshConnection
     };
 }

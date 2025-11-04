@@ -13,27 +13,28 @@ import {
 } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { useState } from "react";
+import { Tooltip } from "../Tooltip";
 
 interface NavItem {
     icon: any;
     label: string;
     path: string;
     badge?: string;
-    section?: 'primary' | 'settings';
+    section?: "primary" | "settings";
 }
 
 const navItems: NavItem[] = [
     // Primary navigation
-    { icon: LayoutGrid, label: 'Workflows', path: '/', section: 'primary' },
-    { icon: Bot, label: 'Agents', path: '/agents', section: 'primary' },
-    { icon: Plug, label: 'Connections', path: '/connections', section: 'primary' },
-    { icon: BookOpen, label: 'Knowledge Bases', path: '/knowledge-bases', section: 'primary' },
-    { icon: FileText, label: 'Templates', path: '/templates', badge: 'Soon', section: 'primary' },
+    { icon: LayoutGrid, label: "Workflows", path: "/", section: "primary" },
+    { icon: Bot, label: "Agents", path: "/agents", section: "primary" },
+    { icon: Plug, label: "Connections", path: "/connections", section: "primary" },
+    { icon: BookOpen, label: "Knowledge Bases", path: "/knowledge-bases", section: "primary" },
+    { icon: FileText, label: "Templates", path: "/templates", badge: "Soon", section: "primary" },
 
     // Settings navigation
-    { icon: Settings, label: 'Settings', path: '/settings', section: 'settings' },
-    { icon: User, label: 'Account', path: '/account', section: 'settings' },
-    { icon: Building, label: 'Workspace', path: '/workspace', badge: 'Pro', section: 'settings' },
+    { icon: Settings, label: "Settings", path: "/settings", section: "settings" },
+    { icon: User, label: "Account", path: "/account", section: "settings" },
+    { icon: Building, label: "Workspace", path: "/workspace", badge: "Pro", section: "settings" }
 ];
 
 export function AppSidebar() {
@@ -41,19 +42,19 @@ export function AppSidebar() {
     const [isCollapsed, setIsCollapsed] = useState(false);
 
     const isActive = (path: string) => {
-        if (path === '/') {
-            return location.pathname === '/';
+        if (path === "/") {
+            return location.pathname === "/";
         }
         return location.pathname.startsWith(path);
     };
 
-    const primaryItems = navItems.filter(item => item.section === 'primary');
-    const settingsItems = navItems.filter(item => item.section === 'settings');
+    const primaryItems = navItems.filter((item) => item.section === "primary");
+    const settingsItems = navItems.filter((item) => item.section === "settings");
 
     return (
         <aside
             className={cn(
-                "h-screen bg-background border-r border-border flex flex-col transition-all duration-300",
+                "h-screen bg-background border-r border-border flex flex-col transition-all duration-300 overflow-x-hidden",
                 isCollapsed ? "w-16" : "w-60"
             )}
         >
@@ -104,28 +105,31 @@ export function AppSidebar() {
                     {primaryItems.map((item) => {
                         const Icon = item.icon;
                         const active = isActive(item.path);
+                        const tooltipContent = item.badge
+                            ? `${item.label} (${item.badge})`
+                            : item.label;
 
-                        return (
+                        const linkContent = (
                             <Link
-                                key={item.path}
                                 to={item.path}
                                 className={cn(
-                                    "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all relative group",
+                                    "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all relative",
                                     active
                                         ? "bg-primary/10 text-primary"
                                         : "text-muted-foreground hover:bg-muted hover:text-foreground"
                                 )}
-                                title={isCollapsed ? item.label : undefined}
                             >
                                 {/* Active indicator */}
                                 {active && (
                                     <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-primary rounded-r-full" />
                                 )}
 
-                                <Icon className={cn(
-                                    "w-5 h-5 flex-shrink-0",
-                                    isCollapsed && "mx-auto"
-                                )} />
+                                <Icon
+                                    className={cn(
+                                        "w-5 h-5 flex-shrink-0",
+                                        isCollapsed && "mx-auto"
+                                    )}
+                                />
 
                                 {!isCollapsed && (
                                     <>
@@ -137,15 +141,15 @@ export function AppSidebar() {
                                         )}
                                     </>
                                 )}
-
-                                {/* Tooltip for collapsed state */}
-                                {isCollapsed && (
-                                    <div className="absolute left-full ml-2 px-2 py-1 bg-popover text-popover-foreground text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap">
-                                        {item.label}
-                                        {item.badge && ` (${item.badge})`}
-                                    </div>
-                                )}
                             </Link>
+                        );
+
+                        return isCollapsed ? (
+                            <Tooltip key={item.path} content={tooltipContent} delay={200}>
+                                {linkContent}
+                            </Tooltip>
+                        ) : (
+                            <div key={item.path}>{linkContent}</div>
                         );
                     })}
                 </div>
@@ -157,27 +161,30 @@ export function AppSidebar() {
                     {settingsItems.map((item) => {
                         const Icon = item.icon;
                         const active = isActive(item.path);
+                        const tooltipContent = item.badge
+                            ? `${item.label} (${item.badge})`
+                            : item.label;
 
-                        return (
+                        const linkContent = (
                             <Link
-                                key={item.path}
                                 to={item.path}
                                 className={cn(
-                                    "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all relative group",
+                                    "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all relative",
                                     active
                                         ? "bg-primary/10 text-primary"
                                         : "text-muted-foreground hover:bg-muted hover:text-foreground"
                                 )}
-                                title={isCollapsed ? item.label : undefined}
                             >
                                 {active && (
                                     <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-primary rounded-r-full" />
                                 )}
 
-                                <Icon className={cn(
-                                    "w-5 h-5 flex-shrink-0",
-                                    isCollapsed && "mx-auto"
-                                )} />
+                                <Icon
+                                    className={cn(
+                                        "w-5 h-5 flex-shrink-0",
+                                        isCollapsed && "mx-auto"
+                                    )}
+                                />
 
                                 {!isCollapsed && (
                                     <>
@@ -189,14 +196,15 @@ export function AppSidebar() {
                                         )}
                                     </>
                                 )}
-
-                                {isCollapsed && (
-                                    <div className="absolute left-full ml-2 px-2 py-1 bg-popover text-popover-foreground text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap">
-                                        {item.label}
-                                        {item.badge && ` (${item.badge})`}
-                                    </div>
-                                )}
                             </Link>
+                        );
+
+                        return isCollapsed ? (
+                            <Tooltip key={item.path} content={tooltipContent} delay={200}>
+                                {linkContent}
+                            </Tooltip>
+                        ) : (
+                            <div key={item.path}>{linkContent}</div>
                         );
                     })}
                 </div>

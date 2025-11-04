@@ -6,7 +6,15 @@
 import { useRef, useEffect, useState } from "react";
 import { useTriggerStore } from "../stores/triggerStore";
 import { useWorkflowStore } from "../stores/workflowStore";
-import { ChevronLeft, ChevronRight, X, Zap, Play, History as HistoryIcon, Plus } from "lucide-react";
+import {
+    ChevronLeft,
+    ChevronRight,
+    X,
+    Zap,
+    Play,
+    History as HistoryIcon,
+    Plus
+} from "lucide-react";
 import { cn } from "../lib/utils";
 import { ExecutionPanelContent } from "./execution/ExecutionPanelContent";
 
@@ -22,15 +30,13 @@ const DEFAULT_WIDTH = 500;
 
 type TabType = "triggers" | "execution" | "history";
 
-export function ExecutionPanel({ workflowId, renderButtonOnly, renderPanelOnly }: ExecutionPanelProps) {
-    const {
-        isDrawerOpen,
-        drawerWidth,
-        setDrawerOpen,
-        setDrawerWidth,
-        triggers,
-        clearTriggers,
-    } = useTriggerStore();
+export function ExecutionPanel({
+    workflowId,
+    renderButtonOnly,
+    renderPanelOnly
+}: ExecutionPanelProps) {
+    const { isDrawerOpen, drawerWidth, setDrawerOpen, setDrawerWidth, triggers, clearTriggers } =
+        useTriggerStore();
 
     const { selectNode, selectedNode, currentExecution, clearExecution } = useWorkflowStore();
 
@@ -115,7 +121,7 @@ export function ExecutionPanel({ workflowId, renderButtonOnly, renderPanelOnly }
     };
 
     // Get enabled trigger count
-    const enabledCount = triggers.filter(t => t.enabled).length;
+    const enabledCount = triggers.filter((t) => t.enabled).length;
 
     // Render tabs
     const renderTabs = () => (
@@ -197,12 +203,14 @@ export function ExecutionPanel({ workflowId, renderButtonOnly, renderPanelOnly }
                     <Zap className="w-4 h-4" />
                     <span className="text-sm font-medium">Execution</span>
                     {enabledCount > 0 && (
-                        <span className={cn(
-                            "text-xs px-2 py-0.5 rounded-full",
-                            isDrawerOpen
-                                ? "bg-primary-foreground/20 text-primary-foreground"
-                                : "bg-primary/10 text-primary"
-                        )}>
+                        <span
+                            className={cn(
+                                "text-xs px-2 py-0.5 rounded-full",
+                                isDrawerOpen
+                                    ? "bg-primary-foreground/20 text-primary-foreground"
+                                    : "bg-primary/10 text-primary"
+                            )}
+                        >
                             {enabledCount}
                         </span>
                     )}
@@ -292,12 +300,14 @@ export function ExecutionPanel({ workflowId, renderButtonOnly, renderPanelOnly }
                         <Zap className="w-4 h-4" />
                         <span className="text-sm font-medium">Execution</span>
                         {enabledCount > 0 && (
-                            <span className={cn(
-                                "text-xs px-2 py-0.5 rounded-full",
-                                isDrawerOpen
-                                    ? "bg-primary-foreground/20 text-primary-foreground"
-                                    : "bg-primary/10 text-primary"
-                            )}>
+                            <span
+                                className={cn(
+                                    "text-xs px-2 py-0.5 rounded-full",
+                                    isDrawerOpen
+                                        ? "bg-primary-foreground/20 text-primary-foreground"
+                                        : "bg-primary/10 text-primary"
+                                )}
+                            >
                                 {enabledCount}
                             </span>
                         )}

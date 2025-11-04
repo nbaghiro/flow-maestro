@@ -20,7 +20,7 @@ export function VariableDialog({
     onOpenChange,
     onConfirm,
     title = "Add Variable",
-    description = "Enter a name and initial value for the variable",
+    description = "Enter a name and initial value for the variable"
 }: VariableDialogProps) {
     const [variableName, setVariableName] = useState("");
     const [initialValue, setInitialValue] = useState("");
@@ -37,7 +37,9 @@ export function VariableDialog({
         }
 
         if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(variableName)) {
-            setError("Variable name must start with a letter or underscore and contain only letters, numbers, and underscores");
+            setError(
+                "Variable name must start with a letter or underscore and contain only letters, numbers, and underscores"
+            );
             return;
         }
 
@@ -80,9 +82,7 @@ export function VariableDialog({
                     {/* Header */}
                     <div className="flex items-start justify-between mb-4">
                         <div>
-                            <Dialog.Title className="text-lg font-semibold">
-                                {title}
-                            </Dialog.Title>
+                            <Dialog.Title className="text-lg font-semibold">{title}</Dialog.Title>
                             <Dialog.Description className="text-sm text-muted-foreground mt-1">
                                 {description}
                             </Dialog.Description>
@@ -122,9 +122,7 @@ export function VariableDialog({
 
                         {/* Value Type */}
                         <div>
-                            <label className="block text-sm font-medium mb-1.5">
-                                Value Type
-                            </label>
+                            <label className="block text-sm font-medium mb-1.5">Value Type</label>
                             <select
                                 value={valueType}
                                 onChange={(e) => {
@@ -161,11 +159,7 @@ export function VariableDialog({
                                         setInitialValue(e.target.value);
                                         setError("");
                                     }}
-                                    placeholder={
-                                        valueType === "number"
-                                            ? "0"
-                                            : "Initial value..."
-                                    }
+                                    placeholder={valueType === "number" ? "0" : "Initial value..."}
                                     className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary font-mono"
                                 />
                             )}

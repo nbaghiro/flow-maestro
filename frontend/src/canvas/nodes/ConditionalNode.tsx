@@ -35,9 +35,13 @@ function ConditionalNode({ data, selected }: NodeProps<ConditionalNodeData>) {
 
         return (
             <div className="text-xs font-mono bg-muted px-2.5 py-1.5 rounded border border-border">
-                <span className="truncate inline-block max-w-[80px] align-bottom">{displayLeft}</span>
-                {" "}<span className="text-primary font-semibold">{operator}</span>{" "}
-                <span className="truncate inline-block max-w-[80px] align-bottom">{displayRight}</span>
+                <span className="truncate inline-block max-w-[80px] align-bottom">
+                    {displayLeft}
+                </span>{" "}
+                <span className="text-primary font-semibold">{operator}</span>{" "}
+                <span className="truncate inline-block max-w-[80px] align-bottom">
+                    {displayRight}
+                </span>
             </div>
         );
     };

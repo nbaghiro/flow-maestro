@@ -7,12 +7,8 @@ import { useWorkflowStore } from "../stores/workflowStore";
  * This hook should be called once at the app level to connect events to the store
  */
 export function useExecutionEventHandlers() {
-    const {
-        updateNodeState,
-        updateExecutionStatus,
-        addExecutionLog,
-        updateVariable,
-    } = useWorkflowStore();
+    const { updateNodeState, updateExecutionStatus, addExecutionLog, updateVariable } =
+        useWorkflowStore();
 
     useEffect(() => {
         // Execution lifecycle events
@@ -21,7 +17,7 @@ export function useExecutionEventHandlers() {
             addExecutionLog({
                 level: "info",
                 message: `Workflow started: ${event.workflowName} (${event.totalNodes} nodes)`,
-                timestamp: new Date(event.timestamp),
+                timestamp: new Date(event.timestamp)
             });
         };
 
@@ -30,7 +26,7 @@ export function useExecutionEventHandlers() {
             addExecutionLog({
                 level: "info",
                 message: `Progress: ${event.completed}/${event.total} nodes (${event.percentage}%)`,
-                timestamp: new Date(event.timestamp),
+                timestamp: new Date(event.timestamp)
             });
         };
 
@@ -40,7 +36,7 @@ export function useExecutionEventHandlers() {
             addExecutionLog({
                 level: "success",
                 message: `Workflow completed successfully in ${event.duration}ms`,
-                timestamp: new Date(event.timestamp),
+                timestamp: new Date(event.timestamp)
             });
         };
 
@@ -50,7 +46,7 @@ export function useExecutionEventHandlers() {
             addExecutionLog({
                 level: "error",
                 message: `Workflow failed: ${event.error}`,
-                timestamp: new Date(event.timestamp),
+                timestamp: new Date(event.timestamp)
             });
         };
 
@@ -59,13 +55,13 @@ export function useExecutionEventHandlers() {
             console.log("[WS] Node started:", event);
             updateNodeState(event.nodeId, {
                 status: "running",
-                startedAt: new Date(event.timestamp),
+                startedAt: new Date(event.timestamp)
             });
             addExecutionLog({
                 level: "info",
                 message: `Node started: ${event.nodeName} (${event.nodeType})`,
                 nodeId: event.nodeId,
-                timestamp: new Date(event.timestamp),
+                timestamp: new Date(event.timestamp)
             });
         };
 
@@ -75,13 +71,13 @@ export function useExecutionEventHandlers() {
                 status: "success",
                 completedAt: new Date(event.timestamp),
                 output: event.output,
-                duration: event.duration,
+                duration: event.duration
             });
             addExecutionLog({
                 level: "success",
                 message: `Node completed in ${event.duration}ms`,
                 nodeId: event.nodeId,
-                timestamp: new Date(event.timestamp),
+                timestamp: new Date(event.timestamp)
             });
         };
 
@@ -90,13 +86,13 @@ export function useExecutionEventHandlers() {
             updateNodeState(event.nodeId, {
                 status: "error",
                 completedAt: new Date(event.timestamp),
-                error: event.error,
+                error: event.error
             });
             addExecutionLog({
                 level: "error",
                 message: `Node failed: ${event.error}`,
                 nodeId: event.nodeId,
-                timestamp: new Date(event.timestamp),
+                timestamp: new Date(event.timestamp)
             });
         };
 
@@ -106,7 +102,7 @@ export function useExecutionEventHandlers() {
                 level: "warning",
                 message: `Retrying node (attempt ${event.attempt}): ${event.error}`,
                 nodeId: event.nodeId,
-                timestamp: new Date(event.timestamp),
+                timestamp: new Date(event.timestamp)
             });
         };
 

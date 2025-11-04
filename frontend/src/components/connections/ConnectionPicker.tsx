@@ -19,24 +19,24 @@ interface ConnectionPickerProps {
 const methodBadgeConfig: Record<ConnectionMethod, { label: string; className: string }> = {
     api_key: {
         label: "API Key",
-        className: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+        className: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
     },
     oauth2: {
         label: "OAuth",
-        className: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
+        className: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400"
     },
     mcp: {
         label: "MCP",
-        className: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400",
+        className: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400"
     },
     basic_auth: {
         label: "Basic Auth",
-        className: "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400",
+        className: "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400"
     },
     custom: {
         label: "Custom",
-        className: "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400",
-    },
+        className: "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400"
+    }
 };
 
 export function ConnectionPicker({
@@ -47,7 +47,7 @@ export function ConnectionPicker({
     description,
     required = false,
     connectionMethod,
-    allowedMethods,
+    allowedMethods
 }: ConnectionPickerProps) {
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
     const { connections, fetchConnections } = useConnectionStore();
@@ -86,7 +86,7 @@ export function ConnectionPicker({
             notion: "Notion",
             filesystem: "Filesystem",
             postgres: "PostgreSQL",
-            mongodb: "MongoDB",
+            mongodb: "MongoDB"
         };
         return names[provider] || provider;
     };
@@ -174,8 +174,8 @@ export function ConnectionPicker({
                         <div className="flex items-start gap-2 p-2 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded text-xs text-yellow-800 dark:text-yellow-400">
                             <AlertCircle className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
                             <span>
-                                This connection has status: {selectedConnection.status}. Please
-                                test it in the Connections page.
+                                This connection has status: {selectedConnection.status}. Please test
+                                it in the Connections page.
                             </span>
                         </div>
                     )}

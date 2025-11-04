@@ -20,7 +20,7 @@ export function NodeExecutionModal({
     nodeName,
     executionState,
     onClose,
-    nodePosition,
+    nodePosition
 }: NodeExecutionModalProps) {
     // Calculate modal position
     const getModalStyle = (): React.CSSProperties => {
@@ -38,7 +38,7 @@ export function NodeExecutionModal({
             position: "absolute",
             left: `${nodePosition.x - modalWidth / 2}px`,
             top: `${nodePosition.y - modalHeight - offsetY}px`,
-            transform: "none",
+            transform: "none"
         };
     };
 
@@ -50,35 +50,35 @@ export function NodeExecutionModal({
                     icon: <Clock className="w-5 h-5" />,
                     color: "text-yellow-500",
                     bg: "bg-yellow-50 dark:bg-yellow-900/20",
-                    label: "Pending",
+                    label: "Pending"
                 };
             case "running":
                 return {
                     icon: <Clock className="w-5 h-5 animate-spin" />,
                     color: "text-blue-500",
                     bg: "bg-blue-50 dark:bg-blue-900/20",
-                    label: "Running",
+                    label: "Running"
                 };
             case "success":
                 return {
                     icon: <CheckCircle2 className="w-5 h-5" />,
                     color: "text-green-500",
                     bg: "bg-green-50 dark:bg-green-900/20",
-                    label: "Success",
+                    label: "Success"
                 };
             case "error":
                 return {
                     icon: <XCircle className="w-5 h-5" />,
                     color: "text-red-500",
                     bg: "bg-red-50 dark:bg-red-900/20",
-                    label: "Error",
+                    label: "Error"
                 };
             default:
                 return {
                     icon: <AlertCircle className="w-5 h-5" />,
                     color: "text-gray-500",
                     bg: "bg-gray-50 dark:bg-gray-900/20",
-                    label: "Idle",
+                    label: "Idle"
                 };
         }
     };
@@ -102,16 +102,15 @@ export function NodeExecutionModal({
     return (
         <>
             {/* Backdrop */}
-            <div
-                className="fixed inset-0 bg-black/50 z-50"
-                onClick={onClose}
-            />
+            <div className="fixed inset-0 bg-black/50 z-50" onClick={onClose} />
 
             {/* Modal */}
-            <div className={cn(
-                "fixed z-50 p-4 pointer-events-none",
-                nodePosition ? "inset-0" : "inset-0 flex items-center justify-center"
-            )}>
+            <div
+                className={cn(
+                    "fixed z-50 p-4 pointer-events-none",
+                    nodePosition ? "inset-0" : "inset-0 flex items-center justify-center"
+                )}
+            >
                 <div
                     className="bg-background border border-border rounded-lg shadow-2xl max-w-3xl w-full max-h-[80vh] overflow-hidden flex flex-col pointer-events-auto"
                     style={getModalStyle()}
@@ -123,9 +122,7 @@ export function NodeExecutionModal({
                             <div className={statusInfo.color}>{statusInfo.icon}</div>
                             <div>
                                 <h3 className="font-semibold">{nodeName}</h3>
-                                <p className="text-xs text-muted-foreground">
-                                    Node ID: {nodeId}
-                                </p>
+                                <p className="text-xs text-muted-foreground">Node ID: {nodeId}</p>
                             </div>
                         </div>
                         <button
@@ -143,7 +140,10 @@ export function NodeExecutionModal({
                                 <h4 className="font-medium">{statusInfo.label}</h4>
                                 <p className="text-xs text-muted-foreground">
                                     {executionState.startedAt && (
-                                        <>Started at {executionState.startedAt.toLocaleTimeString()}</>
+                                        <>
+                                            Started at{" "}
+                                            {executionState.startedAt.toLocaleTimeString()}
+                                        </>
                                     )}
                                 </p>
                             </div>
@@ -151,11 +151,12 @@ export function NodeExecutionModal({
                                 <p className="text-sm font-medium">
                                     Duration: {formatDuration(executionState.duration)}
                                 </p>
-                                {executionState.retryCount !== undefined && executionState.retryCount > 0 && (
-                                    <p className="text-xs text-muted-foreground">
-                                        Retries: {executionState.retryCount}
-                                    </p>
-                                )}
+                                {executionState.retryCount !== undefined &&
+                                    executionState.retryCount > 0 && (
+                                        <p className="text-xs text-muted-foreground">
+                                            Retries: {executionState.retryCount}
+                                        </p>
+                                    )}
                             </div>
                         </div>
                     </div>
@@ -200,33 +201,39 @@ export function NodeExecutionModal({
                         )}
 
                         {/* Metadata */}
-                        {executionState.metadata && Object.keys(executionState.metadata).length > 0 && (
-                            <div>
-                                <h5 className="font-medium mb-2 text-sm">Metadata</h5>
-                                <div className="bg-muted/50 rounded-lg p-3">
-                                    <div className="space-y-1">
-                                        {Object.entries(executionState.metadata).map(([key, value]) => (
-                                            <div key={key} className="flex gap-2 text-xs">
-                                                <span className="font-mono text-primary font-medium">
-                                                    {key}:
-                                                </span>
-                                                <span className="font-mono text-muted-foreground">
-                                                    {typeof value === "object"
-                                                        ? JSON.stringify(value)
-                                                        : String(value)}
-                                                </span>
-                                            </div>
-                                        ))}
+                        {executionState.metadata &&
+                            Object.keys(executionState.metadata).length > 0 && (
+                                <div>
+                                    <h5 className="font-medium mb-2 text-sm">Metadata</h5>
+                                    <div className="bg-muted/50 rounded-lg p-3">
+                                        <div className="space-y-1">
+                                            {Object.entries(executionState.metadata).map(
+                                                ([key, value]) => (
+                                                    <div key={key} className="flex gap-2 text-xs">
+                                                        <span className="font-mono text-primary font-medium">
+                                                            {key}:
+                                                        </span>
+                                                        <span className="font-mono text-muted-foreground">
+                                                            {typeof value === "object"
+                                                                ? JSON.stringify(value)
+                                                                : String(value)}
+                                                        </span>
+                                                    </div>
+                                                )
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        )}
+                            )}
 
                         {/* No data message */}
                         {!executionState.error &&
-                            (!executionState.input || Object.keys(executionState.input).length === 0) &&
-                            (!executionState.output || Object.keys(executionState.output).length === 0) &&
-                            (!executionState.metadata || Object.keys(executionState.metadata).length === 0) && (
+                            (!executionState.input ||
+                                Object.keys(executionState.input).length === 0) &&
+                            (!executionState.output ||
+                                Object.keys(executionState.output).length === 0) &&
+                            (!executionState.metadata ||
+                                Object.keys(executionState.metadata).length === 0) && (
                                 <div className="text-center text-muted-foreground py-8">
                                     <AlertCircle className="w-12 h-12 mx-auto mb-2 opacity-50" />
                                     <p className="text-sm">No execution data available yet</p>

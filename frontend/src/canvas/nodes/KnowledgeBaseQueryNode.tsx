@@ -34,7 +34,10 @@ function KnowledgeBaseQueryNode({ data, selected }: NodeProps<KnowledgeBaseQuery
                 </div>
                 <div className="flex items-center justify-between">
                     <span className="text-xs text-muted-foreground">Query:</span>
-                    <span className="text-xs font-medium truncate max-w-[120px]" title={data.queryText}>
+                    <span
+                        className="text-xs font-medium truncate max-w-[120px]"
+                        title={data.queryText}
+                    >
                         {queryPreview}
                     </span>
                 </div>

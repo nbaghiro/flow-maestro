@@ -146,7 +146,7 @@ export function NodeInspector() {
                     type="text"
                     value={nodeName}
                     onChange={(e) => handleNameChange(e.target.value)}
-                    placeholder={`Enter custom name (e.g., "User Query")`}
+                    placeholder={'Enter custom name (e.g., "User Query")'}
                     className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                 />
                 <p className="mt-1.5 text-xs text-muted-foreground">

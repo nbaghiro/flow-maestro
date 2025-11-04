@@ -11,9 +11,7 @@ import { useWorkflowStore } from "../stores/workflowStore";
 
 export function AIGenerateButton() {
     const [dialogOpen, setDialogOpen] = useState(false);
-    const generateWorkflowFromAI = useWorkflowStore(
-        (state) => state.generateWorkflowFromAI
-    );
+    const generateWorkflowFromAI = useWorkflowStore((state) => state.generateWorkflowFromAI);
 
     const handleGenerate = async (prompt: string, connectionId: string, model: string) => {
         await generateWorkflowFromAI(prompt, connectionId, model);

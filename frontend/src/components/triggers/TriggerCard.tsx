@@ -4,8 +4,24 @@
  */
 
 import { useState } from "react";
-import { WorkflowTrigger, ScheduleTriggerConfig, WebhookTriggerConfig, ManualTriggerConfig } from "../../types/trigger";
-import { Calendar, Webhook, Zap, Copy, Trash2, Power, PowerOff, MoreVertical, Play, Pencil } from "lucide-react";
+import {
+    WorkflowTrigger,
+    ScheduleTriggerConfig,
+    WebhookTriggerConfig,
+    ManualTriggerConfig
+} from "../../types/trigger";
+import {
+    Calendar,
+    Webhook,
+    Zap,
+    Copy,
+    Trash2,
+    Power,
+    PowerOff,
+    MoreVertical,
+    Play,
+    Pencil
+} from "lucide-react";
 import { getWebhookUrl, deleteTrigger, updateTrigger, executeTrigger } from "../../lib/api";
 import { useWorkflowStore } from "../../stores/workflowStore";
 import { wsClient } from "../../lib/websocket";
@@ -35,13 +51,13 @@ export function TriggerCard({ trigger, onUpdate }: TriggerCardProps) {
 
     const getTriggerIcon = () => {
         switch (trigger.trigger_type) {
-            case 'manual':
+            case "manual":
                 return <Play className="w-5 h-5 text-green-500" />;
-            case 'schedule':
+            case "schedule":
                 return <Calendar className="w-5 h-5 text-blue-500" />;
-            case 'webhook':
+            case "webhook":
                 return <Webhook className="w-5 h-5 text-purple-500" />;
-            case 'event':
+            case "event":
                 return <Zap className="w-5 h-5 text-amber-500" />;
             default:
                 return <Zap className="w-5 h-5 text-gray-500" />;
@@ -49,14 +65,16 @@ export function TriggerCard({ trigger, onUpdate }: TriggerCardProps) {
     };
 
     const getConfigDisplay = () => {
-        if (trigger.trigger_type === 'manual') {
+        if (trigger.trigger_type === "manual") {
             const config = trigger.config as ManualTriggerConfig;
             const inputCount = config.inputs ? Object.keys(config.inputs).length : 0;
             return (
                 <div className="space-y-1">
                     <div className="flex items-center gap-2">
                         <span className="text-xs text-muted-foreground">
-                            {inputCount > 0 ? `${inputCount} input${inputCount !== 1 ? 's' : ''}` : 'No inputs'}
+                            {inputCount > 0
+                                ? `${inputCount} input${inputCount !== 1 ? "s" : ""}`
+                                : "No inputs"}
                         </span>
                     </div>
                     {config.description && (
@@ -66,7 +84,7 @@ export function TriggerCard({ trigger, onUpdate }: TriggerCardProps) {
             );
         }
 
-        if (trigger.trigger_type === 'schedule') {
+        if (trigger.trigger_type === "schedule") {
             const config = trigger.config as ScheduleTriggerConfig;
             return (
                 <div className="space-y-1">
@@ -86,17 +104,19 @@ export function TriggerCard({ trigger, onUpdate }: TriggerCardProps) {
             );
         }
 
-        if (trigger.trigger_type === 'webhook') {
+        if (trigger.trigger_type === "webhook") {
             const config = trigger.config as WebhookTriggerConfig;
             return (
                 <div className="space-y-2">
                     <div className="flex items-center gap-2">
                         <span className="text-xs text-muted-foreground">Method:</span>
-                        <span className="text-xs font-medium">{config.method || 'POST'}</span>
-                        {config.authType && config.authType !== 'none' && (
+                        <span className="text-xs font-medium">{config.method || "POST"}</span>
+                        {config.authType && config.authType !== "none" && (
                             <>
                                 <span className="text-xs text-muted-foreground">•</span>
-                                <span className="text-xs text-muted-foreground">Auth: {config.authType}</span>
+                                <span className="text-xs text-muted-foreground">
+                                    Auth: {config.authType}
+                                </span>
                             </>
                         )}
                     </div>
@@ -194,7 +214,7 @@ export function TriggerCard({ trigger, onUpdate }: TriggerCardProps) {
         try {
             // For manual triggers, use the stored inputs
             let inputs: Record<string, any> | undefined;
-            if (trigger.trigger_type === 'manual') {
+            if (trigger.trigger_type === "manual") {
                 const config = trigger.config as ManualTriggerConfig;
                 inputs = config.inputs;
             }
@@ -209,13 +229,18 @@ export function TriggerCard({ trigger, onUpdate }: TriggerCardProps) {
                 wsClient.subscribeToExecution(response.data.executionId);
 
                 // Show success notification
-                setSuccessMessage(`Execution started successfully!\nExecution ID: ${response.data.executionId}`);
+                setSuccessMessage(
+                    `Execution started successfully!\nExecution ID: ${response.data.executionId}`
+                );
                 setShowSuccessDialog(true);
                 onUpdate();
             }
         } catch (error) {
             console.error("Failed to execute trigger:", error);
-            setErrorMessage("Failed to execute trigger: " + (error instanceof Error ? error.message : String(error)));
+            setErrorMessage(
+                "Failed to execute trigger: " +
+                    (error instanceof Error ? error.message : String(error))
+            );
             setShowErrorDialog(true);
         } finally {
             setIsRunning(false);
@@ -223,10 +248,12 @@ export function TriggerCard({ trigger, onUpdate }: TriggerCardProps) {
     };
 
     return (
-        <div className={cn(
-            "border rounded-lg p-3 hover:bg-muted/50 transition-colors relative",
-            !trigger.enabled && "opacity-60"
-        )}>
+        <div
+            className={cn(
+                "border rounded-lg p-3 hover:bg-muted/50 transition-colors relative",
+                !trigger.enabled && "opacity-60"
+            )}
+        >
             <div className="flex items-start gap-3">
                 {/* Icon */}
                 <div className="mt-0.5">{getTriggerIcon()}</div>
@@ -237,13 +264,15 @@ export function TriggerCard({ trigger, onUpdate }: TriggerCardProps) {
                     <div className="flex items-start justify-between gap-2 mb-1">
                         <div className="flex items-center gap-2 flex-1 min-w-0">
                             <h4 className="font-medium text-sm truncate">{trigger.name}</h4>
-                            <span className={cn(
-                                "text-xs px-2 py-0.5 rounded-full flex-shrink-0",
-                                trigger.enabled
-                                    ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                                    : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
-                            )}>
-                                {trigger.enabled ? 'Active' : 'Disabled'}
+                            <span
+                                className={cn(
+                                    "text-xs px-2 py-0.5 rounded-full flex-shrink-0",
+                                    trigger.enabled
+                                        ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                                        : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
+                                )}
+                            >
+                                {trigger.enabled ? "Active" : "Disabled"}
                             </span>
                         </div>
 
@@ -272,9 +301,13 @@ export function TriggerCard({ trigger, onUpdate }: TriggerCardProps) {
                                             className="w-full px-3 py-2 text-left text-sm hover:bg-muted transition-colors flex items-center gap-2"
                                         >
                                             {trigger.enabled ? (
-                                                <><PowerOff className="w-4 h-4" /> Disable</>
+                                                <>
+                                                    <PowerOff className="w-4 h-4" /> Disable
+                                                </>
                                             ) : (
-                                                <><Power className="w-4 h-4" /> Enable</>
+                                                <>
+                                                    <Power className="w-4 h-4" /> Enable
+                                                </>
                                             )}
                                         </button>
                                         <button

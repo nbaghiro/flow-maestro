@@ -14,9 +14,7 @@ export function Workspace() {
                     <Building className="w-12 h-12 text-primary" />
                     <Crown className="w-6 h-6 text-amber-500 absolute -top-2 -right-2" />
                 </div>
-                <h3 className="text-lg font-semibold text-foreground mb-2">
-                    Workspace Features
-                </h3>
+                <h3 className="text-lg font-semibold text-foreground mb-2">Workspace Features</h3>
                 <p className="text-sm text-muted-foreground text-center max-w-md mb-6">
                     Unlock team collaboration, shared workflows, and advanced workspace management
                     with FlowMaestro Pro.
@@ -26,17 +24,23 @@ export function Workspace() {
                     <div className="bg-white p-4 rounded-lg border border-border">
                         <Users className="w-5 h-5 text-primary mb-2" />
                         <h4 className="font-medium text-sm mb-1">Team Collaboration</h4>
-                        <p className="text-xs text-muted-foreground">Invite team members and collaborate</p>
+                        <p className="text-xs text-muted-foreground">
+                            Invite team members and collaborate
+                        </p>
                     </div>
                     <div className="bg-white p-4 rounded-lg border border-border">
                         <Sparkles className="w-5 h-5 text-primary mb-2" />
                         <h4 className="font-medium text-sm mb-1">Shared Resources</h4>
-                        <p className="text-xs text-muted-foreground">Share workflows and credentials</p>
+                        <p className="text-xs text-muted-foreground">
+                            Share workflows and credentials
+                        </p>
                     </div>
                     <div className="bg-white p-4 rounded-lg border border-border">
                         <Crown className="w-5 h-5 text-primary mb-2" />
                         <h4 className="font-medium text-sm mb-1">Advanced Controls</h4>
-                        <p className="text-xs text-muted-foreground">Roles, permissions, and audit logs</p>
+                        <p className="text-xs text-muted-foreground">
+                            Roles, permissions, and audit logs
+                        </p>
                     </div>
                 </div>
 

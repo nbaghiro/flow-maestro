@@ -25,11 +25,15 @@ export function CreateTriggerDialog({ workflowId, onClose, onSuccess }: CreateTr
     const [timezone, setTimezone] = useState("UTC");
 
     // Webhook trigger fields
-    const [webhookMethod, setWebhookMethod] = useState<"GET" | "POST" | "PUT" | "DELETE" | "PATCH" | "ANY">("POST");
+    const [webhookMethod, setWebhookMethod] = useState<
+        "GET" | "POST" | "PUT" | "DELETE" | "PATCH" | "ANY"
+    >("POST");
     const [authType, setAuthType] = useState<"none" | "hmac" | "bearer" | "api_key">("none");
 
     // Manual trigger fields
-    const [manualInputs, setManualInputs] = useState<Array<{ key: string; value: string }>>([{ key: "", value: "" }]);
+    const [manualInputs, setManualInputs] = useState<Array<{ key: string; value: string }>>([
+        { key: "", value: "" }
+    ]);
     const [manualDescription, setManualDescription] = useState("");
 
     // Phone call trigger fields
@@ -58,13 +62,13 @@ export function CreateTriggerDialog({ workflowId, onClose, onSuccess }: CreateTr
                 config = {
                     cronExpression,
                     timezone,
-                    enabled: true,
+                    enabled: true
                 };
             } else if (triggerType === "webhook") {
                 config = {
                     method: webhookMethod,
                     authType,
-                    responseFormat: "json",
+                    responseFormat: "json"
                 };
             } else if (triggerType === "manual") {
                 // Convert inputs array to object, filtering out empty keys
@@ -83,7 +87,7 @@ export function CreateTriggerDialog({ workflowId, onClose, onSuccess }: CreateTr
                 config = {
                     inputs: inputsObject,
                     description: manualDescription || undefined,
-                    requireInputs: Object.keys(inputsObject).length > 0,
+                    requireInputs: Object.keys(inputsObject).length > 0
                 };
             } else if (triggerType === "phone_call") {
                 config = {
@@ -94,7 +98,7 @@ export function CreateTriggerDialog({ workflowId, onClose, onSuccess }: CreateTr
                     language,
                     voiceProvider,
                     enableRecording,
-                    businessHoursEnabled,
+                    businessHoursEnabled
                 };
             }
 
@@ -103,7 +107,7 @@ export function CreateTriggerDialog({ workflowId, onClose, onSuccess }: CreateTr
                 name: name.trim(),
                 triggerType,
                 enabled: true,
-                config,
+                config
             };
 
             await createTrigger(input);
@@ -121,7 +125,7 @@ export function CreateTriggerDialog({ workflowId, onClose, onSuccess }: CreateTr
         { label: "Every hour", value: "0 * * * *" },
         { label: "Every day at 9 AM", value: "0 9 * * *" },
         { label: "Every Monday at 9 AM", value: "0 9 * * 1" },
-        { label: "First day of month", value: "0 0 1 * *" },
+        { label: "First day of month", value: "0 0 1 * *" }
     ];
 
     return (
@@ -150,9 +154,7 @@ export function CreateTriggerDialog({ workflowId, onClose, onSuccess }: CreateTr
 
                         {/* Trigger Name */}
                         <div>
-                            <label className="block text-sm font-medium mb-1.5">
-                                Trigger Name
-                            </label>
+                            <label className="block text-sm font-medium mb-1.5">Trigger Name</label>
                             <input
                                 type="text"
                                 value={name}
@@ -166,9 +168,7 @@ export function CreateTriggerDialog({ workflowId, onClose, onSuccess }: CreateTr
 
                         {/* Trigger Type */}
                         <div>
-                            <label className="block text-sm font-medium mb-1.5">
-                                Trigger Type
-                            </label>
+                            <label className="block text-sm font-medium mb-1.5">Trigger Type</label>
                             <div className="grid grid-cols-4 gap-2">
                                 <button
                                     type="button"
@@ -182,7 +182,9 @@ export function CreateTriggerDialog({ workflowId, onClose, onSuccess }: CreateTr
                                 >
                                     <Play className="w-5 h-5 mx-auto mb-1 text-green-500" />
                                     <div className="text-sm font-medium">Manual</div>
-                                    <div className="text-xs text-muted-foreground">Static inputs</div>
+                                    <div className="text-xs text-muted-foreground">
+                                        Static inputs
+                                    </div>
                                 </button>
 
                                 <button
@@ -212,7 +214,9 @@ export function CreateTriggerDialog({ workflowId, onClose, onSuccess }: CreateTr
                                 >
                                     <Webhook className="w-5 h-5 mx-auto mb-1 text-purple-500" />
                                     <div className="text-sm font-medium">Webhook</div>
-                                    <div className="text-xs text-muted-foreground">HTTP endpoint</div>
+                                    <div className="text-xs text-muted-foreground">
+                                        HTTP endpoint
+                                    </div>
                                 </button>
 
                                 <button
@@ -254,7 +258,8 @@ export function CreateTriggerDialog({ workflowId, onClose, onSuccess }: CreateTr
                                         Static Inputs
                                     </label>
                                     <p className="text-xs text-muted-foreground mb-2">
-                                        Define key-value pairs for workflow inputs. Values can be strings or JSON.
+                                        Define key-value pairs for workflow inputs. Values can be
+                                        strings or JSON.
                                     </p>
                                     <div className="space-y-2">
                                         {manualInputs.map((input, index) => (
@@ -287,7 +292,9 @@ export function CreateTriggerDialog({ workflowId, onClose, onSuccess }: CreateTr
                                                     <button
                                                         type="button"
                                                         onClick={() => {
-                                                            const newInputs = manualInputs.filter((_, i) => i !== index);
+                                                            const newInputs = manualInputs.filter(
+                                                                (_, i) => i !== index
+                                                            );
                                                             setManualInputs(newInputs);
                                                         }}
                                                         className="px-3 py-2 border border-border rounded-lg text-destructive hover:bg-destructive/10 transition-colors"
@@ -301,7 +308,12 @@ export function CreateTriggerDialog({ workflowId, onClose, onSuccess }: CreateTr
                                     </div>
                                     <button
                                         type="button"
-                                        onClick={() => setManualInputs([...manualInputs, { key: "", value: "" }])}
+                                        onClick={() =>
+                                            setManualInputs([
+                                                ...manualInputs,
+                                                { key: "", value: "" }
+                                            ])
+                                        }
                                         className="mt-2 text-sm text-primary hover:underline"
                                         disabled={loading}
                                     >
@@ -347,7 +359,9 @@ export function CreateTriggerDialog({ workflowId, onClose, onSuccess }: CreateTr
                                                 disabled={loading}
                                             >
                                                 <div className="font-medium">{example.label}</div>
-                                                <code className="text-muted-foreground">{example.value}</code>
+                                                <code className="text-muted-foreground">
+                                                    {example.value}
+                                                </code>
                                             </button>
                                         ))}
                                     </div>
@@ -411,7 +425,8 @@ export function CreateTriggerDialog({ workflowId, onClose, onSuccess }: CreateTr
                                         <option value="api_key">API Key</option>
                                     </select>
                                     <p className="text-xs text-muted-foreground mt-1">
-                                        A unique webhook URL and secret will be generated after creation
+                                        A unique webhook URL and secret will be generated after
+                                        creation
                                     </p>
                                 </div>
                             </>
@@ -434,7 +449,8 @@ export function CreateTriggerDialog({ workflowId, onClose, onSuccess }: CreateTr
                                         disabled={loading}
                                     />
                                     <p className="text-xs text-muted-foreground mt-1">
-                                        Your Telnyx phone number in E.164 format (e.g., +15551234567)
+                                        Your Telnyx phone number in E.164 format (e.g.,
+                                        +15551234567)
                                     </p>
                                 </div>
 
@@ -504,11 +520,17 @@ export function CreateTriggerDialog({ workflowId, onClose, onSuccess }: CreateTr
                                         </label>
                                         <select
                                             value={voiceProvider}
-                                            onChange={(e) => setVoiceProvider(e.target.value as "elevenlabs" | "openai")}
+                                            onChange={(e) =>
+                                                setVoiceProvider(
+                                                    e.target.value as "elevenlabs" | "openai"
+                                                )
+                                            }
                                             className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                                             disabled={loading}
                                         >
-                                            <option value="elevenlabs">ElevenLabs (High Quality)</option>
+                                            <option value="elevenlabs">
+                                                ElevenLabs (High Quality)
+                                            </option>
                                             <option value="openai">OpenAI TTS</option>
                                         </select>
                                     </div>
@@ -530,18 +552,23 @@ export function CreateTriggerDialog({ workflowId, onClose, onSuccess }: CreateTr
                                         <input
                                             type="checkbox"
                                             checked={businessHoursEnabled}
-                                            onChange={(e) => setBusinessHoursEnabled(e.target.checked)}
+                                            onChange={(e) =>
+                                                setBusinessHoursEnabled(e.target.checked)
+                                            }
                                             className="w-4 h-4 rounded border-border text-primary focus:ring-2 focus:ring-primary/20"
                                             disabled={loading}
                                         />
-                                        <span className="text-sm">Enable business hours (configure after creation)</span>
+                                        <span className="text-sm">
+                                            Enable business hours (configure after creation)
+                                        </span>
                                     </label>
                                 </div>
 
                                 <div className="p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900 rounded-lg">
                                     <p className="text-xs text-blue-800 dark:text-blue-200">
-                                        <strong>Note:</strong> After creating this trigger, configure your Telnyx phone number
-                                        to forward incoming calls to the webhook URL provided in the trigger details.
+                                        <strong>Note:</strong> After creating this trigger,
+                                        configure your Telnyx phone number to forward incoming calls
+                                        to the webhook URL provided in the trigger details.
                                     </p>
                                 </div>
                             </>

@@ -56,9 +56,9 @@ export function autoLayoutNodes(
             if (branchInfo.has(node.id)) {
                 // This is a branch target - offset based on branch type
                 const branch = branchInfo.get(node.id)!;
-                if (branch.handle === 'true') {
+                if (branch.handle === "true") {
                     y = START_Y - VERTICAL_SPACING;
-                } else if (branch.handle === 'false') {
+                } else if (branch.handle === "false") {
                     y = START_Y + VERTICAL_SPACING;
                 } else {
                     // Switch node or other multi-output
@@ -80,19 +80,16 @@ export function autoLayoutNodes(
 /**
  * Build adjacency list from edges
  */
-function buildAdjacencyList(
-    nodes: LayoutNode[],
-    edges: LayoutEdge[]
-): Map<string, string[]> {
+function buildAdjacencyList(nodes: LayoutNode[], edges: LayoutEdge[]): Map<string, string[]> {
     const adjacencyList = new Map<string, string[]>();
 
     // Initialize with all nodes
-    nodes.forEach(node => {
+    nodes.forEach((node) => {
         adjacencyList.set(node.id, []);
     });
 
     // Add edges
-    edges.forEach(edge => {
+    edges.forEach((edge) => {
         const neighbors = adjacencyList.get(edge.source) || [];
         neighbors.push(edge.target);
         adjacencyList.set(edge.source, neighbors);
@@ -109,9 +106,7 @@ function assignLevels(
     adjacencyList: Map<string, string[]>
 ): Map<string, number> {
     const levels = new Map<string, number>();
-    const queue: Array<{ nodeId: string; level: number }> = [
-        { nodeId: entryNodeId, level: 0 }
-    ];
+    const queue: Array<{ nodeId: string; level: number }> = [{ nodeId: entryNodeId, level: 0 }];
     const visited = new Set<string>();
 
     while (queue.length > 0) {
@@ -125,7 +120,7 @@ function assignLevels(
         levels.set(nodeId, level);
 
         const neighbors = adjacencyList.get(nodeId) || [];
-        neighbors.forEach(neighbor => {
+        neighbors.forEach((neighbor) => {
             if (!visited.has(neighbor)) {
                 queue.push({ nodeId: neighbor, level: level + 1 });
             }
@@ -144,7 +139,7 @@ function groupNodesByLevel(
 ): Map<number, LayoutNode[]> {
     const nodesByLevel = new Map<number, LayoutNode[]>();
 
-    nodes.forEach(node => {
+    nodes.forEach((node) => {
         const level = levels.get(node.id) ?? 0;
         const levelNodes = nodesByLevel.get(level) || [];
         levelNodes.push(node);
@@ -163,13 +158,13 @@ function getBranchInfo(
 ): Map<string, { handle: string }> {
     const branchInfo = new Map<string, { handle: string }>();
 
-    levelNodes.forEach(node => {
+    levelNodes.forEach((node) => {
         // Find edges that target this node
-        const incomingEdges = edges.filter(edge => edge.target === node.id);
+        const incomingEdges = edges.filter((edge) => edge.target === node.id);
 
         // Check if any incoming edge has a sourceHandle (indicating a branch)
-        incomingEdges.forEach(edge => {
-            if (edge.sourceHandle && edge.sourceHandle !== 'output') {
+        incomingEdges.forEach((edge) => {
+            if (edge.sourceHandle && edge.sourceHandle !== "output") {
                 branchInfo.set(node.id, { handle: edge.sourceHandle });
             }
         });
@@ -220,12 +215,12 @@ export function convertToReactFlowFormat(
     entryNodeId: string
 ): { nodes: ReactFlowNode[]; edges: ReactFlowEdge[] } {
     // Calculate positions using auto-layout
-    const layoutNodes: LayoutNode[] = generatedNodes.map(n => ({
+    const layoutNodes: LayoutNode[] = generatedNodes.map((n) => ({
         id: n.id,
         type: n.type
     }));
 
-    const layoutEdges: LayoutEdge[] = generatedEdges.map(e => ({
+    const layoutEdges: LayoutEdge[] = generatedEdges.map((e) => ({
         source: e.source,
         target: e.target,
         sourceHandle: e.sourceHandle
@@ -234,14 +229,14 @@ export function convertToReactFlowFormat(
     const positions = autoLayoutNodes(layoutNodes, layoutEdges, entryNodeId);
 
     // Convert to React Flow format
-    const nodes: ReactFlowNode[] = generatedNodes.map(node => ({
+    const nodes: ReactFlowNode[] = generatedNodes.map((node) => ({
         id: node.id,
         type: node.type,
         position: positions.get(node.id) || { x: 0, y: 0 },
         data: {
             label: node.label,
             config: node.config,
-            status: 'idle'
+            status: "idle"
         }
     }));
 

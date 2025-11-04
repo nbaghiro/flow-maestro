@@ -34,7 +34,9 @@ function JSONTransformNode({ data, selected }: NodeProps<JSONTransformNodeData>)
                 </div>
                 <div className="flex items-center justify-between pt-0.5">
                     <span className="text-xs text-muted-foreground">Output:</span>
-                    <span className="text-xs font-mono bg-muted px-1.5 py-0.5 rounded">${outputVariable}</span>
+                    <span className="text-xs font-mono bg-muted px-1.5 py-0.5 rounded">
+                        ${outputVariable}
+                    </span>
                 </div>
             </div>
         </BaseNode>

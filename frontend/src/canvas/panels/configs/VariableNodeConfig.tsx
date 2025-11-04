@@ -1,21 +1,23 @@
 import { useState, useEffect } from "react";
 import { FormField, FormSection } from "../../../components/FormField";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 interface VariableNodeConfigProps {
     data: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     onUpdate: (config: any) => void;
 }
 
 const operations = [
     { value: "set", label: "Set Variable" },
     { value: "get", label: "Get Variable" },
-    { value: "delete", label: "Delete Variable" },
+    { value: "delete", label: "Delete Variable" }
 ];
 
 const scopes = [
     { value: "workflow", label: "Workflow (current workflow only)" },
     { value: "global", label: "Global (across workflows)" },
-    { value: "temporary", label: "Temporary (this execution only)" },
+    { value: "temporary", label: "Temporary (this execution only)" }
 ];
 
 const valueTypes = [
@@ -23,7 +25,7 @@ const valueTypes = [
     { value: "string", label: "String" },
     { value: "number", label: "Number" },
     { value: "boolean", label: "Boolean" },
-    { value: "json", label: "JSON" },
+    { value: "json", label: "JSON" }
 ];
 
 export function VariableNodeConfig({ data, onUpdate }: VariableNodeConfigProps) {
@@ -39,7 +41,7 @@ export function VariableNodeConfig({ data, onUpdate }: VariableNodeConfigProps) 
             variableName,
             value,
             scope,
-            valueType,
+            valueType
         });
     }, [operation, variableName, value, scope, valueType]);
 
@@ -62,10 +64,7 @@ export function VariableNodeConfig({ data, onUpdate }: VariableNodeConfigProps) 
             </FormSection>
 
             <FormSection title="Variable">
-                <FormField
-                    label="Variable Name"
-                    description="Name of the variable"
-                >
+                <FormField label="Variable Name" description="Name of the variable">
                     <input
                         type="text"
                         value={variableName}
@@ -117,8 +116,8 @@ export function VariableNodeConfig({ data, onUpdate }: VariableNodeConfigProps) 
                                 valueType === "json"
                                     ? '{"key": "value"}'
                                     : valueType === "boolean"
-                                    ? "true"
-                                    : "Value or ${otherVariable}"
+                                      ? "true"
+                                      : "Value or ${otherVariable}"
                             }
                             rows={valueType === "json" ? 6 : 4}
                             className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none font-mono"

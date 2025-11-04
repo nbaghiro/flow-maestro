@@ -7,7 +7,7 @@ import ReactFlow, {
     addEdge,
     Connection,
     BackgroundVariant,
-    ReactFlowInstance,
+    ReactFlowInstance
 } from "reactflow";
 import "reactflow/dist/style.css";
 import { useWorkflowStore } from "../stores/workflowStore";
@@ -58,34 +58,30 @@ const nodeTypes = {
     voice_greet: VoiceGreetNode,
     voice_listen: VoiceListenNode,
     voice_menu: VoiceMenuNode,
-    voice_hangup: VoiceHangupNode,
+    voice_hangup: VoiceHangupNode
 };
 
 export function WorkflowCanvas() {
     const reactFlowWrapper = useRef<HTMLDivElement>(null);
     const reactFlowInstance = useRef<ReactFlowInstance | null>(null);
 
-    const {
-        nodes,
-        edges,
-        onNodesChange,
-        onEdgesChange,
-        addNode,
-        selectNode,
-    } = useWorkflowStore();
+    const { nodes, edges, onNodesChange, onEdgesChange, addNode, selectNode } = useWorkflowStore();
 
     const onConnect = useCallback(
         (connection: Connection) => {
             useWorkflowStore.setState({
-                edges: addEdge(connection, edges),
+                edges: addEdge(connection, edges)
             });
         },
         [edges]
     );
 
-    const onNodeClick = useCallback((_event: React.MouseEvent, node: any) => {
-        selectNode(node.id);
-    }, [selectNode]);
+    const onNodeClick = useCallback(
+        (_event: React.MouseEvent, node: any) => {
+            selectNode(node.id);
+        },
+        [selectNode]
+    );
 
     const onPaneClick = useCallback(() => {
         selectNode(null);
@@ -112,7 +108,7 @@ export function WorkflowCanvas() {
             const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
             const position = reactFlowInstance.current.project({
                 x: event.clientX - reactFlowBounds.left,
-                y: event.clientY - reactFlowBounds.top,
+                y: event.clientY - reactFlowBounds.top
             });
 
             const newNode = {
@@ -122,8 +118,8 @@ export function WorkflowCanvas() {
                 data: {
                     label: getDefaultLabel(type),
                     status: "idle" as const,
-                    config: {},
-                },
+                    config: {}
+                }
             };
 
             addNode(newNode);
@@ -155,7 +151,7 @@ export function WorkflowCanvas() {
                     className="!absolute !bottom-4 !right-4"
                     style={{
                         backgroundColor: "rgba(0, 0, 0, 0.05)",
-                        border: "1px solid rgba(0, 0, 0, 0.1)",
+                        border: "1px solid rgba(0, 0, 0, 0.1)"
                     }}
                     nodeColor="#6366f1"
                     maskColor="rgba(0, 0, 0, 0.1)"
@@ -182,7 +178,7 @@ function getDefaultLabel(type: string): string {
         output: "Output",
         http: "HTTP",
         database: "Database",
-        integration: "Integration",
+        integration: "Integration"
     };
     return labels[type] || "Node";
 }

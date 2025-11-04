@@ -5,7 +5,11 @@ import type { WorkflowDefinition } from "../lib/api";
 interface CreateWorkflowDialogProps {
     isOpen: boolean;
     onClose: () => void;
-    onCreate: (name: string, description?: string, definition?: WorkflowDefinition) => Promise<void>;
+    onCreate: (
+        name: string,
+        description?: string,
+        definition?: WorkflowDefinition
+    ) => Promise<void>;
 }
 
 export function CreateWorkflowDialog({ isOpen, onClose, onCreate }: CreateWorkflowDialogProps) {
@@ -17,7 +21,9 @@ export function CreateWorkflowDialog({ isOpen, onClose, onCreate }: CreateWorkfl
     const [showJsonImport, setShowJsonImport] = useState(false);
     const [parsedWorkflow, setParsedWorkflow] = useState<WorkflowDefinition | null>(null);
 
-    const validateAndParseJSON = (json: string): { valid: boolean; data?: WorkflowDefinition; error?: string } => {
+    const validateAndParseJSON = (
+        json: string
+    ): { valid: boolean; data?: WorkflowDefinition; error?: string } => {
         if (!json.trim()) {
             return { valid: true }; // Empty is valid (optional)
         }
@@ -32,11 +38,17 @@ export function CreateWorkflowDialog({ isOpen, onClose, onCreate }: CreateWorkfl
 
             // Check if it has the required workflow structure
             if (!parsed.nodes || typeof parsed.nodes !== "object") {
-                return { valid: false, error: "Invalid workflow: Missing 'nodes' property (must be an object)" };
+                return {
+                    valid: false,
+                    error: "Invalid workflow: Missing 'nodes' property (must be an object)"
+                };
             }
 
             if (!parsed.edges || !Array.isArray(parsed.edges)) {
-                return { valid: false, error: "Invalid workflow: Missing or invalid 'edges' property (must be an array)" };
+                return {
+                    valid: false,
+                    error: "Invalid workflow: Missing or invalid 'edges' property (must be an array)"
+                };
             }
 
             // Validate nodes structure more deeply
@@ -45,16 +57,31 @@ export function CreateWorkflowDialog({ isOpen, onClose, onCreate }: CreateWorkfl
                 for (const [nodeId, node] of nodeEntries) {
                     const nodeObj = node as any;
                     if (!nodeObj.type || typeof nodeObj.type !== "string") {
-                        return { valid: false, error: `Invalid node '${nodeId}': Missing or invalid 'type' property` };
+                        return {
+                            valid: false,
+                            error: `Invalid node '${nodeId}': Missing or invalid 'type' property`
+                        };
                     }
                     if (!nodeObj.name || typeof nodeObj.name !== "string") {
-                        return { valid: false, error: `Invalid node '${nodeId}': Missing or invalid 'name' property` };
+                        return {
+                            valid: false,
+                            error: `Invalid node '${nodeId}': Missing or invalid 'name' property`
+                        };
                     }
                     if (!nodeObj.position || typeof nodeObj.position !== "object") {
-                        return { valid: false, error: `Invalid node '${nodeId}': Missing 'position' property` };
+                        return {
+                            valid: false,
+                            error: `Invalid node '${nodeId}': Missing 'position' property`
+                        };
                     }
-                    if (typeof nodeObj.position.x !== "number" || typeof nodeObj.position.y !== "number") {
-                        return { valid: false, error: `Invalid node '${nodeId}': Position must have x and y coordinates` };
+                    if (
+                        typeof nodeObj.position.x !== "number" ||
+                        typeof nodeObj.position.y !== "number"
+                    ) {
+                        return {
+                            valid: false,
+                            error: `Invalid node '${nodeId}': Position must have x and y coordinates`
+                        };
                     }
                 }
             }
@@ -192,7 +219,10 @@ export function CreateWorkflowDialog({ isOpen, onClose, onCreate }: CreateWorkfl
                     {!showJsonImport && (
                         <>
                             <div>
-                                <label htmlFor="workflow-name" className="block text-sm font-medium text-foreground mb-1.5">
+                                <label
+                                    htmlFor="workflow-name"
+                                    className="block text-sm font-medium text-foreground mb-1.5"
+                                >
                                     Workflow Name <span className="text-red-500">*</span>
                                 </label>
                                 <input
@@ -209,7 +239,10 @@ export function CreateWorkflowDialog({ isOpen, onClose, onCreate }: CreateWorkfl
                             </div>
 
                             <div>
-                                <label htmlFor="workflow-description" className="block text-sm font-medium text-foreground mb-1.5">
+                                <label
+                                    htmlFor="workflow-description"
+                                    className="block text-sm font-medium text-foreground mb-1.5"
+                                >
                                     Description (optional)
                                 </label>
                                 <textarea
@@ -264,7 +297,9 @@ export function CreateWorkflowDialog({ isOpen, onClose, onCreate }: CreateWorkfl
                                 <div>
                                     <label className="flex items-center justify-center gap-2 px-4 py-2 border border-dashed border-border rounded-lg hover:border-primary hover:bg-primary/5 transition-colors cursor-pointer">
                                         <Upload className="w-4 h-4 text-muted-foreground" />
-                                        <span className="text-sm text-muted-foreground">Upload JSON file</span>
+                                        <span className="text-sm text-muted-foreground">
+                                            Upload JSON file
+                                        </span>
                                         <input
                                             type="file"
                                             accept=".json"
@@ -283,14 +318,19 @@ export function CreateWorkflowDialog({ isOpen, onClose, onCreate }: CreateWorkfl
 
                                 {/* JSON Input */}
                                 <div>
-                                    <label htmlFor="json-input" className="block text-xs font-medium text-muted-foreground mb-1.5">
+                                    <label
+                                        htmlFor="json-input"
+                                        className="block text-xs font-medium text-muted-foreground mb-1.5"
+                                    >
                                         Paste JSON Definition
                                     </label>
                                     <textarea
                                         id="json-input"
                                         value={jsonInput}
                                         onChange={(e) => handleJsonChange(e.target.value)}
-                                        placeholder={`{\n  "name": "My Workflow",\n  "nodes": {...},\n  "edges": [...],\n  "entryPoint": "..."\n}`}
+                                        placeholder={
+                                            '{\n  "name": "My Workflow",\n  "nodes": {...},\n  "edges": [...],\n  "entryPoint": "..."\n}'
+                                        }
                                         rows={6}
                                         disabled={isCreating}
                                         className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-none font-mono text-xs disabled:opacity-50 disabled:cursor-not-allowed"
@@ -302,8 +342,13 @@ export function CreateWorkflowDialog({ isOpen, onClose, onCreate }: CreateWorkfl
                                                     <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                                                     Valid
                                                 </span>
-                                                <span>{Object.keys(parsedWorkflow.nodes || {}).length} nodes</span>
-                                                <span>{(parsedWorkflow.edges || []).length} edges</span>
+                                                <span>
+                                                    {Object.keys(parsedWorkflow.nodes || {}).length}{" "}
+                                                    nodes
+                                                </span>
+                                                <span>
+                                                    {(parsedWorkflow.edges || []).length} edges
+                                                </span>
                                             </div>
                                             {parsedWorkflow.name && (
                                                 <div className="p-3 bg-primary/5 border border-primary/20 rounded-lg">
@@ -336,7 +381,9 @@ export function CreateWorkflowDialog({ isOpen, onClose, onCreate }: CreateWorkfl
                         </button>
                         <button
                             type="submit"
-                            disabled={isCreating || (showJsonImport ? !parsedWorkflow : !name.trim())}
+                            disabled={
+                                isCreating || (showJsonImport ? !parsedWorkflow : !name.trim())
+                            }
                             className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors"
                         >
                             {isCreating ? (
@@ -344,8 +391,10 @@ export function CreateWorkflowDialog({ isOpen, onClose, onCreate }: CreateWorkfl
                                     <Loader2 className="w-4 h-4 animate-spin" />
                                     {showJsonImport ? "Importing..." : "Creating..."}
                                 </>
+                            ) : showJsonImport ? (
+                                "Import Workflow"
                             ) : (
-                                showJsonImport ? "Import Workflow" : "Create Workflow"
+                                "Create Workflow"
                             )}
                         </button>
                     </div>

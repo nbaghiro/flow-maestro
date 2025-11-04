@@ -5,7 +5,7 @@ import { useWorkflowStore } from "../stores/workflowStore";
 interface BuilderHeaderProps {
     workflowName?: string;
     hasUnsavedChanges?: boolean;
-    saveStatus?: 'idle' | 'saving' | 'saved' | 'error';
+    saveStatus?: "idle" | "saving" | "saved" | "error";
     onSave?: () => void;
     onNameChange?: (name: string) => void;
     onOpenSettings?: () => void;
@@ -14,7 +14,7 @@ interface BuilderHeaderProps {
 export function BuilderHeader({
     workflowName = "Untitled Workflow",
     hasUnsavedChanges = false,
-    saveStatus = 'idle',
+    saveStatus = "idle",
     onSave,
     onNameChange,
     onOpenSettings
@@ -102,15 +102,15 @@ export function BuilderHeader({
 
                     <button
                         onClick={onSave}
-                        disabled={saveStatus === 'saving'}
+                        disabled={saveStatus === "saving"}
                         className="flex items-center gap-2 px-4 py-1.5 text-sm font-medium text-foreground hover:bg-muted border border-border rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        {saveStatus === 'saving' ? (
+                        {saveStatus === "saving" ? (
                             <>
                                 <Loader2 className="w-4 h-4 animate-spin" />
                                 Saving...
                             </>
-                        ) : saveStatus === 'saved' ? (
+                        ) : saveStatus === "saved" ? (
                             <>
                                 <CheckCircle className="w-4 h-4 text-green-600" />
                                 Saved
@@ -133,7 +133,7 @@ export function BuilderHeader({
                         ) : (
                             <Play className="w-4 h-4" />
                         )}
-                        {isExecuting ? 'Running...' : 'Run'}
+                        {isExecuting ? "Running..." : "Run"}
                     </button>
                 </div>
             </div>

@@ -20,13 +20,8 @@ const MAX_WIDTH = 800;
 const DEFAULT_WIDTH = 500;
 
 export function TriggerDrawer({ children, renderButtonOnly, renderPanelOnly }: TriggerDrawerProps) {
-    const {
-        isDrawerOpen,
-        drawerWidth,
-        setDrawerOpen,
-        setDrawerWidth,
-        triggers,
-    } = useTriggerStore();
+    const { isDrawerOpen, drawerWidth, setDrawerOpen, setDrawerWidth, triggers } =
+        useTriggerStore();
 
     const { selectNode } = useWorkflowStore();
 
@@ -86,7 +81,7 @@ export function TriggerDrawer({ children, renderButtonOnly, renderPanelOnly }: T
     };
 
     // Get enabled trigger count
-    const enabledCount = triggers.filter(t => t.enabled).length;
+    const enabledCount = triggers.filter((t) => t.enabled).length;
 
     // Render only button
     if (renderButtonOnly) {
@@ -104,12 +99,14 @@ export function TriggerDrawer({ children, renderButtonOnly, renderPanelOnly }: T
                     <Zap className="w-4 h-4" />
                     <span className="text-sm font-medium">Triggers</span>
                     {enabledCount > 0 && (
-                        <span className={cn(
-                            "text-xs px-2 py-0.5 rounded-full",
-                            isDrawerOpen
-                                ? "bg-primary-foreground/20 text-primary-foreground"
-                                : "bg-primary/10 text-primary"
-                        )}>
+                        <span
+                            className={cn(
+                                "text-xs px-2 py-0.5 rounded-full",
+                                isDrawerOpen
+                                    ? "bg-primary-foreground/20 text-primary-foreground"
+                                    : "bg-primary/10 text-primary"
+                            )}
+                        >
                             {enabledCount}
                         </span>
                     )}
@@ -175,9 +172,7 @@ export function TriggerDrawer({ children, renderButtonOnly, renderPanelOnly }: T
                     </div>
 
                     {/* Content */}
-                    <div className="flex-1 overflow-hidden">
-                        {children}
-                    </div>
+                    <div className="flex-1 overflow-hidden">{children}</div>
                 </div>
             </div>
         ) : null;
@@ -201,12 +196,14 @@ export function TriggerDrawer({ children, renderButtonOnly, renderPanelOnly }: T
                         <Zap className="w-4 h-4" />
                         <span className="text-sm font-medium">Triggers</span>
                         {enabledCount > 0 && (
-                            <span className={cn(
-                                "text-xs px-2 py-0.5 rounded-full",
-                                isDrawerOpen
-                                    ? "bg-primary-foreground/20 text-primary-foreground"
-                                    : "bg-primary/10 text-primary"
-                            )}>
+                            <span
+                                className={cn(
+                                    "text-xs px-2 py-0.5 rounded-full",
+                                    isDrawerOpen
+                                        ? "bg-primary-foreground/20 text-primary-foreground"
+                                        : "bg-primary/10 text-primary"
+                                )}
+                            >
                                 {enabledCount}
                             </span>
                         )}
@@ -270,9 +267,7 @@ export function TriggerDrawer({ children, renderButtonOnly, renderPanelOnly }: T
                         </div>
 
                         {/* Content */}
-                        <div className="flex-1 overflow-hidden">
-                            {children}
-                        </div>
+                        <div className="flex-1 overflow-hidden">{children}</div>
                     </div>
                 </div>
             )}

@@ -17,14 +17,7 @@ interface ToastProps {
  *
  * Displays temporary notifications for success/error/warning messages
  */
-export function Toast({
-    isOpen,
-    onClose,
-    type,
-    title,
-    message,
-    duration = 5000,
-}: ToastProps) {
+export function Toast({ isOpen, onClose, type, title, message, duration = 5000 }: ToastProps) {
     useEffect(() => {
         if (isOpen && duration > 0) {
             const timer = setTimeout(() => {
@@ -42,21 +35,21 @@ export function Toast({
         success: <CheckCircle2 className="w-5 h-5 text-green-600" />,
         error: <XCircle className="w-5 h-5 text-red-600" />,
         warning: <AlertCircle className="w-5 h-5 text-yellow-600" />,
-        info: <AlertCircle className="w-5 h-5 text-blue-600" />,
+        info: <AlertCircle className="w-5 h-5 text-blue-600" />
     };
 
     const colors = {
         success: "bg-green-50 border-green-200",
         error: "bg-red-50 border-red-200",
         warning: "bg-yellow-50 border-yellow-200",
-        info: "bg-blue-50 border-blue-200",
+        info: "bg-blue-50 border-blue-200"
     };
 
     const textColors = {
         success: "text-green-900",
         error: "text-red-900",
         warning: "text-yellow-900",
-        info: "text-blue-900",
+        info: "text-blue-900"
     };
 
     return (
@@ -67,13 +60,9 @@ export function Toast({
                 <div className="flex-shrink-0 mt-0.5">{icons[type]}</div>
 
                 <div className="flex-1 min-w-0">
-                    <p className={`font-medium text-sm ${textColors[type]}`}>
-                        {title}
-                    </p>
+                    <p className={`font-medium text-sm ${textColors[type]}`}>{title}</p>
                     {message && (
-                        <p className={`mt-1 text-sm ${textColors[type]} opacity-90`}>
-                            {message}
-                        </p>
+                        <p className={`mt-1 text-sm ${textColors[type]} opacity-90`}>{message}</p>
                     )}
                 </div>
 

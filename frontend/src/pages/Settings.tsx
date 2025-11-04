@@ -26,7 +26,7 @@ export function Settings() {
             title: "Security",
             description: "Security and privacy settings",
             items: ["Two-factor authentication", "Active sessions", "Audit log"]
-        },
+        }
     ];
 
     return (
@@ -40,7 +40,10 @@ export function Settings() {
                 {settingsSections.map((section) => {
                     const Icon = section.icon;
                     return (
-                        <div key={section.title} className="bg-white border border-border rounded-lg p-6">
+                        <div
+                            key={section.title}
+                            className="bg-white border border-border rounded-lg p-6"
+                        >
                             <div className="flex items-start gap-4">
                                 <div className="p-2 bg-primary/10 text-primary rounded-lg">
                                     <Icon className="w-5 h-5" />
@@ -58,8 +61,12 @@ export function Settings() {
                                                 key={item}
                                                 className="flex items-center justify-between py-2 px-3 hover:bg-muted rounded-lg transition-colors cursor-pointer"
                                             >
-                                                <span className="text-sm text-foreground">{item}</span>
-                                                <span className="text-xs text-muted-foreground">Configure →</span>
+                                                <span className="text-sm text-foreground">
+                                                    {item}
+                                                </span>
+                                                <span className="text-xs text-muted-foreground">
+                                                    Configure →
+                                                </span>
                                             </div>
                                         ))}
                                     </div>

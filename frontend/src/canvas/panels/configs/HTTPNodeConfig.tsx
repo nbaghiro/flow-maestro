@@ -3,8 +3,10 @@ import { FormField, FormSection } from "../../../components/FormField";
 import { OutputSettingsSection } from "../../../components/OutputSettingsSection";
 import { Plus, Trash2 } from "lucide-react";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 interface HTTPNodeConfigProps {
     data: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     onUpdate: (config: any) => void;
 }
 
@@ -13,20 +15,20 @@ const methods = [
     { value: "POST", label: "POST" },
     { value: "PUT", label: "PUT" },
     { value: "PATCH", label: "PATCH" },
-    { value: "DELETE", label: "DELETE" },
+    { value: "DELETE", label: "DELETE" }
 ];
 
 const authTypes = [
     { value: "none", label: "None" },
     { value: "basic", label: "Basic Auth" },
     { value: "bearer", label: "Bearer Token" },
-    { value: "apiKey", label: "API Key" },
+    { value: "apiKey", label: "API Key" }
 ];
 
 const bodyTypes = [
     { value: "json", label: "JSON" },
     { value: "form", label: "Form Data" },
-    { value: "raw", label: "Raw" },
+    { value: "raw", label: "Raw" }
 ];
 
 interface KeyValue {
@@ -36,9 +38,9 @@ interface KeyValue {
 
 export function HTTPNodeConfig({ data, onUpdate }: HTTPNodeConfigProps) {
     // Helper function to convert object to KeyValue array
-    const toKeyValueArray = (obj: any): KeyValue[] => {
+    const toKeyValueArray = (obj: unknown): KeyValue[] => {
         if (Array.isArray(obj)) return obj;
-        if (obj && typeof obj === 'object') {
+        if (obj && typeof obj === "object") {
             return Object.entries(obj).map(([key, value]) => ({ key, value: String(value) }));
         }
         return [];
@@ -66,17 +68,29 @@ export function HTTPNodeConfig({ data, onUpdate }: HTTPNodeConfigProps) {
         onUpdate({
             method,
             url,
-            headers: headers.filter(h => h.key),
-            queryParams: queryParams.filter(q => q.key),
+            headers: headers.filter((h) => h.key),
+            queryParams: queryParams.filter((q) => q.key),
             authType,
             authCredentials,
             bodyType,
             body,
             timeout,
             retryCount,
-            outputVariable,
+            outputVariable
         });
-    }, [method, url, headers, queryParams, authType, authCredentials, bodyType, body, timeout, retryCount, outputVariable]);
+    }, [
+        method,
+        url,
+        headers,
+        queryParams,
+        authType,
+        authCredentials,
+        bodyType,
+        body,
+        timeout,
+        retryCount,
+        outputVariable
+    ]);
 
     const addHeader = () => setHeaders([...headers, { key: "", value: "" }]);
     const removeHeader = (index: number) => setHeaders(headers.filter((_, i) => i !== index));
@@ -87,7 +101,8 @@ export function HTTPNodeConfig({ data, onUpdate }: HTTPNodeConfigProps) {
     };
 
     const addQueryParam = () => setQueryParams([...queryParams, { key: "", value: "" }]);
-    const removeQueryParam = (index: number) => setQueryParams(queryParams.filter((_, i) => i !== index));
+    const removeQueryParam = (index: number) =>
+        setQueryParams(queryParams.filter((_, i) => i !== index));
     const updateQueryParam = (index: number, field: keyof KeyValue, value: string) => {
         const updated = [...queryParams];
         updated[index] = { ...updated[index], [field]: value };
@@ -111,10 +126,7 @@ export function HTTPNodeConfig({ data, onUpdate }: HTTPNodeConfigProps) {
                     </select>
                 </FormField>
 
-                <FormField
-                    label="URL"
-                    description="Supports ${variableName} interpolation"
-                >
+                <FormField label="URL" description="Supports ${variableName} interpolation">
                     <input
                         type="text"
                         value={url}
@@ -219,8 +231,8 @@ export function HTTPNodeConfig({ data, onUpdate }: HTTPNodeConfigProps) {
                             authType === "basic"
                                 ? "username:password"
                                 : authType === "bearer"
-                                ? "Token value"
-                                : "API key value"
+                                  ? "Token value"
+                                  : "API key value"
                         }
                     >
                         <input
@@ -228,9 +240,7 @@ export function HTTPNodeConfig({ data, onUpdate }: HTTPNodeConfigProps) {
                             value={authCredentials}
                             onChange={(e) => setAuthCredentials(e.target.value)}
                             placeholder={
-                                authType === "basic"
-                                    ? "username:password"
-                                    : "Token or API key"
+                                authType === "basic" ? "username:password" : "Token or API key"
                             }
                             className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary font-mono"
                         />
@@ -271,10 +281,7 @@ export function HTTPNodeConfig({ data, onUpdate }: HTTPNodeConfigProps) {
             )}
 
             <FormSection title="Settings">
-                <FormField
-                    label="Timeout (seconds)"
-                    description="Maximum request duration"
-                >
+                <FormField label="Timeout (seconds)" description="Maximum request duration">
                     <input
                         type="number"
                         value={timeout}
@@ -285,10 +292,7 @@ export function HTTPNodeConfig({ data, onUpdate }: HTTPNodeConfigProps) {
                     />
                 </FormField>
 
-                <FormField
-                    label="Retry Count"
-                    description="Number of retries on failure"
-                >
+                <FormField label="Retry Count" description="Number of retries on failure">
                     <input
                         type="number"
                         value={retryCount}

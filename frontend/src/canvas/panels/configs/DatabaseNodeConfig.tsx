@@ -3,8 +3,10 @@ import { FormField, FormSection } from "../../../components/FormField";
 import { OutputSettingsSection } from "../../../components/OutputSettingsSection";
 import { CodeInput } from "../../../components/CodeInput";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 interface DatabaseNodeConfigProps {
     data: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     onUpdate: (config: any) => void;
 }
 
@@ -12,20 +14,20 @@ const operations = [
     { value: "query", label: "Query" },
     { value: "insert", label: "Insert" },
     { value: "update", label: "Update" },
-    { value: "delete", label: "Delete" },
+    { value: "delete", label: "Delete" }
 ];
 
 const databases = [
     { value: "postgresql", label: "PostgreSQL" },
     { value: "mysql", label: "MySQL" },
     { value: "mongodb", label: "MongoDB" },
-    { value: "redis", label: "Redis" },
+    { value: "redis", label: "Redis" }
 ];
 
 const returnFormats = [
     { value: "array", label: "Array of rows" },
     { value: "single", label: "Single row" },
-    { value: "count", label: "Row count" },
+    { value: "count", label: "Row count" }
 ];
 
 export function DatabaseNodeConfig({ data, onUpdate }: DatabaseNodeConfigProps) {
@@ -45,7 +47,7 @@ export function DatabaseNodeConfig({ data, onUpdate }: DatabaseNodeConfigProps) 
             query,
             parameters,
             returnFormat,
-            outputVariable,
+            outputVariable
         });
     }, [operation, databaseType, connectionId, query, parameters, returnFormat, outputVariable]);
 
@@ -62,21 +64,21 @@ export function DatabaseNodeConfig({ data, onUpdate }: DatabaseNodeConfigProps) 
                     return '{ "id": "${userId}" }';
             }
         } else if (databaseType === "redis") {
-            return operation === "query" ? 'GET ${key}' : 'SET ${key} ${value}';
+            return operation === "query" ? "GET ${key}" : "SET ${key} ${value}";
         }
 
         // SQL databases
         switch (operation) {
             case "query":
-                return 'SELECT * FROM users WHERE age > $1';
+                return "SELECT * FROM users WHERE age > $1";
             case "insert":
-                return 'INSERT INTO users (name, email) VALUES ($1, $2)';
+                return "INSERT INTO users (name, email) VALUES ($1, $2)";
             case "update":
-                return 'UPDATE users SET status = $1 WHERE id = $2';
+                return "UPDATE users SET status = $1 WHERE id = $2";
             case "delete":
-                return 'DELETE FROM users WHERE id = $1';
+                return "DELETE FROM users WHERE id = $1";
             default:
-                return '';
+                return "";
         }
     };
 
@@ -97,10 +99,7 @@ export function DatabaseNodeConfig({ data, onUpdate }: DatabaseNodeConfigProps) 
                     </select>
                 </FormField>
 
-                <FormField
-                    label="Connection"
-                    description="Stored connection reference"
-                >
+                <FormField label="Connection" description="Stored connection reference">
                     <input
                         type="text"
                         value={connectionId}
@@ -127,13 +126,23 @@ export function DatabaseNodeConfig({ data, onUpdate }: DatabaseNodeConfigProps) 
                 </FormField>
 
                 <FormField
-                    label={databaseType === "mongodb" ? "Query Object" : databaseType === "redis" ? "Command" : "SQL Query"}
+                    label={
+                        databaseType === "mongodb"
+                            ? "Query Object"
+                            : databaseType === "redis"
+                              ? "Command"
+                              : "SQL Query"
+                    }
                     description="Use $1, $2, etc. for parameterized queries (SQL)"
                 >
                     <CodeInput
                         value={query}
                         onChange={setQuery}
-                        language={databaseType === "mongodb" || databaseType === "redis" ? "javascript" : "sql"}
+                        language={
+                            databaseType === "mongodb" || databaseType === "redis"
+                                ? "javascript"
+                                : "sql"
+                        }
                         placeholder={getQueryPlaceholder()}
                         rows={6}
                     />
@@ -156,7 +165,8 @@ export function DatabaseNodeConfig({ data, onUpdate }: DatabaseNodeConfigProps) 
 
                 <div className="px-3 py-2 bg-yellow-50 border border-yellow-200 rounded-lg">
                     <p className="text-xs text-yellow-800">
-                        <strong>Security:</strong> Always use parameterized queries to prevent SQL injection attacks.
+                        <strong>Security:</strong> Always use parameterized queries to prevent SQL
+                        injection attacks.
                     </p>
                 </div>
             </FormSection>

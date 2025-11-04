@@ -5,7 +5,11 @@ import { useConnectionStore } from "../stores/connectionStore";
 import { ArrowLeft, Save, Loader2, Settings, MessageSquare, Slack, Wrench } from "lucide-react";
 import { cn } from "../lib/utils";
 import { AgentChat } from "../components/agents/AgentChat";
-import type { CreateAgentRequest, UpdateAgentRequest } from "../lib/api";
+import { ToolsList } from "../components/agents/ToolsList";
+import { AddWorkflowDialog } from "../components/agents/AddWorkflowDialog";
+import { AddMCPIntegrationDialog } from "../components/agents/AddMCPIntegrationDialog";
+import { AddCustomMCPDialog } from "../components/agents/AddCustomMCPDialog";
+import type { CreateAgentRequest, UpdateAgentRequest, Tool } from "../lib/api";
 import { getModelsForProvider, getDefaultModelForProvider } from "@flowmaestro/shared";
 
 type AgentTab = "build" | "conversations" | "slack" | "settings";
@@ -16,13 +20,23 @@ export function AgentBuilder() {
     const isNewAgent = agentId === "new";
     const [activeTab, setActiveTab] = useState<AgentTab>("build");
 
-    const { currentAgent, fetchAgent, createAgent, updateAgent, setCurrentAgent } = useAgentStore();
+    const {
+        currentAgent,
+        fetchAgent,
+        createAgent,
+        updateAgent,
+        setCurrentAgent,
+        addTool,
+        removeTool
+    } = useAgentStore();
     const { connections, fetchConnections } = useConnectionStore();
 
     // Form state
     const [name, setName] = useState("");
     const [description, setDescription] = useState("");
-    const [provider, setProvider] = useState<"openai" | "anthropic" | "google" | "cohere">("openai");
+    const [provider, setProvider] = useState<"openai" | "anthropic" | "google" | "cohere">(
+        "openai"
+    );
     const [model, setModel] = useState("");
     const [connectionId, setConnectionId] = useState<string>("");
     const [systemPrompt, setSystemPrompt] = useState("You are a helpful AI assistant.");
@@ -30,6 +44,13 @@ export function AgentBuilder() {
     const [maxTokens, setMaxTokens] = useState(4096);
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    // Tools state
+    const [tools, setTools] = useState<Tool[]>([]);
+    const [removingToolId, setRemovingToolId] = useState<string | null>(null);
+    const [isWorkflowDialogOpen, setIsWorkflowDialogOpen] = useState(false);
+    const [isMCPDialogOpen, setIsMCPDialogOpen] = useState(false);
+    const [isCustomMCPDialogOpen, setIsCustomMCPDialogOpen] = useState(false);
 
     // Load agent if editing
     useEffect(() => {
@@ -54,6 +75,8 @@ export function AgentBuilder() {
             setSystemPrompt(currentAgent.system_prompt);
             setTemperature(currentAgent.temperature);
             setMaxTokens(currentAgent.max_tokens);
+            // Parse tools from available_tools array
+            setTools(currentAgent.available_tools || []);
         }
     }, [currentAgent]);
 
@@ -71,8 +94,6 @@ export function AgentBuilder() {
             ["openai", "anthropic", "google", "cohere"].includes(conn.provider.toLowerCase()) &&
             (conn.connection_method === "api_key" || conn.connection_method === "oauth2")
     );
-
-    const availableModels = getModelsForProvider(provider);
 
     const handleSave = async () => {
         if (!name.trim()) {
@@ -97,7 +118,7 @@ export function AgentBuilder() {
                 connection_id: connectionId || null,
                 system_prompt: systemPrompt,
                 temperature,
-                max_tokens: maxTokens,
+                max_tokens: maxTokens
             };
 
             if (isNewAgent) {
@@ -113,11 +134,86 @@ export function AgentBuilder() {
         }
     };
 
+    // Tool management handlers
+    const handleRemoveTool = async (toolId: string) => {
+        if (!currentAgent) return;
+
+        setRemovingToolId(toolId);
+        try {
+            await removeTool(currentAgent.id, toolId);
+            // Update local state from the updated agent (handled by store)
+            if (currentAgent) {
+                setTools(currentAgent.available_tools || []);
+            }
+        } catch (error) {
+            console.error("Failed to remove tool:", error);
+            setError(error instanceof Error ? error.message : "Failed to remove tool");
+        } finally {
+            setRemovingToolId(null);
+        }
+    };
+
+    const handleAddWorkflows = async (workflows: any[]) => {
+        if (!currentAgent) return;
+
+        try {
+            // Add each workflow as a tool
+            for (const workflow of workflows) {
+                await addTool(currentAgent.id, {
+                    type: "workflow",
+                    name: workflow.name,
+                    description: workflow.description || `Workflow: ${workflow.name}`,
+                    schema: {}, // Empty schema for now
+                    config: {
+                        workflowId: workflow.id
+                    }
+                });
+            }
+
+            // Update local state from the updated agent
+            if (currentAgent) {
+                setTools(currentAgent.available_tools || []);
+            }
+        } catch (error) {
+            console.error("Failed to add workflows:", error);
+            setError(error instanceof Error ? error.message : "Failed to add workflows");
+        }
+    };
+
+    const handleAddCustomMCP = async (server: { name: string; url: string; apiKey?: string }) => {
+        if (!currentAgent) return;
+
+        try {
+            // Note: Using "function" type for custom MCP servers
+            // This will need to be updated when we have proper MCP integration
+            await addTool(currentAgent.id, {
+                type: "function",
+                name: server.name,
+                description: `Custom MCP Server: ${server.name}`,
+                schema: {
+                    type: "mcp_server",
+                    url: server.url
+                },
+                config: {
+                    functionName: server.name
+                }
+            });
+
+            // Update local state from the updated agent
+            if (currentAgent) {
+                setTools(currentAgent.available_tools || []);
+            }
+        } catch (error) {
+            console.error("Failed to add custom MCP:", error);
+            setError(error instanceof Error ? error.message : "Failed to add custom MCP");
+        }
+    };
+
     const tabs = [
         { id: "build" as AgentTab, label: "Build", icon: Wrench },
         { id: "conversations" as AgentTab, label: "Conversations", icon: MessageSquare },
         { id: "slack" as AgentTab, label: "Connect to Slack", icon: Slack, comingSoon: true },
-        { id: "settings" as AgentTab, label: "Settings", icon: Settings },
+        { id: "settings" as AgentTab, label: "Settings", icon: Settings }
     ];
 
     return (
@@ -192,7 +288,9 @@ export function AgentBuilder() {
                                     <Icon className="w-5 h-5" />
                                     <span className="flex-1 text-left">{tab.label}</span>
                                     {tab.comingSoon && (
-                                        <span className="text-xs bg-muted px-2 py-0.5 rounded">Soon</span>
+                                        <span className="text-xs bg-muted px-2 py-0.5 rounded">
+                                            Soon
+                                        </span>
                                     )}
                                 </button>
                             );
@@ -215,7 +313,8 @@ export function AgentBuilder() {
                                         <select
                                             value={`${provider}:${model}`}
                                             onChange={(e) => {
-                                                const [newProvider, newModel] = e.target.value.split(":");
+                                                const [newProvider, newModel] =
+                                                    e.target.value.split(":");
                                                 setProvider(newProvider as any);
                                                 setModel(newModel);
                                             }}
@@ -228,28 +327,40 @@ export function AgentBuilder() {
                                         >
                                             <optgroup label="OpenAI">
                                                 {getModelsForProvider("openai").map((m) => (
-                                                    <option key={`openai:${m.value}`} value={`openai:${m.value}`}>
+                                                    <option
+                                                        key={`openai:${m.value}`}
+                                                        value={`openai:${m.value}`}
+                                                    >
                                                         {m.label}
                                                     </option>
                                                 ))}
                                             </optgroup>
                                             <optgroup label="Anthropic">
                                                 {getModelsForProvider("anthropic").map((m) => (
-                                                    <option key={`anthropic:${m.value}`} value={`anthropic:${m.value}`}>
+                                                    <option
+                                                        key={`anthropic:${m.value}`}
+                                                        value={`anthropic:${m.value}`}
+                                                    >
                                                         {m.label}
                                                     </option>
                                                 ))}
                                             </optgroup>
                                             <optgroup label="Google">
                                                 {getModelsForProvider("google").map((m) => (
-                                                    <option key={`google:${m.value}`} value={`google:${m.value}`}>
+                                                    <option
+                                                        key={`google:${m.value}`}
+                                                        value={`google:${m.value}`}
+                                                    >
                                                         {m.label}
                                                     </option>
                                                 ))}
                                             </optgroup>
                                             <optgroup label="Cohere">
                                                 {getModelsForProvider("cohere").map((m) => (
-                                                    <option key={`cohere:${m.value}`} value={`cohere:${m.value}`}>
+                                                    <option
+                                                        key={`cohere:${m.value}`}
+                                                        value={`cohere:${m.value}`}
+                                                    >
                                                         {m.label}
                                                     </option>
                                                 ))}
@@ -285,39 +396,45 @@ export function AgentBuilder() {
                                         <p className="text-sm text-muted-foreground mb-3">
                                             Select the integrations and flows the agent can access
                                         </p>
+
+                                        {/* Connected Tools List */}
+                                        <ToolsList
+                                            tools={tools}
+                                            onRemove={handleRemoveTool}
+                                            isRemoving={removingToolId}
+                                        />
+
+                                        {/* Add Tool Buttons */}
                                         <div className="space-y-2">
                                             <button
-                                                disabled
+                                                onClick={() => setIsMCPDialogOpen(true)}
                                                 className={cn(
                                                     "w-full px-4 py-3 rounded-lg border border-dashed border-border",
                                                     "text-sm text-muted-foreground text-left",
-                                                    "hover:border-primary/50 transition-colors",
-                                                    "disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    "hover:border-primary/50 hover:bg-muted transition-colors"
                                                 )}
                                             >
-                                                + Add an MCP integration (Coming Soon)
+                                                + Add an MCP integration
                                             </button>
                                             <button
-                                                disabled
+                                                onClick={() => setIsWorkflowDialogOpen(true)}
                                                 className={cn(
                                                     "w-full px-4 py-3 rounded-lg border border-dashed border-border",
                                                     "text-sm text-muted-foreground text-left",
-                                                    "hover:border-primary/50 transition-colors",
-                                                    "disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    "hover:border-primary/50 hover:bg-muted transition-colors"
                                                 )}
                                             >
-                                                + Add a workflow (Coming Soon)
+                                                + Add a workflow
                                             </button>
                                             <button
-                                                disabled
+                                                onClick={() => setIsCustomMCPDialogOpen(true)}
                                                 className={cn(
                                                     "w-full px-4 py-3 rounded-lg border border-dashed border-border",
                                                     "text-sm text-muted-foreground text-left",
-                                                    "hover:border-primary/50 transition-colors",
-                                                    "disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    "hover:border-primary/50 hover:bg-muted transition-colors"
                                                 )}
                                             >
-                                                + Connect your own MCP server (Coming Soon)
+                                                + Connect your own MCP server
                                             </button>
                                         </div>
                                     </div>
@@ -332,7 +449,9 @@ export function AgentBuilder() {
                                     <div className="h-full flex items-center justify-center text-muted-foreground">
                                         <div className="text-center">
                                             <p className="mb-2">Save your agent to start testing</p>
-                                            <p className="text-sm">You'll be able to chat with your agent here</p>
+                                            <p className="text-sm">
+                                                You'll be able to chat with your agent here
+                                            </p>
                                         </div>
                                     </div>
                                 )}
@@ -435,8 +554,12 @@ export function AgentBuilder() {
                                         {/* Temperature */}
                                         <div>
                                             <div className="flex items-center justify-between mb-2">
-                                                <span className="text-sm text-muted-foreground">Temperature</span>
-                                                <span className="text-sm font-medium">{temperature}</span>
+                                                <span className="text-sm text-muted-foreground">
+                                                    Temperature
+                                                </span>
+                                                <span className="text-sm font-medium">
+                                                    {temperature}
+                                                </span>
                                             </div>
                                             <input
                                                 type="range"
@@ -444,7 +567,9 @@ export function AgentBuilder() {
                                                 max="2"
                                                 step="0.1"
                                                 value={temperature}
-                                                onChange={(e) => setTemperature(parseFloat(e.target.value))}
+                                                onChange={(e) =>
+                                                    setTemperature(parseFloat(e.target.value))
+                                                }
                                                 className="w-full"
                                             />
                                         </div>
@@ -452,8 +577,12 @@ export function AgentBuilder() {
                                         {/* Max Tokens */}
                                         <div>
                                             <div className="flex items-center justify-between mb-2">
-                                                <span className="text-sm text-muted-foreground">Max Tokens</span>
-                                                <span className="text-sm font-medium">{maxTokens}</span>
+                                                <span className="text-sm text-muted-foreground">
+                                                    Max Tokens
+                                                </span>
+                                                <span className="text-sm font-medium">
+                                                    {maxTokens}
+                                                </span>
                                             </div>
                                             <input
                                                 type="number"
@@ -461,7 +590,9 @@ export function AgentBuilder() {
                                                 max="100000"
                                                 step="100"
                                                 value={maxTokens}
-                                                onChange={(e) => setMaxTokens(parseInt(e.target.value))}
+                                                onChange={(e) =>
+                                                    setMaxTokens(parseInt(e.target.value))
+                                                }
                                                 className={cn(
                                                     "w-full px-3 py-2 rounded-lg",
                                                     "bg-background border border-border",
@@ -477,6 +608,25 @@ export function AgentBuilder() {
                     )}
                 </div>
             </div>
+
+            {/* Tool Dialogs */}
+            <AddWorkflowDialog
+                isOpen={isWorkflowDialogOpen}
+                onClose={() => setIsWorkflowDialogOpen(false)}
+                onAdd={handleAddWorkflows}
+                existingToolIds={tools.filter((t) => t.type === "workflow").map((t) => t.id)}
+            />
+
+            <AddMCPIntegrationDialog
+                isOpen={isMCPDialogOpen}
+                onClose={() => setIsMCPDialogOpen(false)}
+            />
+
+            <AddCustomMCPDialog
+                isOpen={isCustomMCPDialogOpen}
+                onClose={() => setIsCustomMCPDialogOpen(false)}
+                onAdd={handleAddCustomMCP}
+            />
         </div>
     );
 }

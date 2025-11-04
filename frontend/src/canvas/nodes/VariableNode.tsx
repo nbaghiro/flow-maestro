@@ -31,12 +31,12 @@ function VariableNode({ data, selected }: NodeProps<VariableNodeData>) {
                 </div>
                 <div className="flex items-center justify-between">
                     <span className="text-xs text-muted-foreground">Name:</span>
-                    <span className="text-xs font-mono bg-muted px-1.5 py-0.5 rounded">${variableName}</span>
+                    <span className="text-xs font-mono bg-muted px-1.5 py-0.5 rounded">
+                        ${variableName}
+                    </span>
                 </div>
                 {value && (
-                    <div className="text-xs text-muted-foreground italic truncate">
-                        {value}
-                    </div>
+                    <div className="text-xs text-muted-foreground italic truncate">{value}</div>
                 )}
             </div>
         </BaseNode>

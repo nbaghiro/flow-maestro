@@ -1,4 +1,4 @@
-import { create } from 'zustand';
+import { create } from "zustand";
 import type {
     KnowledgeBase,
     KnowledgeDocument,
@@ -6,8 +6,8 @@ import type {
     CreateKnowledgeBaseInput,
     UpdateKnowledgeBaseInput,
     QueryKnowledgeBaseInput,
-    ChunkSearchResult,
-} from '../lib/knowledgeBaseApi';
+    ChunkSearchResult
+} from "../lib/knowledgeBaseApi";
 import {
     getKnowledgeBases,
     getKnowledgeBase,
@@ -20,8 +20,8 @@ import {
     addUrlToKnowledgeBase,
     queryKnowledgeBase,
     deleteDocument,
-    reprocessDocument,
-} from '../lib/knowledgeBaseApi';
+    reprocessDocument
+} from "../lib/knowledgeBaseApi";
 
 interface KnowledgeBaseStore {
     // State
@@ -66,12 +66,12 @@ export const useKnowledgeBaseStore = create<KnowledgeBaseStore>((set, get) => ({
             if (response.success && response.data) {
                 set({ knowledgeBases: response.data, loading: false });
             } else {
-                throw new Error(response.error || 'Failed to fetch knowledge bases');
+                throw new Error(response.error || "Failed to fetch knowledge bases");
             }
         } catch (error) {
             set({
-                error: error instanceof Error ? error.message : 'Failed to fetch knowledge bases',
-                loading: false,
+                error: error instanceof Error ? error.message : "Failed to fetch knowledge bases",
+                loading: false
             });
         }
     },
@@ -84,12 +84,12 @@ export const useKnowledgeBaseStore = create<KnowledgeBaseStore>((set, get) => ({
             if (response.success && response.data) {
                 set({ currentKB: response.data, loading: false });
             } else {
-                throw new Error(response.error || 'Failed to fetch knowledge base');
+                throw new Error(response.error || "Failed to fetch knowledge base");
             }
         } catch (error) {
             set({
-                error: error instanceof Error ? error.message : 'Failed to fetch knowledge base',
-                loading: false,
+                error: error instanceof Error ? error.message : "Failed to fetch knowledge base",
+                loading: false
             });
         }
     },
@@ -102,15 +102,15 @@ export const useKnowledgeBaseStore = create<KnowledgeBaseStore>((set, get) => ({
             if (response.success && response.data) {
                 set((state) => ({
                     knowledgeBases: [...state.knowledgeBases, response.data!],
-                    loading: false,
+                    loading: false
                 }));
                 return response.data;
             }
-            throw new Error(response.error || 'Failed to create knowledge base');
+            throw new Error(response.error || "Failed to create knowledge base");
         } catch (error) {
             set({
-                error: error instanceof Error ? error.message : 'Failed to create knowledge base',
-                loading: false,
+                error: error instanceof Error ? error.message : "Failed to create knowledge base",
+                loading: false
             });
             throw error;
         }
@@ -127,15 +127,15 @@ export const useKnowledgeBaseStore = create<KnowledgeBaseStore>((set, get) => ({
                         kb.id === id ? response.data! : kb
                     ),
                     currentKB: state.currentKB?.id === id ? response.data! : state.currentKB,
-                    loading: false,
+                    loading: false
                 }));
             } else {
-                throw new Error(response.error || 'Failed to update knowledge base');
+                throw new Error(response.error || "Failed to update knowledge base");
             }
         } catch (error) {
             set({
-                error: error instanceof Error ? error.message : 'Failed to update knowledge base',
-                loading: false,
+                error: error instanceof Error ? error.message : "Failed to update knowledge base",
+                loading: false
             });
             throw error;
         }
@@ -150,15 +150,15 @@ export const useKnowledgeBaseStore = create<KnowledgeBaseStore>((set, get) => ({
                 set((state) => ({
                     knowledgeBases: state.knowledgeBases.filter((kb) => kb.id !== id),
                     currentKB: state.currentKB?.id === id ? null : state.currentKB,
-                    loading: false,
+                    loading: false
                 }));
             } else {
-                throw new Error(response.error || 'Failed to delete knowledge base');
+                throw new Error(response.error || "Failed to delete knowledge base");
             }
         } catch (error) {
             set({
-                error: error instanceof Error ? error.message : 'Failed to delete knowledge base',
-                loading: false,
+                error: error instanceof Error ? error.message : "Failed to delete knowledge base",
+                loading: false
             });
             throw error;
         }
@@ -172,12 +172,12 @@ export const useKnowledgeBaseStore = create<KnowledgeBaseStore>((set, get) => ({
             if (response.success && response.data) {
                 set({ currentStats: response.data, loading: false });
             } else {
-                throw new Error(response.error || 'Failed to fetch stats');
+                throw new Error(response.error || "Failed to fetch stats");
             }
         } catch (error) {
             set({
-                error: error instanceof Error ? error.message : 'Failed to fetch stats',
-                loading: false,
+                error: error instanceof Error ? error.message : "Failed to fetch stats",
+                loading: false
             });
         }
     },
@@ -190,12 +190,12 @@ export const useKnowledgeBaseStore = create<KnowledgeBaseStore>((set, get) => ({
             if (response.success && response.data) {
                 set({ currentDocuments: response.data, loading: false });
             } else {
-                throw new Error(response.error || 'Failed to fetch documents');
+                throw new Error(response.error || "Failed to fetch documents");
             }
         } catch (error) {
             set({
-                error: error instanceof Error ? error.message : 'Failed to fetch documents',
-                loading: false,
+                error: error instanceof Error ? error.message : "Failed to fetch documents",
+                loading: false
             });
         }
     },
@@ -210,12 +210,12 @@ export const useKnowledgeBaseStore = create<KnowledgeBaseStore>((set, get) => ({
                 await get().fetchDocuments(id);
                 set({ loading: false });
             } else {
-                throw new Error(response.error || 'Failed to upload document');
+                throw new Error(response.error || "Failed to upload document");
             }
         } catch (error) {
             set({
-                error: error instanceof Error ? error.message : 'Failed to upload document',
-                loading: false,
+                error: error instanceof Error ? error.message : "Failed to upload document",
+                loading: false
             });
             throw error;
         }
@@ -231,12 +231,12 @@ export const useKnowledgeBaseStore = create<KnowledgeBaseStore>((set, get) => ({
                 await get().fetchDocuments(id);
                 set({ loading: false });
             } else {
-                throw new Error(response.error || 'Failed to add URL');
+                throw new Error(response.error || "Failed to add URL");
             }
         } catch (error) {
             set({
-                error: error instanceof Error ? error.message : 'Failed to add URL',
-                loading: false,
+                error: error instanceof Error ? error.message : "Failed to add URL",
+                loading: false
             });
             throw error;
         }
@@ -249,18 +249,15 @@ export const useKnowledgeBaseStore = create<KnowledgeBaseStore>((set, get) => ({
             const response = await deleteDocument(kbId, docId);
             if (response.success) {
                 // Refresh documents list and stats
-                await Promise.all([
-                    get().fetchDocuments(kbId),
-                    get().fetchStats(kbId)
-                ]);
+                await Promise.all([get().fetchDocuments(kbId), get().fetchStats(kbId)]);
                 set({ loading: false });
             } else {
-                throw new Error(response.error || 'Failed to delete document');
+                throw new Error(response.error || "Failed to delete document");
             }
         } catch (error) {
             set({
-                error: error instanceof Error ? error.message : 'Failed to delete document',
-                loading: false,
+                error: error instanceof Error ? error.message : "Failed to delete document",
+                loading: false
             });
             throw error;
         }
@@ -276,12 +273,12 @@ export const useKnowledgeBaseStore = create<KnowledgeBaseStore>((set, get) => ({
                 await get().fetchDocuments(kbId);
                 set({ loading: false });
             } else {
-                throw new Error(response.error || 'Failed to reprocess document');
+                throw new Error(response.error || "Failed to reprocess document");
             }
         } catch (error) {
             set({
-                error: error instanceof Error ? error.message : 'Failed to reprocess document',
-                loading: false,
+                error: error instanceof Error ? error.message : "Failed to reprocess document",
+                loading: false
             });
             throw error;
         }
@@ -296,11 +293,11 @@ export const useKnowledgeBaseStore = create<KnowledgeBaseStore>((set, get) => ({
                 set({ loading: false });
                 return response.data.results;
             }
-            throw new Error(response.error || 'Failed to query knowledge base');
+            throw new Error(response.error || "Failed to query knowledge base");
         } catch (error) {
             set({
-                error: error instanceof Error ? error.message : 'Failed to query knowledge base',
-                loading: false,
+                error: error instanceof Error ? error.message : "Failed to query knowledge base",
+                loading: false
             });
             throw error;
         }
@@ -316,7 +313,7 @@ export const useKnowledgeBaseStore = create<KnowledgeBaseStore>((set, get) => ({
         set({
             currentKB: null,
             currentDocuments: [],
-            currentStats: null,
+            currentStats: null
         });
-    },
+    }
 }));

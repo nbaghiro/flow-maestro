@@ -25,46 +25,49 @@ const statusConfig: Record<NodeStatus, { color: string; label: string }> = {
     pending: { color: "bg-yellow-400", label: "Pending" },
     running: { color: "bg-blue-500 animate-pulse", label: "Running" },
     success: { color: "bg-green-500", label: "Success" },
-    error: { color: "bg-red-500", label: "Error" },
+    error: { color: "bg-red-500", label: "Error" }
 };
 
-const categoryConfig: Record<string, { borderColor: string; iconBg: string; iconColor: string; ringColor: string }> = {
+const categoryConfig: Record<
+    string,
+    { borderColor: string; iconBg: string; iconColor: string; ringColor: string }
+> = {
     ai: {
         borderColor: "border-l-blue-500",
         iconBg: "bg-blue-50",
         iconColor: "text-blue-600",
-        ringColor: "ring-blue-500",
+        ringColor: "ring-blue-500"
     },
     logic: {
         borderColor: "border-l-purple-500",
         iconBg: "bg-purple-50",
         iconColor: "text-purple-600",
-        ringColor: "ring-purple-500",
+        ringColor: "ring-purple-500"
     },
     interaction: {
         borderColor: "border-l-green-500",
         iconBg: "bg-green-50",
         iconColor: "text-green-600",
-        ringColor: "ring-green-500",
+        ringColor: "ring-green-500"
     },
     data: {
         borderColor: "border-l-teal-500",
         iconBg: "bg-teal-50",
         iconColor: "text-teal-600",
-        ringColor: "ring-teal-500",
+        ringColor: "ring-teal-500"
     },
     connect: {
         borderColor: "border-l-orange-500",
         iconBg: "bg-orange-50",
         iconColor: "text-orange-600",
-        ringColor: "ring-orange-500",
+        ringColor: "ring-orange-500"
     },
     voice: {
         borderColor: "border-l-emerald-500",
         iconBg: "bg-emerald-50",
         iconColor: "text-emerald-600",
-        ringColor: "ring-emerald-500",
-    },
+        ringColor: "ring-emerald-500"
+    }
 };
 
 export function BaseNode({
@@ -77,7 +80,7 @@ export function BaseNode({
     hasInputHandle = true,
     hasOutputHandle = true,
     customHandles,
-    onStatusClick,
+    onStatusClick
 }: BaseNodeProps) {
     const nodeId = useNodeId();
     const { currentExecution } = useWorkflowStore();
@@ -88,9 +91,8 @@ export function BaseNode({
     const viewport = useStore((state) => state.transform);
 
     // Get execution status for this node
-    const executionState = nodeId && currentExecution
-        ? currentExecution.nodeStates.get(nodeId)
-        : null;
+    const executionState =
+        nodeId && currentExecution ? currentExecution.nodeStates.get(nodeId) : null;
 
     // Close popover when viewport changes (zoom or pan)
     useEffect(() => {
@@ -103,7 +105,7 @@ export function BaseNode({
     // Use execution status if available, otherwise use provided status
     const status: NodeStatus = executionState
         ? (executionState.status as NodeStatus)
-        : (providedStatus || "idle");
+        : providedStatus || "idle";
 
     // Build tooltip text
     const getTooltipText = () => {
@@ -131,7 +133,7 @@ export function BaseNode({
                 `node-${category}-category`,
                 selected ? "shadow-node-hover" : "shadow-node hover:shadow-node-hover"
             )}
-            style={{ borderLeftWidth: '4px' }}
+            style={{ borderLeftWidth: "4px" }}
         >
             {/* Header */}
             <div className="flex items-center justify-between px-3 py-2.5 border-b border-border bg-muted/30">
@@ -177,11 +179,7 @@ export function BaseNode({
             </div>
 
             {/* Content */}
-            {children && (
-                <div className="px-3 py-2.5 text-sm bg-white">
-                    {children}
-                </div>
-            )}
+            {children && <div className="px-3 py-2.5 text-sm bg-white">{children}</div>}
 
             {/* Handles */}
             {customHandles || (
@@ -204,7 +202,6 @@ export function BaseNode({
                     )}
                 </>
             )}
-
         </div>
     );
 }

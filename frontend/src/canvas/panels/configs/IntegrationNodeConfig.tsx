@@ -12,20 +12,20 @@ const services = [
     { value: "discord", label: "Discord" },
     { value: "email", label: "Email" },
     { value: "webhook", label: "Webhook" },
-    { value: "custom", label: "Custom API" },
+    { value: "custom", label: "Custom API" }
 ];
 
 const slackActions = [
     { value: "sendMessage", label: "Send Message" },
     { value: "createChannel", label: "Create Channel" },
-    { value: "inviteUser", label: "Invite User" },
+    { value: "inviteUser", label: "Invite User" }
 ];
 
 const emailProviders = [
     { value: "smtp", label: "SMTP" },
     { value: "sendgrid", label: "SendGrid" },
     { value: "mailgun", label: "Mailgun" },
-    { value: "ses", label: "AWS SES" },
+    { value: "ses", label: "AWS SES" }
 ];
 
 export function IntegrationNodeConfig({ data, onUpdate }: IntegrationNodeConfigProps) {
@@ -72,7 +72,22 @@ export function IntegrationNodeConfig({ data, onUpdate }: IntegrationNodeConfigP
         }
 
         onUpdate(config);
-    }, [service, action, credentialsId, slackChannel, slackMessage, discordWebhookUrl, discordMessage, emailProvider, emailTo, emailSubject, emailBody, webhookUrl, webhookPayload, outputVariable]);
+    }, [
+        service,
+        action,
+        credentialsId,
+        slackChannel,
+        slackMessage,
+        discordWebhookUrl,
+        discordMessage,
+        emailProvider,
+        emailTo,
+        emailSubject,
+        emailBody,
+        webhookUrl,
+        webhookPayload,
+        outputVariable
+    ]);
 
     return (
         <div>
@@ -149,10 +164,7 @@ export function IntegrationNodeConfig({ data, onUpdate }: IntegrationNodeConfigP
 
             {service === "discord" && (
                 <FormSection title="Configuration">
-                    <FormField
-                        label="Webhook URL"
-                        description="Discord webhook URL"
-                    >
+                    <FormField label="Webhook URL" description="Discord webhook URL">
                         <input
                             type="text"
                             value={discordWebhookUrl}
@@ -238,14 +250,13 @@ export function IntegrationNodeConfig({ data, onUpdate }: IntegrationNodeConfigP
                         />
                     </FormField>
 
-                    <FormField
-                        label="Payload"
-                        description="JSON payload to send"
-                    >
+                    <FormField label="Payload" description="JSON payload to send">
                         <textarea
                             value={webhookPayload}
                             onChange={(e) => setWebhookPayload(e.target.value)}
-                            placeholder={'{\n  "event": "workflow_complete",\n  "data": "${result}"\n}'}
+                            placeholder={
+                                '{\n  "event": "workflow_complete",\n  "data": "${result}"\n}'
+                            }
                             rows={8}
                             className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none font-mono"
                         />

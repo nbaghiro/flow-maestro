@@ -17,7 +17,7 @@ const providersByMethod: Record<ConnectionMethod, string[]> = {
     oauth2: ["slack", "google", "notion", "github"],
     mcp: ["filesystem", "postgres", "mongodb", "github", "custom"],
     basic_auth: ["custom"],
-    custom: ["custom"],
+    custom: ["custom"]
 };
 
 const providerLabels: Record<string, string> = {
@@ -31,14 +31,14 @@ const providerLabels: Record<string, string> = {
     filesystem: "Filesystem MCP",
     postgres: "PostgreSQL MCP",
     mongodb: "MongoDB MCP",
-    custom: "Custom",
+    custom: "Custom"
 };
 
 export function AddConnectionDialog({
     isOpen,
     onClose,
     onSuccess,
-    initialProvider,
+    initialProvider
 }: AddConnectionDialogProps) {
     const [step, setStep] = useState<Step>("method");
     const [connectionMethod, setConnectionMethod] = useState<ConnectionMethod | null>(null);
@@ -119,14 +119,14 @@ export function AddConnectionDialog({
             name,
             connection_method: connectionMethod,
             provider,
-            data: {},
+            data: {}
         };
 
         // Build data based on connection method
         if (connectionMethod === "api_key") {
             input.data = {
                 api_key: config.apiKey || "",
-                api_secret: config.apiSecret,
+                api_secret: config.apiSecret
             };
         } else if (connectionMethod === "mcp") {
             input.data = {
@@ -135,13 +135,13 @@ export function AddConnectionDialog({
                 api_key: config.apiKey,
                 bearer_token: config.bearerToken,
                 username: config.username,
-                password: config.password,
+                password: config.password
             };
             input.mcp_server_url = config.serverUrl;
         } else if (connectionMethod === "basic_auth") {
             input.data = {
                 username: config.username || "",
-                password: config.password || "",
+                password: config.password || ""
             };
         }
 
@@ -176,8 +176,8 @@ export function AddConnectionDialog({
                 step === "method"
                     ? "Choose how you want to connect"
                     : step === "provider"
-                    ? "Select a provider"
-                    : `Configure ${providerLabels[provider] || "connection"}`
+                      ? "Select a provider"
+                      : `Configure ${providerLabels[provider] || "connection"}`
             }
             maxWidth="lg"
         >
@@ -221,9 +221,7 @@ export function AddConnectionDialog({
                                 onClick={() => handleProviderSelect(p)}
                                 className="p-4 text-left border border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors"
                             >
-                                <div className="font-medium text-gray-900">
-                                    {providerLabels[p]}
-                                </div>
+                                <div className="font-medium text-gray-900">{providerLabels[p]}</div>
                             </button>
                         ))}
                     </div>
@@ -283,7 +281,7 @@ export function AddConnectionDialog({
                                             onChange={(e) =>
                                                 setConfig({
                                                     ...config,
-                                                    apiSecret: e.target.value,
+                                                    apiSecret: e.target.value
                                                 })
                                             }
                                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
@@ -353,7 +351,7 @@ export function AddConnectionDialog({
                                             onChange={(e) =>
                                                 setConfig({
                                                     ...config,
-                                                    bearerToken: e.target.value,
+                                                    bearerToken: e.target.value
                                                 })
                                             }
                                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
@@ -372,7 +370,7 @@ export function AddConnectionDialog({
                                                 onChange={(e) =>
                                                     setConfig({
                                                         ...config,
-                                                        username: e.target.value,
+                                                        username: e.target.value
                                                     })
                                                 }
                                                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
@@ -388,7 +386,7 @@ export function AddConnectionDialog({
                                                 onChange={(e) =>
                                                     setConfig({
                                                         ...config,
-                                                        password: e.target.value,
+                                                        password: e.target.value
                                                     })
                                                 }
                                                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
@@ -403,8 +401,8 @@ export function AddConnectionDialog({
                         {connectionMethod === "oauth2" && (
                             <div className="p-4 bg-blue-50 rounded-md">
                                 <p className="text-sm text-blue-800">
-                                    OAuth connections are configured through the Integrations
-                                    page. Click "Connect" on the provider you want to authorize.
+                                    OAuth connections are configured through the Integrations page.
+                                    Click "Connect" on the provider you want to authorize.
                                 </p>
                             </div>
                         )}

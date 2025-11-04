@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
 import { FormField, FormSection } from "../../../components/FormField";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 interface OutputNodeConfigProps {
     data: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     onUpdate: (config: any) => void;
 }
 
@@ -10,7 +12,7 @@ const formats = [
     { value: "json", label: "JSON" },
     { value: "string", label: "String" },
     { value: "number", label: "Number" },
-    { value: "boolean", label: "Boolean" },
+    { value: "boolean", label: "Boolean" }
 ];
 
 export function OutputNodeConfig({ data, onUpdate }: OutputNodeConfigProps) {
@@ -24,7 +26,7 @@ export function OutputNodeConfig({ data, onUpdate }: OutputNodeConfigProps) {
             outputName,
             value,
             format,
-            description,
+            description
         });
     }, [outputName, value, format, description]);
 
@@ -58,10 +60,7 @@ export function OutputNodeConfig({ data, onUpdate }: OutputNodeConfigProps) {
                     </select>
                 </FormField>
 
-                <FormField
-                    label="Description"
-                    description="Optional description for this output"
-                >
+                <FormField label="Description" description="Optional description for this output">
                     <textarea
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
@@ -93,9 +92,9 @@ export function OutputNodeConfig({ data, onUpdate }: OutputNodeConfigProps) {
                 <div className="px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg">
                     <p className="text-xs text-blue-800">
                         <strong>Examples:</strong>
-                        <br />• {`\${llmResponse}`} - Reference a variable
-                        <br />• {`\${user.name}`} - Access nested properties
-                        <br />• {`\{...\${object}, extra: "value"\}`} - Merge objects
+                        <br />• {"${llmResponse}"} - Reference a variable
+                        <br />• {"${user.name}"} - Access nested properties
+                        <br />• {'{{...${object}, extra: "value"}}'} - Merge objects
                     </p>
                 </div>
             </FormSection>
@@ -108,7 +107,14 @@ export function OutputNodeConfig({ data, onUpdate }: OutputNodeConfigProps) {
                     <code className="text-xs block font-mono text-foreground">
                         {"{"}
                         <br />
-                        {"  "}"{outputName || "outputName"}": {format === "json" ? "{...}" : format === "number" ? "123" : format === "boolean" ? "true" : '"..."'}
+                        {"  "}"{outputName || "outputName"}":{" "}
+                        {format === "json"
+                            ? "{...}"
+                            : format === "number"
+                              ? "123"
+                              : format === "boolean"
+                                ? "true"
+                                : '"..."'}
                         <br />
                         {"}"}
                     </code>
@@ -117,15 +123,9 @@ export function OutputNodeConfig({ data, onUpdate }: OutputNodeConfigProps) {
 
             <FormSection title="Usage Notes">
                 <div className="px-3 py-2 bg-muted rounded-lg text-xs text-muted-foreground space-y-2">
-                    <p>
-                        • Output nodes define the final results returned by the workflow
-                    </p>
-                    <p>
-                        • Multiple output nodes can be used to return different values
-                    </p>
-                    <p>
-                        • Outputs are accessible via the workflow execution API
-                    </p>
+                    <p>• Output nodes define the final results returned by the workflow</p>
+                    <p>• Multiple output nodes can be used to return different values</p>
+                    <p>• Outputs are accessible via the workflow execution API</p>
                 </div>
             </FormSection>
         </div>

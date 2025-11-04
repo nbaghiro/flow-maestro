@@ -12,7 +12,7 @@ const hangupReasons = [
     { value: "timeout", label: "Timeout" },
     { value: "error", label: "Error" },
     { value: "transfer", label: "Transfer to Another Number" },
-    { value: "voicemail", label: "Voicemail" },
+    { value: "voicemail", label: "Voicemail" }
 ];
 
 export function VoiceHangupNodeConfig({ data, onUpdate }: VoiceHangupNodeConfigProps) {
@@ -23,7 +23,7 @@ export function VoiceHangupNodeConfig({ data, onUpdate }: VoiceHangupNodeConfigP
     useEffect(() => {
         onUpdate({
             farewellMessage: enableFarewell ? farewellMessage : undefined,
-            reason,
+            reason
         });
     }, [farewellMessage, reason, enableFarewell, onUpdate]);
 

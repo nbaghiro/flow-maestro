@@ -16,8 +16,8 @@ export function Templates() {
                 </div>
                 <h3 className="text-lg font-semibold text-foreground mb-2">Coming Soon</h3>
                 <p className="text-sm text-muted-foreground text-center max-w-md">
-                    We're building an amazing library of workflow templates to help you get started faster.
-                    Stay tuned!
+                    We're building an amazing library of workflow templates to help you get started
+                    faster. Stay tuned!
                 </p>
             </div>
         </div>

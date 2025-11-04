@@ -16,24 +16,24 @@ interface ConnectionCardProps {
 const methodBadgeConfig: Record<ConnectionMethod, { label: string; className: string }> = {
     api_key: {
         label: "API Key",
-        className: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+        className: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
     },
     oauth2: {
         label: "OAuth",
-        className: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
+        className: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400"
     },
     mcp: {
         label: "MCP",
-        className: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400",
+        className: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400"
     },
     basic_auth: {
         label: "Basic Auth",
-        className: "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400",
+        className: "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400"
     },
     custom: {
         label: "Custom",
-        className: "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400",
-    },
+        className: "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400"
+    }
 };
 
 const providerIcons: Record<string, string> = {
@@ -43,7 +43,7 @@ const providerIcons: Record<string, string> = {
     slack: "💬",
     github: "🐙",
     notion: "📝",
-    default: "🔌",
+    default: "🔌"
 };
 
 export function ConnectionCard({
@@ -53,7 +53,7 @@ export function ConnectionCard({
     onDelete,
     onSelect,
     testing = false,
-    refreshing = false,
+    refreshing = false
 }: ConnectionCardProps) {
     const methodConfig = methodBadgeConfig[connection.connection_method];
     const icon = providerIcons[connection.provider] || providerIcons.default;
@@ -110,21 +110,18 @@ export function ConnectionCard({
                 )}
 
                 {/* OAuth Expiry Warning */}
-                {connection.connection_method === "oauth2" &&
-                    connection.metadata?.expires_at && (
-                        <span
-                            className={cn(
-                                "inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full",
-                                Date.now() > connection.metadata.expires_at
-                                    ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
-                                    : "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                            )}
-                        >
-                            {Date.now() > connection.metadata.expires_at
-                                ? "Expired"
-                                : "Valid"}
-                        </span>
-                    )}
+                {connection.connection_method === "oauth2" && connection.metadata?.expires_at && (
+                    <span
+                        className={cn(
+                            "inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full",
+                            Date.now() > connection.metadata.expires_at
+                                ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+                                : "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                        )}
+                    >
+                        {Date.now() > connection.metadata.expires_at ? "Expired" : "Valid"}
+                    </span>
+                )}
             </div>
 
             {/* Metadata */}
@@ -148,7 +145,7 @@ export function ConnectionCard({
                 <div className="text-xs text-gray-500 dark:text-gray-400 mb-3">
                     Last used{" "}
                     {formatDistanceToNow(new Date(connection.last_used_at), {
-                        addSuffix: true,
+                        addSuffix: true
                     })}
                 </div>
             )}

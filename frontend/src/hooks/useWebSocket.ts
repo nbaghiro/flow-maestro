@@ -15,7 +15,8 @@ export function useWebSocket(token: string | null) {
         }
 
         // Connect to WebSocket
-        wsClient.connect(token)
+        wsClient
+            .connect(token)
             .then(() => setIsConnected(true))
             .catch((error) => {
                 console.error("Failed to connect to WebSocket:", error);
@@ -34,16 +35,13 @@ export function useWebSocket(token: string | null) {
         };
     }, [token]);
 
-    const subscribe = useCallback(
-        (eventType: string, handler: (event: WebSocketEvent) => void) => {
-            wsClient.on(eventType, handler);
+    const subscribe = useCallback((eventType: string, handler: (event: WebSocketEvent) => void) => {
+        wsClient.on(eventType, handler);
 
-            return () => {
-                wsClient.off(eventType, handler);
-            };
-        },
-        []
-    );
+        return () => {
+            wsClient.off(eventType, handler);
+        };
+    }, []);
 
     const subscribeToExecution = useCallback((executionId: string) => {
         wsClient.subscribeToExecution(executionId);
@@ -89,51 +87,37 @@ export function useExecutionEvents(
 
         if (handlers.onStart) {
             wsClient.on("execution:started", handlers.onStart);
-            unsubscribers.push(() =>
-                wsClient.off("execution:started", handlers.onStart!)
-            );
+            unsubscribers.push(() => wsClient.off("execution:started", handlers.onStart!));
         }
 
         if (handlers.onProgress) {
             wsClient.on("execution:progress", handlers.onProgress);
-            unsubscribers.push(() =>
-                wsClient.off("execution:progress", handlers.onProgress!)
-            );
+            unsubscribers.push(() => wsClient.off("execution:progress", handlers.onProgress!));
         }
 
         if (handlers.onNodeStart) {
             wsClient.on("node:started", handlers.onNodeStart);
-            unsubscribers.push(() =>
-                wsClient.off("node:started", handlers.onNodeStart!)
-            );
+            unsubscribers.push(() => wsClient.off("node:started", handlers.onNodeStart!));
         }
 
         if (handlers.onNodeComplete) {
             wsClient.on("node:completed", handlers.onNodeComplete);
-            unsubscribers.push(() =>
-                wsClient.off("node:completed", handlers.onNodeComplete!)
-            );
+            unsubscribers.push(() => wsClient.off("node:completed", handlers.onNodeComplete!));
         }
 
         if (handlers.onNodeFail) {
             wsClient.on("node:failed", handlers.onNodeFail);
-            unsubscribers.push(() =>
-                wsClient.off("node:failed", handlers.onNodeFail!)
-            );
+            unsubscribers.push(() => wsClient.off("node:failed", handlers.onNodeFail!));
         }
 
         if (handlers.onComplete) {
             wsClient.on("execution:completed", handlers.onComplete);
-            unsubscribers.push(() =>
-                wsClient.off("execution:completed", handlers.onComplete!)
-            );
+            unsubscribers.push(() => wsClient.off("execution:completed", handlers.onComplete!));
         }
 
         if (handlers.onFail) {
             wsClient.on("execution:failed", handlers.onFail);
-            unsubscribers.push(() =>
-                wsClient.off("execution:failed", handlers.onFail!)
-            );
+            unsubscribers.push(() => wsClient.off("execution:failed", handlers.onFail!));
         }
 
         // Cleanup

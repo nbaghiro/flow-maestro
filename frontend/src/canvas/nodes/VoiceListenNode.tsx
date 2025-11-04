@@ -13,12 +13,7 @@ export function VoiceListenNode(props: NodeProps) {
     const outputVariable = config.outputVariable || "userSpeech";
 
     return (
-        <BaseNode
-            icon={Ear}
-            label="Listen"
-            category="voice"
-            selected={props.selected}
-        >
+        <BaseNode icon={Ear} label="Listen" category="voice" selected={props.selected}>
             <div className="px-3 py-2 text-xs text-muted-foreground border-t border-border">
                 <div className="flex items-center justify-between">
                     <span>Max: {maxDuration}s</span>

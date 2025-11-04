@@ -40,7 +40,7 @@ export function OutputSettingsSection({
     nodeName,
     nodeType,
     value,
-    onChange,
+    onChange
 }: OutputSettingsSectionProps) {
     const [enabled, setEnabled] = useState(!!value);
     const [variableName, setVariableName] = useState(value || "");
@@ -60,7 +60,9 @@ export function OutputSettingsSection({
     // Validate on change
     useEffect(() => {
         if (variableName && !isValidVariableName(variableName)) {
-            setError("Variable name must start with letter/underscore and contain only letters, numbers, and underscores");
+            setError(
+                "Variable name must start with letter/underscore and contain only letters, numbers, and underscores"
+            );
         } else {
             setError(null);
         }

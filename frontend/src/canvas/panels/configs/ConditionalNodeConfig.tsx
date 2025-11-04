@@ -10,7 +10,7 @@ interface ConditionalNodeConfigProps {
 
 const conditionTypes = [
     { value: "simple", label: "Simple Comparison" },
-    { value: "expression", label: "JavaScript Expression" },
+    { value: "expression", label: "JavaScript Expression" }
 ];
 
 const operators = [
@@ -23,7 +23,7 @@ const operators = [
     { value: "contains", label: "Contains" },
     { value: "startsWith", label: "Starts With" },
     { value: "endsWith", label: "Ends With" },
-    { value: "matches", label: "Regex Match" },
+    { value: "matches", label: "Regex Match" }
 ];
 
 export function ConditionalNodeConfig({ data, onUpdate }: ConditionalNodeConfigProps) {
@@ -41,7 +41,7 @@ export function ConditionalNodeConfig({ data, onUpdate }: ConditionalNodeConfigP
             operator,
             rightValue,
             expression,
-            outputVariable,
+            outputVariable
         });
     }, [conditionType, leftValue, operator, rightValue, expression, outputVariable]);
 
@@ -125,9 +125,9 @@ export function ConditionalNodeConfig({ data, onUpdate }: ConditionalNodeConfigP
                     <div className="px-3 py-2 bg-yellow-50 border border-yellow-200 rounded-lg">
                         <p className="text-xs text-yellow-800">
                             <strong>Examples:</strong>
-                            <br />• {`\${age} >= 18`}
-                            <br />• {`\${status} === 'active' && \${score} > 75`}
-                            <br />• {`\${email}.endsWith('@company.com')`}
+                            <br />• {"${age} >= 18"}
+                            <br />• {"${status} === 'active' && ${score} > 75"}
+                            <br />• {"${email}.endsWith('@company.com')"}
                         </p>
                     </div>
                 </FormSection>
@@ -136,10 +136,12 @@ export function ConditionalNodeConfig({ data, onUpdate }: ConditionalNodeConfigP
             <FormSection title="Branch Info">
                 <div className="px-3 py-2 text-xs bg-muted rounded-lg text-muted-foreground">
                     <p>
-                        <strong>True Branch:</strong> Connect to nodes that should run when condition is true
+                        <strong>True Branch:</strong> Connect to nodes that should run when
+                        condition is true
                     </p>
                     <p className="mt-2">
-                        <strong>False Branch:</strong> Connect to nodes that should run when condition is false
+                        <strong>False Branch:</strong> Connect to nodes that should run when
+                        condition is false
                     </p>
                 </div>
             </FormSection>

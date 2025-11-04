@@ -2,33 +2,34 @@ import { Link, useLocation } from "react-router-dom";
 import { ChevronRight, Home } from "lucide-react";
 
 const routeLabels: Record<string, string> = {
-    '/': 'Workflows',
-    '/credentials': 'Credentials',
-    '/integrations': 'Integrations',
-    '/templates': 'Templates',
-    '/settings': 'Settings',
-    '/account': 'Account',
-    '/workspace': 'Workspace',
+    "/": "Workflows",
+    "/credentials": "Credentials",
+    "/integrations": "Integrations",
+    "/templates": "Templates",
+    "/settings": "Settings",
+    "/account": "Account",
+    "/workspace": "Workspace"
 };
 
 export function Breadcrumbs() {
     const location = useLocation();
-    const pathSegments = location.pathname.split('/').filter(Boolean);
+    const pathSegments = location.pathname.split("/").filter(Boolean);
 
     // Build breadcrumb items
     const breadcrumbs: Array<{ label: string; path: string; isLast: boolean }> = [];
 
-    if (location.pathname === '/') {
-        breadcrumbs.push({ label: 'Workflows', path: '/', isLast: true });
+    if (location.pathname === "/") {
+        breadcrumbs.push({ label: "Workflows", path: "/", isLast: true });
     } else {
         // Add home
-        breadcrumbs.push({ label: 'Home', path: '/', isLast: false });
+        breadcrumbs.push({ label: "Home", path: "/", isLast: false });
 
         // Add segments
-        let currentPath = '';
+        let currentPath = "";
         pathSegments.forEach((segment, index) => {
             currentPath += `/${segment}`;
-            const label = routeLabels[currentPath] || segment.charAt(0).toUpperCase() + segment.slice(1);
+            const label =
+                routeLabels[currentPath] || segment.charAt(0).toUpperCase() + segment.slice(1);
             const isLast = index === pathSegments.length - 1;
             breadcrumbs.push({ label, path: currentPath, isLast });
         });
@@ -38,9 +39,7 @@ export function Breadcrumbs() {
         <nav className="flex items-center gap-2 text-sm">
             {breadcrumbs.map((crumb, index) => (
                 <div key={crumb.path} className="flex items-center gap-2">
-                    {index > 0 && (
-                        <ChevronRight className="w-4 h-4 text-muted-foreground" />
-                    )}
+                    {index > 0 && <ChevronRight className="w-4 h-4 text-muted-foreground" />}
                     {crumb.isLast ? (
                         <span className="text-foreground font-medium">{crumb.label}</span>
                     ) : (

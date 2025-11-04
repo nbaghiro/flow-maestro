@@ -11,14 +11,14 @@ interface WaitNodeConfigProps {
 const waitTypes = [
     { value: "duration", label: "Fixed Duration" },
     { value: "until", label: "Until Timestamp" },
-    { value: "condition", label: "Until Condition" },
+    { value: "condition", label: "Until Condition" }
 ];
 
 const timeUnits = [
     { value: "seconds", label: "Seconds" },
     { value: "minutes", label: "Minutes" },
     { value: "hours", label: "Hours" },
-    { value: "days", label: "Days" },
+    { value: "days", label: "Days" }
 ];
 
 export function WaitNodeConfig({ data, onUpdate }: WaitNodeConfigProps) {
@@ -38,7 +38,7 @@ export function WaitNodeConfig({ data, onUpdate }: WaitNodeConfigProps) {
             timestamp,
             condition,
             pollingInterval,
-            outputVariable,
+            outputVariable
         });
     }, [waitType, duration, unit, timestamp, condition, pollingInterval, outputVariable]);
 
@@ -98,10 +98,7 @@ export function WaitNodeConfig({ data, onUpdate }: WaitNodeConfigProps) {
 
             {waitType === "until" && (
                 <FormSection title="Until Timestamp">
-                    <FormField
-                        label="Timestamp"
-                        description="ISO 8601 format or use ${variable}"
-                    >
+                    <FormField label="Timestamp" description="ISO 8601 format or use ${variable}">
                         <input
                             type="text"
                             value={timestamp}
@@ -116,7 +113,7 @@ export function WaitNodeConfig({ data, onUpdate }: WaitNodeConfigProps) {
                             <strong>Examples:</strong>
                             <br />• 2024-12-31T23:59:59Z
                             <br />• 2024-01-15T09:00:00-05:00
-                            <br />• {`\${futureTimestamp}`}
+                            <br />• {"${futureTimestamp}"}
                         </p>
                     </div>
                 </FormSection>
@@ -124,10 +121,7 @@ export function WaitNodeConfig({ data, onUpdate }: WaitNodeConfigProps) {
 
             {waitType === "condition" && (
                 <FormSection title="Until Condition">
-                    <FormField
-                        label="Condition"
-                        description="Wait until this evaluates to true"
-                    >
+                    <FormField label="Condition" description="Wait until this evaluates to true">
                         <CodeInput
                             value={condition}
                             onChange={setCondition}

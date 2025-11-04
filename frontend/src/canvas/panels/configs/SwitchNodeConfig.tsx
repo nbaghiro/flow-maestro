@@ -11,7 +11,7 @@ interface SwitchNodeConfigProps {
 const matchTypes = [
     { value: "exact", label: "Exact Match" },
     { value: "contains", label: "Contains" },
-    { value: "regex", label: "Regex Pattern" },
+    { value: "regex", label: "Regex Pattern" }
 ];
 
 interface SwitchCase {
@@ -22,7 +22,9 @@ interface SwitchCase {
 export function SwitchNodeConfig({ data, onUpdate }: SwitchNodeConfigProps) {
     const [inputVariable, setInputVariable] = useState(data.inputVariable || "");
     const [matchType, setMatchType] = useState(data.matchType || "exact");
-    const [cases, setCases] = useState<SwitchCase[]>(data.cases || [{ value: "", label: "Case 1" }]);
+    const [cases, setCases] = useState<SwitchCase[]>(
+        data.cases || [{ value: "", label: "Case 1" }]
+    );
     const [hasDefault, setHasDefault] = useState(data.hasDefault ?? true);
     const [outputVariable, setOutputVariable] = useState(data.outputVariable || "");
 
@@ -32,7 +34,7 @@ export function SwitchNodeConfig({ data, onUpdate }: SwitchNodeConfigProps) {
             matchType,
             cases,
             hasDefault,
-            outputVariable,
+            outputVariable
         });
     }, [inputVariable, matchType, cases, hasDefault, outputVariable]);
 
@@ -55,10 +57,7 @@ export function SwitchNodeConfig({ data, onUpdate }: SwitchNodeConfigProps) {
     return (
         <div>
             <FormSection title="Input">
-                <FormField
-                    label="Input Variable"
-                    description="Variable to match against cases"
-                >
+                <FormField label="Input Variable" description="Variable to match against cases">
                     <input
                         type="text"
                         value={inputVariable}
@@ -85,7 +84,10 @@ export function SwitchNodeConfig({ data, onUpdate }: SwitchNodeConfigProps) {
 
             <FormSection title="Cases">
                 {cases.map((switchCase, index) => (
-                    <div key={index} className="space-y-2 p-3 border border-border rounded-lg bg-muted/30">
+                    <div
+                        key={index}
+                        className="space-y-2 p-3 border border-border rounded-lg bg-muted/30"
+                    >
                         <div className="flex items-center justify-between">
                             <span className="text-xs font-semibold text-muted-foreground">
                                 Case {index + 1}
@@ -106,7 +108,9 @@ export function SwitchNodeConfig({ data, onUpdate }: SwitchNodeConfigProps) {
                                 type="text"
                                 value={switchCase.value}
                                 onChange={(e) => updateCase(index, "value", e.target.value)}
-                                placeholder={matchType === "regex" ? "^pattern.*$" : "value to match"}
+                                placeholder={
+                                    matchType === "regex" ? "^pattern.*$" : "value to match"
+                                }
                                 className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary font-mono"
                             />
                         </FormField>
@@ -133,10 +137,7 @@ export function SwitchNodeConfig({ data, onUpdate }: SwitchNodeConfigProps) {
             </FormSection>
 
             <FormSection title="Default Case">
-                <FormField
-                    label="Enable Default"
-                    description="Run if no cases match"
-                >
+                <FormField label="Enable Default" description="Run if no cases match">
                     <label className="flex items-center gap-2 cursor-pointer">
                         <input
                             type="checkbox"

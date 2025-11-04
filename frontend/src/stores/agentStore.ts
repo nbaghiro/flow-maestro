@@ -5,6 +5,7 @@ import type {
     UpdateAgentRequest,
     AgentExecution,
     ConversationMessage,
+    AddToolRequest
 } from "../lib/api";
 import * as api from "../lib/api";
 
@@ -24,6 +25,10 @@ interface AgentStore {
     deleteAgent: (agentId: string) => Promise<void>;
     setCurrentAgent: (agent: Agent | null) => void;
     clearError: () => void;
+
+    // Tool management actions
+    addTool: (agentId: string, data: AddToolRequest) => Promise<void>;
+    removeTool: (agentId: string, toolId: string) => Promise<void>;
 
     // Execution actions
     executeAgent: (agentId: string, message: string) => Promise<string>;
@@ -52,7 +57,7 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
             set({
                 error: error instanceof Error ? error.message : "Failed to fetch agents",
                 isLoading: false,
-                agents: [], // Reset to empty array on error
+                agents: [] // Reset to empty array on error
             });
         }
     },
@@ -66,7 +71,7 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
         } catch (error) {
             set({
                 error: error instanceof Error ? error.message : "Failed to fetch agent",
-                isLoading: false,
+                isLoading: false
             });
         }
     },
@@ -80,13 +85,13 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
             set((state) => ({
                 agents: [...state.agents, newAgent],
                 currentAgent: newAgent,
-                isLoading: false,
+                isLoading: false
             }));
             return newAgent;
         } catch (error) {
             set({
                 error: error instanceof Error ? error.message : "Failed to create agent",
-                isLoading: false,
+                isLoading: false
             });
             throw error;
         }
@@ -100,13 +105,14 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
             const updatedAgent = response.data;
             set((state) => ({
                 agents: state.agents.map((a) => (a.id === agentId ? updatedAgent : a)),
-                currentAgent: state.currentAgent?.id === agentId ? updatedAgent : state.currentAgent,
-                isLoading: false,
+                currentAgent:
+                    state.currentAgent?.id === agentId ? updatedAgent : state.currentAgent,
+                isLoading: false
             }));
         } catch (error) {
             set({
                 error: error instanceof Error ? error.message : "Failed to update agent",
-                isLoading: false,
+                isLoading: false
             });
             throw error;
         }
@@ -120,12 +126,12 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
             set((state) => ({
                 agents: state.agents.filter((a) => a.id !== agentId),
                 currentAgent: state.currentAgent?.id === agentId ? null : state.currentAgent,
-                isLoading: false,
+                isLoading: false
             }));
         } catch (error) {
             set({
                 error: error instanceof Error ? error.message : "Failed to delete agent",
-                isLoading: false,
+                isLoading: false
             });
             throw error;
         }
@@ -139,6 +145,52 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
     // Clear error
     clearError: () => {
         set({ error: null });
+    },
+
+    // Add a tool to an agent
+    addTool: async (agentId: string, data: AddToolRequest) => {
+        set({ isLoading: true, error: null });
+        try {
+            const response = await api.addAgentTool(agentId, data);
+            const updatedAgent = response.data.agent;
+
+            // Update both the agents list and currentAgent if it matches
+            set((state) => ({
+                agents: state.agents.map((a) => (a.id === agentId ? updatedAgent : a)),
+                currentAgent:
+                    state.currentAgent?.id === agentId ? updatedAgent : state.currentAgent,
+                isLoading: false
+            }));
+        } catch (error) {
+            set({
+                error: error instanceof Error ? error.message : "Failed to add tool",
+                isLoading: false
+            });
+            throw error;
+        }
+    },
+
+    // Remove a tool from an agent
+    removeTool: async (agentId: string, toolId: string) => {
+        set({ isLoading: true, error: null });
+        try {
+            const response = await api.removeAgentTool(agentId, toolId);
+            const updatedAgent = response.data.agent;
+
+            // Update both the agents list and currentAgent if it matches
+            set((state) => ({
+                agents: state.agents.map((a) => (a.id === agentId ? updatedAgent : a)),
+                currentAgent:
+                    state.currentAgent?.id === agentId ? updatedAgent : state.currentAgent,
+                isLoading: false
+            }));
+        } catch (error) {
+            set({
+                error: error instanceof Error ? error.message : "Failed to remove tool",
+                isLoading: false
+            });
+            throw error;
+        }
     },
 
     // Execute an agent with initial message
@@ -160,24 +212,24 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
                             id: `user-${Date.now()}`,
                             role: "user",
                             content: message,
-                            timestamp: new Date().toISOString(),
-                        },
+                            timestamp: new Date().toISOString()
+                        }
                     ],
                     iterations: 0,
                     error: null,
                     started_at: new Date().toISOString(),
                     completed_at: null,
                     created_at: new Date().toISOString(),
-                    updated_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
                 },
-                isLoading: false,
+                isLoading: false
             });
 
             return executionId;
         } catch (error) {
             set({
                 error: error instanceof Error ? error.message : "Failed to execute agent",
-                isLoading: false,
+                isLoading: false
             });
             throw error;
         }
@@ -205,17 +257,17 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
                                   id: `user-${Date.now()}`,
                                   role: "user",
                                   content: message,
-                                  timestamp: new Date().toISOString(),
-                              } as ConversationMessage,
-                          ],
+                                  timestamp: new Date().toISOString()
+                              } as ConversationMessage
+                          ]
                       }
                     : null,
-                isLoading: false,
+                isLoading: false
             }));
         } catch (error) {
             set({
                 error: error instanceof Error ? error.message : "Failed to send message",
-                isLoading: false,
+                isLoading: false
             });
             throw error;
         }
@@ -230,7 +282,7 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
         } catch (error) {
             set({
                 error: error instanceof Error ? error.message : "Failed to fetch execution",
-                isLoading: false,
+                isLoading: false
             });
         }
     },
@@ -238,5 +290,5 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
     // Clear execution
     clearExecution: () => {
         set({ currentExecution: null });
-    },
+    }
 }));

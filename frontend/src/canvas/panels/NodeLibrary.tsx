@@ -25,7 +25,7 @@ import {
     MessageSquare,
     Ear,
     ListOrdered,
-    PhoneOff,
+    PhoneOff
 } from "lucide-react";
 
 interface NodeDefinition {
@@ -43,28 +43,28 @@ const nodeLibrary: NodeDefinition[] = [
         label: "LLM",
         icon: Bot,
         category: "ai",
-        description: "Text generation with OpenAI, Anthropic, Google, etc.",
+        description: "Text generation with OpenAI, Anthropic, Google, etc."
     },
     {
         type: "vision",
         label: "Vision",
         icon: Eye,
         category: "ai",
-        description: "Image generation and analysis with AI models",
+        description: "Image generation and analysis with AI models"
     },
     {
         type: "audio",
         label: "Audio",
         icon: Mic,
         category: "ai",
-        description: "Speech-to-text and text-to-speech processing",
+        description: "Speech-to-text and text-to-speech processing"
     },
     {
         type: "embeddings",
         label: "Embeddings",
         icon: Sparkles,
         category: "ai",
-        description: "Generate vector embeddings for semantic search",
+        description: "Generate vector embeddings for semantic search"
     },
 
     // Logic & Code (5 nodes)
@@ -73,35 +73,35 @@ const nodeLibrary: NodeDefinition[] = [
         label: "Conditional",
         icon: GitBranch,
         category: "logic",
-        description: "Branch workflow based on if/else conditions",
+        description: "Branch workflow based on if/else conditions"
     },
     {
         type: "switch",
         label: "Switch",
         icon: GitMerge,
         category: "logic",
-        description: "Multiple branch conditions like switch/case",
+        description: "Multiple branch conditions like switch/case"
     },
     {
         type: "loop",
         label: "Loop",
         icon: Repeat,
         category: "logic",
-        description: "Iterate over arrays or lists of items",
+        description: "Iterate over arrays or lists of items"
     },
     {
         type: "code",
         label: "Code",
         icon: Code2,
         category: "logic",
-        description: "Run custom JavaScript or Python code",
+        description: "Run custom JavaScript or Python code"
     },
     {
         type: "wait",
         label: "Wait/Delay",
         icon: Clock,
         category: "logic",
-        description: "Pause workflow execution for a duration",
+        description: "Pause workflow execution for a duration"
     },
 
     // Data Operations (5 nodes)
@@ -110,35 +110,35 @@ const nodeLibrary: NodeDefinition[] = [
         label: "Input",
         icon: Hand,
         category: "data",
-        description: "Collect user input, file upload, or choices",
+        description: "Collect user input, file upload, or choices"
     },
     {
         type: "transform",
         label: "Transform",
         icon: Shuffle,
         category: "data",
-        description: "Transform data with JSONPath, templates, filters",
+        description: "Transform data with JSONPath, templates, filters"
     },
     {
         type: "variable",
         label: "Variable",
         icon: Variable,
         category: "data",
-        description: "Set or get workflow variables",
+        description: "Set or get workflow variables"
     },
     {
         type: "knowledgeBaseQuery",
         label: "KB Query",
         icon: BookOpen,
         category: "data",
-        description: "Search knowledge base using semantic similarity (RAG)",
+        description: "Search knowledge base using semantic similarity (RAG)"
     },
     {
         type: "output",
         label: "Output",
         icon: Send,
         category: "data",
-        description: "Display final workflow results",
+        description: "Display final workflow results"
     },
 
     // Connect (3 nodes)
@@ -147,21 +147,21 @@ const nodeLibrary: NodeDefinition[] = [
         label: "HTTP",
         icon: Globe,
         category: "connect",
-        description: "Make HTTP requests to external APIs",
+        description: "Make HTTP requests to external APIs"
     },
     {
         type: "database",
         label: "Database",
         icon: Database,
         category: "connect",
-        description: "Query SQL or NoSQL databases",
+        description: "Query SQL or NoSQL databases"
     },
     {
         type: "integration",
         label: "Integration",
         icon: Plug,
         category: "connect",
-        description: "Connect to Slack, Email, Google Sheets, etc.",
+        description: "Connect to Slack, Email, Google Sheets, etc."
     },
 
     // Voice (4 nodes)
@@ -170,29 +170,29 @@ const nodeLibrary: NodeDefinition[] = [
         label: "Say Message",
         icon: MessageSquare,
         category: "voice",
-        description: "Play text-to-speech message to caller",
+        description: "Play text-to-speech message to caller"
     },
     {
         type: "voice_listen",
         label: "Listen",
         icon: Ear,
         category: "voice",
-        description: "Capture caller's speech with speech-to-text",
+        description: "Capture caller's speech with speech-to-text"
     },
     {
         type: "voice_menu",
         label: "Menu",
         icon: ListOrdered,
         category: "voice",
-        description: "Present IVR menu with multiple options",
+        description: "Present IVR menu with multiple options"
     },
     {
         type: "voice_hangup",
         label: "Hang Up",
         icon: PhoneOff,
         category: "voice",
-        description: "End the phone call",
-    },
+        description: "End the phone call"
+    }
 ];
 
 const categories = [
@@ -200,7 +200,7 @@ const categories = [
     { id: "logic", label: "Logic & Code", color: "text-purple-600", bgColor: "bg-purple-50" },
     { id: "data", label: "Data Operations", color: "text-green-600", bgColor: "bg-green-50" },
     { id: "connect", label: "Connect", color: "text-orange-600", bgColor: "bg-orange-50" },
-    { id: "voice", label: "Voice & Calls", color: "text-emerald-600", bgColor: "bg-emerald-50" },
+    { id: "voice", label: "Voice & Calls", color: "text-emerald-600", bgColor: "bg-emerald-50" }
 ];
 
 interface NodeLibraryProps {
@@ -313,8 +313,12 @@ export function NodeLibrary({ isCollapsed = false, onToggleCollapse }: NodeLibra
                                                 className="group px-3 py-1.5 cursor-move hover:bg-muted/70 transition-colors active:bg-muted flex items-center gap-2"
                                                 title={node.description}
                                             >
-                                                <div className={`p-1 rounded ${category.bgColor} flex-shrink-0`}>
-                                                    <IconComponent className={`w-3.5 h-3.5 ${category.color}`} />
+                                                <div
+                                                    className={`p-1 rounded ${category.bgColor} flex-shrink-0`}
+                                                >
+                                                    <IconComponent
+                                                        className={`w-3.5 h-3.5 ${category.color}`}
+                                                    />
                                                 </div>
                                                 <span className="text-xs font-medium text-foreground">
                                                     {node.label}

@@ -27,7 +27,7 @@ export function ConnectionDetailsDialog({
     connection,
     providerDisplayName,
     providerIcon,
-    onDisconnect,
+    onDisconnect
 }: ConnectionDetailsDialogProps) {
     const [isDisconnecting, setIsDisconnecting] = useState(false);
     const [showConfirmDisconnect, setShowConfirmDisconnect] = useState(false);
@@ -56,7 +56,7 @@ export function ConnectionDetailsDialog({
         return new Date(dateString).toLocaleDateString("en-US", {
             year: "numeric",
             month: "short",
-            day: "numeric",
+            day: "numeric"
         });
     };
 
@@ -66,18 +66,13 @@ export function ConnectionDetailsDialog({
         <>
             <div className="fixed inset-0 z-50 flex items-center justify-center">
                 {/* Backdrop */}
-                <div
-                    className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-                    onClick={onClose}
-                />
+                <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
 
                 {/* Dialog */}
                 <div className="relative bg-white rounded-lg shadow-xl max-w-lg w-full mx-4 animate-in fade-in zoom-in-95 duration-200">
                     {/* Header */}
                     <div className="flex items-center justify-between p-6 pb-4 border-b border-gray-200">
-                        <h2 className="text-lg font-semibold text-gray-900">
-                            Connection Details
-                        </h2>
+                        <h2 className="text-lg font-semibold text-gray-900">Connection Details</h2>
                         <button
                             onClick={onClose}
                             className="text-gray-400 hover:text-gray-600 transition-colors"
@@ -91,16 +86,10 @@ export function ConnectionDetailsDialog({
                     <div className="p-6 space-y-6">
                         {/* Provider Info */}
                         <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 flex-shrink-0">
-                                {providerIcon}
-                            </div>
+                            <div className="w-12 h-12 flex-shrink-0">{providerIcon}</div>
                             <div>
-                                <h3 className="font-medium text-gray-900">
-                                    {providerDisplayName}
-                                </h3>
-                                <p className="text-sm text-gray-600">
-                                    {connection.name}
-                                </p>
+                                <h3 className="font-medium text-gray-900">{providerDisplayName}</h3>
+                                <p className="text-sm text-gray-600">{connection.name}</p>
                             </div>
                         </div>
 
@@ -113,9 +102,7 @@ export function ConnectionDetailsDialog({
                                 {isOAuth ? (
                                     <>
                                         <Shield className="w-4 h-4 text-gray-600" />
-                                        <span className="text-sm text-gray-900">
-                                            OAuth 2.0
-                                        </span>
+                                        <span className="text-sm text-gray-900">OAuth 2.0</span>
                                         <span className="ml-auto px-2 py-0.5 text-xs font-medium text-blue-700 bg-blue-100 rounded">
                                             OAUTH
                                         </span>
@@ -123,9 +110,7 @@ export function ConnectionDetailsDialog({
                                 ) : isApiKey ? (
                                     <>
                                         <Key className="w-4 h-4 text-gray-600" />
-                                        <span className="text-sm text-gray-900">
-                                            API Key
-                                        </span>
+                                        <span className="text-sm text-gray-900">API Key</span>
                                     </>
                                 ) : (
                                     <span className="text-sm text-gray-900">
@@ -198,8 +183,8 @@ export function ConnectionDetailsDialog({
                                         connection.status === "active"
                                             ? "bg-green-50 text-green-700"
                                             : connection.status === "expired"
-                                            ? "bg-yellow-50 text-yellow-700"
-                                            : "bg-red-50 text-red-700"
+                                              ? "bg-yellow-50 text-yellow-700"
+                                              : "bg-red-50 text-red-700"
                                     }`}
                                 >
                                     {connection.status.charAt(0).toUpperCase() +

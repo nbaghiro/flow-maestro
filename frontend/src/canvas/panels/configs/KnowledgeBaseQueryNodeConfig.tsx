@@ -23,7 +23,10 @@ function getAuthToken(): string | null {
     return localStorage.getItem("auth_token");
 }
 
-export function KnowledgeBaseQueryNodeConfig({ data, onUpdate }: KnowledgeBaseQueryNodeConfigProps) {
+export function KnowledgeBaseQueryNodeConfig({
+    data,
+    onUpdate
+}: KnowledgeBaseQueryNodeConfigProps) {
     const [knowledgeBaseId, setKnowledgeBaseId] = useState(data.knowledgeBaseId || "");
     const [queryText, setQueryText] = useState(data.queryText || "");
     const [outputVariable, setOutputVariable] = useState(data.outputVariable || "");
@@ -36,8 +39,8 @@ export function KnowledgeBaseQueryNodeConfig({ data, onUpdate }: KnowledgeBaseQu
             const response = await fetch(`${API_BASE_URL}/api/knowledge-bases`, {
                 headers: {
                     "Content-Type": "application/json",
-                    ...(token && { Authorization: `Bearer ${token}` }),
-                },
+                    ...(token && { Authorization: `Bearer ${token}` })
+                }
             });
 
             if (!response.ok) {
@@ -46,7 +49,7 @@ export function KnowledgeBaseQueryNodeConfig({ data, onUpdate }: KnowledgeBaseQu
 
             const result = await response.json();
             return result.data as KnowledgeBase[];
-        },
+        }
     });
 
     useEffect(() => {
@@ -57,7 +60,7 @@ export function KnowledgeBaseQueryNodeConfig({ data, onUpdate }: KnowledgeBaseQu
             knowledgeBaseId,
             knowledgeBaseName: selectedKB?.name || "",
             queryText,
-            outputVariable,
+            outputVariable
         });
     }, [knowledgeBaseId, queryText, outputVariable, kbData]);
 
@@ -69,7 +72,9 @@ export function KnowledgeBaseQueryNodeConfig({ data, onUpdate }: KnowledgeBaseQu
                     description="Choose which knowledge base to search"
                 >
                     {isLoading ? (
-                        <div className="text-sm text-muted-foreground">Loading knowledge bases...</div>
+                        <div className="text-sm text-muted-foreground">
+                            Loading knowledge bases...
+                        </div>
                     ) : kbData && kbData.length > 0 ? (
                         <select
                             value={knowledgeBaseId}
@@ -107,8 +112,8 @@ export function KnowledgeBaseQueryNodeConfig({ data, onUpdate }: KnowledgeBaseQu
                     <textarea
                         value={queryText}
                         onChange={(e) => setQueryText(e.target.value)}
-                        placeholder='What is the purpose of this system?
-Or use: {{input.question}}'
+                        placeholder="What is the purpose of this system?
+Or use: {{input.question}}"
                         rows={4}
                         className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none"
                     />
@@ -117,8 +122,8 @@ Or use: {{input.question}}'
                 <div className="px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg">
                     <p className="text-xs text-blue-800">
                         <strong>Tip:</strong> Use variables like{" "}
-                        <code className="px-1 bg-blue-100 rounded">{"{{input.query}}"}</code> to make
-                        the query dynamic based on workflow inputs.
+                        <code className="px-1 bg-blue-100 rounded">{"{{input.query}}"}</code> to
+                        make the query dynamic based on workflow inputs.
                     </p>
                 </div>
             </FormSection>
@@ -129,8 +134,8 @@ Or use: {{input.question}}'
                         <div className="font-medium mb-2">Available Outputs:</div>
                         <div className="space-y-1 text-muted-foreground">
                             <div>
-                                • <code className="px-1 bg-gray-100 rounded">results</code> - Array of
-                                all matches
+                                • <code className="px-1 bg-gray-100 rounded">results</code> - Array
+                                of all matches
                             </div>
                             <div>
                                 • <code className="px-1 bg-gray-100 rounded">topResult</code> - Best
@@ -141,8 +146,8 @@ Or use: {{input.question}}'
                                 Formatted text for prompts
                             </div>
                             <div>
-                                • <code className="px-1 bg-gray-100 rounded">count</code> - Number of
-                                results
+                                • <code className="px-1 bg-gray-100 rounded">count</code> - Number
+                                of results
                             </div>
                         </div>
                     </div>

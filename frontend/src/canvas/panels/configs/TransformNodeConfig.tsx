@@ -15,7 +15,7 @@ const operations = [
     { value: "sort", label: "Sort" },
     { value: "merge", label: "Merge objects/arrays" },
     { value: "extract", label: "Extract properties" },
-    { value: "custom", label: "Custom JSONata" },
+    { value: "custom", label: "Custom JSONata" }
 ];
 
 export function TransformNodeConfig({ data, onUpdate }: TransformNodeConfigProps) {
@@ -37,7 +37,7 @@ export function TransformNodeConfig({ data, onUpdate }: TransformNodeConfigProps
             operation,
             inputData,
             expression,
-            outputVariable,
+            outputVariable
         });
     }, [operation, inputData, expression, outputVariable]);
 
@@ -106,10 +106,7 @@ export function TransformNodeConfig({ data, onUpdate }: TransformNodeConfigProps
             </FormSection>
 
             <FormSection title="Input">
-                <FormField
-                    label="Input Data"
-                    description="Variable reference to transform"
-                >
+                <FormField label="Input Data" description="Variable reference to transform">
                     <input
                         type="text"
                         value={inputData}
@@ -123,7 +120,11 @@ export function TransformNodeConfig({ data, onUpdate }: TransformNodeConfigProps
             <FormSection title="Transformation">
                 <FormField
                     label={operation === "custom" ? "JSONata Expression" : "Expression"}
-                    description={operation === "custom" ? "JSONata query" : "JavaScript expression or function"}
+                    description={
+                        operation === "custom"
+                            ? "JSONata query"
+                            : "JavaScript expression or function"
+                    }
                 >
                     <CodeInput
                         value={expression}

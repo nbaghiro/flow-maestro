@@ -9,13 +9,9 @@ interface FormFieldProps {
 export function FormField({ label, children, description }: FormFieldProps) {
     return (
         <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground">
-                {label}
-            </label>
+            <label className="text-sm font-medium text-foreground">{label}</label>
             {children}
-            {description && (
-                <p className="text-xs text-muted-foreground">{description}</p>
-            )}
+            {description && <p className="text-xs text-muted-foreground">{description}</p>}
         </div>
     );
 }

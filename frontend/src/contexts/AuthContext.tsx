@@ -1,5 +1,11 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { login as apiLogin, register as apiRegister, getCurrentUser, setAuthToken, clearAuthToken } from "../lib/api";
+import {
+    login as apiLogin,
+    register as apiRegister,
+    getCurrentUser,
+    setAuthToken,
+    clearAuthToken
+} from "../lib/api";
 
 interface User {
     id: string;
@@ -88,7 +94,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isLoading,
         login,
         register,
-        logout,
+        logout
     };
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

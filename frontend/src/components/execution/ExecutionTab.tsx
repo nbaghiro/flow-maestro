@@ -50,28 +50,28 @@ export function ExecutionTab({ workflowId: _workflowId }: ExecutionTabProps) {
                     icon: <Clock className="w-5 h-5 animate-spin" />,
                     color: "text-blue-500",
                     bg: "bg-blue-50 dark:bg-blue-900/20",
-                    border: "border-blue-200 dark:border-blue-800",
+                    border: "border-blue-200 dark:border-blue-800"
                 };
             case "completed":
                 return {
                     icon: <CheckCircle2 className="w-5 h-5" />,
                     color: "text-green-500",
                     bg: "bg-green-50 dark:bg-green-900/20",
-                    border: "border-green-200 dark:border-green-800",
+                    border: "border-green-200 dark:border-green-800"
                 };
             case "failed":
                 return {
                     icon: <XCircle className="w-5 h-5" />,
                     color: "text-red-500",
                     bg: "bg-red-50 dark:bg-red-900/20",
-                    border: "border-red-200 dark:border-red-800",
+                    border: "border-red-200 dark:border-red-800"
                 };
             default:
                 return {
                     icon: <Play className="w-5 h-5" />,
                     color: "text-gray-500",
                     bg: "bg-gray-50 dark:bg-gray-900/20",
-                    border: "border-gray-200 dark:border-gray-800",
+                    border: "border-gray-200 dark:border-gray-800"
                 };
         }
     };
@@ -219,9 +219,7 @@ export function ExecutionTab({ workflowId: _workflowId }: ExecutionTabProps) {
             {/* Logs List */}
             <div className="flex-1 overflow-y-auto p-3 space-y-1 font-mono text-xs">
                 {filteredLogs.length === 0 ? (
-                    <div className="text-center text-muted-foreground py-8">
-                        No logs to display
-                    </div>
+                    <div className="text-center text-muted-foreground py-8">No logs to display</div>
                 ) : (
                     filteredLogs.map((log) => (
                         <div

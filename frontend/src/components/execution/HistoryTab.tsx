@@ -46,35 +46,35 @@ export function HistoryTab({ workflowId }: HistoryTabProps) {
                     icon: <Clock className="w-4 h-4" />,
                     color: "text-yellow-500",
                     bg: "bg-yellow-50 dark:bg-yellow-900/20",
-                    label: "Pending",
+                    label: "Pending"
                 };
             case "running":
                 return {
                     icon: <Clock className="w-4 h-4 animate-spin" />,
                     color: "text-blue-500",
                     bg: "bg-blue-50 dark:bg-blue-900/20",
-                    label: "Running",
+                    label: "Running"
                 };
             case "completed":
                 return {
                     icon: <CheckCircle2 className="w-4 h-4" />,
                     color: "text-green-500",
                     bg: "bg-green-50 dark:bg-green-900/20",
-                    label: "Completed",
+                    label: "Completed"
                 };
             case "failed":
                 return {
                     icon: <XCircle className="w-4 h-4" />,
                     color: "text-red-500",
                     bg: "bg-red-50 dark:bg-red-900/20",
-                    label: "Failed",
+                    label: "Failed"
                 };
             case "cancelled":
                 return {
                     icon: <AlertCircle className="w-4 h-4" />,
                     color: "text-gray-500",
                     bg: "bg-gray-50 dark:bg-gray-900/20",
-                    label: "Cancelled",
+                    label: "Cancelled"
                 };
         }
     };
@@ -161,10 +161,12 @@ export function HistoryTab({ workflowId }: HistoryTabProps) {
             {/* Execution List */}
             <div className="flex-1 overflow-hidden flex">
                 {/* List */}
-                <div className={cn(
-                    "flex-shrink-0 overflow-y-auto border-r border-border",
-                    selectedExecution ? "w-64" : "flex-1"
-                )}>
+                <div
+                    className={cn(
+                        "flex-shrink-0 overflow-y-auto border-r border-border",
+                        selectedExecution ? "w-64" : "flex-1"
+                    )}
+                >
                     <div className="p-2 space-y-1">
                         {executions.map((execution) => {
                             const statusInfo = getStatusInfo(execution.status);
@@ -173,7 +175,9 @@ export function HistoryTab({ workflowId }: HistoryTabProps) {
                             return (
                                 <button
                                     key={execution.id}
-                                    onClick={() => setSelectedExecution(isSelected ? null : execution)}
+                                    onClick={() =>
+                                        setSelectedExecution(isSelected ? null : execution)
+                                    }
                                     className={cn(
                                         "w-full p-3 rounded-lg border text-left transition-colors",
                                         isSelected
@@ -191,7 +195,10 @@ export function HistoryTab({ workflowId }: HistoryTabProps) {
                                             </span>
                                         </div>
                                         <span className="text-xs text-muted-foreground">
-                                            {formatDuration(execution.started_at, execution.completed_at)}
+                                            {formatDuration(
+                                                execution.started_at,
+                                                execution.completed_at
+                                            )}
                                         </span>
                                     </div>
                                     <div className="text-xs text-muted-foreground space-y-1">
@@ -203,9 +210,7 @@ export function HistoryTab({ workflowId }: HistoryTabProps) {
                                                 <ChevronRight className="w-3 h-3 flex-shrink-0" />
                                             )}
                                         </div>
-                                        <div>
-                                            {new Date(execution.created_at).toLocaleString()}
-                                        </div>
+                                        <div>{new Date(execution.created_at).toLocaleString()}</div>
                                     </div>
                                 </button>
                             );
@@ -228,10 +233,12 @@ export function HistoryTab({ workflowId }: HistoryTabProps) {
                             {/* Status */}
                             <div>
                                 <h5 className="text-sm font-medium mb-2">Status</h5>
-                                <div className={cn(
-                                    "p-3 rounded-lg flex items-center gap-2",
-                                    getStatusInfo(selectedExecution.status).bg
-                                )}>
+                                <div
+                                    className={cn(
+                                        "p-3 rounded-lg flex items-center gap-2",
+                                        getStatusInfo(selectedExecution.status).bg
+                                    )}
+                                >
                                     <div className={getStatusInfo(selectedExecution.status).color}>
                                         {getStatusInfo(selectedExecution.status).icon}
                                     </div>
@@ -247,23 +254,42 @@ export function HistoryTab({ workflowId }: HistoryTabProps) {
                                 <div className="space-y-2 text-sm">
                                     <div className="flex justify-between">
                                         <span className="text-muted-foreground">Created:</span>
-                                        <span>{new Date(selectedExecution.created_at).toLocaleString()}</span>
+                                        <span>
+                                            {new Date(
+                                                selectedExecution.created_at
+                                            ).toLocaleString()}
+                                        </span>
                                     </div>
                                     {selectedExecution.started_at && (
                                         <div className="flex justify-between">
                                             <span className="text-muted-foreground">Started:</span>
-                                            <span>{new Date(selectedExecution.started_at).toLocaleString()}</span>
+                                            <span>
+                                                {new Date(
+                                                    selectedExecution.started_at
+                                                ).toLocaleString()}
+                                            </span>
                                         </div>
                                     )}
                                     {selectedExecution.completed_at && (
                                         <div className="flex justify-between">
-                                            <span className="text-muted-foreground">Completed:</span>
-                                            <span>{new Date(selectedExecution.completed_at).toLocaleString()}</span>
+                                            <span className="text-muted-foreground">
+                                                Completed:
+                                            </span>
+                                            <span>
+                                                {new Date(
+                                                    selectedExecution.completed_at
+                                                ).toLocaleString()}
+                                            </span>
                                         </div>
                                     )}
                                     <div className="flex justify-between font-medium">
                                         <span className="text-muted-foreground">Duration:</span>
-                                        <span>{formatDuration(selectedExecution.started_at, selectedExecution.completed_at)}</span>
+                                        <span>
+                                            {formatDuration(
+                                                selectedExecution.started_at,
+                                                selectedExecution.completed_at
+                                            )}
+                                        </span>
                                     </div>
                                 </div>
                             </div>
@@ -281,28 +307,30 @@ export function HistoryTab({ workflowId }: HistoryTabProps) {
                             )}
 
                             {/* Inputs */}
-                            {selectedExecution.inputs && Object.keys(selectedExecution.inputs).length > 0 && (
-                                <div>
-                                    <h5 className="text-sm font-medium mb-2">Inputs</h5>
-                                    <div className="bg-muted/50 rounded-lg p-3 max-h-40 overflow-y-auto">
-                                        <pre className="text-xs font-mono whitespace-pre-wrap">
-                                            {JSON.stringify(selectedExecution.inputs, null, 2)}
-                                        </pre>
+                            {selectedExecution.inputs &&
+                                Object.keys(selectedExecution.inputs).length > 0 && (
+                                    <div>
+                                        <h5 className="text-sm font-medium mb-2">Inputs</h5>
+                                        <div className="bg-muted/50 rounded-lg p-3 max-h-40 overflow-y-auto">
+                                            <pre className="text-xs font-mono whitespace-pre-wrap">
+                                                {JSON.stringify(selectedExecution.inputs, null, 2)}
+                                            </pre>
+                                        </div>
                                     </div>
-                                </div>
-                            )}
+                                )}
 
                             {/* Outputs */}
-                            {selectedExecution.outputs && Object.keys(selectedExecution.outputs).length > 0 && (
-                                <div>
-                                    <h5 className="text-sm font-medium mb-2">Outputs</h5>
-                                    <div className="bg-muted/50 rounded-lg p-3 max-h-40 overflow-y-auto">
-                                        <pre className="text-xs font-mono whitespace-pre-wrap">
-                                            {JSON.stringify(selectedExecution.outputs, null, 2)}
-                                        </pre>
+                            {selectedExecution.outputs &&
+                                Object.keys(selectedExecution.outputs).length > 0 && (
+                                    <div>
+                                        <h5 className="text-sm font-medium mb-2">Outputs</h5>
+                                        <div className="bg-muted/50 rounded-lg p-3 max-h-40 overflow-y-auto">
+                                            <pre className="text-xs font-mono whitespace-pre-wrap">
+                                                {JSON.stringify(selectedExecution.outputs, null, 2)}
+                                            </pre>
+                                        </div>
                                     </div>
-                                </div>
-                            )}
+                                )}
                         </div>
                     </div>
                 )}

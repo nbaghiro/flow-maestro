@@ -19,9 +19,7 @@ export function ErrorDialog({ isOpen, title, message, onClose }: ErrorDialogProp
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
             <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
                 <div className="flex items-start justify-between mb-4">
-                    <h3 className="text-lg font-semibold text-foreground">
-                        {title}
-                    </h3>
+                    <h3 className="text-lg font-semibold text-foreground">{title}</h3>
                     <button
                         onClick={onClose}
                         className="text-muted-foreground hover:text-foreground transition-colors"
@@ -29,9 +27,7 @@ export function ErrorDialog({ isOpen, title, message, onClose }: ErrorDialogProp
                         <X className="w-5 h-5" />
                     </button>
                 </div>
-                <p className="text-sm text-muted-foreground mb-6">
-                    {message}
-                </p>
+                <p className="text-sm text-muted-foreground mb-6">{message}</p>
                 <div className="flex items-center justify-end">
                     <button
                         onClick={onClose}

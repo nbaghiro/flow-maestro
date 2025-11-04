@@ -1,7 +1,11 @@
 import { useState, useEffect } from "react";
 import { FormField, FormSection } from "../../../components/FormField";
 import { OutputSettingsSection } from "../../../components/OutputSettingsSection";
-import { LLM_PROVIDERS, LLM_MODELS_BY_PROVIDER, getDefaultModelForProvider } from "@flowmaestro/shared";
+import {
+    LLM_PROVIDERS,
+    LLM_MODELS_BY_PROVIDER,
+    getDefaultModelForProvider
+} from "@flowmaestro/shared";
 
 interface EmbeddingsNodeConfigProps {
     data: any;
@@ -17,12 +21,14 @@ const dimensionsByModel: Record<string, number> = {
     "textembedding-gecko": 768,
     "textembedding-gecko-multilingual": 768,
     "sentence-transformers/all-MiniLM-L6-v2": 384,
-    "sentence-transformers/all-mpnet-base-v2": 768,
+    "sentence-transformers/all-mpnet-base-v2": 768
 };
 
 export function EmbeddingsNodeConfig({ data, onUpdate }: EmbeddingsNodeConfigProps) {
     const [provider, setProvider] = useState(data.provider || "openai");
-    const [model, setModel] = useState(data.model || getDefaultModelForProvider(data.provider || "openai"));
+    const [model, setModel] = useState(
+        data.model || getDefaultModelForProvider(data.provider || "openai")
+    );
     const [input, setInput] = useState(data.input || "");
     const [batchMode, setBatchMode] = useState(data.batchMode || false);
     const [outputVariable, setOutputVariable] = useState(data.outputVariable || "");
@@ -36,7 +42,7 @@ export function EmbeddingsNodeConfig({ data, onUpdate }: EmbeddingsNodeConfigPro
             input,
             batchMode,
             dimensions,
-            outputVariable,
+            outputVariable
         });
     }, [provider, model, input, batchMode, dimensions, outputVariable]);
 

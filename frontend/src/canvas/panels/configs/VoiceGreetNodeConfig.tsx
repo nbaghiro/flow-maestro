@@ -9,7 +9,7 @@ interface VoiceGreetNodeConfigProps {
 
 const voiceProviders = [
     { value: "elevenlabs", label: "ElevenLabs (High Quality)" },
-    { value: "openai", label: "OpenAI TTS" },
+    { value: "openai", label: "OpenAI TTS" }
 ];
 
 const voicesByProvider: Record<string, Array<{ value: string; label: string }>> = {
@@ -18,7 +18,7 @@ const voicesByProvider: Record<string, Array<{ value: string; label: string }>> 
         { value: "domi", label: "Domi (Strong)" },
         { value: "bella", label: "Bella (Soft)" },
         { value: "antoni", label: "Antoni (Well-rounded)" },
-        { value: "elli", label: "Elli (Emotional)" },
+        { value: "elli", label: "Elli (Emotional)" }
     ],
     openai: [
         { value: "alloy", label: "Alloy" },
@@ -26,8 +26,8 @@ const voicesByProvider: Record<string, Array<{ value: string; label: string }>> 
         { value: "fable", label: "Fable" },
         { value: "onyx", label: "Onyx" },
         { value: "nova", label: "Nova" },
-        { value: "shimmer", label: "Shimmer" },
-    ],
+        { value: "shimmer", label: "Shimmer" }
+    ]
 };
 
 export function VoiceGreetNodeConfig({ data, onUpdate }: VoiceGreetNodeConfigProps) {
@@ -43,7 +43,7 @@ export function VoiceGreetNodeConfig({ data, onUpdate }: VoiceGreetNodeConfigPro
             voiceProvider,
             voice,
             speed,
-            interruptible,
+            interruptible
         });
     }, [message, voiceProvider, voice, speed, interruptible, onUpdate]);
 
@@ -102,13 +102,7 @@ export function VoiceGreetNodeConfig({ data, onUpdate }: VoiceGreetNodeConfigPro
                 </FormField>
 
                 <FormField label="Speed">
-                    <Slider
-                        value={speed}
-                        onChange={setSpeed}
-                        min={0.25}
-                        max={4.0}
-                        step={0.25}
-                    />
+                    <Slider value={speed} onChange={setSpeed} min={0.25} max={4.0} step={0.25} />
                     <p className="text-xs text-muted-foreground mt-1">
                         Adjust speech speed (0.25 = very slow, 1.0 = normal, 4.0 = very fast)
                     </p>
