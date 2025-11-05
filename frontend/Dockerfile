@@ -1,0 +1,63 @@
+# Build stage
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Copy root package files
+COPY package*.json ./
+
+# Copy workspace package files
+COPY frontend/package*.json ./frontend/
+COPY shared/package*.json ./shared/
+
+# Install dependencies for both workspaces
+RUN npm ci --workspace=frontend --workspace=shared
+
+# Copy source code
+COPY shared/ ./shared/
+COPY frontend/ ./frontend/
+COPY tsconfig.json ./
+
+# Build arguments for API URL
+ARG VITE_API_URL
+ARG VITE_WS_URL
+
+# Set environment variables for build
+ENV VITE_API_URL=$VITE_API_URL
+ENV VITE_WS_URL=$VITE_WS_URL
+
+# Build shared package first
+RUN npm run build --workspace=shared
+
+# Build frontend
+RUN npm run build --workspace=frontend
+
+# Production image
+FROM nginx:alpine
+
+# Copy custom nginx config
+COPY frontend/nginx.conf /etc/nginx/conf.d/default.conf
+
+# Copy built files from builder stage
+COPY --from=builder /app/frontend/dist /usr/share/nginx/html
+
+# Create non-root user and set permissions
+RUN chown -R nginx:nginx /usr/share/nginx/html && \
+    chown -R nginx:nginx /var/cache/nginx && \
+    chown -R nginx:nginx /var/log/nginx && \
+    chown -R nginx:nginx /etc/nginx/conf.d && \
+    touch /var/run/nginx.pid && \
+    chown -R nginx:nginx /var/run/nginx.pid
+
+# Switch to non-root user
+USER nginx
+
+# Expose port
+EXPOSE 80
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost/health || exit 1
+
+# Start nginx
+CMD ["nginx", "-g", "daemon off;"]

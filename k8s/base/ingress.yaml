@@ -1,0 +1,142 @@
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: flowmaestro-cert
+  namespace: flowmaestro
+spec:
+  domains:
+    - api.DOMAIN
+    - app.DOMAIN
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: flowmaestro-ingress
+  namespace: flowmaestro
+  annotations:
+    # Use Google Cloud Load Balancer
+    kubernetes.io/ingress.class: "gce"
+
+    # Use global static IP
+    kubernetes.io/ingress.global-static-ip-name: "flowmaestro-static-ip"
+
+    # Enable managed SSL certificate
+    networking.gke.io/managed-certificates: "flowmaestro-cert"
+
+    # Redirect HTTP to HTTPS
+    kubernetes.io/ingress.allow-http: "true"
+
+    # Frontend policy for SSL redirect
+    ingress.gcp.kubernetes.io/pre-shared-cert: "flowmaestro-cert"
+spec:
+  rules:
+    # API server rule
+    - host: api.DOMAIN
+      http:
+        paths:
+          - path: /*
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: api-service
+                port:
+                  number: 3001
+
+    # Frontend app rule (served from Cloud Storage/CDN)
+    - host: app.DOMAIN
+      http:
+        paths:
+          - path: /*
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: api-service
+                port:
+                  number: 3001
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: api-server-network-policy
+  namespace: flowmaestro
+spec:
+  podSelector:
+    matchLabels:
+      app: flowmaestro
+      component: api-server
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Allow traffic from GCP Load Balancer
+    - from:
+        - namespaceSelector: {}
+      ports:
+        - protocol: TCP
+          port: 3001
+  egress:
+    # Allow DNS
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - protocol: UDP
+          port: 53
+    # Allow HTTPS for external APIs
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - protocol: TCP
+          port: 443
+    # Allow PostgreSQL
+    - ports:
+        - protocol: TCP
+          port: 5432
+    # Allow Redis
+    - ports:
+        - protocol: TCP
+          port: 6379
+    # Allow Temporal
+    - ports:
+        - protocol: TCP
+          port: 7233
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: temporal-worker-network-policy
+  namespace: flowmaestro
+spec:
+  podSelector:
+    matchLabels:
+      app: flowmaestro
+      component: temporal-worker
+  policyTypes:
+    - Egress
+  egress:
+    # Allow DNS
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - protocol: UDP
+          port: 53
+    # Allow HTTPS for external APIs
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - protocol: TCP
+          port: 443
+    # Allow PostgreSQL
+    - ports:
+        - protocol: TCP
+          port: 5432
+    # Allow Redis
+    - ports:
+        - protocol: TCP
+          port: 6379
+    # Allow Temporal
+    - ports:
+        - protocol: TCP
+          port: 7233

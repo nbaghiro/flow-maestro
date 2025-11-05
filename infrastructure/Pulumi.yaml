@@ -1,0 +1,6 @@
+name: flowmaestro-infrastructure
+description: FlowMaestro Infrastructure on GKE
+runtime:
+  name: nodejs
+  options:
+    typescript: true

@@ -1,0 +1,53 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-service
+  namespace: flowmaestro
+  labels:
+    app: flowmaestro
+    component: api-server
+  annotations:
+    cloud.google.com/neg: '{"ingress": true}'
+    cloud.google.com/backend-config: '{"default": "api-backend-config"}'
+spec:
+  type: ClusterIP
+  selector:
+    app: flowmaestro
+    component: api-server
+  ports:
+    - name: http
+      port: 3001
+      targetPort: http
+      protocol: TCP
+  sessionAffinity: ClientIP
+  sessionAffinityConfig:
+    clientIP:
+      timeoutSeconds: 10800
+
+---
+apiVersion: cloud.google.com/v1
+kind: BackendConfig
+metadata:
+  name: api-backend-config
+  namespace: flowmaestro
+spec:
+  timeoutSec: 300
+  connectionDraining:
+    drainingTimeoutSec: 60
+  sessionAffinity:
+    affinityType: "CLIENT_IP"
+    affinityCookieTtlSec: 3600
+  healthCheck:
+    checkIntervalSec: 10
+    timeoutSec: 5
+    healthyThreshold: 2
+    unhealthyThreshold: 3
+    type: HTTP
+    requestPath: /health
+    port: 3001
+  cdn:
+    enabled: false
+    cachePolicy:
+      includeHost: true
+      includeProtocol: true
+      includeQueryString: false

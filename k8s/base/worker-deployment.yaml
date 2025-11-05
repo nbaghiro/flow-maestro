@@ -1,0 +1,217 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: temporal-worker
+  namespace: flowmaestro
+  labels:
+    app: flowmaestro
+    component: temporal-worker
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: flowmaestro
+      component: temporal-worker
+  template:
+    metadata:
+      labels:
+        app: flowmaestro
+        component: temporal-worker
+    spec:
+      serviceAccountName: flowmaestro-sa
+      containers:
+        - name: temporal-worker
+          image: REGION-docker.pkg.dev/PROJECT_ID/flowmaestro/backend:latest
+          imagePullPolicy: Always
+          # Override command to run worker instead of API server
+          command: ["node", "backend/dist/backend/src/temporal/workers/orchestrator-worker.js"]
+          env:
+            # From ConfigMap
+            - name: NODE_ENV
+              valueFrom:
+                configMapKeyRef:
+                  name: flowmaestro-config
+                  key: NODE_ENV
+            - name: LOG_LEVEL
+              valueFrom:
+                configMapKeyRef:
+                  name: flowmaestro-config
+                  key: LOG_LEVEL
+            - name: TEMPORAL_TASK_QUEUE
+              valueFrom:
+                configMapKeyRef:
+                  name: flowmaestro-config
+                  key: TEMPORAL_TASK_QUEUE
+            - name: TEMPORAL_MAX_CONCURRENT_ACTIVITIES
+              valueFrom:
+                configMapKeyRef:
+                  name: flowmaestro-config
+                  key: TEMPORAL_MAX_CONCURRENT_ACTIVITIES
+            - name: TEMPORAL_MAX_CONCURRENT_WORKFLOWS
+              valueFrom:
+                configMapKeyRef:
+                  name: flowmaestro-config
+                  key: TEMPORAL_MAX_CONCURRENT_WORKFLOWS
+
+            # Database credentials (from secret)
+            - name: POSTGRES_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: db-credentials
+                  key: host
+            - name: POSTGRES_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: db-credentials
+                  key: port
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: db-credentials
+                  key: database
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: db-credentials
+                  key: user
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: db-credentials
+                  key: password
+
+            # Redis credentials (from secret)
+            - name: REDIS_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: redis-credentials
+                  key: host
+            - name: REDIS_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: redis-credentials
+                  key: port
+
+            # Temporal configuration (from secret)
+            - name: TEMPORAL_ADDRESS
+              valueFrom:
+                secretKeyRef:
+                  name: temporal-credentials
+                  key: address
+            - name: TEMPORAL_NAMESPACE
+              valueFrom:
+                secretKeyRef:
+                  name: temporal-credentials
+                  key: namespace
+
+            # Application secrets (from secret)
+            - name: ENCRYPTION_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: encryption-key
+
+            # Optional: LLM API keys (from secret, if exists)
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: llm-api-keys
+                  key: openai-api-key
+                  optional: true
+            - name: ANTHROPIC_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: llm-api-keys
+                  key: anthropic-api-key
+                  optional: true
+            - name: GOOGLE_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: llm-api-keys
+                  key: google-api-key
+                  optional: true
+
+          # Mount Temporal certificates
+          volumeMounts:
+            - name: temporal-certs
+              mountPath: /etc/temporal
+              readOnly: true
+
+          resources:
+            requests:
+              cpu: 1000m
+              memory: 1Gi
+            limits:
+              cpu: 4000m
+              memory: 4Gi
+
+          # Worker health can be checked via logs - no HTTP endpoint
+          # Use liveness probe to restart if process crashes
+          livenessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - "ps aux | grep orchestrator-worker || exit 1"
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1001
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+            capabilities:
+              drop:
+                - ALL
+
+      volumes:
+        - name: temporal-certs
+          secret:
+            secretName: temporal-credentials
+            items:
+              - key: ca-cert
+                path: ca.pem
+              - key: client-cert
+                path: client.pem
+              - key: client-key
+                path: client-key.pem
+
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 60
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: temporal-worker-hpa
+  namespace: flowmaestro
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: temporal-worker
+  minReplicas: 2
+  maxReplicas: 5
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 75
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+        - type: Pods
+          value: 1
+          periodSeconds: 120
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+        - type: Pods
+          value: 1
+          periodSeconds: 60
