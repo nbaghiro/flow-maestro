@@ -1,0 +1,58 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    * {
+        @apply border-white/10;
+    }
+
+    body {
+        @apply bg-black text-white antialiased;
+        font-feature-settings: "rlig" 1, "calt" 1;
+    }
+
+    html {
+        scroll-behavior: smooth;
+    }
+}
+
+@layer utilities {
+    .grid-pattern {
+        background-image: linear-gradient(
+                rgba(255, 255, 255, 0.05) 1px,
+                transparent 1px
+            ),
+            linear-gradient(
+                90deg,
+                rgba(255, 255, 255, 0.05) 1px,
+                transparent 1px
+            );
+        background-size: 50px 50px;
+    }
+
+    .gradient-text {
+        @apply bg-gradient-to-r from-primary-400 via-accent-400 to-primary-600 bg-clip-text text-transparent;
+    }
+
+    .gradient-border {
+        position: relative;
+    }
+
+    .gradient-border::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        padding: 2px;
+        background: linear-gradient(
+            135deg,
+            rgba(139, 92, 246, 0.5),
+            rgba(217, 70, 239, 0.5)
+        );
+        -webkit-mask: linear-gradient(#fff 0 0) content-box,
+            linear-gradient(#fff 0 0);
+        -webkit-mask-composite: xor;
+        mask-composite: exclude;
+    }
+}

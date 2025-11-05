@@ -1,0 +1,84 @@
+import React from "react";
+import { motion } from "framer-motion";
+import { useInView } from "framer-motion";
+import { ArrowRight, CheckCircle2 } from "lucide-react";
+
+export const CTA: React.FC = () => {
+    const ref = React.useRef<HTMLDivElement>(null);
+    const isInView = useInView(ref, { once: true, margin: "-100px" });
+
+    return (
+        <section
+            ref={ref}
+            className="relative py-24 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-gray-950 to-black"
+        >
+            <div className="max-w-5xl mx-auto">
+                <motion.div
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={isInView ? { opacity: 1, y: 0 } : {}}
+                    transition={{ duration: 0.6 }}
+                    className="relative rounded-3xl bg-gradient-to-br from-primary-600/20 via-accent-600/20 to-primary-600/20 p-12 md:p-16 backdrop-blur-sm border border-white/10 overflow-hidden"
+                >
+                    {/* Background Pattern */}
+                    <div className="absolute inset-0 grid-pattern opacity-20"></div>
+
+                    {/* Content */}
+                    <div className="relative z-10 text-center">
+                        <h2 className="text-4xl sm:text-5xl font-bold mb-6">
+                            Ready to
+                            <span className="gradient-text">
+                                {" "}
+                                Automate Everything
+                            </span>
+                            ?
+                        </h2>
+
+                        <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
+                            Join thousands of teams building powerful workflows
+                            with FlowMaestro. Start for free, no credit card
+                            required.
+                        </p>
+
+                        {/* Features */}
+                        <div className="flex flex-wrap justify-center gap-6 mb-10">
+                            {[
+                                "Free 14-day trial",
+                                "No credit card required",
+                                "Cancel anytime",
+                            ].map((feature) => (
+                                <div
+                                    key={feature}
+                                    className="flex items-center gap-2 text-gray-300"
+                                >
+                                    <CheckCircle2 className="w-5 h-5 text-green-400" />
+                                    <span>{feature}</span>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Buttons */}
+                        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+                            <button className="group px-8 py-4 bg-white text-black hover:bg-gray-100 rounded-lg font-semibold transition-all duration-200 flex items-center gap-2 shadow-lg">
+                                Start Building Now
+                                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                            </button>
+                            <button className="px-8 py-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg font-semibold transition-all duration-200">
+                                Schedule a Demo
+                            </button>
+                        </div>
+
+                        <p className="text-sm text-gray-400 mt-8">
+                            Have questions?{" "}
+                            <a
+                                href="#"
+                                className="text-primary-400 hover:text-primary-300 underline"
+                            >
+                                Talk to our sales team
+                            </a>
+                        </p>
+                    </div>
+                </motion.div>
+            </div>
+        </section>
+    );
+};
