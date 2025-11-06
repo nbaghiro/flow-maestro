@@ -197,15 +197,22 @@ npm run docker:up    # Start PostgreSQL, Redis, Temporal
 npm run dev          # Start frontend + backend + worker
 ```
 
-### Production (AWS)
-FlowMaestro is designed for production deployment on AWS using:
-- **ECS on Fargate** for container orchestration
-- **RDS PostgreSQL** for data persistence
-- **ElastiCache Redis** for caching
-- **CloudFront + S3** for frontend delivery
-- **Application Load Balancer** for API traffic
+### Production (GKE)
+FlowMaestro is production-ready for deployment on Google Kubernetes Engine (GKE):
+- **GKE Autopilot** for managed Kubernetes cluster
+- **Cloud SQL PostgreSQL** for data persistence
+- **Memorystore Redis** for caching and pub/sub
+- **Cloud Storage + CDN** for frontend delivery
+- **Global Load Balancer** for API traffic with SSL
+- **Temporal Cloud** for durable workflow orchestration
 
-See `_docs/architecture.md` for detailed deployment architecture and infrastructure provisioning with Terraform/CDK.
+**Quick Deploy:**
+```bash
+cd infra
+./deploy.sh
+```
+
+See **[infra/README.md](./infra/README.md)** for complete deployment guide with Pulumi infrastructure-as-code.
 
 ---
 

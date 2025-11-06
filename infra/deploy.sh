@@ -120,12 +120,12 @@ build_images() {
 
     # Build backend
     print_info "Building backend image..."
-    docker build -f backend/Dockerfile -t ${REGISTRY}/backend:${IMAGE_TAG} .
+    docker build -f infra/docker/backend/Dockerfile -t ${REGISTRY}/backend:${IMAGE_TAG} .
     docker tag ${REGISTRY}/backend:${IMAGE_TAG} ${REGISTRY}/backend:latest
 
     # Build frontend
     print_info "Building frontend image..."
-    docker build -f frontend/Dockerfile \
+    docker build -f infra/docker/frontend/Dockerfile \
         --build-arg VITE_API_URL=https://api.${DOMAIN} \
         --build-arg VITE_WS_URL=wss://api.${DOMAIN} \
         -t ${REGISTRY}/frontend:${IMAGE_TAG} .
@@ -133,7 +133,7 @@ build_images() {
 
     # Build marketing
     print_info "Building marketing image..."
-    docker build -f marketing/Dockerfile -t ${REGISTRY}/marketing:${IMAGE_TAG} .
+    docker build -f infra/docker/marketing/Dockerfile -t ${REGISTRY}/marketing:${IMAGE_TAG} .
     docker tag ${REGISTRY}/marketing:${IMAGE_TAG} ${REGISTRY}/marketing:latest
 
     print_info "All images built successfully"
@@ -160,14 +160,14 @@ update_k8s_images() {
     print_info "Updating Kubernetes deployment images..."
 
     # Update manifests with project-specific values
-    find k8s -type f -name "*.yaml" -exec sed -i.bak \
+    find infra/k8s -type f -name "*.yaml" -exec sed -i.bak \
         -e "s|REGION-docker.pkg.dev/PROJECT_ID|${REGISTRY}|g" \
         -e "s|PROJECT_ID|${GCP_PROJECT_ID}|g" \
         -e "s|DOMAIN|${DOMAIN}|g" \
         {} \;
 
     # Remove backup files
-    find k8s -type f -name "*.bak" -delete
+    find infra/k8s -type f -name "*.bak" -delete
 
     print_info "Kubernetes manifests updated"
 }
@@ -178,12 +178,12 @@ deploy_to_k8s() {
 
     # Apply database migration job first
     print_info "Running database migrations..."
-    kubectl apply -f k8s/jobs/db-migration.yaml
+    kubectl apply -f infra/k8s/jobs/db-migration.yaml
     kubectl wait --for=condition=complete --timeout=300s job/db-migration -n flowmaestro
 
     # Deploy application
     print_info "Deploying application..."
-    kubectl apply -k k8s/overlays/production
+    kubectl apply -k infra/k8s/overlays/production
 
     # Wait for rollout
     print_info "Waiting for API server rollout..."

@@ -5,7 +5,7 @@ steps:
     args:
       - "build"
       - "-f"
-      - "backend/Dockerfile"
+      - "infra/docker/backend/Dockerfile"
       - "-t"
       - "${_REGISTRY}/backend:$SHORT_SHA"
       - "-t"
@@ -18,7 +18,7 @@ steps:
     args:
       - "build"
       - "-f"
-      - "frontend/Dockerfile"
+      - "infra/docker/frontend/Dockerfile"
       - "--build-arg"
       - "VITE_API_URL=${_API_URL}"
       - "--build-arg"
@@ -35,7 +35,7 @@ steps:
     args:
       - "build"
       - "-f"
-      - "marketing/Dockerfile"
+      - "infra/docker/marketing/Dockerfile"
       - "-t"
       - "${_REGISTRY}/marketing:$SHORT_SHA"
       - "-t"
