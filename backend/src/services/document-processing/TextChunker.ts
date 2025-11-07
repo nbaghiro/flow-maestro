@@ -29,7 +29,7 @@ export class TextChunker {
     /**
      * Split text into chunks with overlap, preserving sentence boundaries
      */
-    chunkText(text: string, documentMetadata?: Record<string, any>): TextChunk[] {
+    chunkText(text: string, documentMetadata?: Record<string, unknown>): TextChunk[] {
         if (!text || text.trim().length === 0) {
             return [];
         }
@@ -67,10 +67,7 @@ export class TextChunker {
 
                 // Start new chunk with overlap
                 // Include last few sentences for context
-                const overlapSentences = this.getOverlapSentences(
-                    currentSentences,
-                    chunkOverlap
-                );
+                const overlapSentences = this.getOverlapSentences(currentSentences, chunkOverlap);
                 currentChunk = overlapSentences.join(" ");
                 currentSentences = [...overlapSentences.map((s) => s)];
                 charPosition = currentChunk.length;
@@ -109,7 +106,7 @@ export class TextChunker {
     chunkStructuredText(
         text: string,
         structure: "markdown" | "html" | "code",
-        documentMetadata?: Record<string, any>
+        documentMetadata?: Record<string, unknown>
     ): TextChunk[] {
         switch (structure) {
             case "markdown":
@@ -126,7 +123,7 @@ export class TextChunker {
     /**
      * Split markdown text, preserving headings structure
      */
-    private chunkMarkdown(text: string, documentMetadata?: Record<string, any>): TextChunk[] {
+    private chunkMarkdown(text: string, documentMetadata?: Record<string, unknown>): TextChunk[] {
         const chunks: TextChunk[] = [];
         const sections = this.splitMarkdownSections(text);
 
@@ -154,7 +151,9 @@ export class TextChunker {
     /**
      * Split markdown into sections by headings
      */
-    private splitMarkdownSections(text: string): Array<{ heading: string; level: number; content: string }> {
+    private splitMarkdownSections(
+        text: string
+    ): Array<{ heading: string; level: number; content: string }> {
         const sections: Array<{ heading: string; level: number; content: string }> = [];
         const lines = text.split("\n");
 
@@ -199,7 +198,7 @@ export class TextChunker {
     /**
      * Chunk HTML content (placeholder - similar to markdown)
      */
-    private chunkHTML(text: string, documentMetadata?: Record<string, any>): TextChunk[] {
+    private chunkHTML(text: string, documentMetadata?: Record<string, unknown>): TextChunk[] {
         // For now, use basic chunking
         // In production, you might want to preserve HTML structure
         return this.chunkText(text, documentMetadata);
@@ -208,7 +207,7 @@ export class TextChunker {
     /**
      * Chunk code (placeholder - could preserve function/class boundaries)
      */
-    private chunkCode(text: string, documentMetadata?: Record<string, any>): TextChunk[] {
+    private chunkCode(text: string, documentMetadata?: Record<string, unknown>): TextChunk[] {
         // For now, use basic chunking
         // In production, you might want to chunk by functions/classes
         return this.chunkText(text, documentMetadata);

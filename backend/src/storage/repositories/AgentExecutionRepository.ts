@@ -1,11 +1,41 @@
 import { db } from "../database";
+import type { JsonValue } from "@flowmaestro/shared";
 import {
     AgentExecutionModel,
     AgentMessageModel,
     CreateAgentExecutionInput,
     UpdateAgentExecutionInput,
-    CreateAgentMessageInput
+    CreateAgentMessageInput,
+    AgentExecutionStatus,
+    MessageRole
 } from "../models/AgentExecution";
+
+interface AgentExecutionRow {
+    id: string;
+    agent_id: string;
+    user_id: string;
+    status: string;
+    conversation_history: string | JsonValue[];
+    iterations: number;
+    tool_calls_count: number;
+    metadata: string | Record<string, JsonValue>;
+    started_at: string | Date;
+    completed_at: string | Date | null;
+    error: string | null;
+    created_at: string | Date;
+    updated_at: string | Date;
+}
+
+interface AgentMessageRow {
+    id: string;
+    execution_id: string;
+    role: string;
+    content: string;
+    tool_calls: string | JsonValue[] | null;
+    tool_name: string | null;
+    tool_call_id: string | null;
+    created_at: string | Date;
+}
 
 export class AgentExecutionRepository {
     async create(input: CreateAgentExecutionInput): Promise<AgentExecutionModel> {
@@ -28,8 +58,8 @@ export class AgentExecutionRepository {
             JSON.stringify(input.metadata || {})
         ];
 
-        const result = await db.query<AgentExecutionModel>(query, values);
-        return this.mapExecutionRow(result.rows[0]);
+        const result = await db.query<AgentExecutionRow>(query, values);
+        return this.mapExecutionRow(result.rows[0] as AgentExecutionRow);
     }
 
     async findById(id: string): Promise<AgentExecutionModel | null> {
@@ -38,8 +68,8 @@ export class AgentExecutionRepository {
             WHERE id = $1
         `;
 
-        const result = await db.query<AgentExecutionModel>(query, [id]);
-        return result.rows.length > 0 ? this.mapExecutionRow(result.rows[0]) : null;
+        const result = await db.query<AgentExecutionRow>(query, [id]);
+        return result.rows.length > 0 ? this.mapExecutionRow(result.rows[0] as AgentExecutionRow) : null;
     }
 
     async findByIdAndUserId(id: string, userId: string): Promise<AgentExecutionModel | null> {
@@ -48,37 +78,50 @@ export class AgentExecutionRepository {
             WHERE id = $1 AND user_id = $2
         `;
 
-        const result = await db.query<AgentExecutionModel>(query, [id, userId]);
-        return result.rows.length > 0 ? this.mapExecutionRow(result.rows[0]) : null;
+        const result = await db.query<AgentExecutionRow>(query, [id, userId]);
+        return result.rows.length > 0 ? this.mapExecutionRow(result.rows[0] as AgentExecutionRow) : null;
     }
 
     async findByAgentId(
         agentId: string,
-        options: { limit?: number; offset?: number } = {}
+        options: { limit?: number; offset?: number; status?: string } = {}
     ): Promise<{ executions: AgentExecutionModel[]; total: number }> {
         const limit = options.limit || 50;
         const offset = options.offset || 0;
+        const { status } = options;
+
+        // Build WHERE clause
+        const whereConditions = ["agent_id = $1"];
+        const queryParams: unknown[] = [agentId];
+        let paramIndex = 2;
+
+        if (status) {
+            whereConditions.push(`status = $${paramIndex++}`);
+            queryParams.push(status);
+        }
+
+        const whereClause = whereConditions.join(" AND ");
 
         const countQuery = `
             SELECT COUNT(*) as count
             FROM flowmaestro.agent_executions
-            WHERE agent_id = $1
+            WHERE ${whereClause}
         `;
 
         const query = `
             SELECT * FROM flowmaestro.agent_executions
-            WHERE agent_id = $1
+            WHERE ${whereClause}
             ORDER BY started_at DESC
-            LIMIT $2 OFFSET $3
+            LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
         `;
 
         const [countResult, executionsResult] = await Promise.all([
-            db.query<{ count: string }>(countQuery, [agentId]),
-            db.query<AgentExecutionModel>(query, [agentId, limit, offset])
+            db.query<{ count: string }>(countQuery, queryParams),
+            db.query<AgentExecutionRow>(query, [...queryParams, limit, offset])
         ]);
 
         return {
-            executions: executionsResult.rows.map((row) => this.mapExecutionRow(row)),
+            executions: executionsResult.rows.map((row) => this.mapExecutionRow(row as AgentExecutionRow)),
             total: parseInt(countResult.rows[0].count)
         };
     }
@@ -105,18 +148,21 @@ export class AgentExecutionRepository {
 
         const [countResult, executionsResult] = await Promise.all([
             db.query<{ count: string }>(countQuery, [userId]),
-            db.query<AgentExecutionModel>(query, [userId, limit, offset])
+            db.query<AgentExecutionRow>(query, [userId, limit, offset])
         ]);
 
         return {
-            executions: executionsResult.rows.map((row) => this.mapExecutionRow(row)),
+            executions: executionsResult.rows.map((row) => this.mapExecutionRow(row as AgentExecutionRow)),
             total: parseInt(countResult.rows[0].count)
         };
     }
 
-    async update(id: string, input: UpdateAgentExecutionInput): Promise<AgentExecutionModel | null> {
+    async update(
+        id: string,
+        input: UpdateAgentExecutionInput
+    ): Promise<AgentExecutionModel | null> {
         const updates: string[] = [];
-        const values: any[] = [];
+        const values: unknown[] = [];
         let paramIndex = 1;
 
         if (input.status !== undefined) {
@@ -166,8 +212,8 @@ export class AgentExecutionRepository {
             RETURNING *
         `;
 
-        const result = await db.query<AgentExecutionModel>(query, values);
-        return result.rows.length > 0 ? this.mapExecutionRow(result.rows[0]) : null;
+        const result = await db.query<AgentExecutionRow>(query, values);
+        return result.rows.length > 0 ? this.mapExecutionRow(result.rows[0] as AgentExecutionRow) : null;
     }
 
     async addMessage(input: CreateAgentMessageInput): Promise<AgentMessageModel> {
@@ -188,8 +234,8 @@ export class AgentExecutionRepository {
             input.tool_call_id || null
         ];
 
-        const result = await db.query<AgentMessageModel>(query, values);
-        return this.mapMessageRow(result.rows[0]);
+        const result = await db.query<AgentMessageRow>(query, values);
+        return this.mapMessageRow(result.rows[0] as AgentMessageRow);
     }
 
     async getMessages(
@@ -206,8 +252,8 @@ export class AgentExecutionRepository {
             LIMIT $2 OFFSET $3
         `;
 
-        const result = await db.query<AgentMessageModel>(query, [executionId, limit, offset]);
-        return result.rows.map((row) => this.mapMessageRow(row));
+        const result = await db.query<AgentMessageRow>(query, [executionId, limit, offset]);
+        return result.rows.map((row) => this.mapMessageRow(row as AgentMessageRow));
     }
 
     async deleteExecution(id: string): Promise<boolean> {
@@ -221,25 +267,28 @@ export class AgentExecutionRepository {
         return (result.rowCount || 0) > 0;
     }
 
-    private mapExecutionRow(row: any): AgentExecutionModel {
+    private mapExecutionRow(row: AgentExecutionRow): AgentExecutionModel {
         return {
             ...row,
-            conversation_history: typeof row.conversation_history === "string"
-                ? JSON.parse(row.conversation_history)
-                : row.conversation_history,
-            metadata: typeof row.metadata === "string"
-                ? JSON.parse(row.metadata)
-                : row.metadata,
+            status: row.status as AgentExecutionStatus,
+            conversation_history:
+                typeof row.conversation_history === "string"
+                    ? JSON.parse(row.conversation_history)
+                    : row.conversation_history,
+            metadata: typeof row.metadata === "string" ? JSON.parse(row.metadata) : row.metadata,
             started_at: new Date(row.started_at),
             completed_at: row.completed_at ? new Date(row.completed_at) : null
         };
     }
 
-    private mapMessageRow(row: any): AgentMessageModel {
+    private mapMessageRow(row: AgentMessageRow): AgentMessageModel {
         return {
             ...row,
+            role: row.role as MessageRole,
             tool_calls: row.tool_calls
-                ? (typeof row.tool_calls === "string" ? JSON.parse(row.tool_calls) : row.tool_calls)
+                ? typeof row.tool_calls === "string"
+                    ? JSON.parse(row.tool_calls)
+                    : row.tool_calls
                 : null,
             created_at: new Date(row.created_at)
         };

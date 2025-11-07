@@ -1,5 +1,8 @@
 import { FastifyInstance } from "fastify";
-import { KnowledgeBaseRepository, KnowledgeDocumentRepository } from "../../../storage/repositories";
+import {
+    KnowledgeBaseRepository,
+    KnowledgeDocumentRepository
+} from "../../../storage/repositories";
 import { authMiddleware } from "../../middleware";
 import * as fs from "fs/promises";
 import * as path from "path";

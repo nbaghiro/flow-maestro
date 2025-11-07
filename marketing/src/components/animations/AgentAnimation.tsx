@@ -4,12 +4,7 @@ import { motion } from "framer-motion";
 export const AgentAnimation: React.FC = () => {
     return (
         <div className="relative w-full h-full flex items-center justify-center">
-            <svg
-                width="100%"
-                height="100%"
-                viewBox="0 0 400 300"
-                className="max-w-md mx-auto"
-            >
+            <svg width="100%" height="100%" viewBox="0 0 400 300" className="max-w-md mx-auto">
                 {/* Central AI Brain */}
                 <motion.g
                     initial={{ scale: 0 }}
@@ -40,7 +35,7 @@ export const AgentAnimation: React.FC = () => {
                         transition={{
                             duration: 8,
                             repeat: Infinity,
-                            ease: "linear",
+                            ease: "linear"
                         }}
                         style={{ originX: "200px", originY: "150px" }}
                     />
@@ -71,12 +66,12 @@ export const AgentAnimation: React.FC = () => {
                             opacity: [0, 1, 0],
                             scale: [0, 1, 0],
                             x: [0, Math.cos(i * 60 * (Math.PI / 180)) * 60],
-                            y: [0, Math.sin(i * 60 * (Math.PI / 180)) * 60],
+                            y: [0, Math.sin(i * 60 * (Math.PI / 180)) * 60]
                         }}
                         transition={{
                             duration: 2,
                             repeat: Infinity,
-                            delay: i * 0.3,
+                            delay: i * 0.3
                         }}
                     />
                 ))}
@@ -92,12 +87,12 @@ export const AgentAnimation: React.FC = () => {
                     opacity="0.3"
                     animate={{
                         r: [50, 70, 50],
-                        opacity: [0.3, 0, 0.3],
+                        opacity: [0.3, 0, 0.3]
                     }}
                     transition={{
                         duration: 2,
                         repeat: Infinity,
-                        ease: "easeInOut",
+                        ease: "easeInOut"
                     }}
                 />
 
@@ -107,22 +102,10 @@ export const AgentAnimation: React.FC = () => {
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.8 }}
                 >
-                    <text
-                        x="200"
-                        y="60"
-                        fill="#94a3b8"
-                        fontSize="11"
-                        textAnchor="middle"
-                    >
+                    <text x="200" y="60" fill="#94a3b8" fontSize="11" textAnchor="middle">
                         Analyzing Context
                     </text>
-                    <text
-                        x="200"
-                        y="250"
-                        fill="#94a3b8"
-                        fontSize="11"
-                        textAnchor="middle"
-                    >
+                    <text x="200" y="250" fill="#94a3b8" fontSize="11" textAnchor="middle">
                         Making Decisions
                     </text>
                 </motion.g>

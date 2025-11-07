@@ -1,11 +1,13 @@
 import { EventEmitter } from "events";
 
 // Type stubs for browser Web Audio APIs not available in Node.js
-type AudioContext = any;
-type AnalyserNode = any;
-type ScriptProcessorNode = any;
-type MediaStream = any;
-type AudioProcessingEvent = any;
+type AudioContext = unknown;
+type AnalyserNode = unknown;
+type ScriptProcessorNode = unknown;
+type MediaStream = unknown;
+type AudioProcessingEvent = {
+    inputBuffer: { getChannelData: (channel: number) => Float32Array };
+};
 
 /**
  * Voice Activity Detector
@@ -48,26 +50,61 @@ export class VoiceActivityDetector extends EventEmitter {
 
         try {
             // Create audio context
-            this.audioContext = new ((globalThis as any).AudioContext || (globalThis as any).webkitAudioContext)({
-                sampleRate: 16000,
+            const AudioContextClass = (
+                globalThis as typeof globalThis & {
+                    AudioContext?: new (options: { sampleRate: number }) => unknown;
+                    webkitAudioContext?: new (options: { sampleRate: number }) => unknown;
+                }
+            ).AudioContext || (globalThis as typeof globalThis & {
+                webkitAudioContext?: new (options: { sampleRate: number }) => unknown;
+            }).webkitAudioContext;
+
+            if (!AudioContextClass) {
+                throw new Error("AudioContext not available");
+            }
+
+            this.audioContext = new AudioContextClass({
+                sampleRate: 16000
             });
 
             // Create analyser
-            this.analyser = this.audioContext.createAnalyser();
-            this.analyser.fftSize = 2048;
-            this.analyser.smoothingTimeConstant = 0.8;
+            this.analyser = (this.audioContext as {
+                createAnalyser: () => {
+                    fftSize: number;
+                    smoothingTimeConstant: number;
+                    connect: (node: unknown) => void;
+                    disconnect: () => void;
+                };
+            }).createAnalyser();
+            (this.analyser as { fftSize: number }).fftSize = 2048;
+            (this.analyser as { smoothingTimeConstant: number }).smoothingTimeConstant = 0.8;
 
             // Connect media stream to analyser
-            const source = this.audioContext.createMediaStreamSource(mediaStream);
+            const source = (this.audioContext as {
+                createMediaStreamSource: (stream: unknown) => { connect: (node: unknown) => void };
+            }).createMediaStreamSource(mediaStream);
             source.connect(this.analyser);
 
             // Create script processor for analysis
-            this.processor = this.audioContext.createScriptProcessor(2048, 1, 1);
-            this.analyser.connect(this.processor);
-            this.processor.connect(this.audioContext.destination);
+            this.processor = (this.audioContext as {
+                createScriptProcessor: (
+                    bufferSize: number,
+                    numberOfInputChannels: number,
+                    numberOfOutputChannels: number
+                ) => {
+                    onaudioprocess: ((e: AudioProcessingEvent) => void) | null;
+                    connect: (node: unknown) => void;
+                    disconnect: () => void;
+                };
+                destination: unknown;
+            }).createScriptProcessor(2048, 1, 1);
+            (this.analyser as { connect: (node: unknown) => void }).connect(this.processor);
+            (this.processor as { connect: (node: unknown) => void }).connect(
+                (this.audioContext as { destination: unknown }).destination
+            );
 
             // Process audio frames
-            this.processor.onaudioprocess = (e: AudioProcessingEvent) => {
+            (this.processor as { onaudioprocess: ((e: AudioProcessingEvent) => void) | null }).onaudioprocess = (e: AudioProcessingEvent) => {
                 if (!this.isActive) return;
 
                 const inputData = e.inputBuffer.getChannelData(0);
@@ -95,17 +132,17 @@ export class VoiceActivityDetector extends EventEmitter {
         this.isActive = false;
 
         if (this.processor) {
-            this.processor.disconnect();
+            (this.processor as { disconnect: () => void }).disconnect();
             this.processor = null;
         }
 
         if (this.analyser) {
-            this.analyser.disconnect();
+            (this.analyser as { disconnect: () => void }).disconnect();
             this.analyser = null;
         }
 
         if (this.audioContext) {
-            this.audioContext.close();
+            (this.audioContext as { close: () => void }).close();
             this.audioContext = null;
         }
 

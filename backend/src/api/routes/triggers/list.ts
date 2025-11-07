@@ -1,5 +1,6 @@
 import { FastifyInstance } from "fastify";
 import { TriggerRepository } from "../../../storage/repositories/TriggerRepository";
+import { TriggerType } from "../../../storage/models/Trigger";
 import { authMiddleware } from "../../middleware";
 
 export async function listTriggersRoute(fastify: FastifyInstance) {
@@ -10,7 +11,7 @@ export async function listTriggersRoute(fastify: FastifyInstance) {
         },
         async (request, reply) => {
             const triggerRepo = new TriggerRepository();
-            const query = request.query as any;
+            const query = request.query as { workflowId?: string; type?: string; enabled?: string };
 
             try {
                 // Get triggers for a specific workflow if workflowId provided
@@ -25,8 +26,8 @@ export async function listTriggersRoute(fastify: FastifyInstance) {
                 // Get triggers by type if specified
                 if (query.type) {
                     const triggers = await triggerRepo.findByType(
-                        query.type,
-                        query.enabled !== undefined ? query.enabled === 'true' : undefined
+                        query.type as TriggerType,
+                        query.enabled !== undefined ? query.enabled === "true" : undefined
                     );
                     return reply.send({
                         success: true,
@@ -41,7 +42,7 @@ export async function listTriggersRoute(fastify: FastifyInstance) {
                     data: triggers
                 });
             } catch (error) {
-                console.error('Error listing triggers:', error);
+                console.error("Error listing triggers:", error);
                 return reply.status(500).send({
                     success: false,
                     error: String(error)

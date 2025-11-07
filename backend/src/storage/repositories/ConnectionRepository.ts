@@ -1,6 +1,5 @@
 import { db } from "../database";
 import {
-    ConnectionModel,
     ConnectionWithData,
     CreateConnectionInput,
     UpdateConnectionInput,
@@ -9,8 +8,29 @@ import {
     ConnectionMethod,
     ConnectionStatus,
     MCPTool,
+    ConnectionMetadata,
+    ConnectionCapabilities
 } from "../models/Connection";
 import { getEncryptionService } from "../../services/EncryptionService";
+
+// Database row interface matching PostgreSQL table structure
+interface ConnectionRow {
+    id: string;
+    user_id: string;
+    name: string;
+    connection_method: ConnectionMethod;
+    provider: string;
+    encrypted_data: string;
+    metadata: ConnectionMetadata | string;
+    status: ConnectionStatus;
+    mcp_server_url: string | null;
+    mcp_tools: MCPTool[] | string | null;
+    capabilities: ConnectionCapabilities | string;
+    last_tested_at: string | Date | null;
+    last_used_at: string | Date | null;
+    created_at: string | Date;
+    updated_at: string | Date;
+}
 
 export class ConnectionRepository {
     private encryptionService = getEncryptionService();
@@ -49,11 +69,11 @@ export class ConnectionRepository {
             input.status || "active",
             input.mcp_server_url || null,
             input.mcp_tools ? JSON.stringify(input.mcp_tools) : null,
-            JSON.stringify(input.capabilities || {}),
+            JSON.stringify(input.capabilities || {})
         ];
 
-        const result = await db.query<ConnectionModel>(query, values);
-        return this.mapToSummary(result.rows[0]);
+        const result = await db.query(query, values);
+        return this.mapToSummary(result.rows[0] as ConnectionRow);
     }
 
     /**
@@ -65,8 +85,8 @@ export class ConnectionRepository {
             WHERE id = $1
         `;
 
-        const result = await db.query<ConnectionModel>(query, [id]);
-        return result.rows.length > 0 ? this.mapToSummary(result.rows[0]) : null;
+        const result = await db.query(query, [id]);
+        return result.rows.length > 0 ? this.mapToSummary(result.rows[0] as ConnectionRow) : null;
     }
 
     /**
@@ -79,12 +99,12 @@ export class ConnectionRepository {
             WHERE id = $1
         `;
 
-        const result = await db.query<ConnectionModel>(query, [id]);
+        const result = await db.query(query, [id]);
         if (result.rows.length === 0) {
             return null;
         }
 
-        return this.mapToConnectionWithData(result.rows[0]);
+        return this.mapToConnectionWithData(result.rows[0] as ConnectionRow);
     }
 
     /**
@@ -114,8 +134,8 @@ export class ConnectionRepository {
             WHERE user_id = $1
         `;
 
-        const countParams: any[] = [userId];
-        const queryParams: any[] = [userId];
+        const countParams: unknown[] = [userId];
+        const queryParams: unknown[] = [userId];
 
         // Add filters
         if (options.provider) {
@@ -144,12 +164,12 @@ export class ConnectionRepository {
 
         const [countResult, connectionsResult] = await Promise.all([
             db.query<{ count: string }>(countQuery, countParams),
-            db.query<ConnectionModel>(query, queryParams),
+            db.query(query, queryParams)
         ]);
 
         return {
-            connections: connectionsResult.rows.map((row) => this.mapToSummary(row)),
-            total: parseInt(countResult.rows[0].count),
+            connections: connectionsResult.rows.map((row) => this.mapToSummary(row as ConnectionRow)),
+            total: parseInt(countResult.rows[0].count)
         };
     }
 
@@ -163,8 +183,8 @@ export class ConnectionRepository {
             ORDER BY created_at DESC
         `;
 
-        const result = await db.query<ConnectionModel>(query, [userId, provider]);
-        return result.rows.map((row) => this.mapToSummary(row));
+        const result = await db.query(query, [userId, provider]);
+        return result.rows.map((row) => this.mapToSummary(row as ConnectionRow));
     }
 
     /**
@@ -177,8 +197,8 @@ export class ConnectionRepository {
             ORDER BY created_at DESC
         `;
 
-        const result = await db.query<ConnectionModel>(query, [userId, method]);
-        return result.rows.map((row) => this.mapToSummary(row));
+        const result = await db.query(query, [userId, method]);
+        return result.rows.map((row) => this.mapToSummary(row as ConnectionRow));
     }
 
     /**
@@ -186,7 +206,7 @@ export class ConnectionRepository {
      */
     async update(id: string, input: UpdateConnectionInput): Promise<ConnectionSummary | null> {
         const updates: string[] = [];
-        const values: any[] = [];
+        const values: unknown[] = [];
         let paramIndex = 1;
 
         if (input.name !== undefined) {
@@ -231,14 +251,14 @@ export class ConnectionRepository {
             RETURNING *
         `;
 
-        const result = await db.query<ConnectionModel>(query, values);
-        return result.rows.length > 0 ? this.mapToSummary(result.rows[0]) : null;
+        const result = await db.query(query, values);
+        return result.rows.length > 0 ? this.mapToSummary(result.rows[0] as ConnectionRow) : null;
     }
 
     /**
      * Update OAuth tokens (for token refresh)
      */
-    async updateTokens(id: string, tokenData: any): Promise<void> {
+    async updateTokens(id: string, tokenData: unknown): Promise<void> {
         // First, get the current connection to preserve other data
         const current = await this.findByIdWithData(id);
         if (!current) {
@@ -246,20 +266,22 @@ export class ConnectionRepository {
         }
 
         // Merge new tokens with existing data
+        const currentData = current.data as unknown as Record<string, unknown>;
         const updatedData = {
-            ...current.data,
-            ...tokenData,
+            ...currentData,
+            ...(tokenData as unknown as Record<string, unknown>)
         };
 
         // Encrypt and update
         const encryptedData = this.encryptionService.encryptObject(updatedData);
 
         // Update metadata with new expiry time if provided
-        let metadata = current.metadata;
-        if (tokenData.expires_in) {
+        let metadata = current.metadata as Record<string, unknown>;
+        const tokenDataTyped = tokenData as { expires_in?: number };
+        if (tokenDataTyped.expires_in) {
             metadata = {
                 ...metadata,
-                expires_at: Date.now() + tokenData.expires_in * 1000,
+                expires_at: Date.now() + tokenDataTyped.expires_in * 1000
             };
         }
 
@@ -347,7 +369,7 @@ export class ConnectionRepository {
         // Get all OAuth connections
         const { connections } = await this.findByUserId(userId, {
             connection_method: "oauth2",
-            status: "active",
+            status: "active"
         });
 
         // Filter to those expiring within 5 minutes
@@ -366,15 +388,14 @@ export class ConnectionRepository {
     /**
      * Map database row to summary (safe for API responses)
      */
-    private mapToSummary(row: any): ConnectionSummary {
+    private mapToSummary(row: ConnectionRow): ConnectionSummary {
         return {
             id: row.id,
             name: row.name,
             connection_method: row.connection_method,
             provider: row.provider,
             status: row.status,
-            metadata:
-                typeof row.metadata === "string" ? JSON.parse(row.metadata) : row.metadata,
+            metadata: typeof row.metadata === "string" ? JSON.parse(row.metadata) : row.metadata,
             mcp_server_url: row.mcp_server_url,
             mcp_tools:
                 row.mcp_tools !== null
@@ -389,7 +410,7 @@ export class ConnectionRepository {
             last_tested_at: row.last_tested_at ? new Date(row.last_tested_at) : null,
             last_used_at: row.last_used_at ? new Date(row.last_used_at) : null,
             created_at: new Date(row.created_at),
-            updated_at: new Date(row.updated_at),
+            updated_at: new Date(row.updated_at)
         };
     }
 
@@ -397,14 +418,14 @@ export class ConnectionRepository {
      * Map database row to connection with decrypted data
      * ONLY use internally when you need the actual connection credentials
      */
-    private mapToConnectionWithData(row: any): ConnectionWithData {
+    private mapToConnectionWithData(row: ConnectionRow): ConnectionWithData {
         const summary = this.mapToSummary(row);
         const data = this.encryptionService.decryptObject<ConnectionData>(row.encrypted_data);
 
         return {
             ...summary,
             user_id: row.user_id,
-            data,
+            data
         };
     }
 }

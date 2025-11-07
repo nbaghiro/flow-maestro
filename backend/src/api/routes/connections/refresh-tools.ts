@@ -12,7 +12,7 @@ export async function refreshToolsRoute(fastify: FastifyInstance) {
     fastify.post(
         "/:id/refresh-tools",
         {
-            preHandler: [authMiddleware, validateParams(connectionIdParamSchema)],
+            preHandler: [authMiddleware, validateParams(connectionIdParamSchema)]
         },
         async (request, reply) => {
             const connectionRepository = new ConnectionRepository();
@@ -24,7 +24,7 @@ export async function refreshToolsRoute(fastify: FastifyInstance) {
             if (ownerId !== request.user!.id) {
                 return reply.status(403).send({
                     success: false,
-                    error: "You do not have permission to refresh this connection",
+                    error: "You do not have permission to refresh this connection"
                 });
             }
 
@@ -34,7 +34,7 @@ export async function refreshToolsRoute(fastify: FastifyInstance) {
             if (!connection) {
                 return reply.status(404).send({
                     success: false,
-                    error: "Connection not found",
+                    error: "Connection not found"
                 });
             }
 
@@ -42,7 +42,7 @@ export async function refreshToolsRoute(fastify: FastifyInstance) {
             if (connection.connection_method !== "mcp") {
                 return reply.status(400).send({
                     success: false,
-                    error: "This connection is not an MCP connection. Only MCP connections can refresh tools.",
+                    error: "This connection is not an MCP connection. Only MCP connections can refresh tools."
                 });
             }
 
@@ -58,14 +58,14 @@ export async function refreshToolsRoute(fastify: FastifyInstance) {
                     data: {
                         connection_id: params.id,
                         tools,
-                        tool_count: tools.length,
+                        tool_count: tools.length
                     },
-                    message: "Tools refreshed successfully",
+                    message: "Tools refreshed successfully"
                 });
             } catch (error) {
                 return reply.status(400).send({
                     success: false,
-                    error: error instanceof Error ? error.message : "Failed to refresh tools",
+                    error: error instanceof Error ? error.message : "Failed to refresh tools"
                 });
             }
         }

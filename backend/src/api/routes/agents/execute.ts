@@ -6,11 +6,11 @@ import { getTemporalClient } from "../../../temporal/client";
 import { NotFoundError, BadRequestError } from "../../middleware";
 
 const executeAgentParamsSchema = z.object({
-    id: z.string().uuid(),
+    id: z.string().uuid()
 });
 
 const executeAgentSchema = z.object({
-    message: z.string().min(1),
+    message: z.string().min(1)
 });
 
 export async function executeAgentHandler(
@@ -37,7 +37,7 @@ export async function executeAgentHandler(
             user_id: userId,
             status: "running",
             conversation_history: [],
-            iterations: 0,
+            iterations: 0
         });
 
         // Start Temporal workflow
@@ -45,12 +45,14 @@ export async function executeAgentHandler(
         await client.workflow.start("agentOrchestratorWorkflow", {
             taskQueue: "flowmaestro",
             workflowId: execution.id,
-            args: [{
-                executionId: execution.id,
-                agentId,
-                userId,
-                initialMessage: message,
-            }],
+            args: [
+                {
+                    executionId: execution.id,
+                    agentId,
+                    userId,
+                    initialMessage: message
+                }
+            ]
         });
 
         reply.code(201).send({
@@ -58,8 +60,8 @@ export async function executeAgentHandler(
             data: {
                 executionId: execution.id,
                 agentId,
-                status: "running",
-            },
+                status: "running"
+            }
         });
     } catch (error) {
         throw new BadRequestError(

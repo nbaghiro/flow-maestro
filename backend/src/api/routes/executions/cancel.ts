@@ -13,7 +13,7 @@ export async function cancelExecutionRoute(fastify: FastifyInstance) {
         async (request, reply) => {
             const executionRepository = new ExecutionRepository();
             const workflowRepository = new WorkflowRepository();
-            const { id } = request.params as any;
+            const { id } = (request.params as { id: string });
 
             const execution = await executionRepository.findById(id);
 
@@ -53,7 +53,7 @@ export async function cancelExecutionRoute(fastify: FastifyInstance) {
                     data: updatedExecution,
                     message: "Execution cancelled successfully"
                 });
-            } catch (error: any) {
+            } catch (error: unknown) {
                 fastify.log.error({ error, executionId: id }, "Failed to cancel execution");
                 throw new BadRequestError("Failed to cancel execution");
             }

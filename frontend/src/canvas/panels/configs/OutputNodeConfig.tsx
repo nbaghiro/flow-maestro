@@ -3,9 +3,9 @@ import { FormField, FormSection } from "../../../components/FormField";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 interface OutputNodeConfigProps {
-    data: any;
+    data: Record<string, unknown>;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    onUpdate: (config: any) => void;
+    onUpdate: (config: unknown) => void;
 }
 
 const formats = [
@@ -16,10 +16,10 @@ const formats = [
 ];
 
 export function OutputNodeConfig({ data, onUpdate }: OutputNodeConfigProps) {
-    const [outputName, setOutputName] = useState(data.outputName || "result");
-    const [value, setValue] = useState(data.value || "");
-    const [format, setFormat] = useState(data.format || "json");
-    const [description, setDescription] = useState(data.description || "");
+    const [outputName, setOutputName] = useState((data.outputName as string) || "result");
+    const [value, setValue] = useState((data.value as string) || "");
+    const [format, setFormat] = useState((data.format as string) || "json");
+    const [description, setDescription] = useState((data.description as string) || "");
 
     useEffect(() => {
         onUpdate({

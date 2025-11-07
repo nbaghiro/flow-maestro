@@ -1,5 +1,20 @@
 import { db } from "../database";
+import type { JsonValue } from "@flowmaestro/shared";
 import { WorkflowModel, CreateWorkflowInput, UpdateWorkflowInput } from "../models/Workflow";
+
+interface WorkflowRow {
+    id: string;
+    name: string;
+    description: string | null;
+    definition: string | Record<string, JsonValue>;
+    user_id: string;
+    version: number;
+    ai_generated: boolean;
+    ai_prompt: string | null;
+    created_at: string | Date;
+    updated_at: string | Date;
+    deleted_at: string | Date | null;
+}
 
 export class WorkflowRepository {
     async create(input: CreateWorkflowInput): Promise<WorkflowModel> {
@@ -18,8 +33,8 @@ export class WorkflowRepository {
             input.ai_prompt || null
         ];
 
-        const result = await db.query<WorkflowModel>(query, values);
-        return this.mapRow(result.rows[0]);
+        const result = await db.query<WorkflowRow>(query, values);
+        return this.mapRow(result.rows[0] as WorkflowRow);
     }
 
     async findById(id: string): Promise<WorkflowModel | null> {
@@ -28,8 +43,8 @@ export class WorkflowRepository {
             WHERE id = $1 AND deleted_at IS NULL
         `;
 
-        const result = await db.query<WorkflowModel>(query, [id]);
-        return result.rows.length > 0 ? this.mapRow(result.rows[0]) : null;
+        const result = await db.query<WorkflowRow>(query, [id]);
+        return result.rows.length > 0 ? this.mapRow(result.rows[0] as WorkflowRow) : null;
     }
 
     async findByUserId(
@@ -54,18 +69,18 @@ export class WorkflowRepository {
 
         const [countResult, workflowsResult] = await Promise.all([
             db.query<{ count: string }>(countQuery, [userId]),
-            db.query<WorkflowModel>(query, [userId, limit, offset])
+            db.query<WorkflowRow>(query, [userId, limit, offset])
         ]);
 
         return {
-            workflows: workflowsResult.rows.map((row) => this.mapRow(row)),
+            workflows: workflowsResult.rows.map((row) => this.mapRow(row as WorkflowRow)),
             total: parseInt(countResult.rows[0].count)
         };
     }
 
     async update(id: string, input: UpdateWorkflowInput): Promise<WorkflowModel | null> {
         const updates: string[] = [];
-        const values: any[] = [];
+        const values: unknown[] = [];
         let paramIndex = 1;
 
         if (input.name !== undefined) {
@@ -110,8 +125,8 @@ export class WorkflowRepository {
             RETURNING *
         `;
 
-        const result = await db.query<WorkflowModel>(query, values);
-        return result.rows.length > 0 ? this.mapRow(result.rows[0]) : null;
+        const result = await db.query<WorkflowRow>(query, values);
+        return result.rows.length > 0 ? this.mapRow(result.rows[0] as WorkflowRow) : null;
     }
 
     async delete(id: string): Promise<boolean> {
@@ -135,12 +150,11 @@ export class WorkflowRepository {
         return (result.rowCount || 0) > 0;
     }
 
-    private mapRow(row: any): WorkflowModel {
+    private mapRow(row: WorkflowRow): WorkflowModel {
         return {
             ...row,
-            definition: typeof row.definition === "string"
-                ? JSON.parse(row.definition)
-                : row.definition,
+            definition:
+                typeof row.definition === "string" ? JSON.parse(row.definition) : row.definition,
             created_at: new Date(row.created_at),
             updated_at: new Date(row.updated_at),
             deleted_at: row.deleted_at ? new Date(row.deleted_at) : null

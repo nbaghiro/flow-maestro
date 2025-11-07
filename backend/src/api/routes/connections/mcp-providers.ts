@@ -11,7 +11,7 @@ export async function mcpProvidersRoute(fastify: FastifyInstance) {
 
         return reply.send({
             success: true,
-            data: providers,
+            data: providers
         });
     });
 }

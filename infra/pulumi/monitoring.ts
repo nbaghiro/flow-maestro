@@ -9,44 +9,41 @@ export const emailNotificationChannel = new gcp.monitoring.NotificationChannel(
         displayName: `${infrastructureConfig.appName} Email Alerts`,
         type: "email",
         labels: {
-            email_address: `ops@${infrastructureConfig.domain}`,
+            email_address: `ops@${infrastructureConfig.domain}`
         },
-        enabled: true,
+        enabled: true
     }
 );
 
 // Alert policy: API server error rate
-export const apiErrorRateAlert = new gcp.monitoring.AlertPolicy(
-    resourceName("api-error-rate"),
-    {
-        displayName: "API Server Error Rate High",
-        combiner: "OR",
-        conditions: [
-            {
-                displayName: "Error rate > 5%",
-                conditionThreshold: {
-                    filter: pulumi.interpolate`resource.type="k8s_container" AND resource.labels.namespace_name="flowmaestro" AND resource.labels.container_name="api-server"`,
-                    aggregations: [
-                        {
-                            alignmentPeriod: "300s",
-                            perSeriesAligner: "ALIGN_RATE",
-                            crossSeriesReducer: "REDUCE_SUM",
-                            groupByFields: ["resource.namespace_name"],
-                        },
-                    ],
-                    comparison: "COMPARISON_GT",
-                    thresholdValue: 0.05,
-                    duration: "300s",
-                },
-            },
-        ],
-        notificationChannels: [emailNotificationChannel.id],
-        alertStrategy: {
-            autoClose: "604800s", // 7 days
-        },
-        enabled: true,
-    }
-);
+export const apiErrorRateAlert = new gcp.monitoring.AlertPolicy(resourceName("api-error-rate"), {
+    displayName: "API Server Error Rate High",
+    combiner: "OR",
+    conditions: [
+        {
+            displayName: "Error rate > 5%",
+            conditionThreshold: {
+                filter: pulumi.interpolate`resource.type="k8s_container" AND resource.labels.namespace_name="flowmaestro" AND resource.labels.container_name="api-server"`,
+                aggregations: [
+                    {
+                        alignmentPeriod: "300s",
+                        perSeriesAligner: "ALIGN_RATE",
+                        crossSeriesReducer: "REDUCE_SUM",
+                        groupByFields: ["resource.namespace_name"]
+                    }
+                ],
+                comparison: "COMPARISON_GT",
+                thresholdValue: 0.05,
+                duration: "300s"
+            }
+        }
+    ],
+    notificationChannels: [emailNotificationChannel.id],
+    alertStrategy: {
+        autoClose: "604800s" // 7 days
+    },
+    enabled: true
+});
 
 // Alert policy: Database CPU utilization
 export const dbCpuAlert = new gcp.monitoring.AlertPolicy(resourceName("db-cpu"), {
@@ -60,17 +57,17 @@ export const dbCpuAlert = new gcp.monitoring.AlertPolicy(resourceName("db-cpu"),
                 aggregations: [
                     {
                         alignmentPeriod: "300s",
-                        perSeriesAligner: "ALIGN_MEAN",
-                    },
+                        perSeriesAligner: "ALIGN_MEAN"
+                    }
                 ],
                 comparison: "COMPARISON_GT",
                 thresholdValue: 0.8,
-                duration: "300s",
-            },
-        },
+                duration: "300s"
+            }
+        }
     ],
     notificationChannels: [emailNotificationChannel.id],
-    enabled: true,
+    enabled: true
 });
 
 // Alert policy: Redis memory utilization
@@ -85,41 +82,38 @@ export const redisMemoryAlert = new gcp.monitoring.AlertPolicy(resourceName("red
                 aggregations: [
                     {
                         alignmentPeriod: "300s",
-                        perSeriesAligner: "ALIGN_MEAN",
-                    },
+                        perSeriesAligner: "ALIGN_MEAN"
+                    }
                 ],
                 comparison: "COMPARISON_GT",
                 thresholdValue: 0.9,
-                duration: "300s",
-            },
-        },
+                duration: "300s"
+            }
+        }
     ],
     notificationChannels: [emailNotificationChannel.id],
-    enabled: true,
+    enabled: true
 });
 
 // Uptime check: API health endpoint
-export const apiUptimeCheck = new gcp.monitoring.UptimeCheckConfig(
-    resourceName("api-uptime"),
-    {
-        displayName: "API Server Health Check",
-        timeout: "10s",
-        period: "60s",
-        httpCheck: {
-            path: "/health",
-            port: 443,
-            useSsl: true,
-            validateSsl: true,
-        },
-        monitoredResource: {
-            type: "uptime_url",
-            labels: {
-                project_id: infrastructureConfig.project,
-                host: `api.${infrastructureConfig.domain}`,
-            },
-        },
+export const apiUptimeCheck = new gcp.monitoring.UptimeCheckConfig(resourceName("api-uptime"), {
+    displayName: "API Server Health Check",
+    timeout: "10s",
+    period: "60s",
+    httpCheck: {
+        path: "/health",
+        port: 443,
+        useSsl: true,
+        validateSsl: true
+    },
+    monitoredResource: {
+        type: "uptime_url",
+        labels: {
+            project_id: infrastructureConfig.project,
+            host: `api.${infrastructureConfig.domain}`
+        }
     }
-);
+});
 
 // Uptime check: Frontend
 export const frontendUptimeCheck = new gcp.monitoring.UptimeCheckConfig(
@@ -132,15 +126,15 @@ export const frontendUptimeCheck = new gcp.monitoring.UptimeCheckConfig(
             path: "/",
             port: 443,
             useSsl: true,
-            validateSsl: true,
+            validateSsl: true
         },
         monitoredResource: {
             type: "uptime_url",
             labels: {
                 project_id: infrastructureConfig.project,
-                host: `app.${infrastructureConfig.domain}`,
-            },
-        },
+                host: `app.${infrastructureConfig.domain}`
+            }
+        }
     }
 );
 
@@ -165,14 +159,14 @@ export const dashboard = new gcp.monitoring.Dashboard(resourceName("dashboard"),
                                             aggregation: {
                                                 alignmentPeriod: "60s",
                                                 perSeriesAligner: "ALIGN_RATE",
-                                                crossSeriesReducer: "REDUCE_SUM",
-                                            },
-                                        },
-                                    },
-                                },
-                            ],
-                        },
-                    },
+                                                crossSeriesReducer: "REDUCE_SUM"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
                 },
                 {
                     width: 6,
@@ -188,14 +182,14 @@ export const dashboard = new gcp.monitoring.Dashboard(resourceName("dashboard"),
                                             filter: 'resource.type="cloudsql_database" AND metric.type="cloudsql.googleapis.com/database/postgresql/num_backends"',
                                             aggregation: {
                                                 alignmentPeriod: "60s",
-                                                perSeriesAligner: "ALIGN_MEAN",
-                                            },
-                                        },
-                                    },
-                                },
-                            ],
-                        },
-                    },
+                                                perSeriesAligner: "ALIGN_MEAN"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
                 },
                 {
                     width: 6,
@@ -211,14 +205,14 @@ export const dashboard = new gcp.monitoring.Dashboard(resourceName("dashboard"),
                                             filter: 'resource.type="redis_instance" AND metric.type="redis.googleapis.com/stats/memory/usage_ratio"',
                                             aggregation: {
                                                 alignmentPeriod: "60s",
-                                                perSeriesAligner: "ALIGN_MEAN",
-                                            },
-                                        },
-                                    },
-                                },
-                            ],
-                        },
-                    },
+                                                perSeriesAligner: "ALIGN_MEAN"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
                 },
                 {
                     width: 6,
@@ -237,18 +231,18 @@ export const dashboard = new gcp.monitoring.Dashboard(resourceName("dashboard"),
                                                 alignmentPeriod: "60s",
                                                 perSeriesAligner: "ALIGN_MEAN",
                                                 crossSeriesReducer: "REDUCE_MEAN",
-                                                groupByFields: ["resource.container_name"],
-                                            },
-                                        },
-                                    },
-                                },
-                            ],
-                        },
-                    },
-                },
-            ],
-        },
-    }),
+                                                groupByFields: ["resource.container_name"]
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
+        }
+    })
 });
 
 // Export monitoring outputs
@@ -259,5 +253,5 @@ export const monitoringOutputs = {
     redisMemoryAlertId: redisMemoryAlert.id,
     apiUptimeCheckId: apiUptimeCheck.id,
     frontendUptimeCheckId: frontendUptimeCheck.id,
-    dashboardId: dashboard.id,
+    dashboardId: dashboard.id
 };

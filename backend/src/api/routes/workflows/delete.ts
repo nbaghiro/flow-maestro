@@ -11,7 +11,7 @@ export async function deleteWorkflowRoute(fastify: FastifyInstance) {
         },
         async (request, reply) => {
             const workflowRepository = new WorkflowRepository();
-            const { id } = request.params as any;
+            const { id } = request.params as { id: string };
 
             // Check if workflow exists and user owns it
             const existingWorkflow = await workflowRepository.findById(id);

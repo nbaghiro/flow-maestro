@@ -1,5 +1,6 @@
 import { FastifyRequest } from "fastify";
 import { z, ZodSchema } from "zod";
+import type { JsonValue } from "@flowmaestro/shared";
 import { ValidationError } from "./error-handler";
 
 export function validateRequest<T extends ZodSchema>(schema: T) {
@@ -8,7 +9,7 @@ export function validateRequest<T extends ZodSchema>(schema: T) {
             request.body = schema.parse(request.body);
         } catch (error) {
             if (error instanceof z.ZodError) {
-                throw new ValidationError("Validation failed", error.errors);
+                throw new ValidationError("Validation failed", error.errors as unknown as JsonValue);
             }
             throw error;
         }
@@ -21,7 +22,7 @@ export function validateQuery<T extends ZodSchema>(schema: T) {
             request.query = schema.parse(request.query);
         } catch (error) {
             if (error instanceof z.ZodError) {
-                throw new ValidationError("Query validation failed", error.errors);
+                throw new ValidationError("Query validation failed", error.errors as unknown as JsonValue);
             }
             throw error;
         }
@@ -34,7 +35,7 @@ export function validateParams<T extends ZodSchema>(schema: T) {
             request.params = schema.parse(request.params);
         } catch (error) {
             if (error instanceof z.ZodError) {
-                throw new ValidationError("Params validation failed", error.errors);
+                throw new ValidationError("Params validation failed", error.errors as unknown as JsonValue);
             }
             throw error;
         }

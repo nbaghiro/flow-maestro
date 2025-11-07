@@ -7,18 +7,64 @@ import {
     CreateTriggerExecutionInput,
     WebhookLog,
     CreateWebhookLogInput,
-    TriggerType
+    TriggerType,
+    TriggerConfig
 } from "../models/Trigger";
+import type { JsonValue } from "@flowmaestro/shared";
 import * as crypto from "crypto";
+
+// Database row interfaces
+interface TriggerRow {
+    id: string;
+    workflow_id: string;
+    name: string;
+    trigger_type: TriggerType;
+    config: TriggerConfig | string;
+    enabled: boolean;
+    last_triggered_at: string | Date | null;
+    next_scheduled_at: string | Date | null;
+    trigger_count: number | string;
+    temporal_schedule_id: string | null;
+    webhook_secret: string | null;
+    created_at: string | Date;
+    updated_at: string | Date;
+    deleted_at: string | Date | null;
+}
+
+interface TriggerExecutionRow {
+    id: string;
+    trigger_id: string;
+    execution_id: string;
+    trigger_payload: Record<string, JsonValue> | string | null;
+    created_at: string | Date;
+}
+
+interface WebhookLogRow {
+    id: string;
+    trigger_id: string | null;
+    workflow_id: string | null;
+    request_method: string;
+    request_path: string | null;
+    request_headers: Record<string, JsonValue> | string | null;
+    request_body: Record<string, JsonValue> | string | null;
+    request_query: Record<string, JsonValue> | string | null;
+    response_status: number | null;
+    response_body: Record<string, JsonValue> | string | null;
+    error: string | null;
+    execution_id: string | null;
+    ip_address: string | null;
+    user_agent: string | null;
+    processing_time_ms: number | null;
+    created_at: string | Date;
+}
 
 export class TriggerRepository {
     /**
      * Create a new workflow trigger
      */
     async create(input: CreateTriggerInput): Promise<WorkflowTrigger> {
-        const webhookSecret = input.trigger_type === 'webhook'
-            ? this.generateWebhookSecret()
-            : null;
+        const webhookSecret =
+            input.trigger_type === "webhook" ? this.generateWebhookSecret() : null;
 
         const query = `
             INSERT INTO flowmaestro.workflow_triggers
@@ -36,8 +82,8 @@ export class TriggerRepository {
             webhookSecret
         ];
 
-        const result = await db.query<any>(query, values);
-        return this.mapTriggerRow(result.rows[0]);
+        const result = await db.query(query, values);
+        return this.mapTriggerRow(result.rows[0] as TriggerRow);
     }
 
     /**
@@ -49,8 +95,8 @@ export class TriggerRepository {
             WHERE id = $1 AND deleted_at IS NULL
         `;
 
-        const result = await db.query<any>(query, [id]);
-        return result.rows.length > 0 ? this.mapTriggerRow(result.rows[0]) : null;
+        const result = await db.query(query, [id]);
+        return result.rows.length > 0 ? this.mapTriggerRow(result.rows[0] as TriggerRow) : null;
     }
 
     /**
@@ -63,8 +109,8 @@ export class TriggerRepository {
             ORDER BY created_at DESC
         `;
 
-        const result = await db.query<any>(query, [workflowId]);
-        return result.rows.map((row) => this.mapTriggerRow(row));
+        const result = await db.query(query, [workflowId]);
+        return result.rows.map((row) => this.mapTriggerRow(row as TriggerRow));
     }
 
     /**
@@ -75,17 +121,17 @@ export class TriggerRepository {
             SELECT * FROM flowmaestro.workflow_triggers
             WHERE trigger_type = $1 AND deleted_at IS NULL
         `;
-        const values: any[] = [triggerType];
+        const values: unknown[] = [triggerType];
 
         if (enabled !== undefined) {
-            query += ` AND enabled = $2`;
+            query += " AND enabled = $2";
             values.push(enabled);
         }
 
-        query += ` ORDER BY created_at DESC`;
+        query += " ORDER BY created_at DESC";
 
-        const result = await db.query<any>(query, values);
-        return result.rows.map((row) => this.mapTriggerRow(row));
+        const result = await db.query(query, values);
+        return result.rows.map((row) => this.mapTriggerRow(row as TriggerRow));
     }
 
     /**
@@ -100,8 +146,8 @@ export class TriggerRepository {
             ORDER BY next_scheduled_at ASC NULLS LAST
         `;
 
-        const result = await db.query<any>(query);
-        return result.rows.map((row) => this.mapTriggerRow(row));
+        const result = await db.query(query);
+        return result.rows.map((row) => this.mapTriggerRow(row as TriggerRow));
     }
 
     /**
@@ -109,7 +155,7 @@ export class TriggerRepository {
      */
     async update(id: string, input: UpdateTriggerInput): Promise<WorkflowTrigger | null> {
         const updates: string[] = [];
-        const values: any[] = [];
+        const values: unknown[] = [];
         let paramIndex = 1;
 
         if (input.name !== undefined) {
@@ -154,8 +200,8 @@ export class TriggerRepository {
             RETURNING *
         `;
 
-        const result = await db.query<any>(query, values);
-        return result.rows.length > 0 ? this.mapTriggerRow(result.rows[0]) : null;
+        const result = await db.query(query, values);
+        return result.rows.length > 0 ? this.mapTriggerRow(result.rows[0] as TriggerRow) : null;
     }
 
     /**
@@ -219,8 +265,8 @@ export class TriggerRepository {
             input.trigger_payload ? JSON.stringify(input.trigger_payload) : null
         ];
 
-        const result = await db.query<any>(query, values);
-        return this.mapTriggerExecutionRow(result.rows[0]);
+        const result = await db.query(query, values);
+        return this.mapTriggerExecutionRow(result.rows[0] as TriggerExecutionRow);
     }
 
     /**
@@ -248,11 +294,11 @@ export class TriggerRepository {
 
         const [countResult, executionsResult] = await Promise.all([
             db.query<{ count: string }>(countQuery, [triggerId]),
-            db.query<any>(query, [triggerId, limit, offset])
+            db.query(query, [triggerId, limit, offset])
         ]);
 
         return {
-            executions: executionsResult.rows.map((row) => this.mapTriggerExecutionRow(row)),
+            executions: executionsResult.rows.map((row) => this.mapTriggerExecutionRow(row as TriggerExecutionRow)),
             total: parseInt(countResult.rows[0].count)
         };
     }
@@ -289,8 +335,8 @@ export class TriggerRepository {
             input.processing_time_ms || null
         ];
 
-        const result = await db.query<any>(query, values);
-        return this.mapWebhookLogRow(result.rows[0]);
+        const result = await db.query(query, values);
+        return this.mapWebhookLogRow(result.rows[0] as WebhookLogRow);
     }
 
     /**
@@ -318,11 +364,11 @@ export class TriggerRepository {
 
         const [countResult, logsResult] = await Promise.all([
             db.query<{ count: string }>(countQuery, [triggerId]),
-            db.query<any>(query, [triggerId, limit, offset])
+            db.query(query, [triggerId, limit, offset])
         ]);
 
         return {
-            logs: logsResult.rows.map((row) => this.mapWebhookLogRow(row)),
+            logs: logsResult.rows.map((row) => this.mapWebhookLogRow(row as WebhookLogRow)),
             total: parseInt(countResult.rows[0].count)
         };
     }
@@ -333,13 +379,13 @@ export class TriggerRepository {
      * Generate a secure webhook secret
      */
     private generateWebhookSecret(): string {
-        return crypto.randomBytes(32).toString('hex');
+        return crypto.randomBytes(32).toString("hex");
     }
 
     /**
      * Map database row to WorkflowTrigger model
      */
-    private mapTriggerRow(row: any): WorkflowTrigger {
+    private mapTriggerRow(row: TriggerRow): WorkflowTrigger {
         return {
             id: row.id,
             workflow_id: row.workflow_id,
@@ -349,7 +395,7 @@ export class TriggerRepository {
             enabled: row.enabled,
             last_triggered_at: row.last_triggered_at ? new Date(row.last_triggered_at) : null,
             next_scheduled_at: row.next_scheduled_at ? new Date(row.next_scheduled_at) : null,
-            trigger_count: parseInt(row.trigger_count) || 0,
+            trigger_count: typeof row.trigger_count === "string" ? parseInt(row.trigger_count) : row.trigger_count || 0,
             temporal_schedule_id: row.temporal_schedule_id,
             webhook_secret: row.webhook_secret,
             created_at: new Date(row.created_at),
@@ -361,14 +407,16 @@ export class TriggerRepository {
     /**
      * Map database row to TriggerExecution model
      */
-    private mapTriggerExecutionRow(row: any): TriggerExecution {
+    private mapTriggerExecutionRow(row: TriggerExecutionRow): TriggerExecution {
+        const payload = typeof row.trigger_payload === "string"
+            ? JSON.parse(row.trigger_payload) as Record<string, JsonValue>
+            : row.trigger_payload;
+
         return {
             id: row.id,
             trigger_id: row.trigger_id,
             execution_id: row.execution_id,
-            trigger_payload: typeof row.trigger_payload === "string"
-                ? JSON.parse(row.trigger_payload)
-                : row.trigger_payload,
+            trigger_payload: payload,
             created_at: new Date(row.created_at)
         };
     }
@@ -376,26 +424,30 @@ export class TriggerRepository {
     /**
      * Map database row to WebhookLog model
      */
-    private mapWebhookLogRow(row: any): WebhookLog {
+    private mapWebhookLogRow(row: WebhookLogRow): WebhookLog {
         return {
             id: row.id.toString(),
             trigger_id: row.trigger_id,
             workflow_id: row.workflow_id,
             request_method: row.request_method,
             request_path: row.request_path,
-            request_headers: typeof row.request_headers === "string"
-                ? JSON.parse(row.request_headers)
-                : row.request_headers,
-            request_body: typeof row.request_body === "string"
-                ? JSON.parse(row.request_body)
-                : row.request_body,
-            request_query: typeof row.request_query === "string"
-                ? JSON.parse(row.request_query)
-                : row.request_query,
+            request_headers:
+                typeof row.request_headers === "string"
+                    ? JSON.parse(row.request_headers) as Record<string, JsonValue>
+                    : row.request_headers,
+            request_body:
+                typeof row.request_body === "string"
+                    ? JSON.parse(row.request_body) as Record<string, JsonValue>
+                    : row.request_body,
+            request_query:
+                typeof row.request_query === "string"
+                    ? JSON.parse(row.request_query) as Record<string, JsonValue>
+                    : row.request_query,
             response_status: row.response_status,
-            response_body: typeof row.response_body === "string"
-                ? JSON.parse(row.response_body)
-                : row.response_body,
+            response_body:
+                typeof row.response_body === "string"
+                    ? JSON.parse(row.response_body) as Record<string, JsonValue>
+                    : row.response_body,
             error: row.error,
             execution_id: row.execution_id,
             ip_address: row.ip_address,

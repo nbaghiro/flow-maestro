@@ -12,6 +12,6 @@ export async function listAgentsHandler(
 
     reply.send({
         success: true,
-        data: agents,
+        data: agents
     });
 }

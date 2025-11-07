@@ -1,11 +1,14 @@
 import { FastifyInstance } from "fastify";
 import { getTemporalClient } from "../../../temporal/client";
 import { authMiddleware } from "../../middleware";
-import { convertFrontendToBackend, FrontendWorkflowDefinition } from "../../../shared/utils/workflow-converter";
+import {
+    convertFrontendToBackend,
+    FrontendWorkflowDefinition
+} from "../../../shared/utils/workflow-converter";
 
 interface ExecuteWorkflowBody {
     workflowDefinition: FrontendWorkflowDefinition;
-    inputs?: Record<string, any>;
+    inputs?: Record<string, unknown>;
 }
 
 export async function executeWorkflowRoute(fastify: FastifyInstance) {
@@ -37,13 +40,15 @@ export async function executeWorkflowRoute(fastify: FastifyInstance) {
                 );
 
                 // Start the workflow
-                const handle = await client.workflow.start('orchestratorWorkflow', {
-                    taskQueue: 'flowmaestro-orchestrator',
+                const handle = await client.workflow.start("orchestratorWorkflow", {
+                    taskQueue: "flowmaestro-orchestrator",
                     workflowId,
-                    args: [{
-                        workflowDefinition: backendWorkflowDefinition,
-                        inputs: body.inputs || {}
-                    }],
+                    args: [
+                        {
+                            workflowDefinition: backendWorkflowDefinition,
+                            inputs: body.inputs || {}
+                        }
+                    ]
                 });
 
                 fastify.log.info(`Started workflow ${workflowId}`);
@@ -58,11 +63,12 @@ export async function executeWorkflowRoute(fastify: FastifyInstance) {
                         result
                     }
                 });
-            } catch (error: any) {
-                fastify.log.error(`Workflow execution failed: ${error.message}`);
+            } catch (error: unknown) {
+                const errorMsg = error instanceof Error ? error.message : "Workflow execution failed";
+                fastify.log.error(`Workflow execution failed: ${errorMsg}`);
                 return reply.status(500).send({
                     success: false,
-                    error: error.message || 'Workflow execution failed'
+                    error: errorMsg
                 });
             }
         }

@@ -5,9 +5,9 @@ import { Plus, Trash2 } from "lucide-react";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 interface HTTPNodeConfigProps {
-    data: any;
+    data: Record<string, unknown>;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    onUpdate: (config: any) => void;
+    onUpdate: (config: unknown) => void;
 }
 
 const methods = [
@@ -46,8 +46,8 @@ export function HTTPNodeConfig({ data, onUpdate }: HTTPNodeConfigProps) {
         return [];
     };
 
-    const [method, setMethod] = useState(data.method || "GET");
-    const [url, setUrl] = useState(data.url || "");
+    const [method, setMethod] = useState((data.method as string) || "GET");
+    const [url, setUrl] = useState((data.url as string) || "");
     const [headers, setHeaders] = useState<KeyValue[]>(
         data.headers
             ? toKeyValueArray(data.headers).length > 0
@@ -56,13 +56,13 @@ export function HTTPNodeConfig({ data, onUpdate }: HTTPNodeConfigProps) {
             : [{ key: "", value: "" }]
     );
     const [queryParams, setQueryParams] = useState<KeyValue[]>(toKeyValueArray(data.queryParams));
-    const [authType, setAuthType] = useState(data.authType || "none");
-    const [authCredentials, setAuthCredentials] = useState(data.authCredentials || "");
-    const [bodyType, setBodyType] = useState(data.bodyType || "json");
-    const [body, setBody] = useState(data.body || "");
-    const [timeout, setTimeout] = useState(data.timeout || 30);
-    const [retryCount, setRetryCount] = useState(data.retryCount || 3);
-    const [outputVariable, setOutputVariable] = useState(data.outputVariable || "");
+    const [authType, setAuthType] = useState((data.authType as string) || "none");
+    const [authCredentials, setAuthCredentials] = useState((data.authCredentials as string) || "");
+    const [bodyType, setBodyType] = useState((data.bodyType as string) || "json");
+    const [body, setBody] = useState((data.body as string) || "");
+    const [timeout, setTimeout] = useState((data.timeout as number) || 30);
+    const [retryCount, setRetryCount] = useState((data.retryCount as number) || 3);
+    const [outputVariable, setOutputVariable] = useState((data.outputVariable as string) || "");
 
     useEffect(() => {
         onUpdate({
@@ -306,7 +306,7 @@ export function HTTPNodeConfig({ data, onUpdate }: HTTPNodeConfigProps) {
 
             <FormSection title="Output Settings">
                 <OutputSettingsSection
-                    nodeName={data.label || "HTTP"}
+                    nodeName={(data.label as string) || "HTTP"}
                     nodeType="http"
                     value={outputVariable}
                     onChange={setOutputVariable}

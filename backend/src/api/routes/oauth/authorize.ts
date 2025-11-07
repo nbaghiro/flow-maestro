@@ -34,12 +34,13 @@ export async function authorizeRoute(fastify: FastifyInstance) {
                         provider
                     }
                 });
-            } catch (error: any) {
+            } catch (error: unknown) {
+                const errorMsg = error instanceof Error ? error.message : "Unknown error";
                 fastify.log.error(error, `Failed to generate auth URL for ${provider}`);
 
                 return reply.status(400).send({
                     success: false,
-                    error: error.message || `Failed to generate authorization URL for ${provider}`
+                    error: errorMsg || `Failed to generate authorization URL for ${provider}`
                 });
             }
         }

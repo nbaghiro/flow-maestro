@@ -24,7 +24,7 @@ export const database = new gcp.sql.DatabaseInstance(
             ipConfiguration: {
                 ipv4Enabled: false,
                 privateNetwork: network.id,
-                enablePrivatePathForGoogleCloudServices: true,
+                enablePrivatePathForGoogleCloudServices: true
             },
 
             backupConfiguration: infrastructureConfig.dbBackupEnabled
@@ -35,15 +35,15 @@ export const database = new gcp.sql.DatabaseInstance(
                       transactionLogRetentionDays: 7,
                       backupRetentionSettings: {
                           retainedBackups: 7,
-                          retentionUnit: "COUNT",
-                      },
+                          retentionUnit: "COUNT"
+                      }
                   }
                 : undefined,
 
             maintenanceWindow: {
                 day: 7, // Sunday
                 hour: 3,
-                updateTrack: "stable",
+                updateTrack: "stable"
             },
 
             insightsConfig: {
@@ -51,14 +51,14 @@ export const database = new gcp.sql.DatabaseInstance(
                 queryPlansPerMinute: 5,
                 queryStringLength: 1024,
                 recordApplicationTags: true,
-                recordClientAddress: true,
+                recordClientAddress: true
             },
 
-            userLabels: resourceLabels(),
-        },
+            userLabels: resourceLabels()
+        }
     },
     {
-        dependsOn: [privateVpcConnection],
+        dependsOn: [privateVpcConnection]
     }
 );
 
@@ -67,14 +67,14 @@ export const databaseName = new gcp.sql.Database(resourceName("database"), {
     name: "flowmaestro",
     instance: database.name,
     charset: "UTF8",
-    collation: "en_US.UTF8",
+    collation: "en_US.UTF8"
 });
 
 // Create database user
 export const databaseUser = new gcp.sql.User(resourceName("db-user"), {
     name: "flowmaestro",
     instance: database.name,
-    password: infrastructureConfig.dbPassword,
+    password: infrastructureConfig.dbPassword
 });
 
 // Export database outputs
@@ -83,7 +83,7 @@ export const databaseOutputs = {
     instanceConnectionName: database.connectionName,
     privateIp: database.privateIpAddress,
     databaseName: databaseName.name,
-    userName: databaseUser.name,
+    userName: databaseUser.name
 };
 
 // Export database connection string for Kubernetes

@@ -5,17 +5,20 @@ This directory contains comprehensive integration tests for FlowMaestro workflow
 ## Test Infrastructure Built
 
 ### 1. Test Helpers (`tests/helpers/`)
+
 - **DatabaseHelper.ts**: Database operations, test data seeding, cleanup
 - **TestConnectionFactory.ts**: Creates mock connections (OpenAI, Anthropic, Slack, etc.)
 - **WorkflowTestHarness.ts**: Executes workflows via Temporal and validates results
 - **TemporalWorkerHelper.ts**: Helper for starting/stopping Temporal workers (not currently used)
 
 ### 2. Test Fixtures (`tests/fixtures/`)
+
 - **workflows/**: JSON workflow definitions for testing
 - **documents/**: Sample files (PDFs, CSVs) for file operation tests (to be added)
 - **responses/**: Mock API responses for deterministic tests (to be added)
 
 ### 3. Test Setup (`jest.setup.ts`)
+
 - PostgreSQL connection pool
 - Test environment variables
 - Encryption key for connections
@@ -26,18 +29,22 @@ This directory contains comprehensive integration tests for FlowMaestro workflow
 Before running integration tests, ensure these services are running:
 
 ### 1. Docker Services
+
 ```bash
 npm run docker:up
 ```
 
 This starts:
+
 - PostgreSQL (port 5432)
 - Redis (port 6379)
 - Temporal Server (port 7233)
 - Temporal UI (http://localhost:8088)
 
 ### 2. Temporal Worker
+
 In a separate terminal, start the Temporal worker:
+
 ```bash
 cd backend
 npm run worker:orchestrator:dev
@@ -48,21 +55,25 @@ The worker must be running because workflows are executed on the real Temporal s
 ## Running Tests
 
 ### Run all integration tests:
+
 ```bash
 npm test
 ```
 
 ### Run specific workflow test:
+
 ```bash
 npm test -- tests/integration/workflows/01-http-transform-database.test.ts
 ```
 
 ### Run specific test case:
+
 ```bash
 npm test -- tests/integration/workflows/01-http-transform-database.test.ts --testNamePattern="should fetch user from API"
 ```
 
 ### Run with coverage:
+
 ```bash
 npm run test:coverage
 ```
@@ -70,20 +81,25 @@ npm run test:coverage
 ## Test Workflows
 
 ### Workflow 0: Simple HTTP + Transform
+
 **File**: `tests/integration/workflows/00-simple-http-transform.test.ts`
 
 **What it tests**:
+
 - HTTP executor (fetching from JSONPlaceholder API)
 - Transform executor (JSONata data transformation)
 - Basic workflow execution
 
 **Test cases**:
+
 - ✅ Execute HTTP and Transform nodes
 
 ### Workflow 1: HTTP + Transform + Database
+
 **File**: `tests/integration/workflows/01-http-transform-database.test.ts`
 
 **What it tests**:
+
 - HTTP executor (fetching from JSONPlaceholder API)
 - Transform executor (JSONata data transformation)
 - Database executor (PostgreSQL insert operations)
@@ -91,6 +107,7 @@ npm run test:coverage
 - Error handling (404 responses)
 
 **Workflow flow**:
+
 1. Input (userId)
 2. HTTP Request → Fetch user data from API
 3. Transform → Extract and map fields
@@ -98,6 +115,7 @@ npm run test:coverage
 5. Output → Return stored data
 
 **Test cases**:
+
 - ✅ Fetch user from API, transform, and store
 - ✅ Handle different user IDs
 - ✅ Handle HTTP errors gracefully (404)
@@ -105,9 +123,11 @@ npm run test:coverage
 - ✅ Complete within reasonable time (<15s)
 
 ### Workflow 2: LLM Chained Providers (OpenAI → Anthropic)
+
 **File**: `tests/integration/workflows/02-llm-chained-providers.test.ts`
 
 **What it tests**:
+
 - LLM executor with OpenAI (gpt-4o-mini)
 - LLM executor with Anthropic (claude-haiku-4-5)
 - Variable interpolation between LLM calls
@@ -116,6 +136,7 @@ npm run test:coverage
 - Real API integration and response handling
 
 **Workflow flow**:
+
 1. Input (topic)
 2. OpenAI LLM → Generate sentence about topic
 3. Anthropic LLM → Refine sentence with humor (uses ${openai_response.text})
@@ -123,11 +144,13 @@ npm run test:coverage
 5. Output → Return final JSON result
 
 **Test cases**:
+
 - ✅ Chain OpenAI and Anthropic LLM calls with variable interpolation
 - ✅ Handle variable interpolation correctly
 - ✅ Use correct models (gpt-4o-mini and claude-haiku-4-5)
 
 **Prerequisites**:
+
 - Set `OPENAI_API_KEY` environment variable
 - Set `ANTHROPIC_API_KEY` environment variable
 - Tests will be skipped if API keys are not available
@@ -137,6 +160,7 @@ npm run test:coverage
 ## Writing New Tests
 
 ### Step 1: Create workflow fixture
+
 Create a JSON file in `tests/fixtures/workflows/`:
 
 ```json
@@ -173,6 +197,7 @@ Create a JSON file in `tests/fixtures/workflows/`:
 ```
 
 ### Step 2: Create test file
+
 Create a test file in `tests/integration/workflows/`:
 
 ```typescript
@@ -204,10 +229,7 @@ describe("My Test Workflow", () => {
     });
 
     it("should execute workflow successfully", async () => {
-        const result = await testHarness.executeWorkflow(
-            workflowDefinition,
-            { input: "test" }
-        );
+        const result = await testHarness.executeWorkflow(workflowDefinition, { input: "test" });
 
         expect(result.success).toBe(true);
         expect(result.outputs).toBeDefined();
@@ -216,6 +238,7 @@ describe("My Test Workflow", () => {
 ```
 
 ### Step 3: Run and validate
+
 1. Start Docker services
 2. Start Temporal worker
 3. Run test: `npm test -- tests/integration/workflows/my-workflow.test.ts`
@@ -225,6 +248,7 @@ describe("My Test Workflow", () => {
 This test suite follows **Strategy 1: Local Service Ecosystem** with some real API tests:
 
 ### Local Infrastructure (No cost, fast)
+
 - ✅ PostgreSQL, MongoDB, Redis (via Docker)
 - ✅ Temporal for workflow orchestration
 - ✅ HTTP requests to public test APIs (httpbin.org, jsonplaceholder.typicode.com)
@@ -232,6 +256,7 @@ This test suite follows **Strategy 1: Local Service Ecosystem** with some real A
 - ✅ Transform, Code, Conditional, Loop, Variable nodes (pure logic)
 
 ### Real API Integration (Small cost, validates real services)
+
 - 🔄 OpenAI API (gpt-3.5-turbo, text-embedding-3-small)
 - 🔄 Anthropic API (claude-3-haiku)
 - 🔄 Slack API (test workspace)
@@ -240,13 +265,17 @@ This test suite follows **Strategy 1: Local Service Ecosystem** with some real A
 ## Troubleshooting
 
 ### Tests fail with "relation does not exist"
+
 **Solution**: Run database migrations
+
 ```bash
 npm run db:migrate
 ```
 
 ### Tests timeout
+
 **Causes**:
+
 1. Temporal worker not running → Start worker in separate terminal
 2. Docker services not running → Run `npm run docker:up`
 3. Network issues with external APIs → Check internet connection
@@ -254,17 +283,21 @@ npm run db:migrate
 **Solution**: Verify prerequisites are running
 
 ### "Webpack finished with errors"
+
 **Cause**: Attempting to start Temporal worker in test (old approach)
 
 **Solution**: Start worker manually before running tests
 
 ### Database connection errors
+
 **Solution**: Check Docker services:
+
 ```bash
 docker ps | grep flowmaestro-postgres
 ```
 
 If not running:
+
 ```bash
 npm run docker:up
 ```
@@ -272,6 +305,7 @@ npm run docker:up
 ## Next Steps
 
 ### Planned Workflows
+
 1. ✅ **Workflow 0**: Simple HTTP + Transform
 2. ✅ **Workflow 1**: HTTP + Transform + Database
 3. ✅ **Workflow 2**: LLM Chained Providers (OpenAI → Anthropic)
@@ -286,6 +320,7 @@ npm run docker:up
 12. 🔄 **Workflow 11**: Integration Services (Real Slack)
 
 ### To Do
+
 - [x] Validate Workflow 0 passes all tests
 - [x] Validate Workflow 1 passes all tests
 - [x] Build Workflow 2 (LLM Chained Providers)
@@ -299,22 +334,26 @@ npm run docker:up
 ## Cost Analysis
 
 ### Local Tests (Workflows 1-8)
+
 - **Cost**: $0/run
 - **Runtime**: ~5-10 minutes total
 - **Frequency**: Run on every commit
 
 ### Real API Tests (Workflows 9-12)
+
 - **Cost**: ~$0.0014/run (~$1.40 per 1000 runs)
 - **Runtime**: ~2-3 minutes total
 - **Frequency**: Run before releases or weekly
 
 **Annual cost estimate** (assuming 100 runs/day of local + 10 runs/day of API tests):
+
 - Local: $0
 - API: 10 runs/day × 365 days × $0.0014 = **~$5.11/year**
 
 ## Support
 
 For issues or questions about testing:
+
 1. Check this README
 2. Review existing test files for patterns
 3. Check test output for specific error messages

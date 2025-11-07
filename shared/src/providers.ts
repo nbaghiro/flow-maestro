@@ -29,7 +29,7 @@ export const ALL_PROVIDERS: MCPProvider[] = [
         description: "GPT models and AI capabilities",
         logoUrl: "https://logo.clearbit.com/openai.com",
         category: "AI & ML",
-        methods: ["api_key"],
+        methods: ["api_key"]
     },
     {
         provider: "anthropic",
@@ -37,7 +37,7 @@ export const ALL_PROVIDERS: MCPProvider[] = [
         description: "Claude AI assistant",
         logoUrl: "https://logo.clearbit.com/anthropic.com",
         category: "AI & ML",
-        methods: ["api_key"],
+        methods: ["api_key"]
     },
     {
         provider: "huggingface",
@@ -46,7 +46,7 @@ export const ALL_PROVIDERS: MCPProvider[] = [
         logoUrl: "https://logo.clearbit.com/huggingface.co",
         category: "AI & ML",
         methods: ["api_key"],
-        comingSoon: true,
+        comingSoon: true
     },
 
     // Communication
@@ -58,7 +58,7 @@ export const ALL_PROVIDERS: MCPProvider[] = [
         category: "Communication",
         methods: ["oauth2"],
         mcpServerUrl: "https://mcp.pipedream.com/app/slack",
-        mcpAuthType: "oauth2",
+        mcpAuthType: "oauth2"
     },
     {
         provider: "discord",
@@ -69,7 +69,7 @@ export const ALL_PROVIDERS: MCPProvider[] = [
         methods: ["api_key"],
         comingSoon: true,
         mcpServerUrl: "https://mcp.pipedream.com/app/discord",
-        mcpAuthType: "api_key",
+        mcpAuthType: "api_key"
     },
     {
         provider: "telegram",
@@ -80,7 +80,7 @@ export const ALL_PROVIDERS: MCPProvider[] = [
         methods: ["api_key"],
         comingSoon: true,
         mcpServerUrl: "https://mcp.pipedream.com/app/telegram",
-        mcpAuthType: "api_key",
+        mcpAuthType: "api_key"
     },
     {
         provider: "microsoft-teams",
@@ -89,7 +89,7 @@ export const ALL_PROVIDERS: MCPProvider[] = [
         logoUrl: "https://logo.clearbit.com/microsoft.com",
         category: "Communication",
         methods: ["oauth2"],
-        comingSoon: true,
+        comingSoon: true
     },
     {
         provider: "whatsapp",
@@ -98,7 +98,7 @@ export const ALL_PROVIDERS: MCPProvider[] = [
         logoUrl: "https://cdn.simpleicons.org/whatsapp/25D366",
         category: "Communication",
         methods: ["api_key"],
-        comingSoon: true,
+        comingSoon: true
     },
 
     // Productivity & Collaboration
@@ -110,7 +110,7 @@ export const ALL_PROVIDERS: MCPProvider[] = [
         category: "Productivity",
         methods: ["api_key", "oauth2"],
         mcpServerUrl: "https://mcp.pipedream.com/app/google-drive",
-        mcpAuthType: "oauth2",
+        mcpAuthType: "oauth2"
     },
     {
         provider: "notion",
@@ -120,7 +120,7 @@ export const ALL_PROVIDERS: MCPProvider[] = [
         category: "Productivity",
         methods: ["oauth2"],
         mcpServerUrl: "https://mcp.pipedream.com/app/notion",
-        mcpAuthType: "oauth2",
+        mcpAuthType: "oauth2"
     },
     {
         provider: "microsoft-365",
@@ -129,7 +129,7 @@ export const ALL_PROVIDERS: MCPProvider[] = [
         logoUrl: "https://logo.clearbit.com/microsoft.com",
         category: "Productivity",
         methods: ["oauth2"],
-        comingSoon: true,
+        comingSoon: true
     },
     {
         provider: "airtable",
@@ -140,7 +140,7 @@ export const ALL_PROVIDERS: MCPProvider[] = [
         methods: ["api_key"],
         comingSoon: true,
         mcpServerUrl: "https://mcp.pipedream.com/app/airtable",
-        mcpAuthType: "oauth2",
+        mcpAuthType: "oauth2"
     },
     {
         provider: "coda",
@@ -149,7 +149,7 @@ export const ALL_PROVIDERS: MCPProvider[] = [
         logoUrl: "https://cdn.simpleicons.org/coda/F46A54",
         category: "Productivity",
         methods: ["api_key"],
-        comingSoon: true,
+        comingSoon: true
     },
 
     // Developer Tools
@@ -162,7 +162,7 @@ export const ALL_PROVIDERS: MCPProvider[] = [
         methods: ["api_key", "oauth2"],
         comingSoon: true,
         mcpServerUrl: "https://mcp.pipedream.com/app/github",
-        mcpAuthType: "oauth2",
+        mcpAuthType: "oauth2"
     },
     {
         provider: "gitlab",
@@ -173,7 +173,7 @@ export const ALL_PROVIDERS: MCPProvider[] = [
         methods: ["api_key", "oauth2"],
         comingSoon: true,
         mcpServerUrl: "https://mcp.pipedream.com/app/gitlab",
-        mcpAuthType: "oauth2",
+        mcpAuthType: "oauth2"
     },
     {
         provider: "bitbucket",
@@ -182,7 +182,7 @@ export const ALL_PROVIDERS: MCPProvider[] = [
         logoUrl: "https://cdn.simpleicons.org/bitbucket/0052CC",
         category: "Developer Tools",
         methods: ["api_key", "oauth2"],
-        comingSoon: true,
+        comingSoon: true
     },
     {
         provider: "jira",
@@ -193,7 +193,7 @@ export const ALL_PROVIDERS: MCPProvider[] = [
         methods: ["api_key", "oauth2"],
         comingSoon: true,
         mcpServerUrl: "https://mcp.pipedream.com/app/jira",
-        mcpAuthType: "oauth2",
+        mcpAuthType: "oauth2"
     },
 
     // Project Management
@@ -206,7 +206,7 @@ export const ALL_PROVIDERS: MCPProvider[] = [
         methods: ["api_key", "oauth2"],
         comingSoon: true,
         mcpServerUrl: "https://mcp.pipedream.com/app/asana",
-        mcpAuthType: "oauth2",
+        mcpAuthType: "oauth2"
     },
     {
         provider: "trello",
@@ -217,7 +217,7 @@ export const ALL_PROVIDERS: MCPProvider[] = [
         methods: ["api_key", "oauth2"],
         comingSoon: true,
         mcpServerUrl: "https://mcp.pipedream.com/app/trello",
-        mcpAuthType: "oauth2",
+        mcpAuthType: "oauth2"
     },
     {
         provider: "monday",
@@ -226,7 +226,7 @@ export const ALL_PROVIDERS: MCPProvider[] = [
         logoUrl: "https://logo.clearbit.com/monday.com",
         category: "Project Management",
         methods: ["api_key"],
-        comingSoon: true,
+        comingSoon: true
     },
     {
         provider: "clickup",
@@ -235,7 +235,7 @@ export const ALL_PROVIDERS: MCPProvider[] = [
         logoUrl: "https://logo.clearbit.com/clickup.com",
         category: "Project Management",
         methods: ["api_key"],
-        comingSoon: true,
+        comingSoon: true
     },
 
     // CRM & Sales
@@ -246,7 +246,7 @@ export const ALL_PROVIDERS: MCPProvider[] = [
         logoUrl: "https://cdn.simpleicons.org/salesforce/00A1E0",
         category: "CRM & Sales",
         methods: ["oauth2"],
-        comingSoon: true,
+        comingSoon: true
     },
     {
         provider: "hubspot",
@@ -257,7 +257,7 @@ export const ALL_PROVIDERS: MCPProvider[] = [
         methods: ["api_key", "oauth2"],
         comingSoon: true,
         mcpServerUrl: "https://mcp.pipedream.com/app/hubspot",
-        mcpAuthType: "oauth2",
+        mcpAuthType: "oauth2"
     },
     {
         provider: "pipedrive",
@@ -266,7 +266,7 @@ export const ALL_PROVIDERS: MCPProvider[] = [
         logoUrl: "https://logo.clearbit.com/pipedrive.com",
         category: "CRM & Sales",
         methods: ["api_key", "oauth2"],
-        comingSoon: true,
+        comingSoon: true
     },
 
     // E-commerce & Payments
@@ -279,7 +279,7 @@ export const ALL_PROVIDERS: MCPProvider[] = [
         methods: ["api_key", "oauth2"],
         comingSoon: true,
         mcpServerUrl: "https://mcp.pipedream.com/app/shopify",
-        mcpAuthType: "oauth2",
+        mcpAuthType: "oauth2"
     },
     {
         provider: "stripe",
@@ -290,7 +290,7 @@ export const ALL_PROVIDERS: MCPProvider[] = [
         methods: ["api_key"],
         comingSoon: true,
         mcpServerUrl: "https://mcp.pipedream.com/app/stripe",
-        mcpAuthType: "api_key",
+        mcpAuthType: "api_key"
     },
     {
         provider: "woocommerce",
@@ -299,7 +299,7 @@ export const ALL_PROVIDERS: MCPProvider[] = [
         logoUrl: "https://cdn.simpleicons.org/woocommerce/96588A",
         category: "E-commerce",
         methods: ["api_key"],
-        comingSoon: true,
+        comingSoon: true
     },
 
     // Marketing & Email
@@ -312,7 +312,7 @@ export const ALL_PROVIDERS: MCPProvider[] = [
         methods: ["api_key", "oauth2"],
         comingSoon: true,
         mcpServerUrl: "https://mcp.pipedream.com/app/mailchimp",
-        mcpAuthType: "oauth2",
+        mcpAuthType: "oauth2"
     },
     {
         provider: "sendgrid",
@@ -323,7 +323,7 @@ export const ALL_PROVIDERS: MCPProvider[] = [
         methods: ["api_key"],
         comingSoon: true,
         mcpServerUrl: "https://mcp.pipedream.com/app/sendgrid",
-        mcpAuthType: "api_key",
+        mcpAuthType: "api_key"
     },
     {
         provider: "twilio",
@@ -334,7 +334,7 @@ export const ALL_PROVIDERS: MCPProvider[] = [
         methods: ["api_key"],
         comingSoon: true,
         mcpServerUrl: "https://mcp.pipedream.com/app/twilio",
-        mcpAuthType: "api_key",
+        mcpAuthType: "api_key"
     },
 
     // File Storage
@@ -345,7 +345,7 @@ export const ALL_PROVIDERS: MCPProvider[] = [
         logoUrl: "https://cdn.simpleicons.org/dropbox/0061FF",
         category: "File Storage",
         methods: ["oauth2"],
-        comingSoon: true,
+        comingSoon: true
     },
     {
         provider: "box",
@@ -354,7 +354,7 @@ export const ALL_PROVIDERS: MCPProvider[] = [
         logoUrl: "https://cdn.simpleicons.org/box/0061D5",
         category: "File Storage",
         methods: ["oauth2"],
-        comingSoon: true,
+        comingSoon: true
     },
     {
         provider: "onedrive",
@@ -363,7 +363,7 @@ export const ALL_PROVIDERS: MCPProvider[] = [
         logoUrl: "https://logo.clearbit.com/onedrive.live.com",
         category: "File Storage",
         methods: ["oauth2"],
-        comingSoon: true,
+        comingSoon: true
     },
 
     // Social Media
@@ -374,7 +374,7 @@ export const ALL_PROVIDERS: MCPProvider[] = [
         logoUrl: "https://cdn.simpleicons.org/x/000000",
         category: "Social Media",
         methods: ["api_key", "oauth2"],
-        comingSoon: true,
+        comingSoon: true
     },
     {
         provider: "linkedin",
@@ -383,7 +383,7 @@ export const ALL_PROVIDERS: MCPProvider[] = [
         logoUrl: "https://logo.clearbit.com/linkedin.com",
         category: "Social Media",
         methods: ["oauth2"],
-        comingSoon: true,
+        comingSoon: true
     },
     {
         provider: "facebook",
@@ -392,7 +392,7 @@ export const ALL_PROVIDERS: MCPProvider[] = [
         logoUrl: "https://cdn.simpleicons.org/facebook/0866FF",
         category: "Social Media",
         methods: ["oauth2"],
-        comingSoon: true,
+        comingSoon: true
     },
     {
         provider: "instagram",
@@ -401,6 +401,6 @@ export const ALL_PROVIDERS: MCPProvider[] = [
         logoUrl: "https://cdn.simpleicons.org/instagram/E4405F",
         category: "Social Media",
         methods: ["oauth2"],
-        comingSoon: true,
-    },
+        comingSoon: true
+    }
 ];

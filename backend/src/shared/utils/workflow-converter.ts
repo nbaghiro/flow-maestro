@@ -5,12 +5,12 @@
  * and backend workflow format (Record-based with 'config' property)
  */
 
-import { WorkflowDefinition, WorkflowNode } from '@flowmaestro/shared';
+import { WorkflowDefinition, WorkflowNode } from "@flowmaestro/shared";
 
 export interface FrontendWorkflowNode {
     id: string;
     type: string;
-    data: Record<string, any>;
+    data: Record<string, unknown>;
     position?: { x: number; y: number };
 }
 
@@ -29,7 +29,7 @@ export interface FrontendWorkflowDefinition {
  */
 export function convertFrontendToBackend(
     frontendWorkflow: FrontendWorkflowDefinition,
-    workflowName: string = 'Untitled Workflow'
+    workflowName: string = "Untitled Workflow"
 ): WorkflowDefinition {
     const nodesRecord: Record<string, WorkflowNode> = {};
 
@@ -37,16 +37,18 @@ export function convertFrontendToBackend(
     for (const node of frontendWorkflow.nodes) {
         const { id, type, data, position } = node;
 
+        const nodeName = (data.label as string) || (data.inputName as string) || (data.outputName as string) || type;
+
         nodesRecord[id] = {
             type,
-            name: data.label || data.inputName || data.outputName || type,
-            config: data,
+            name: nodeName,
+            config: JSON.parse(JSON.stringify(data)),
             position: position || { x: 0, y: 0 }
         };
     }
 
     // Find entry point (first input node or first node)
-    const inputNode = frontendWorkflow.nodes.find((n) => n.type === 'input');
+    const inputNode = frontendWorkflow.nodes.find((n) => n.type === "input");
     const entryPoint = inputNode?.id || frontendWorkflow.nodes[0]?.id;
 
     if (!entryPoint) {

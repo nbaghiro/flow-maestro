@@ -37,12 +37,19 @@ export function FlowBuilder() {
     const getWorkflowStateSnapshot = () => {
         const nodesSnapshot = nodes.map((node) => {
             // Extract label and onError from node.data, rest goes into config
-            const { label, onError, ...config } = node.data || {};
+            const { label, onError, ...config } = (node.data || {}) as Record<string, unknown>;
 
-            const nodeData: any = {
+            const nodeData: {
+                id: string;
+                type: string;
+                name: string;
+                position: { x: number; y: number };
+                config: Record<string, unknown>;
+                onError?: unknown;
+            } = {
                 id: node.id,
                 type: node.type || "default",
-                name: label || node.id,
+                name: (label as string) || node.id,
                 // Only include non-empty config
                 config: Object.keys(config).length > 0 ? config : {},
                 // Normalize position to only x and y
@@ -53,7 +60,7 @@ export function FlowBuilder() {
             };
 
             // Only include onError if it exists and has a strategy
-            if (onError && onError.strategy) {
+            if (onError && typeof onError === "object" && "strategy" in onError) {
                 nodeData.onError = onError;
             }
 
@@ -91,21 +98,27 @@ export function FlowBuilder() {
     // This can be called from browser console: window.debugWorkflow()
     const logWorkflowStructure = () => {
         // Convert React Flow nodes to backend format (keyed by node id)
-        const nodesMap: Record<string, any> = {};
+        const nodesMap: Record<string, unknown> = {};
         nodes.forEach((node) => {
             // Extract label and onError from node.data, rest goes into config
-            const { label, onError, ...config } = node.data || {};
+            const { label, onError, ...config } = (node.data || {}) as Record<string, unknown>;
 
             // Only include onError if it has a valid strategy
-            const nodeData: any = {
+            const nodeData: {
+                type: string;
+                name: string;
+                config: Record<string, unknown>;
+                position: { x: number; y: number };
+                onError?: unknown;
+            } = {
                 type: node.type || "default",
-                name: label || node.id,
+                name: (label as string) || node.id,
                 config: config,
                 position: node.position
             };
 
             // Only add onError if it exists and has a strategy
-            if (onError && onError.strategy) {
+            if (onError && typeof onError === "object" && "strategy" in onError) {
                 nodeData.onError = onError;
             }
 
@@ -136,10 +149,11 @@ export function FlowBuilder() {
 
     // Expose debug method to window for browser console access
     useEffect(() => {
-        (window as any).debugWorkflow = logWorkflowStructure;
+        (window as Window & { debugWorkflow?: () => void }).debugWorkflow =
+            logWorkflowStructure;
 
         return () => {
-            delete (window as any).debugWorkflow;
+            delete (window as Window & { debugWorkflow?: () => void }).debugWorkflow;
         };
     }, [nodes, edges, workflowName, workflowDescription, aiGenerated, aiPrompt]);
 
@@ -162,16 +176,21 @@ export function FlowBuilder() {
 
                     // Convert backend nodes format to React Flow format
                     if (definition.nodes && Object.keys(definition.nodes).length > 0) {
-                        const flowNodes = Object.entries(definition.nodes).map(
-                            ([id, node]: [string, any]) => {
+                        const nodesObj = definition.nodes as Record<string, unknown>;
+                        const flowNodes = Object.entries(nodesObj).map(
+                            ([id, node]: [string, unknown]) => {
+                                const nodeData = node as Record<string, unknown>;
                                 return {
                                     id,
-                                    type: node.type,
-                                    position: node.position,
+                                    type: (nodeData.type as string) || "default",
+                                    position: (nodeData.position as { x: number; y: number }) || {
+                                        x: 0,
+                                        y: 0
+                                    },
                                     data: {
-                                        label: node.name,
-                                        ...node.config,
-                                        onError: node.onError
+                                        label: nodeData.name,
+                                        ...(nodeData.config as Record<string, unknown>),
+                                        onError: nodeData.onError
                                     }
                                 };
                             }
@@ -213,21 +232,30 @@ export function FlowBuilder() {
 
         try {
             // Convert React Flow nodes to backend format (keyed by node id)
-            const nodesMap: Record<string, any> = {};
+            const nodesMap: Record<string, unknown> = {};
             nodes.forEach((node) => {
                 // Extract label and onError from node.data, rest goes into config
-                const { label, onError, ...config } = node.data || {};
+                const { label, onError, ...config } = (node.data || {}) as Record<string, unknown>;
 
                 // Only include onError if it has a valid strategy
-                const nodeData: any = {
+                const nodeData: {
+                    type: string;
+                    name: string;
+                    config: Record<string, unknown>;
+                    position: { x: number; y: number };
+                    onError?: unknown;
+                } = {
                     type: node.type || "default",
-                    name: label || node.id,
+                    name: (label as string) || node.id,
                     config: config,
                     position: node.position
                 };
 
                 // Only add onError if it exists and has a strategy
-                if (onError && onError.strategy) {
+                if (
+                    onError &&
+                    (onError as { strategy?: string }).strategy
+                ) {
                     nodeData.onError = onError;
                 }
 
@@ -268,7 +296,11 @@ export function FlowBuilder() {
             console.log("Full workflow definition:", JSON.stringify(workflowDefinition, null, 2));
 
             // Build update payload, only including non-empty fields
-            const updatePayload: any = {
+            const updatePayload: {
+                name: string;
+                description?: string;
+                definition: unknown;
+            } = {
                 name: workflowName,
                 definition: workflowDefinition
             };
@@ -280,13 +312,13 @@ export function FlowBuilder() {
 
             // Only include AI metadata if present
             if (aiGenerated !== undefined) {
-                updatePayload.aiGenerated = aiGenerated;
+                (updatePayload as Record<string, unknown>).aiGenerated = aiGenerated;
             }
             if (aiPrompt) {
-                updatePayload.aiPrompt = aiPrompt;
+                (updatePayload as Record<string, unknown>).aiPrompt = aiPrompt;
             }
 
-            await updateWorkflow(workflowId, updatePayload);
+            await updateWorkflow(workflowId, updatePayload as Parameters<typeof updateWorkflow>[1]);
 
             setSaveStatus("saved");
 
@@ -300,7 +332,7 @@ export function FlowBuilder() {
             setTimeout(() => {
                 setSaveStatus("idle");
             }, 2000);
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Failed to save workflow:", error);
             setSaveStatus("error");
 

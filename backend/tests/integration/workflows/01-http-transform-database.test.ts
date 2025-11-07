@@ -60,7 +60,7 @@ describe("Workflow 1: HTTP + Transform + Database", () => {
 
     afterAll(async () => {
         // Clean up test table
-        await pool.query(`DROP TABLE IF EXISTS test_users`);
+        await pool.query("DROP TABLE IF EXISTS test_users");
 
         // Clean up test data
         if (connectionFactory) {
@@ -73,7 +73,7 @@ describe("Workflow 1: HTTP + Transform + Database", () => {
     afterEach(async () => {
         // Clean up test_users table after each test (if it exists)
         try {
-            await pool.query(`DELETE FROM test_users`);
+            await pool.query("DELETE FROM test_users");
         } catch (error) {
             // Ignore if table doesn't exist yet
         }
@@ -87,10 +87,7 @@ describe("Workflow 1: HTTP + Transform + Database", () => {
             workflowDefinition
         );
 
-        const executionId = await dbHelper.createTestExecution(
-            workflowId,
-            { userId: 1 }
-        );
+        const executionId = await dbHelper.createTestExecution(workflowId, { userId: 1 });
 
         // Execute workflow
         const result = await testHarness.executeWorkflow(
@@ -124,9 +121,7 @@ describe("Workflow 1: HTTP + Transform + Database", () => {
         expect(storedUser.company).toBe("Romaguera-Crona");
 
         // Verify data was actually stored in database
-        const dbResult = await pool.query(
-            `SELECT * FROM test_users WHERE user_id = 1`
-        );
+        const dbResult = await pool.query("SELECT * FROM test_users WHERE user_id = 1");
 
         expect(dbResult.rows.length).toBe(1);
         expect(dbResult.rows[0].full_name).toBe("Leanne Graham");
@@ -135,10 +130,7 @@ describe("Workflow 1: HTTP + Transform + Database", () => {
 
     it("should handle different user IDs correctly", async () => {
         // Execute workflow with user ID 2
-        const result = await testHarness.executeWorkflow(
-            workflowDefinition,
-            { userId: 2 }
-        );
+        const result = await testHarness.executeWorkflow(workflowDefinition, { userId: 2 });
 
         // Verify workflow succeeded
         expect(result.success).toBe(true);
@@ -154,9 +146,7 @@ describe("Workflow 1: HTTP + Transform + Database", () => {
         expect(storedUser.full_name).toBe("Ervin Howell");
 
         // Verify in database
-        const dbResult = await pool.query(
-            `SELECT * FROM test_users WHERE user_id = 2`
-        );
+        const dbResult = await pool.query("SELECT * FROM test_users WHERE user_id = 2");
 
         expect(dbResult.rows.length).toBe(1);
         expect(dbResult.rows[0].full_name).toBe("Ervin Howell");
@@ -173,18 +163,13 @@ describe("Workflow 1: HTTP + Transform + Database", () => {
         const userIds = [1, 2, 3];
 
         for (const userId of userIds) {
-            const result = await testHarness.executeWorkflow(
-                workflowDefinition,
-                { userId }
-            );
+            const result = await testHarness.executeWorkflow(workflowDefinition, { userId });
 
             expect(result.success).toBe(true);
         }
 
         // Verify all users were stored
-        const dbResult = await pool.query(
-            `SELECT * FROM test_users ORDER BY user_id`
-        );
+        const dbResult = await pool.query("SELECT * FROM test_users ORDER BY user_id");
 
         expect(dbResult.rows.length).toBe(3);
         expect(dbResult.rows[0].user_id).toBe(1);
@@ -193,10 +178,7 @@ describe("Workflow 1: HTTP + Transform + Database", () => {
     });
 
     it("should complete within reasonable time", async () => {
-        const result = await testHarness.executeWorkflow(
-            workflowDefinition,
-            { userId: 1 }
-        );
+        const result = await testHarness.executeWorkflow(workflowDefinition, { userId: 1 });
 
         expect(result.success).toBe(true);
         expect(result.duration).toBeLessThan(15000); // Should complete within 15 seconds

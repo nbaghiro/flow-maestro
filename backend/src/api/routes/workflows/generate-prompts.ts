@@ -1,10 +1,13 @@
 import { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { authMiddleware, validateBody } from "../../middleware";
-import { executeLLMNode, type LLMNodeConfig } from "../../../temporal/activities/node-executors/llm-executor";
+import {
+    executeLLMNode,
+    type LLMNodeConfig
+} from "../../../temporal/activities/node-executors/llm-executor";
 
 const generatePromptsSchema = z.object({
-    connectionId: z.string().uuid(),
+    connectionId: z.string().uuid()
 });
 
 export async function generatePromptsRoute(fastify: FastifyInstance) {
@@ -29,7 +32,7 @@ export async function generatePromptsRoute(fastify: FastifyInstance) {
                     });
                 }
 
-                if (connection.status !== 'active') {
+                if (connection.status !== "active") {
                     return reply.status(400).send({
                         success: false,
                         error: "Connection is not active"
@@ -41,17 +44,17 @@ export async function generatePromptsRoute(fastify: FastifyInstance) {
                 // Set default model based on provider
                 let model: string;
                 switch (provider) {
-                    case 'openai':
-                        model = 'gpt-4';
+                    case "openai":
+                        model = "gpt-4";
                         break;
-                    case 'anthropic':
-                        model = 'claude-3-5-sonnet-20241022';
+                    case "anthropic":
+                        model = "claude-3-5-sonnet-20241022";
                         break;
-                    case 'google':
-                        model = 'gemini-pro';
+                    case "google":
+                        model = "gemini-pro";
                         break;
-                    case 'cohere':
-                        model = 'command';
+                    case "cohere":
+                        model = "command";
                         break;
                     default:
                         return reply.status(400).send({
@@ -79,16 +82,17 @@ Return ONLY a JSON array of 4 strings, each being a concise workflow description
 Example format:
 ["prompt 1", "prompt 2", "prompt 3", "prompt 4"]`;
 
-                const systemPrompt = "You are a helpful assistant that generates creative workflow automation examples. Return only valid JSON.";
+                const systemPrompt =
+                    "You are a helpful assistant that generates creative workflow automation examples. Return only valid JSON.";
 
                 const config: LLMNodeConfig = {
-                    provider: provider as any,
+                    provider: provider as "openai" | "anthropic" | "google" | "cohere",
                     model,
                     connectionId,
                     prompt,
                     systemPrompt,
                     temperature: 0.9,
-                    maxTokens: 300,
+                    maxTokens: 300
                 };
 
                 const result = await executeLLMNode(config, {});
@@ -97,11 +101,12 @@ Example format:
                     success: true,
                     data: result
                 });
-            } catch (error: any) {
-                console.error('[Generate Prompts] Error:', error);
+            } catch (error: unknown) {
+                const errorMsg = error instanceof Error ? error.message : "Failed to generate example prompts";
+                console.error("[Generate Prompts] Error:", error);
                 return reply.status(500).send({
                     success: false,
-                    error: error.message || "Failed to generate example prompts"
+                    error: errorMsg
                 });
             }
         }

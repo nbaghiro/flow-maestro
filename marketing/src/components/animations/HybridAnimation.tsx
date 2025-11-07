@@ -4,12 +4,7 @@ import { motion } from "framer-motion";
 export const HybridAnimation: React.FC = () => {
     return (
         <div className="relative w-full h-full flex items-center justify-center">
-            <svg
-                width="100%"
-                height="100%"
-                viewBox="0 0 400 300"
-                className="max-w-md mx-auto"
-            >
+            <svg width="100%" height="100%" viewBox="0 0 400 300" className="max-w-md mx-auto">
                 {/* Left: Workflow Box */}
                 <motion.g
                     initial={{ opacity: 0, x: -20 }}
@@ -26,31 +21,13 @@ export const HybridAnimation: React.FC = () => {
                         stroke="#64748b"
                         strokeWidth="2"
                     />
-                    <text
-                        x="75"
-                        y="140"
-                        fill="#e2e8f0"
-                        fontSize="12"
-                        textAnchor="middle"
-                    >
+                    <text x="75" y="140" fill="#e2e8f0" fontSize="12" textAnchor="middle">
                         ⚙️
                     </text>
-                    <text
-                        x="75"
-                        y="165"
-                        fill="#94a3b8"
-                        fontSize="10"
-                        textAnchor="middle"
-                    >
+                    <text x="75" y="165" fill="#94a3b8" fontSize="10" textAnchor="middle">
                         Workflow
                     </text>
-                    <text
-                        x="75"
-                        y="180"
-                        fill="#94a3b8"
-                        fontSize="9"
-                        textAnchor="middle"
-                    >
+                    <text x="75" y="180" fill="#94a3b8" fontSize="9" textAnchor="middle">
                         Fetch Data
                     </text>
                 </motion.g>
@@ -67,11 +44,11 @@ export const HybridAnimation: React.FC = () => {
                         stroke="#f0abfc"
                         strokeWidth="2"
                         animate={{
-                            scale: [1, 1.05, 1],
+                            scale: [1, 1.05, 1]
                         }}
                         transition={{
                             duration: 2,
-                            repeat: Infinity,
+                            repeat: Infinity
                         }}
                         style={{ originX: "200px", originY: "160px" }}
                     />
@@ -85,13 +62,7 @@ export const HybridAnimation: React.FC = () => {
                     >
                         🤖
                     </text>
-                    <text
-                        x="200"
-                        y="173"
-                        fill="#fae8ff"
-                        fontSize="9"
-                        textAnchor="middle"
-                    >
+                    <text x="200" y="173" fill="#fae8ff" fontSize="9" textAnchor="middle">
                         AI Agent
                     </text>
                 </motion.g>
@@ -112,31 +83,13 @@ export const HybridAnimation: React.FC = () => {
                         stroke="#64748b"
                         strokeWidth="2"
                     />
-                    <text
-                        x="325"
-                        y="140"
-                        fill="#e2e8f0"
-                        fontSize="12"
-                        textAnchor="middle"
-                    >
+                    <text x="325" y="140" fill="#e2e8f0" fontSize="12" textAnchor="middle">
                         ⚙️
                     </text>
-                    <text
-                        x="325"
-                        y="165"
-                        fill="#94a3b8"
-                        fontSize="10"
-                        textAnchor="middle"
-                    >
+                    <text x="325" y="165" fill="#94a3b8" fontSize="10" textAnchor="middle">
                         Workflow
                     </text>
-                    <text
-                        x="325"
-                        y="180"
-                        fill="#94a3b8"
-                        fontSize="9"
-                        textAnchor="middle"
-                    >
+                    <text x="325" y="180" fill="#94a3b8" fontSize="9" textAnchor="middle">
                         Save Results
                     </text>
                 </motion.g>
@@ -192,13 +145,13 @@ export const HybridAnimation: React.FC = () => {
                     fill="#a78bfa"
                     animate={{
                         cx: [120, 160, 240, 280],
-                        cy: [150, 160, 160, 150],
+                        cy: [150, 160, 160, 150]
                     }}
                     transition={{
                         duration: 2.5,
                         repeat: Infinity,
                         repeatDelay: 1,
-                        delay: 2.5,
+                        delay: 2.5
                     }}
                 />
 

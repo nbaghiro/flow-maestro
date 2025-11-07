@@ -1,4 +1,5 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
+import type { JsonValue } from "@flowmaestro/shared";
 import { TriggerRepository } from "../../../storage/repositories/TriggerRepository";
 import { WorkflowRepository } from "../../../storage/repositories/WorkflowRepository";
 import { CallExecutionRepository } from "../../../storage/repositories/CallExecutionRepository";
@@ -16,10 +17,10 @@ interface TelnyxCallWebhook {
             call_control_id: string;
             call_leg_id: string;
             call_session_id: string;
-            from: string;           // +15551234567
-            to: string;             // +15559876543
+            from: string; // +15551234567
+            to: string; // +15559876543
             direction: "incoming" | "outgoing";
-            state: string;          // "parked", "answered", "hangup", etc.
+            state: string; // "parked", "answered", "hangup", etc.
             caller_id_name?: string;
             caller_id_number?: string;
             // Additional fields
@@ -38,62 +39,61 @@ interface TelnyxCallWebhook {
  * Receives incoming call notifications from Telnyx
  */
 export async function phoneCallWebhookRoute(fastify: FastifyInstance): Promise<void> {
-    fastify.post(
-        "/phone-call",
-        async (request: FastifyRequest, reply: FastifyReply) => {
-            const startTime = Date.now();
-            const body = request.body as TelnyxCallWebhook;
+    fastify.post("/phone-call", async (request: FastifyRequest, reply: FastifyReply) => {
+        const startTime = Date.now();
+        const body = request.body as TelnyxCallWebhook;
 
-            fastify.log.info({
-                msg: "Phone call webhook received",
-                body,
-            });
+        fastify.log.info({
+            msg: "Phone call webhook received",
+            body
+        });
 
-            try {
-                // Validate webhook payload
-                if (!body.data || !body.data.payload) {
-                    return reply.status(400).send({
-                        success: false,
-                        error: "Invalid webhook payload",
-                    });
-                }
-
-                const payload = body.data.payload;
-                const eventType = body.data.event_type;
-
-                // Handle different event types
-                if (eventType === "call.initiated" || eventType === "call.ringing") {
-                    return await handleIncomingCall(fastify, request, reply, body);
-                } else if (eventType === "call.answered") {
-                    return await handleCallAnswered(fastify, body);
-                } else if (eventType === "call.hangup") {
-                    return await handleCallHangup(fastify, body);
-                } else {
-                    // For other events, just log and return success
-                    fastify.log.info({
-                        msg: "Unhandled call event",
-                        eventType,
-                        callSid: payload.call_session_id,
-                    });
-
-                    return reply.send({ success: true });
-                }
-            } catch (error: any) {
-                const processingTime = Date.now() - startTime;
-                fastify.log.error({
-                    msg: "Phone call webhook processing error",
-                    error: error.message,
-                    stack: error.stack,
-                    processingTime,
-                });
-
-                return reply.status(500).send({
+        try {
+            // Validate webhook payload
+            if (!body.data || !body.data.payload) {
+                return reply.status(400).send({
                     success: false,
-                    error: "Internal server error",
+                    error: "Invalid webhook payload"
                 });
             }
+
+            const payload = body.data.payload;
+            const eventType = body.data.event_type;
+
+            // Handle different event types
+            if (eventType === "call.initiated" || eventType === "call.ringing") {
+                return await handleIncomingCall(fastify, request, reply, body);
+            } else if (eventType === "call.answered") {
+                return await handleCallAnswered(fastify, body);
+            } else if (eventType === "call.hangup") {
+                return await handleCallHangup(fastify, body);
+            } else {
+                // For other events, just log and return success
+                fastify.log.info({
+                    msg: "Unhandled call event",
+                    eventType,
+                    callSid: payload.call_session_id
+                });
+
+                return reply.send({ success: true });
+            }
+        } catch (error: unknown) {
+            const processingTime = Date.now() - startTime;
+            const errorMsg = error instanceof Error ? error.message : "Unknown error";
+            const errorStack = error instanceof Error ? error.stack : undefined;
+            fastify.log.error({
+                msg: "Phone call webhook processing error",
+                error: errorMsg,
+                stack: errorStack,
+                processingTime
+            });
+
+            return reply.status(500).send({
+                success: false,
+                error: "Internal server error"
+            });
         }
-    );
+    });
 }
 
 /**
@@ -114,7 +114,7 @@ async function handleIncomingCall(
         msg: "Processing incoming call",
         callerNumber,
         calledNumber,
-        callSid,
+        callSid
     });
 
     // Find trigger by phone number
@@ -129,13 +129,13 @@ async function handleIncomingCall(
     if (!trigger) {
         fastify.log.warn({
             msg: "No trigger found for phone number",
-            calledNumber,
+            calledNumber
         });
 
         // Return error response to Telnyx (will play error message to caller)
         return reply.status(404).send({
             success: false,
-            error: "No workflow configured for this phone number",
+            error: "No workflow configured for this phone number"
         });
     }
 
@@ -147,12 +147,12 @@ async function handleIncomingCall(
         fastify.log.error({
             msg: "Workflow not found for trigger",
             triggerId: trigger.id,
-            workflowId: trigger.workflow_id,
+            workflowId: trigger.workflow_id
         });
 
         return reply.status(404).send({
             success: false,
-            error: "Workflow not found",
+            error: "Workflow not found"
         });
     }
 
@@ -172,14 +172,14 @@ async function handleIncomingCall(
                 msg: "Call received outside business hours",
                 callerNumber,
                 dayOfWeek,
-                hoursToday,
+                hoursToday
             });
 
             // If voicemail is enabled, could handle here
             // For now, just return error
             return reply.status(503).send({
                 success: false,
-                error: "Outside business hours",
+                error: "Outside business hours"
             });
         }
     }
@@ -195,7 +195,7 @@ async function handleIncomingCall(
         direction: "inbound",
         call_status: "ringing",
         caller_name: payload.caller_id_name,
-        recording_enabled: config.enableRecording || false,
+        recording_enabled: config.enableRecording || false
     });
 
     // Generate LiveKit room name
@@ -203,7 +203,7 @@ async function handleIncomingCall(
 
     // Update call execution with room name
     await callRepo.update(callExecution.id, {
-        livekit_room_name: livekitRoomName,
+        livekit_room_name: livekitRoomName
     });
 
     // Log event
@@ -213,9 +213,9 @@ async function handleIncomingCall(
         event_data: {
             caller_number: callerNumber,
             called_number: calledNumber,
-            caller_name: payload.caller_id_name,
-        },
-        severity: "info",
+            caller_name: payload.caller_id_name || null
+        } as Record<string, JsonValue>,
+        severity: "info"
     });
 
     // Emit WebSocket event for real-time updates
@@ -232,7 +232,7 @@ async function handleIncomingCall(
     fastify.log.info({
         msg: "Call execution created",
         callExecutionId: callExecution.id,
-        livekitRoomName,
+        livekitRoomName
     });
 
     // Return SIP redirect to LiveKit
@@ -243,7 +243,7 @@ async function handleIncomingCall(
     return reply.send({
         commands: [
             {
-                command: "answer",
+                command: "answer"
             },
             {
                 command: "transfer",
@@ -251,15 +251,15 @@ async function handleIncomingCall(
                 sip_headers: [
                     {
                         name: "X-Call-Execution-ID",
-                        value: callExecution.id,
+                        value: callExecution.id
                     },
                     {
                         name: "X-Trigger-ID",
-                        value: trigger.id,
-                    },
-                ],
-            },
-        ],
+                        value: trigger.id
+                    }
+                ]
+            }
+        ]
     });
 }
 
@@ -279,7 +279,7 @@ async function handleCallAnswered(
     if (!callExecution) {
         fastify.log.warn({
             msg: "Call execution not found for answered event",
-            callSid,
+            callSid
         });
         return { success: true };
     }
@@ -288,7 +288,7 @@ async function handleCallAnswered(
     const answeredAt = new Date();
     await callRepo.update(callExecution.id, {
         call_status: "active",
-        answered_at: answeredAt,
+        answered_at: answeredAt
     });
 
     // Log event
@@ -296,9 +296,9 @@ async function handleCallAnswered(
         call_execution_id: callExecution.id,
         event_type: "call:answered",
         event_data: {
-            answer_time: payload.answer_time,
-        },
-        severity: "info",
+            answer_time: payload.answer_time || null
+        } as Record<string, JsonValue>,
+        severity: "info"
     });
 
     // Emit WebSocket event
@@ -311,7 +311,7 @@ async function handleCallAnswered(
     fastify.log.info({
         msg: "Call answered",
         callExecutionId: callExecution.id,
-        callSid,
+        callSid
     });
 
     return { success: true };
@@ -333,7 +333,7 @@ async function handleCallHangup(
     if (!callExecution) {
         fastify.log.warn({
             msg: "Call execution not found for hangup event",
-            callSid,
+            callSid
         });
         return { success: true };
     }
@@ -349,7 +349,7 @@ async function handleCallHangup(
         call_status: "completed",
         ended_at: endedAt,
         call_duration_seconds: callDuration,
-        hangup_cause: payload.hangup_cause || "normal",
+        hangup_cause: payload.hangup_cause || "normal"
     });
 
     // Log event
@@ -357,11 +357,11 @@ async function handleCallHangup(
         call_execution_id: callExecution.id,
         event_type: "call:hangup",
         event_data: {
-            hangup_cause: payload.hangup_cause,
-            hangup_source: payload.hangup_source,
-            duration_seconds: callDuration,
-        },
-        severity: "info",
+            hangup_cause: payload.hangup_cause || null,
+            hangup_source: payload.hangup_source || null,
+            duration_seconds: callDuration
+        } as Record<string, JsonValue>,
+        severity: "info"
     });
 
     // Emit WebSocket event
@@ -377,7 +377,7 @@ async function handleCallHangup(
         callExecutionId: callExecution.id,
         callSid,
         duration: callDuration,
-        hangupCause: payload.hangup_cause,
+        hangupCause: payload.hangup_cause
     });
 
     return { success: true };
@@ -394,7 +394,7 @@ function isWithinBusinessHours(now: Date, hoursStr: string, timezone: string): b
         now.toLocaleTimeString("en-US", {
             hour: "2-digit",
             hour12: false,
-            timeZone: timezone,
+            timeZone: timezone
         })
     );
 

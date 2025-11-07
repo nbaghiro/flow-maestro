@@ -9,6 +9,7 @@ import {
     getWorkflow,
     type WorkflowDefinition
 } from "../lib/api";
+import type { WorkflowNode } from "@flowmaestro/shared";
 import { CreateWorkflowDialog } from "../components/CreateWorkflowDialog";
 import { AIGenerateDialog } from "../components/AIGenerateDialog";
 import { ErrorDialog } from "../components/ErrorDialog";
@@ -112,16 +113,22 @@ export function Workflows() {
                 const workflowId = createResponse.data.id;
 
                 // Convert React Flow format back to backend format for saving
-                const nodesMap: Record<string, any> = {};
+                const nodesMap: Record<string, Record<string, unknown>> = {};
                 flowNodes.forEach((node) => {
-                    const { label, onError, ...config } = (node.data || {}) as any;
-                    nodesMap[node.id] = {
+                    const { label, onError, ...config } = (node.data || {}) as Record<
+                        string,
+                        unknown
+                    >;
+                    const nodeEntry: Record<string, unknown> = {
                         type: node.type || "default",
                         name: label || node.id,
                         config: config,
-                        position: node.position,
-                        ...(onError && { onError })
+                        position: node.position
                     };
+                    if (onError && typeof onError === "object") {
+                        nodeEntry.onError = onError;
+                    }
+                    nodesMap[node.id] = nodeEntry;
                 });
 
                 // Find entry point
@@ -130,7 +137,7 @@ export function Workflows() {
 
                 const workflowDefinition = {
                     name: workflowName,
-                    nodes: nodesMap,
+                    nodes: nodesMap as unknown as Record<string, WorkflowNode>,
                     edges: flowEdges.map((edge) => ({
                         id: edge.id,
                         source: edge.source,
@@ -165,11 +172,12 @@ export function Workflows() {
             // Refresh the workflow list
             await loadWorkflows();
             setWorkflowToDelete(null);
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Failed to delete workflow:", error);
+            const err = error as { message?: string };
             setError({
                 title: "Delete Failed",
-                message: error.message || "Failed to delete workflow. Please try again."
+                message: err.message || "Failed to delete workflow. Please try again."
             });
         } finally {
             setIsDeleting(false);
@@ -234,11 +242,12 @@ export function Workflows() {
                 // Navigate to the new workflow
                 navigate(`/builder/${createData.data.id}`);
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
+            const err = error as { message?: string };
             console.error("Failed to duplicate workflow:", error);
             setError({
                 title: "Duplicate Failed",
-                message: error.message || "Failed to duplicate workflow. Please try again."
+                message: err.message || "Failed to duplicate workflow. Please try again."
             });
         }
     };

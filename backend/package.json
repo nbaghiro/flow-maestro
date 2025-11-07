@@ -54,6 +54,7 @@
         "livekit-client": "^2.15.14",
         "livekit-server-sdk": "^2.14.0",
         "mammoth": "^1.8.0",
+        "mathjs": "^15.1.0",
         "mongodb": "^6.20.0",
         "nanoid": "^5.1.6",
         "node-web-audio-api": "^1.0.4",

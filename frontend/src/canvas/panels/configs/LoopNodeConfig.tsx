@@ -5,8 +5,8 @@ import { CodeInput } from "../../../components/CodeInput";
 import { VariableDialog } from "../../../components/VariableDialog";
 
 interface LoopNodeConfigProps {
-    data: any;
-    onUpdate: (config: any) => void;
+    data: Record<string, unknown>;
+    onUpdate: (config: unknown) => void;
 }
 
 const loopTypes = [
@@ -16,16 +16,16 @@ const loopTypes = [
 ];
 
 export function LoopNodeConfig({ data, onUpdate }: LoopNodeConfigProps) {
-    const [loopType, setLoopType] = useState(data.loopType || "forEach");
-    const [arrayVariable, setArrayVariable] = useState(data.arrayVariable || "");
-    const [itemVariable, setItemVariable] = useState(data.itemVariable || "item");
-    const [indexVariable, setIndexVariable] = useState(data.indexVariable || "index");
-    const [condition, setCondition] = useState(data.condition || "");
-    const [count, setCount] = useState(data.count || 10);
-    const [maxIterations, setMaxIterations] = useState(data.maxIterations || 1000);
-    const [outputVariable, setOutputVariable] = useState(data.outputVariable || "");
-    const [initialVariables, setInitialVariables] = useState<Record<string, any>>(
-        data.initialVariables || {}
+    const [loopType, setLoopType] = useState((data.loopType as string) || "forEach");
+    const [arrayVariable, setArrayVariable] = useState((data.arrayVariable as string) || "");
+    const [itemVariable, setItemVariable] = useState((data.itemVariable as string) || "item");
+    const [indexVariable, setIndexVariable] = useState((data.indexVariable as string) || "index");
+    const [condition, setCondition] = useState((data.condition as string) || "");
+    const [count, setCount] = useState((data.count as number) || 10);
+    const [maxIterations, setMaxIterations] = useState((data.maxIterations as number) || 1000);
+    const [outputVariable, setOutputVariable] = useState((data.outputVariable as string) || "");
+    const [initialVariables, setInitialVariables] = useState<Record<string, unknown>>(
+        (data.initialVariables as Record<string, unknown>) || {}
     );
     const [showVariableDialog, setShowVariableDialog] = useState(false);
 
@@ -58,13 +58,13 @@ export function LoopNodeConfig({ data, onUpdate }: LoopNodeConfigProps) {
         setShowVariableDialog(true);
     };
 
-    const handleConfirmVariable = (varName: string, initialValue: any) => {
+    const handleConfirmVariable = (varName: string, initialValue: unknown) => {
         if (varName && !initialVariables[varName]) {
             setInitialVariables({ ...initialVariables, [varName]: initialValue });
         }
     };
 
-    const handleUpdateInitialVariable = (key: string, value: any) => {
+    const handleUpdateInitialVariable = (key: string, value: unknown) => {
         setInitialVariables({ ...initialVariables, [key]: value });
     };
 
@@ -178,7 +178,7 @@ export function LoopNodeConfig({ data, onUpdate }: LoopNodeConfigProps) {
                                                             : JSON.stringify(value)
                                                     }
                                                     onChange={(e) => {
-                                                        let parsedValue: any = e.target.value;
+                                                        let parsedValue: unknown = e.target.value;
                                                         // Try to parse as boolean
                                                         if (e.target.value === "true")
                                                             parsedValue = true;
@@ -317,7 +317,7 @@ export function LoopNodeConfig({ data, onUpdate }: LoopNodeConfigProps) {
 
             <FormSection title="Output Settings">
                 <OutputSettingsSection
-                    nodeName={data.label || "Loop"}
+                    nodeName={(data.label as string) || "Loop"}
                     nodeType="loop"
                     value={outputVariable}
                     onChange={setOutputVariable}

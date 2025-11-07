@@ -18,14 +18,14 @@ export const cluster = new gcp.container.Cluster(resourceName("cluster"), {
     // IP allocation policy for VPC-native cluster
     ipAllocationPolicy: {
         clusterSecondaryRangeName: "pods",
-        servicesSecondaryRangeName: "services",
+        servicesSecondaryRangeName: "services"
     },
 
     // Private cluster configuration
     privateClusterConfig: {
         enablePrivateNodes: true,
         enablePrivateEndpoint: false, // Allow public access to control plane
-        masterIpv4CidrBlock: "172.16.0.0/28",
+        masterIpv4CidrBlock: "172.16.0.0/28"
     },
 
     // Master authorized networks (optional - can restrict control plane access)
@@ -33,39 +33,39 @@ export const cluster = new gcp.container.Cluster(resourceName("cluster"), {
         cidrBlocks: [
             {
                 displayName: "All",
-                cidrBlock: "0.0.0.0/0",
-            },
-        ],
+                cidrBlock: "0.0.0.0/0"
+            }
+        ]
     },
 
     // Workload Identity for GKE
     workloadIdentityConfig: {
-        workloadPool: `${infrastructureConfig.project}.svc.id.goog`,
+        workloadPool: `${infrastructureConfig.project}.svc.id.goog`
     },
 
     // Release channel for automatic upgrades
     releaseChannel: {
-        channel: "REGULAR",
+        channel: "REGULAR"
     },
 
     // Maintenance window
     maintenancePolicy: {
         dailyMaintenanceWindow: {
-            startTime: "03:00",
-        },
+            startTime: "03:00"
+        }
     },
 
     // Addons
     addonsConfig: {
         httpLoadBalancing: {
-            disabled: false,
+            disabled: false
         },
         horizontalPodAutoscaling: {
-            disabled: false,
+            disabled: false
         },
         gcePersistentDiskCsiDriverConfig: {
-            enabled: true,
-        },
+            enabled: true
+        }
     },
 
     // Logging and monitoring
@@ -77,44 +77,41 @@ export const cluster = new gcp.container.Cluster(resourceName("cluster"), {
 
     // Enable binary authorization (optional security feature)
     binaryAuthorization: {
-        evaluationMode: "DISABLED", // Set to "PROJECT_SINGLETON_POLICY_ENFORCE" for stricter security
+        evaluationMode: "DISABLED" // Set to "PROJECT_SINGLETON_POLICY_ENFORCE" for stricter security
     },
 
     // Network policy
     networkPolicy: {
         enabled: true,
-        provider: "PROVIDER_UNSPECIFIED", // Autopilot manages this
+        provider: "PROVIDER_UNSPECIFIED" // Autopilot manages this
     },
 
     // Security posture
     securityPostureConfig: {
-        mode: "BASIC",
-    },
+        mode: "BASIC"
+    }
 });
 
 // Create a service account for Kubernetes workloads
-export const k8sServiceAccount = new gcp.serviceaccount.Account(
-    resourceName("k8s-sa"),
-    {
-        accountId: resourceName("k8s-sa"),
-        displayName: "FlowMaestro Kubernetes Service Account",
-        description: "Service account for FlowMaestro workloads in GKE",
-    }
-);
+export const k8sServiceAccount = new gcp.serviceaccount.Account(resourceName("k8s-sa"), {
+    accountId: resourceName("k8s-sa"),
+    displayName: "FlowMaestro Kubernetes Service Account",
+    description: "Service account for FlowMaestro workloads in GKE"
+});
 
 // Grant necessary IAM roles to the service account
 // Cloud SQL Client
 new gcp.projects.IAMMember(resourceName("k8s-sa-cloudsql"), {
     project: infrastructureConfig.project,
     role: "roles/cloudsql.client",
-    member: pulumi.interpolate`serviceAccount:${k8sServiceAccount.email}`,
+    member: pulumi.interpolate`serviceAccount:${k8sServiceAccount.email}`
 });
 
 // Secret Manager Secret Accessor
 new gcp.projects.IAMMember(resourceName("k8s-sa-secrets"), {
     project: infrastructureConfig.project,
     role: "roles/secretmanager.secretAccessor",
-    member: pulumi.interpolate`serviceAccount:${k8sServiceAccount.email}`,
+    member: pulumi.interpolate`serviceAccount:${k8sServiceAccount.email}`
 });
 
 // Allow Kubernetes service account to impersonate GCP service account
@@ -122,8 +119,8 @@ new gcp.serviceaccount.IAMBinding(resourceName("k8s-sa-workload-identity"), {
     serviceAccountId: k8sServiceAccount.name,
     role: "roles/iam.workloadIdentityUser",
     members: [
-        pulumi.interpolate`serviceAccount:${infrastructureConfig.project}.svc.id.goog[flowmaestro/flowmaestro-sa]`,
-    ],
+        pulumi.interpolate`serviceAccount:${infrastructureConfig.project}.svc.id.goog[flowmaestro/flowmaestro-sa]`
+    ]
 });
 
 // Get kubeconfig for the cluster
@@ -163,5 +160,5 @@ export const clusterOutputs = {
     clusterEndpoint: cluster.endpoint,
     clusterCaCertificate: cluster.masterAuth.apply((auth) => auth.clusterCaCertificate),
     kubeconfig: kubeconfig,
-    serviceAccountEmail: k8sServiceAccount.email,
+    serviceAccountEmail: k8sServiceAccount.email
 };

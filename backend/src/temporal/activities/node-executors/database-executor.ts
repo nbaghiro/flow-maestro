@@ -1,11 +1,11 @@
-import { Pool, PoolClient } from 'pg';
-import { MongoClient, Db, Document } from 'mongodb';
-import type { JsonObject, JsonValue } from '@flowmaestro/shared';
-import { interpolateVariables } from './utils';
+import { Pool, PoolClient } from "pg";
+import { MongoClient, Db, Document } from "mongodb";
+import type { JsonObject, JsonValue } from "@flowmaestro/shared";
+import { interpolateVariables } from "./utils";
 
 export interface DatabaseNodeConfig {
-    provider: 'postgresql' | 'mysql' | 'mongodb';
-    operation: 'query' | 'insert' | 'update' | 'delete';
+    provider: "postgresql" | "mysql" | "mongodb";
+    operation: "query" | "insert" | "update" | "delete";
 
     // Connection
     connectionString?: string;
@@ -72,16 +72,16 @@ export async function executeDatabaseNode(
     let result: DatabaseNodeResult;
 
     switch (config.provider) {
-        case 'postgresql':
+        case "postgresql":
             result = await executePostgreSQL(config, context);
             break;
 
-        case 'mongodb':
+        case "mongodb":
             result = await executeMongoDB(config, context);
             break;
 
-        case 'mysql':
-            throw new Error('MySQL provider not yet implemented');
+        case "mysql":
+            throw new Error("MySQL provider not yet implemented");
 
         default:
             throw new Error(`Unsupported database provider: ${config.provider}`);
@@ -90,10 +90,12 @@ export async function executeDatabaseNode(
     const queryTime = Date.now() - startTime;
     result.metadata = {
         ...result.metadata,
-        queryTime,
+        queryTime
     };
 
-    console.log(`[Database] Completed in ${queryTime}ms, ${result.rowCount || result.affectedRows || 0} rows`);
+    console.log(
+        `[Database] Completed in ${queryTime}ms, ${result.rowCount || result.affectedRows || 0} rows`
+    );
 
     if (config.outputVariable) {
         return { [config.outputVariable]: result } as unknown as JsonObject;
@@ -121,23 +123,23 @@ async function executePostgreSQL(
             connectionString,
             max: 10,
             idleTimeoutMillis: 30000,
-            connectionTimeoutMillis: config.timeout || 5000,
+            connectionTimeoutMillis: config.timeout || 5000
         });
         pgPools.set(connectionString, pool);
 
-        console.log('[Database/PostgreSQL] Created new connection pool');
+        console.log("[Database/PostgreSQL] Created new connection pool");
     }
 
     const client: PoolClient = await pool.connect();
 
     try {
-        if (config.operation === 'query') {
+        if (config.operation === "query") {
             // Execute SELECT query
-            const query = interpolateVariables(config.query || '', context);
+            const query = interpolateVariables(config.query || "", context);
             const parameters = Array.isArray(config.parameters)
-                ? config.parameters.map(p =>
-                    typeof p === 'string' ? interpolateVariables(p, context) : p
-                )
+                ? config.parameters.map((p) =>
+                      typeof p === "string" ? interpolateVariables(p, context) : p
+                  )
                 : [];
 
             console.log(`[Database/PostgreSQL] Executing query: ${query.substring(0, 100)}...`);
@@ -145,50 +147,48 @@ async function executePostgreSQL(
             const result = await client.query(query, parameters);
 
             // Limit rows if specified
-            const rows = config.maxRows
-                ? result.rows.slice(0, config.maxRows)
-                : result.rows;
+            const rows = config.maxRows ? result.rows.slice(0, config.maxRows) : result.rows;
 
             return {
-                operation: 'query',
-                provider: 'postgresql',
+                operation: "query",
+                provider: "postgresql",
                 rows,
                 rowCount: result.rowCount || 0,
                 metadata: {
                     queryTime: 0,
-                    rowsReturned: rows.length,
-                },
+                    rowsReturned: rows.length
+                }
             };
-        } else if (config.operation === 'insert') {
+        } else if (config.operation === "insert") {
             // Execute INSERT
-            const query = interpolateVariables(config.query || '', context);
+            const query = interpolateVariables(config.query || "", context);
             const parameters = Array.isArray(config.parameters)
-                ? config.parameters.map(p =>
-                    typeof p === 'string' ? interpolateVariables(p, context) : p
-                )
+                ? config.parameters.map((p) =>
+                      typeof p === "string" ? interpolateVariables(p, context) : p
+                  )
                 : [];
 
-            console.log(`[Database/PostgreSQL] Executing insert`);
+            console.log("[Database/PostgreSQL] Executing insert");
 
             const result = await client.query(query, parameters);
 
             return {
-                operation: 'insert',
-                provider: 'postgresql',
+                operation: "insert",
+                provider: "postgresql",
                 affectedRows: result.rowCount || 0,
                 insertId: result.rows[0]?.id, // If RETURNING id
                 metadata: {
                     queryTime: 0,
-                    rowsReturned: 0,
-                },
+                    rowsReturned: 0
+                }
             };
-        } else if (config.operation === 'update' || config.operation === 'delete') {
+        } else if (config.operation === "update" || config.operation === "delete") {
             // Execute UPDATE or DELETE
-            const query = interpolateVariables(config.query || '', context);
+            const query = interpolateVariables(config.query || "", context);
             const parameters = Array.isArray(config.parameters)
-                ? config.parameters.map(p =>
-                    typeof p === 'string' ? interpolateVariables(p, context) : p
-                )
+                ? config.parameters.map((p) =>
+                      typeof p === "string" ? interpolateVariables(p, context) : p
+                  )
                 : [];
 
             console.log(`[Database/PostgreSQL] Executing ${config.operation}`);
@@ -197,12 +197,12 @@ async function executePostgreSQL(
 
             return {
                 operation: config.operation,
-                provider: 'postgresql',
+                provider: "postgresql",
                 affectedRows: result.rowCount || 0,
                 metadata: {
                     queryTime: 0,
-                    rowsReturned: 0,
-                },
+                    rowsReturned: 0
+                }
             };
         } else {
             throw new Error(`Unsupported operation: ${config.operation}`);
@@ -229,20 +229,20 @@ async function executeMongoDB(
     if (!client) {
         client = new MongoClient(connectionString, {
             maxPoolSize: 10,
-            serverSelectionTimeoutMS: config.timeout || 5000,
+            serverSelectionTimeoutMS: config.timeout || 5000
         });
         await client.connect();
         mongoClients.set(connectionString, client);
 
-        console.log('[Database/MongoDB] Created new connection');
+        console.log("[Database/MongoDB] Created new connection");
     }
 
     const dbName = config.database || client.db().databaseName;
     const db: Db = client.db(dbName);
-    const collectionName = interpolateVariables(config.collection || '', context);
+    const collectionName = interpolateVariables(config.collection || "", context);
     const collection = db.collection(collectionName);
 
-    if (config.operation === 'query') {
+    if (config.operation === "query") {
         // Find documents
         const filter = interpolateObject(config.filter || {}, context) as Document;
         const projection = (config.projection || {}) as Document;
@@ -258,19 +258,19 @@ async function executeMongoDB(
             .limit(config.maxRows || limit)
             .skip(skip);
 
-        const rows = await cursor.toArray() as JsonObject[];
+        const rows = (await cursor.toArray()) as JsonObject[];
 
         return {
-            operation: 'query',
-            provider: 'mongodb',
+            operation: "query",
+            provider: "mongodb",
             rows,
             rowCount: rows.length,
             metadata: {
                 queryTime: 0,
-                rowsReturned: rows.length,
-            },
+                rowsReturned: rows.length
+            }
         };
-    } else if (config.operation === 'insert') {
+    } else if (config.operation === "insert") {
         // Insert document(s)
         const document = interpolateObject(config.document || {}, context);
 
@@ -279,29 +279,29 @@ async function executeMongoDB(
         if (Array.isArray(document)) {
             const result = await collection.insertMany(document as Document[]);
             return {
-                operation: 'insert',
-                provider: 'mongodb',
+                operation: "insert",
+                provider: "mongodb",
                 affectedRows: result.insertedCount,
-                insertId: Object.values(result.insertedIds).map(id => id.toString()),
+                insertId: Object.values(result.insertedIds).map((id) => id.toString()),
                 metadata: {
                     queryTime: 0,
-                    rowsReturned: 0,
-                },
+                    rowsReturned: 0
+                }
             };
         } else {
             const result = await collection.insertOne(document as Document);
             return {
-                operation: 'insert',
-                provider: 'mongodb',
+                operation: "insert",
+                provider: "mongodb",
                 affectedRows: result.acknowledged ? 1 : 0,
                 insertId: result.insertedId.toString(),
                 metadata: {
                     queryTime: 0,
-                    rowsReturned: 0,
-                },
+                    rowsReturned: 0
+                }
             };
         }
-    } else if (config.operation === 'update') {
+    } else if (config.operation === "update") {
         // Update document(s)
         const filter = interpolateObject(config.filter || {}, context) as Document;
         const update = interpolateObject(config.update || {}, context) as Document;
@@ -311,15 +311,15 @@ async function executeMongoDB(
         const result = await collection.updateMany(filter, update);
 
         return {
-            operation: 'update',
-            provider: 'mongodb',
+            operation: "update",
+            provider: "mongodb",
             affectedRows: result.modifiedCount,
             metadata: {
                 queryTime: 0,
-                rowsReturned: 0,
-            },
+                rowsReturned: 0
+            }
         };
-    } else if (config.operation === 'delete') {
+    } else if (config.operation === "delete") {
         // Delete document(s)
         const filter = interpolateObject(config.filter || {}, context) as Document;
 
@@ -328,13 +328,13 @@ async function executeMongoDB(
         const result = await collection.deleteMany(filter);
 
         return {
-            operation: 'delete',
-            provider: 'mongodb',
+            operation: "delete",
+            provider: "mongodb",
             affectedRows: result.deletedCount,
             metadata: {
                 queryTime: 0,
-                rowsReturned: 0,
-            },
+                rowsReturned: 0
+            }
         };
     } else {
         throw new Error(`Unsupported operation: ${config.operation}`);
@@ -345,11 +345,11 @@ async function executeMongoDB(
  * Build PostgreSQL connection string from config
  */
 function buildPostgreSQLConnectionString(config: DatabaseNodeConfig, context: JsonObject): string {
-    const host = interpolateVariables(config.host || 'localhost', context);
+    const host = interpolateVariables(config.host || "localhost", context);
     const port = config.port || 5432;
-    const database = interpolateVariables(config.database || '', context);
-    const username = interpolateVariables(config.username || '', context);
-    const password = interpolateVariables(config.password || '', context);
+    const database = interpolateVariables(config.database || "", context);
+    const username = interpolateVariables(config.username || "", context);
+    const password = interpolateVariables(config.password || "", context);
 
     return `postgresql://${username}:${password}@${host}:${port}/${database}`;
 }
@@ -358,11 +358,11 @@ function buildPostgreSQLConnectionString(config: DatabaseNodeConfig, context: Js
  * Build MongoDB connection string from config
  */
 function buildMongoDBConnectionString(config: DatabaseNodeConfig, context: JsonObject): string {
-    const host = interpolateVariables(config.host || 'localhost', context);
+    const host = interpolateVariables(config.host || "localhost", context);
     const port = config.port || 27017;
-    const database = interpolateVariables(config.database || 'test', context);
-    const username = interpolateVariables(config.username || '', context);
-    const password = interpolateVariables(config.password || '', context);
+    const database = interpolateVariables(config.database || "test", context);
+    const username = interpolateVariables(config.username || "", context);
+    const password = interpolateVariables(config.password || "", context);
 
     if (username && password) {
         return `mongodb://${username}:${password}@${host}:${port}/${database}`;
@@ -375,11 +375,11 @@ function buildMongoDBConnectionString(config: DatabaseNodeConfig, context: JsonO
  * Interpolate variables in an object recursively
  */
 function interpolateObject(obj: JsonValue, context: JsonObject): JsonValue {
-    if (typeof obj === 'string') {
+    if (typeof obj === "string") {
         return interpolateVariables(obj, context);
     } else if (Array.isArray(obj)) {
-        return obj.map(item => interpolateObject(item, context));
-    } else if (obj && typeof obj === 'object') {
+        return obj.map((item) => interpolateObject(item, context));
+    } else if (obj && typeof obj === "object") {
         const result: JsonObject = {};
         for (const key in obj) {
             if (Object.prototype.hasOwnProperty.call(obj, key)) {
@@ -395,7 +395,7 @@ function interpolateObject(obj: JsonValue, context: JsonObject): JsonValue {
  * Clean up all database connections (call on shutdown)
  */
 export async function closeDatabaseConnections(): Promise<void> {
-    console.log('[Database] Closing all database connections');
+    console.log("[Database] Closing all database connections");
 
     // Close PostgreSQL pools
     for (const [key, pool] of pgPools.entries()) {
@@ -409,5 +409,5 @@ export async function closeDatabaseConnections(): Promise<void> {
         mongoClients.delete(key);
     }
 
-    console.log('[Database] All connections closed');
+    console.log("[Database] All connections closed");
 }

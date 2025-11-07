@@ -5,12 +5,12 @@ import { CallExecutionRepository } from "../../../storage/repositories/CallExecu
 import { globalEventEmitter } from "../../../shared/events/EventEmitter";
 
 export interface VoiceGreetNodeConfig {
-    message: string;                    // Text to speak (supports variable interpolation)
-    voice?: string;                     // Voice ID (e.g., ElevenLabs voice ID)
-    voiceProvider?: "elevenlabs" | "openai";  // TTS provider
-    speed?: number;                     // Speech speed (0.5 to 2.0)
-    interruptible?: boolean;            // Can user interrupt?
-    outputVariable?: string;            // Where to store result
+    message: string; // Text to speak (supports variable interpolation)
+    voice?: string; // Voice ID (e.g., ElevenLabs voice ID)
+    voiceProvider?: "elevenlabs" | "openai"; // TTS provider
+    speed?: number; // Speech speed (0.5 to 2.0)
+    interruptible?: boolean; // Can user interrupt?
+    outputVariable?: string; // Where to store result
 }
 
 export interface VoiceGreetNodeResult {
@@ -53,7 +53,7 @@ export async function executeVoiceGreetNode(
                 voice: config.voice,
                 voiceProvider: config.voiceProvider || "elevenlabs",
                 speed: config.speed || 1.0,
-                interruptible: config.interruptible !== false,
+                interruptible: config.interruptible !== false
             },
             60000 // 60 second timeout (TTS can take a while)
         );
@@ -64,28 +64,31 @@ export async function executeVoiceGreetNode(
 
         // Log transcript (agent speaking)
         const callRepo = new CallExecutionRepository();
+
+        interface SpeakCommandResult {
+            durationMs?: number;
+            interrupted?: boolean;
+        }
+
+        const commandResult = (response.result || {}) as SpeakCommandResult;
+
         await callRepo.createTranscript({
             call_execution_id: callExecutionId,
             speaker: "agent",
             text: message,
             started_at: new Date(),
             is_final: true,
-            interrupted: response.result?.interrupted || false,
+            interrupted: commandResult.interrupted || false
         });
 
         // Emit real-time transcript event
-        globalEventEmitter.emitCallTranscript(
-            callExecutionId,
-            "agent",
-            message,
-            true
-        );
+        globalEventEmitter.emitCallTranscript(callExecutionId, "agent", message, true);
 
         const result: VoiceGreetNodeResult = {
             success: true,
             message,
-            durationMs: response.result?.durationMs,
-            interrupted: response.result?.interrupted,
+            durationMs: commandResult.durationMs,
+            interrupted: commandResult.interrupted
         };
 
         console.log("[VoiceGreet] TTS playback completed", result);
@@ -95,13 +98,14 @@ export async function executeVoiceGreetNode(
         }
 
         return result as unknown as JsonObject;
-    } catch (error: any) {
-        console.error("[VoiceGreet] Error:", error.message);
+    } catch (error: unknown) {
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        console.error("[VoiceGreet] Error:", errorMsg);
 
         const result: VoiceGreetNodeResult = {
             success: false,
             message,
-            error: error.message,
+            error: errorMsg
         };
 
         if (config.outputVariable) {

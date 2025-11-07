@@ -46,6 +46,7 @@ Integrating Mastra would reduce development time by an estimated **60-70%** and 
 Mastra is a **TypeScript-native AI agent framework** built by the team behind Gatsby, designed for building production-ready agentic applications. It provides a cohesive, batteries-included approach spanning from local development to production deployment.
 
 **GitHub Stats:**
+
 - ⭐ 18,000+ stars
 - 👥 257 contributors
 - 📦 10,969+ commits
@@ -54,24 +55,28 @@ Mastra is a **TypeScript-native AI agent framework** built by the team behind Ga
 ### 1.2 Core Architecture Components
 
 #### **1. Agents**
+
 - Autonomous agents using ReAct (Reasoning + Acting) pattern
 - Tool selection and execution
 - Conversation memory with configurable strategies
 - Multi-step reasoning with iteration control
 
 #### **2. Model Routing**
+
 - Unified interface for 40+ LLM providers
 - Supports OpenAI, Anthropic, Google, Gemini, Llama, Cohere, and more
 - AI SDK v5 integration (backwards compatible with v4)
 - Automatic model switching and fallback
 
 #### **3. Workflows**
+
 - Graph-based state machines for deterministic processes
 - Intuitive control flow: `.then()`, `.branch()`, `.parallel()`
 - Conditional logic and parallel execution
 - Human-in-the-loop support with state persistence
 
 #### **4. Tools & MCP**
+
 - `createTool()` function for custom tools with Zod schemas
 - Two-way MCP support (client + server)
 - MCPClient: Connect to external MCP servers
@@ -79,6 +84,7 @@ Mastra is a **TypeScript-native AI agent framework** built by the team behind Ga
 - Support for local (npx) and remote (HTTP) MCP servers
 
 #### **5. RAG System**
+
 - Document processing with configurable chunking strategies
 - Multiple vector store backends (pgvector, Pinecone, Qdrant, MongoDB)
 - Embedding generation (OpenAI, FastEmbed, etc.)
@@ -86,6 +92,7 @@ Mastra is a **TypeScript-native AI agent framework** built by the team behind Ga
 - Built-in observability for RAG pipelines
 
 #### **6. Memory Management**
+
 - **Working Memory**: Track user characteristics and preferences
 - **Semantic Recall**: RAG-based message retrieval by semantic similarity
 - Multiple storage backends (PostgreSQL, LibSQL, Upstash)
@@ -93,6 +100,7 @@ Mastra is a **TypeScript-native AI agent framework** built by the team behind Ga
 - 80% accuracy demonstrated in benchmarks
 
 #### **7. Streaming**
+
 - Real-time token streaming for agents and workflows
 - Two APIs: `.stream()` (v5) and `.streamLegacy()` (v4)
 - Output format options: 'mastra' or 'aisdk'
@@ -100,6 +108,7 @@ Mastra is a **TypeScript-native AI agent framework** built by the team behind Ga
 - Structured output streaming with Zod schemas
 
 #### **8. Observability**
+
 - Built-in OpenTelemetry traces
 - Automatic span creation for agent runs, model calls, tool executions
 - Local playground with tracing visualization
@@ -107,6 +116,7 @@ Mastra is a **TypeScript-native AI agent framework** built by the team behind Ga
 - Performance monitoring and cost tracking
 
 #### **9. Local Development**
+
 - `mastra dev` command launches integrated playground
 - Interactive testing for agents, tools, and workflows
 - Real-time trace visualization
@@ -116,18 +126,21 @@ Mastra is a **TypeScript-native AI agent framework** built by the team behind Ga
 ### 1.3 Key Advantages Over Alternatives
 
 **vs LangChain:**
+
 - TypeScript-native (not a Python port)
 - Cohesive architecture vs modular fragments
 - Better observability out-of-the-box
 - Simpler API with less boilerplate
 
 **vs LangGraph:**
+
 - Lower learning curve
 - No Docker required for deployment
 - Native TypeScript support (not an afterthought)
 - Integrated playground for local development
 
 **vs Custom Implementation:**
+
 - Production-tested by thousands of developers
 - Active maintenance and community support
 - Comprehensive documentation and examples
@@ -140,6 +153,7 @@ Mastra is a **TypeScript-native AI agent framework** built by the team behind Ga
 ### 2.1 What FlowMaestro Has Implemented
 
 #### **✅ Solid Foundation:**
+
 1. **Database Schema**: Complete tables for agents, executions, messages
 2. **API Layer**: 11 REST endpoints for CRUD operations
 3. **Temporal Integration**: Durable workflow orchestration
@@ -156,51 +170,52 @@ Mastra is a **TypeScript-native AI agent framework** built by the team behind Ga
 #### **❌ Critical Gaps:**
 
 1. **Memory Management**
-   - ❌ "summary" type not implemented
-   - ❌ "vector" type not implemented
-   - ❌ Only "buffer" (store all messages) works
-   - ❌ No semantic recall or RAG-based memory
+    - ❌ "summary" type not implemented
+    - ❌ "vector" type not implemented
+    - ❌ Only "buffer" (store all messages) works
+    - ❌ No semantic recall or RAG-based memory
 
 2. **Tool Execution**
-   - ❌ Workflow tools have placeholder implementation
-   - ❌ Knowledge base tools not implemented
-   - ❌ Limited function tools (only 2, one uses eval - security risk)
-   - ❌ No tool testing or validation UI
+    - ❌ Workflow tools have placeholder implementation
+    - ❌ Knowledge base tools not implemented
+    - ❌ Limited function tools (only 2, one uses eval - security risk)
+    - ❌ No tool testing or validation UI
 
 3. **LLM Providers**
-   - ❌ Google not implemented
-   - ❌ Cohere not implemented
-   - ❌ No model routing or fallback logic
-   - ❌ Hard-coded API integrations
+    - ❌ Google not implemented
+    - ❌ Cohere not implemented
+    - ❌ No model routing or fallback logic
+    - ❌ Hard-coded API integrations
 
 4. **MCP Integration**
-   - ❌ MCP tools can be discovered but not executed in agent flow
-   - ❌ Missing integration between tool execution and MCP service
-   - ❌ No MCP server exposing FlowMaestro capabilities
+    - ❌ MCP tools can be discovered but not executed in agent flow
+    - ❌ Missing integration between tool execution and MCP service
+    - ❌ No MCP server exposing FlowMaestro capabilities
 
 5. **Streaming**
-   - ❌ No real-time token streaming to client
-   - ❌ Event-based updates only (not true streaming)
-   - ❌ No structured output streaming
+    - ❌ No real-time token streaming to client
+    - ❌ Event-based updates only (not true streaming)
+    - ❌ No structured output streaming
 
 6. **Observability**
-   - ❌ No tracing or debugging UI
-   - ❌ Limited visibility into agent reasoning
-   - ❌ No performance metrics or cost tracking
+    - ❌ No tracing or debugging UI
+    - ❌ Limited visibility into agent reasoning
+    - ❌ No performance metrics or cost tracking
 
 7. **Development Experience**
-   - ❌ No local playground for testing agents
-   - ❌ Manual testing via API calls or UI
-   - ❌ No integrated debugging tools
+    - ❌ No local playground for testing agents
+    - ❌ Manual testing via API calls or UI
+    - ❌ No integrated debugging tools
 
 8. **Agent Builder UI**
-   - ❌ Missing visual agent configuration
-   - ❌ No tool testing interface
-   - ❌ Incomplete chat UI integration
+    - ❌ Missing visual agent configuration
+    - ❌ No tool testing interface
+    - ❌ Incomplete chat UI integration
 
 ### 2.3 Development Effort Required
 
 **Estimated time to build missing features from scratch:**
+
 - Memory management (summary + vector): **4-6 weeks**
 - Tool execution completion: **2-3 weeks**
 - Additional LLM providers: **2-3 weeks**
@@ -216,29 +231,30 @@ Mastra is a **TypeScript-native AI agent framework** built by the team behind Ga
 
 ## 3. Feature Comparison Matrix
 
-| Feature | FlowMaestro Current | Mastra.ai | Gap Analysis |
-|---------|-------------------|-----------|--------------|
-| **Agent Execution** | ✅ Custom ReAct loop | ✅ Production-tested ReAct | Mastra more robust |
-| **LLM Providers** | ⚠️ OpenAI, Anthropic only | ✅ 40+ providers | Missing 38+ providers |
-| **Model Routing** | ❌ Not implemented | ✅ Unified interface | Critical gap |
-| **Tool Creation** | ⚠️ Custom schema | ✅ `createTool()` + Zod | Mastra more ergonomic |
-| **Tool Execution** | ⚠️ Partially working | ✅ Full support | Missing implementations |
-| **MCP Client** | ⚠️ Discovery only | ✅ Full integration | Execution gap |
-| **MCP Server** | ❌ Not implemented | ✅ Full server | Critical gap |
-| **Memory - Buffer** | ✅ Implemented | ✅ Implemented | Equal |
-| **Memory - Summary** | ❌ Not implemented | ✅ Implemented | Critical gap |
-| **Memory - Vector/RAG** | ❌ Not implemented | ✅ Implemented | Critical gap |
-| **Streaming** | ❌ Events only | ✅ True streaming | Critical gap |
-| **Workflows** | ✅ Temporal-based | ✅ Graph-based | Different approaches |
-| **Observability** | ❌ Basic events | ✅ Full tracing | Critical gap |
-| **Local Playground** | ❌ Not implemented | ✅ Integrated UI | Critical gap |
-| **Agent Builder UI** | ⚠️ Basic components | ⚠️ Not included | Both need work |
-| **Database** | ✅ PostgreSQL | ⚠️ Optional (in-memory or DB) | FlowMaestro more robust |
-| **Durable Execution** | ✅ Temporal | ⚠️ State persistence | FlowMaestro advantage |
-| **Multi-tenancy** | ✅ Built-in | ⚠️ App-level | FlowMaestro advantage |
-| **Real-time Events** | ✅ Redis + WebSocket | ⚠️ Not core feature | FlowMaestro advantage |
+| Feature                 | FlowMaestro Current       | Mastra.ai                     | Gap Analysis            |
+| ----------------------- | ------------------------- | ----------------------------- | ----------------------- |
+| **Agent Execution**     | ✅ Custom ReAct loop      | ✅ Production-tested ReAct    | Mastra more robust      |
+| **LLM Providers**       | ⚠️ OpenAI, Anthropic only | ✅ 40+ providers              | Missing 38+ providers   |
+| **Model Routing**       | ❌ Not implemented        | ✅ Unified interface          | Critical gap            |
+| **Tool Creation**       | ⚠️ Custom schema          | ✅ `createTool()` + Zod       | Mastra more ergonomic   |
+| **Tool Execution**      | ⚠️ Partially working      | ✅ Full support               | Missing implementations |
+| **MCP Client**          | ⚠️ Discovery only         | ✅ Full integration           | Execution gap           |
+| **MCP Server**          | ❌ Not implemented        | ✅ Full server                | Critical gap            |
+| **Memory - Buffer**     | ✅ Implemented            | ✅ Implemented                | Equal                   |
+| **Memory - Summary**    | ❌ Not implemented        | ✅ Implemented                | Critical gap            |
+| **Memory - Vector/RAG** | ❌ Not implemented        | ✅ Implemented                | Critical gap            |
+| **Streaming**           | ❌ Events only            | ✅ True streaming             | Critical gap            |
+| **Workflows**           | ✅ Temporal-based         | ✅ Graph-based                | Different approaches    |
+| **Observability**       | ❌ Basic events           | ✅ Full tracing               | Critical gap            |
+| **Local Playground**    | ❌ Not implemented        | ✅ Integrated UI              | Critical gap            |
+| **Agent Builder UI**    | ⚠️ Basic components       | ⚠️ Not included               | Both need work          |
+| **Database**            | ✅ PostgreSQL             | ⚠️ Optional (in-memory or DB) | FlowMaestro more robust |
+| **Durable Execution**   | ✅ Temporal               | ⚠️ State persistence          | FlowMaestro advantage   |
+| **Multi-tenancy**       | ✅ Built-in               | ⚠️ App-level                  | FlowMaestro advantage   |
+| **Real-time Events**    | ✅ Redis + WebSocket      | ⚠️ Not core feature           | FlowMaestro advantage   |
 
 **Legend:**
+
 - ✅ Fully implemented
 - ⚠️ Partially implemented or different approach
 - ❌ Not implemented
@@ -246,12 +262,14 @@ Mastra is a **TypeScript-native AI agent framework** built by the team behind Ga
 ### 3.1 Key Insights
 
 **FlowMaestro Advantages:**
+
 1. Temporal-based durable execution (enterprise-grade reliability)
 2. Multi-tenant architecture with user isolation
 3. PostgreSQL persistence with audit trails
 4. Real-time event streaming via Redis
 
 **Mastra Advantages:**
+
 1. 40+ LLM provider support with unified interface
 2. Complete RAG/vector memory implementation
 3. True token streaming
@@ -269,6 +287,7 @@ Mastra is a **TypeScript-native AI agent framework** built by the team behind Ga
 **Problem:** Building missing features from scratch would take 7-10 months.
 
 **Solution:** Mastra provides production-ready implementations of:
+
 - Memory management (summary + vector)
 - Tool creation and execution patterns
 - Model routing for 40+ providers
@@ -285,12 +304,14 @@ Mastra is a **TypeScript-native AI agent framework** built by the team behind Ga
 **Problem:** FlowMaestro's memory system only supports "buffer" type (store all messages). No summarization or semantic recall.
 
 **Mastra Solution:**
+
 - **Working Memory**: Store user preferences, context, and characteristics
 - **Semantic Recall**: RAG-based retrieval of relevant past conversations
 - **Multiple Backends**: PostgreSQL (already used by FlowMaestro), LibSQL, Upstash
 - **Proven Performance**: 80% accuracy in memory recall benchmarks
 
 **Code Example:**
+
 ```typescript
 import { Agent } from "@mastra/core";
 import { PostgresMemory } from "@mastra/memory";
@@ -300,16 +321,15 @@ const agent = new Agent({
     model: openai("gpt-4o"),
     memory: new PostgresMemory({
         connectionString: process.env.DATABASE_URL,
-        tableName: "agent_memory",
+        tableName: "agent_memory"
     }),
-    tools: { queryKnowledgeBase, createTicket },
+    tools: { queryKnowledgeBase, createTicket }
 });
 
 // Memory automatically persists across conversations
-const response = await agent.generate(
-    "What did I ask about billing last week?",
-    { userId: "user-123" }
-);
+const response = await agent.generate("What did I ask about billing last week?", {
+    userId: "user-123"
+});
 ```
 
 ---
@@ -319,12 +339,14 @@ const response = await agent.generate(
 **Problem:** FlowMaestro only supports OpenAI and Anthropic. Adding more providers requires manual API integration for each.
 
 **Mastra Solution:**
+
 - Unified interface via AI SDK for 40+ providers
 - Model routing with automatic fallback
 - Cost optimization by routing to cheaper models
 - Provider-agnostic code
 
 **Before (FlowMaestro):**
+
 ```typescript
 // Must write custom integration for each provider
 async function callLLM(input) {
@@ -342,13 +364,14 @@ async function callLLM(input) {
 ```
 
 **After (with Mastra):**
+
 ```typescript
 import { Agent } from "@mastra/core";
 import { openai, anthropic, google, cohere } from "@ai-sdk/...";
 
 // Works with any provider immediately
 const agent = new Agent({
-    model: google("gemini-pro"), // Just swap the model!
+    model: google("gemini-pro") // Just swap the model!
     // ... rest of config
 });
 ```
@@ -360,12 +383,14 @@ const agent = new Agent({
 **Problem:** FlowMaestro uses event-based updates (message sent after completion), not true streaming.
 
 **Mastra Solution:**
+
 - Server-sent events (SSE) for real-time token delivery
 - Structured output streaming with Zod schemas
 - Compatible with Vercel AI SDK UI components
 - Two formats: 'mastra' and 'aisdk'
 
 **Implementation:**
+
 ```typescript
 // Backend
 import { Agent } from "@mastra/core";
@@ -407,6 +432,7 @@ export function AgentChat() {
 **Problem:** Testing agents requires hitting API endpoints or building custom UI. No debugging visibility.
 
 **Mastra Solution:**
+
 - `mastra dev` command launches integrated playground at `http://localhost:4111`
 - Interactive chat interface for testing agents
 - Tool execution testing
@@ -415,6 +441,7 @@ export function AgentChat() {
 - Hot reload support
 
 **Developer Experience:**
+
 ```bash
 # Launch playground
 $ mastra dev
@@ -436,6 +463,7 @@ $ mastra dev
 **Problem:** FlowMaestro's knowledge base tool type is defined but not implemented.
 
 **Mastra Solution:**
+
 - Document processing with chunking strategies (recursive, sliding window)
 - Embedding generation (OpenAI, FastEmbed, etc.)
 - Multiple vector stores (pgvector, Pinecone, Qdrant, MongoDB)
@@ -443,6 +471,7 @@ $ mastra dev
 - Built-in observability for RAG pipelines
 
 **Implementation:**
+
 ```typescript
 import { RAG } from "@mastra/rag";
 import { PgVector } from "@mastra/rag/vectors";
@@ -451,19 +480,19 @@ import { OpenAIEmbedding } from "@mastra/rag/embeddings";
 const rag = new RAG({
     vectorStore: new PgVector({
         connectionString: process.env.DATABASE_URL,
-        tableName: "document_embeddings",
+        tableName: "document_embeddings"
     }),
     embedding: new OpenAIEmbedding({
-        model: "text-embedding-3-small",
+        model: "text-embedding-3-small"
     }),
     chunkSize: 512,
-    chunkOverlap: 50,
+    chunkOverlap: 50
 });
 
 // Add documents
 await rag.addDocument({
     content: "FlowMaestro documentation...",
-    metadata: { source: "docs.md" },
+    metadata: { source: "docs.md" }
 });
 
 // Query in agent
@@ -473,13 +502,13 @@ const agent = new Agent({
             id: "search-docs",
             description: "Search documentation",
             inputSchema: z.object({
-                query: z.string(),
+                query: z.string()
             }),
             execute: async ({ context }) => {
                 return await rag.query(context.query, { topK: 5 });
-            },
-        }),
-    },
+            }
+        })
+    }
 });
 ```
 
@@ -490,6 +519,7 @@ const agent = new Agent({
 **Problem:** Limited visibility into agent reasoning. Hard to debug multi-step executions.
 
 **Mastra Solution:**
+
 - Automatic OpenTelemetry span creation
 - Trace agent runs, model calls, tool executions
 - Playground UI shows trace waterfall
@@ -497,6 +527,7 @@ const agent = new Agent({
 - Performance metrics and cost tracking
 
 **Traces Include:**
+
 - `AGENT_RUN`: Complete agent execution
 - `MODEL_GENERATION`: Each LLM call with tokens and latency
 - `TOOL_CALL`: Tool execution time and results
@@ -512,12 +543,14 @@ const agent = new Agent({
 **Problem:** FlowMaestro's tool schema uses generic JSON Schema, requiring manual validation.
 
 **Mastra Solution:**
+
 - `createTool()` function with Zod schemas
 - Runtime validation automatically handled
 - TypeScript types inferred from schemas
 - Better IDE autocomplete and type safety
 
 **Before (FlowMaestro):**
+
 ```typescript
 const tool: Tool = {
     id: "get-weather",
@@ -528,11 +561,11 @@ const tool: Tool = {
         type: "object",
         properties: {
             city: { type: "string" },
-            unit: { type: "string", enum: ["celsius", "fahrenheit"] },
+            unit: { type: "string", enum: ["celsius", "fahrenheit"] }
         },
-        required: ["city"],
+        required: ["city"]
     },
-    config: { functionName: "get_weather" },
+    config: { functionName: "get_weather" }
 };
 
 // Must manually validate arguments
@@ -543,6 +576,7 @@ function executeGetWeather(args: any) {
 ```
 
 **After (with Mastra):**
+
 ```typescript
 import { createTool } from "@mastra/core/tools";
 import { z } from "zod";
@@ -552,18 +586,18 @@ const getWeatherTool = createTool({
     description: "Get weather for a city",
     inputSchema: z.object({
         city: z.string().describe("City name"),
-        unit: z.enum(["celsius", "fahrenheit"]).default("celsius"),
+        unit: z.enum(["celsius", "fahrenheit"]).default("celsius")
     }),
     outputSchema: z.object({
         temperature: z.number(),
-        conditions: z.string(),
+        conditions: z.string()
     }),
     execute: async ({ context }) => {
         // context is fully typed! ✅
         const { city, unit } = context; // TypeScript knows these types
         const weather = await fetchWeather(city, unit);
         return weather; // Must match outputSchema
-    },
+    }
 });
 ```
 
@@ -574,16 +608,19 @@ const getWeatherTool = createTool({
 **Problem:** FlowMaestro can discover MCP tools but not execute them. No way to expose FlowMaestro capabilities to other MCP clients.
 
 **Mastra Solution:**
+
 - **MCPClient**: Connect to external MCP servers (local or remote)
 - **MCPServer**: Expose Mastra agents/tools/workflows to MCP clients
 - Support for mcp.run registry and custom servers
 - Bidirectional integration
 
 **Use Cases:**
+
 1. **Inbound**: FlowMaestro agents use external MCP tools (GitHub, Slack, databases)
 2. **Outbound**: External agents (Claude Desktop, Cursor, etc.) use FlowMaestro workflows
 
 **Implementation:**
+
 ```typescript
 import { MCPClient, MCPServer } from "@mastra/mcp";
 
@@ -594,14 +631,14 @@ const mcpClient = new MCPClient({
             name: "github",
             command: "npx",
             args: ["-y", "@modelcontextprotocol/server-github"],
-            env: { GITHUB_TOKEN: process.env.GITHUB_TOKEN },
+            env: { GITHUB_TOKEN: process.env.GITHUB_TOKEN }
         },
         {
             name: "custom-api",
             url: "https://api.example.com/mcp",
-            auth: { type: "bearer", token: process.env.API_TOKEN },
-        },
-    ],
+            auth: { type: "bearer", token: process.env.API_TOKEN }
+        }
+    ]
 });
 
 // Expose FlowMaestro capabilities via MCP
@@ -609,8 +646,8 @@ const mcpServer = new MCPServer({
     name: "flowmaestro",
     version: "1.0.0",
     agents: mastra.agents, // All FlowMaestro agents
-    tools: mastra.tools,   // All custom tools
-    workflows: mastra.workflows,
+    tools: mastra.tools, // All custom tools
+    workflows: mastra.workflows
 });
 
 mcpServer.listen(3100);
@@ -623,31 +660,30 @@ mcpServer.listen(3100);
 **Problem:** FlowMaestro's user input handling has 5-minute timeout and limited state management.
 
 **Mastra Solution:**
+
 - Suspend agent/workflow execution indefinitely
 - Wait for user approval or input
 - State persists in storage (can resume hours/days later)
 - No Temporal workflow timeout concerns
 
 **Implementation:**
+
 ```typescript
 const agent = new Agent({
     name: "Approval Agent",
     model: openai("gpt-4o"),
-    humanInTheLoop: true, // Enable human approvals
+    humanInTheLoop: true // Enable human approvals
 });
 
 // Agent can request approval
-const response = await agent.generate(
-    "Book a $500 flight to Paris",
-    {
-        onApprovalRequired: async (request) => {
-            // Suspend execution, notify user, wait for approval
-            await notifyUser(request);
-            const approval = await waitForApproval(request.id);
-            return approval;
-        },
+const response = await agent.generate("Book a $500 flight to Paris", {
+    onApprovalRequired: async (request) => {
+        // Suspend execution, notify user, wait for approval
+        await notifyUser(request);
+        const approval = await waitForApproval(request.id);
+        return approval;
     }
-);
+});
 ```
 
 ---
@@ -657,21 +693,21 @@ const response = await agent.generate(
 **Problem:** FlowMaestro executes tools sequentially (one after another).
 
 **Mastra Solution:**
+
 - Agents can execute multiple tools in parallel
 - Workflow `.parallel()` method for concurrent operations
 - Significant performance improvement for independent tasks
 
 **Example:**
+
 ```typescript
 // Agent automatically parallelizes independent tool calls
 const agent = new Agent({
-    tools: { getWeather, getNews, getStockPrice },
+    tools: { getWeather, getNews, getStockPrice }
 });
 
 // If LLM requests all 3 tools, Mastra runs them concurrently
-const response = await agent.generate(
-    "Give me weather, news, and stock price for NYC"
-);
+const response = await agent.generate("Give me weather, news, and stock price for NYC");
 // 3x faster than sequential execution ✅
 ```
 
@@ -682,21 +718,24 @@ const response = await agent.generate(
 **Problem:** FlowMaestro workflows use Temporal's approach. Mastra offers alternative graph-based approach.
 
 **Mastra Solution:**
+
 - `.then()`: Sequential execution
 - `.branch()`: Conditional paths
 - `.parallel()`: Concurrent execution
 - `.merge()`: Combine results
 
 **When to Use:**
+
 - **Temporal (current)**: Long-running workflows, retries, complex state
 - **Mastra workflows**: Quick orchestration, deterministic flows, simpler use cases
 
 **Example:**
+
 ```typescript
 import { Workflow } from "@mastra/core";
 
 const workflow = new Workflow({
-    name: "onboarding",
+    name: "onboarding"
 });
 
 workflow
@@ -706,12 +745,12 @@ workflow
         // Conditional branching based on user type
         "is-enterprise": {
             condition: (ctx) => ctx.userType === "enterprise",
-            steps: ["assign-account-manager", "schedule-training"],
+            steps: ["assign-account-manager", "schedule-training"]
         },
         "is-individual": {
             condition: (ctx) => ctx.userType === "individual",
-            steps: ["send-tutorial-video"],
-        },
+            steps: ["send-tutorial-video"]
+        }
     })
     .merge() // Combine branches
     .then("complete-onboarding");
@@ -719,7 +758,7 @@ workflow
 // Execute
 const result = await workflow.execute({
     userId: "123",
-    userType: "enterprise",
+    userType: "enterprise"
 });
 ```
 
@@ -730,12 +769,14 @@ const result = await workflow.execute({
 **Problem:** Building custom streaming UI components from scratch.
 
 **Mastra Solution:**
+
 - Native integration with Vercel AI SDK
 - Use `useChat`, `useCompletion` React hooks
 - Pre-built UI components
 - Compatible with AI SDK ecosystem
 
 **Implementation:**
+
 ```typescript
 // Backend: Mastra agent endpoint
 import { mastra } from "./mastra";
@@ -746,7 +787,7 @@ export async function POST(req: Request) {
 
     // Stream response in AI SDK format
     const stream = await agent.stream(messages, {
-        outputFormat: "aisdk",
+        outputFormat: "aisdk"
     });
 
     return new Response(stream);
@@ -757,7 +798,7 @@ import { useChat } from "@ai-sdk/react";
 
 function ChatInterface() {
     const { messages, input, handleSubmit } = useChat({
-        api: "/api/agents/stream",
+        api: "/api/agents/stream"
     });
 
     // Works out of the box! ✅
@@ -771,6 +812,7 @@ function ChatInterface() {
 **Problem:** Building everything in-house means maintaining all code ourselves.
 
 **Mastra Solution:**
+
 - 18,000+ GitHub stars
 - 257 active contributors
 - Regular updates and bug fixes
@@ -786,12 +828,14 @@ function ChatInterface() {
 **Problem:** AI landscape evolves rapidly. Hard to keep up with new models, techniques, and standards.
 
 **Mastra Solution:**
+
 - Actively maintained by Gatsby team
 - Quick adoption of new AI SDK versions (v5 support added immediately)
 - MCP protocol support (emerging standard)
 - Regular feature additions based on community needs
 
 **Recent Additions (2025):**
+
 - AI SDK v5 support
 - Gemini Live voice capabilities
 - Experimental AI tracing
@@ -807,6 +851,7 @@ function ChatInterface() {
 **Strategy:** Use Mastra for agent runtime, keep FlowMaestro's database and Temporal orchestration.
 
 **Architecture:**
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                        FlowMaestro                          │
@@ -836,12 +881,14 @@ function ChatInterface() {
 ```
 
 **Benefits:**
+
 - Keep FlowMaestro's multi-tenancy and database schema
 - Leverage Mastra's agent features
 - Temporal provides durable execution
 - Gradual migration path
 
 **Implementation:**
+
 1. Install Mastra SDK: `npm install @mastra/core`
 2. Create Mastra instance with FlowMaestro's config
 3. Replace custom ReAct loop with Mastra agents
@@ -857,6 +904,7 @@ function ChatInterface() {
 **Proposed:** Replace with Mastra Agent class (reduces to ~50 lines)
 
 **Migration Path:**
+
 ```typescript
 // OLD: Custom ReAct loop (387 lines)
 export async function agentOrchestratorWorkflow(input) {
@@ -882,10 +930,10 @@ export async function executeAgent(input: AgentExecutionInput) {
         tools: convertToolsToMastra(agentConfig.available_tools),
         memory: new PostgresMemory({
             connectionString: process.env.DATABASE_URL,
-            executionId: input.executionId,
+            executionId: input.executionId
         }),
         maxSteps: agentConfig.max_iterations,
-        temperature: agentConfig.temperature,
+        temperature: agentConfig.temperature
     });
 
     // Execute (Mastra handles ReAct loop internally)
@@ -893,7 +941,7 @@ export async function executeAgent(input: AgentExecutionInput) {
         onStepFinish: async (step) => {
             // Emit events for real-time updates
             await emitAgentMessage({ executionId, message: step });
-        },
+        }
     });
 
     return result;
@@ -901,6 +949,7 @@ export async function executeAgent(input: AgentExecutionInput) {
 ```
 
 **Benefits:**
+
 - 85% less code to maintain
 - Production-tested ReAct implementation
 - Built-in features (streaming, memory, observability)
@@ -917,6 +966,7 @@ export async function executeAgent(input: AgentExecutionInput) {
 3. **Integrate both systems**
 
 **Database Schema:**
+
 ```sql
 -- Existing FlowMaestro tables (keep as-is)
 CREATE TABLE flowmaestro.agents (...);
@@ -940,6 +990,7 @@ USING ivfflat (embedding vector_cosine_ops);
 ```
 
 **Code Integration:**
+
 ```typescript
 import { PostgresMemory } from "@mastra/memory";
 
@@ -948,8 +999,8 @@ const agent = new Agent({
         connectionString: process.env.DATABASE_URL,
         tableName: "agent_memory",
         userId: userId, // Multi-tenant support
-        agentId: agentId,
-    }),
+        agentId: agentId
+    })
     // Mastra automatically:
     // 1. Stores conversation in agent_memory table
     // 2. Generates embeddings
@@ -969,6 +1020,7 @@ const agent = new Agent({
 4. Developers test agents before deployment
 
 **Developer Workflow:**
+
 ```bash
 # 1. Define agent in code
 $ cat > src/mastra/agents/customer-support.ts
@@ -1006,6 +1058,7 @@ $ npm run mastra:dev
 **Vision:** Make FlowMaestro workflows accessible to any MCP client (Claude Desktop, Cursor, Windsurf, etc.)
 
 **Implementation:**
+
 ```typescript
 import { MCPServer } from "@mastra/mcp";
 import { mastra } from "./mastra";
@@ -1023,8 +1076,8 @@ const mcpServer = new MCPServer({
         inputSchema: workflow.inputSchema,
         execute: async (input) => {
             return await workflow.execute(input);
-        },
-    })),
+        }
+    }))
 });
 
 // Start MCP server
@@ -1034,6 +1087,7 @@ mcpServer.listen(3100);
 ```
 
 **Use Cases:**
+
 - Claude Desktop users can run FlowMaestro workflows
 - Cursor IDE can integrate FlowMaestro automations
 - Other AI tools can leverage FlowMaestro capabilities
@@ -1045,31 +1099,33 @@ mcpServer.listen(3100);
 **Strategy:** Build visual agent configuration UI using Mastra's primitives
 
 **UI Components Needed:**
+
 1. **Agent Configuration Panel**
-   - Name, description, model selection
-   - System prompt editor with templates
-   - Temperature, max tokens, max iterations sliders
+    - Name, description, model selection
+    - System prompt editor with templates
+    - Temperature, max tokens, max iterations sliders
 
 2. **Tool Selection Interface**
-   - Browse available tools (workflows, functions, MCP servers)
-   - Drag-and-drop to add tools to agent
-   - Configure tool parameters
+    - Browse available tools (workflows, functions, MCP servers)
+    - Drag-and-drop to add tools to agent
+    - Configure tool parameters
 
 3. **Memory Configuration**
-   - Select memory type: buffer, summary, vector
-   - Configure max messages / embedding settings
+    - Select memory type: buffer, summary, vector
+    - Configure max messages / embedding settings
 
 4. **Testing Panel**
-   - Chat interface powered by Mastra streaming
-   - View conversation history
-   - Inspect tool calls and results
+    - Chat interface powered by Mastra streaming
+    - View conversation history
+    - Inspect tool calls and results
 
 5. **Observability Dashboard**
-   - View agent traces
-   - Monitor token usage and costs
-   - Analyze tool execution times
+    - View agent traces
+    - Monitor token usage and costs
+    - Analyze tool execution times
 
 **Technical Stack:**
+
 - React + TypeScript (existing)
 - Mastra SDK for agent runtime
 - React Query for API state
@@ -1081,24 +1137,28 @@ mcpServer.listen(3100);
 ### Opportunity #7: **Incremental Migration Strategy**
 
 **Phase 1: Foundation (2-3 weeks)**
+
 - Install Mastra packages
 - Create Mastra instance with FlowMaestro config
 - Set up Mastra memory with PostgreSQL
 - Test agent execution in playground
 
 **Phase 2: Core Features (3-4 weeks)**
+
 - Replace custom ReAct loop with Mastra agents
 - Implement streaming endpoints
 - Add model routing for additional providers
 - Integrate Mastra tools with existing tool types
 
 **Phase 3: Advanced Features (4-5 weeks)**
+
 - Implement RAG-based memory
 - Add MCP server to expose workflows
 - Build observability dashboard
 - Complete agent builder UI
 
 **Phase 4: Polish & Testing (2-3 weeks)**
+
 - Performance optimization
 - Comprehensive testing
 - Documentation
@@ -1115,6 +1175,7 @@ mcpServer.listen(3100);
 **Mastra Solution:** Route simple tasks to cheaper models, complex tasks to advanced models.
 
 **Implementation:**
+
 ```typescript
 import { Agent } from "@mastra/core";
 import { openai } from "@ai-sdk/openai";
@@ -1132,10 +1193,10 @@ const agent = new Agent({
                 // Use GPT-4 only for complex tasks
                 const analyst = new Agent({
                     model: openai("gpt-4"),
-                    maxSteps: 10,
+                    maxSteps: 10
                 });
                 return await analyst.generate(input.query);
-            },
+            }
         }),
 
         simpleQuery: createTool({
@@ -1143,12 +1204,12 @@ const agent = new Agent({
             execute: async (input) => {
                 // Use GPT-3.5 for simple tasks
                 const helper = new Agent({
-                    model: openai("gpt-3.5-turbo"),
+                    model: openai("gpt-3.5-turbo")
                 });
                 return await helper.generate(input.query);
-            },
-        }),
-    },
+            }
+        })
+    }
 });
 
 // Router agent decides which tool to use
@@ -1220,26 +1281,31 @@ const agent = new Agent({
 ### 6.2 Key Design Decisions
 
 **Decision #1: Keep FlowMaestro's Database Schema**
+
 - **Rationale:** Multi-tenant architecture with audit trails is valuable
 - **Approach:** Extend schema with Mastra memory tables
 - **Benefit:** No data migration needed
 
 **Decision #2: Use Temporal for Durable Workflows**
+
 - **Rationale:** Temporal provides enterprise-grade reliability
 - **Approach:** Mastra agents run inside Temporal activities
 - **Benefit:** Best of both worlds (Mastra features + Temporal durability)
 
 **Decision #3: Mastra for Agent Runtime**
+
 - **Rationale:** Production-tested implementation saves months
 - **Approach:** Replace custom ReAct loop with Mastra Agent class
 - **Benefit:** Less code, more features, easier maintenance
 
 **Decision #4: Hybrid Tool System**
+
 - **Rationale:** Support FlowMaestro workflows + Mastra tools + MCP tools
 - **Approach:** Convert all tool types to Mastra's `createTool()` format
 - **Benefit:** Unified interface for all tool types
 
 **Decision #5: PostgreSQL for Memory**
+
 - **Rationale:** Already using PostgreSQL, pgvector extension available
 - **Approach:** Use Mastra's PostgresMemory with FlowMaestro's database
 - **Benefit:** No additional infrastructure needed
@@ -1297,67 +1363,73 @@ flowmaestro/
 ### Phase 1: Foundation (Weeks 1-3)
 
 **Goals:**
+
 - Install Mastra dependencies
 - Set up Mastra instance
 - Configure memory system
 - Test basic agent execution
 
 **Tasks:**
+
 1. **Install Dependencies**
-   ```bash
-   npm install @mastra/core @mastra/memory @mastra/mcp @mastra/rag
-   npm install --save-dev @mastra/cli
-   ```
+
+    ```bash
+    npm install @mastra/core @mastra/memory @mastra/mcp @mastra/rag
+    npm install --save-dev @mastra/cli
+    ```
 
 2. **Create Mastra Instance**
-   ```typescript
-   // backend/src/mastra/index.ts
-   import { Mastra } from "@mastra/core";
-   import { customerSupportAgent } from "./agents/customer-support";
 
-   export const mastra = new Mastra({
-       agents: { customerSupportAgent },
-       memory: {
-           provider: "postgres",
-           config: {
-               connectionString: process.env.DATABASE_URL,
-           },
-       },
-   });
-   ```
+    ```typescript
+    // backend/src/mastra/index.ts
+    import { Mastra } from "@mastra/core";
+    import { customerSupportAgent } from "./agents/customer-support";
+
+    export const mastra = new Mastra({
+        agents: { customerSupportAgent },
+        memory: {
+            provider: "postgres",
+            config: {
+                connectionString: process.env.DATABASE_URL
+            }
+        }
+    });
+    ```
 
 3. **Database Migration**
-   ```sql
-   -- migrations/008_add_mastra_memory.sql
-   CREATE EXTENSION IF NOT EXISTS vector;
 
-   CREATE TABLE flowmaestro.agent_memory (
-       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-       agent_id UUID REFERENCES flowmaestro.agents(id),
-       user_id UUID REFERENCES flowmaestro.users(id),
-       execution_id UUID,
-       content TEXT NOT NULL,
-       embedding VECTOR(1536),
-       metadata JSONB DEFAULT '{}',
-       created_at TIMESTAMP DEFAULT NOW()
-   );
+    ```sql
+    -- migrations/008_add_mastra_memory.sql
+    CREATE EXTENSION IF NOT EXISTS vector;
 
-   CREATE INDEX idx_agent_memory_agent_user
-   ON flowmaestro.agent_memory(agent_id, user_id);
+    CREATE TABLE flowmaestro.agent_memory (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        agent_id UUID REFERENCES flowmaestro.agents(id),
+        user_id UUID REFERENCES flowmaestro.users(id),
+        execution_id UUID,
+        content TEXT NOT NULL,
+        embedding VECTOR(1536),
+        metadata JSONB DEFAULT '{}',
+        created_at TIMESTAMP DEFAULT NOW()
+    );
 
-   CREATE INDEX idx_agent_memory_embedding
-   ON flowmaestro.agent_memory
-   USING ivfflat (embedding vector_cosine_ops);
-   ```
+    CREATE INDEX idx_agent_memory_agent_user
+    ON flowmaestro.agent_memory(agent_id, user_id);
+
+    CREATE INDEX idx_agent_memory_embedding
+    ON flowmaestro.agent_memory
+    USING ivfflat (embedding vector_cosine_ops);
+    ```
 
 4. **Test Agent Execution**
-   ```bash
-   npm run mastra:dev
-   # Open http://localhost:4111
-   # Test agent in playground ✅
-   ```
+    ```bash
+    npm run mastra:dev
+    # Open http://localhost:4111
+    # Test agent in playground ✅
+    ```
 
 **Deliverables:**
+
 - ✅ Mastra installed and configured
 - ✅ Memory tables created
 - ✅ Basic agent working in playground
@@ -1367,93 +1439,105 @@ flowmaestro/
 ### Phase 2: Core Features (Weeks 4-7)
 
 **Goals:**
+
 - Replace custom ReAct loop
 - Implement streaming
 - Add model routing
 - Integrate tools
 
 **Tasks:**
+
 1. **Migrate Agent Execution**
-   ```typescript
-   // backend/src/mastra/agents/create-from-config.ts
-   export function createMastraAgent(config: AgentModel): Agent {
-       return new Agent({
-           name: config.name,
-           model: getModel(config.provider, config.model),
-           instructions: config.system_prompt,
-           tools: convertTools(config.available_tools),
-           memory: new PostgresMemory({
-               connectionString: process.env.DATABASE_URL,
-               agentId: config.id,
-           }),
-           maxSteps: config.max_iterations,
-           temperature: config.temperature,
-       });
-   }
-   ```
+
+    ```typescript
+    // backend/src/mastra/agents/create-from-config.ts
+    export function createMastraAgent(config: AgentModel): Agent {
+        return new Agent({
+            name: config.name,
+            model: getModel(config.provider, config.model),
+            instructions: config.system_prompt,
+            tools: convertTools(config.available_tools),
+            memory: new PostgresMemory({
+                connectionString: process.env.DATABASE_URL,
+                agentId: config.id
+            }),
+            maxSteps: config.max_iterations,
+            temperature: config.temperature
+        });
+    }
+    ```
 
 2. **Add Streaming Endpoint**
-   ```typescript
-   // backend/src/api/routes/agents/stream.ts
-   export async function streamAgentHandler(request, reply) {
-       const { id } = request.params;
-       const { message } = request.body;
 
-       const agentConfig = await agentRepository.findById(id);
-       const agent = createMastraAgent(agentConfig);
+    ```typescript
+    // backend/src/api/routes/agents/stream.ts
+    export async function streamAgentHandler(request, reply) {
+        const { id } = request.params;
+        const { message } = request.body;
 
-       const stream = await agent.stream(message, {
-           outputFormat: "aisdk",
-           onStepFinish: async (step) => {
-               await emitAgentEvent({ type: "step", step });
-           },
-       });
+        const agentConfig = await agentRepository.findById(id);
+        const agent = createMastraAgent(agentConfig);
 
-       reply.type("text/event-stream");
-       reply.send(stream);
-   }
-   ```
+        const stream = await agent.stream(message, {
+            outputFormat: "aisdk",
+            onStepFinish: async (step) => {
+                await emitAgentEvent({ type: "step", step });
+            }
+        });
+
+        reply.type("text/event-stream");
+        reply.send(stream);
+    }
+    ```
 
 3. **Update Frontend for Streaming**
-   ```typescript
-   // frontend/src/components/agents/AgentChat.tsx
-   import { useChat } from "@ai-sdk/react";
 
-   export function AgentChat({ agentId }: { agentId: string }) {
-       const { messages, input, handleSubmit } = useChat({
-           api: `/api/agents/${agentId}/stream`,
-       });
+    ```typescript
+    // frontend/src/components/agents/AgentChat.tsx
+    import { useChat } from "@ai-sdk/react";
 
-       return (
-           <div>
-               {messages.map(m => (
-                   <div key={m.id}>{m.role}: {m.content}</div>
-               ))}
-               <form onSubmit={handleSubmit}>
-                   <input value={input} onChange={e => handleInputChange(e)} />
-               </form>
-           </div>
-       );
-   }
-   ```
+    export function AgentChat({ agentId }: { agentId: string }) {
+        const { messages, input, handleSubmit } = useChat({
+            api: `/api/agents/${agentId}/stream`,
+        });
+
+        return (
+            <div>
+                {messages.map(m => (
+                    <div key={m.id}>{m.role}: {m.content}</div>
+                ))}
+                <form onSubmit={handleSubmit}>
+                    <input value={input} onChange={e => handleInputChange(e)} />
+                </form>
+            </div>
+        );
+    }
+    ```
 
 4. **Add Model Routing**
-   ```typescript
-   // backend/src/mastra/models.ts
-   import { openai, anthropic, google, cohere } from "@ai-sdk/...";
 
-   export function getModel(provider: string, model: string) {
-       switch (provider) {
-           case "openai": return openai(model);
-           case "anthropic": return anthropic(model);
-           case "google": return google(model);
-           case "cohere": return cohere(model);
-           default: throw new Error(`Unknown provider: ${provider}`);
-       }
-   }
-   ```
+    ```typescript
+    // backend/src/mastra/models.ts
+    import { openai, anthropic, google, cohere } from "@ai-sdk/...";
+
+    export function getModel(provider: string, model: string) {
+        switch (provider) {
+            case "openai":
+                return openai(model);
+            case "anthropic":
+                return anthropic(model);
+            case "google":
+                return google(model);
+            case "cohere":
+                return cohere(model);
+            default:
+                throw new Error(`Unknown provider: ${provider}`);
+        }
+    }
+    ```
 
 **Deliverables:**
+
 - ✅ Agent execution uses Mastra
 - ✅ Streaming works in UI
 - ✅ Support for 40+ LLM providers
@@ -1464,75 +1548,81 @@ flowmaestro/
 ### Phase 3: Advanced Features (Weeks 8-12)
 
 **Goals:**
+
 - Implement RAG memory
 - Add MCP server
 - Build observability dashboard
 - Complete agent builder UI
 
 **Tasks:**
-1. **RAG Implementation**
-   ```typescript
-   // backend/src/mastra/memory/rag-memory.ts
-   import { RAG } from "@mastra/rag";
-   import { PgVector } from "@mastra/rag/vectors";
 
-   export const rag = new RAG({
-       vectorStore: new PgVector({
-           connectionString: process.env.DATABASE_URL,
-           tableName: "agent_memory",
-       }),
-       chunkSize: 512,
-       chunkOverlap: 50,
-   });
-   ```
+1. **RAG Implementation**
+
+    ```typescript
+    // backend/src/mastra/memory/rag-memory.ts
+    import { RAG } from "@mastra/rag";
+    import { PgVector } from "@mastra/rag/vectors";
+
+    export const rag = new RAG({
+        vectorStore: new PgVector({
+            connectionString: process.env.DATABASE_URL,
+            tableName: "agent_memory"
+        }),
+        chunkSize: 512,
+        chunkOverlap: 50
+    });
+    ```
 
 2. **MCP Server Setup**
-   ```typescript
-   // backend/src/mcp/server.ts
-   import { MCPServer } from "@mastra/mcp";
-   import { mastra } from "../mastra";
 
-   export const mcpServer = new MCPServer({
-       name: "flowmaestro",
-       agents: mastra.agents,
-       workflows: mastra.workflows,
-   });
+    ```typescript
+    // backend/src/mcp/server.ts
+    import { MCPServer } from "@mastra/mcp";
+    import { mastra } from "../mastra";
 
-   mcpServer.listen(3100);
-   ```
+    export const mcpServer = new MCPServer({
+        name: "flowmaestro",
+        agents: mastra.agents,
+        workflows: mastra.workflows
+    });
+
+    mcpServer.listen(3100);
+    ```
 
 3. **Observability Dashboard**
-   ```typescript
-   // frontend/src/components/agents/ObservabilityPanel.tsx
-   export function ObservabilityPanel({ executionId }) {
-       const { traces } = useAgentTraces(executionId);
 
-       return (
-           <div>
-               <h3>Execution Traces</h3>
-               <TraceWaterfall traces={traces} />
-               <MetricsPanel metrics={traces.metrics} />
-           </div>
-       );
-   }
-   ```
+    ```typescript
+    // frontend/src/components/agents/ObservabilityPanel.tsx
+    export function ObservabilityPanel({ executionId }) {
+        const { traces } = useAgentTraces(executionId);
+
+        return (
+            <div>
+                <h3>Execution Traces</h3>
+                <TraceWaterfall traces={traces} />
+                <MetricsPanel metrics={traces.metrics} />
+            </div>
+        );
+    }
+    ```
 
 4. **Agent Builder UI**
-   ```typescript
-   // frontend/src/components/agents/AgentBuilder.tsx
-   export function AgentBuilder() {
-       return (
-           <div className="grid grid-cols-2 gap-4">
-               <ConfigPanel />
-               <ToolSelector />
-               <MemoryConfig />
-               <TestingPanel />
-           </div>
-       );
-   }
-   ```
+    ```typescript
+    // frontend/src/components/agents/AgentBuilder.tsx
+    export function AgentBuilder() {
+        return (
+            <div className="grid grid-cols-2 gap-4">
+                <ConfigPanel />
+                <ToolSelector />
+                <MemoryConfig />
+                <TestingPanel />
+            </div>
+        );
+    }
+    ```
 
 **Deliverables:**
+
 - ✅ RAG-based memory working
 - ✅ MCP server exposing workflows
 - ✅ Observability dashboard
@@ -1543,12 +1633,14 @@ flowmaestro/
 ### Phase 4: Polish & Testing (Weeks 13-15)
 
 **Goals:**
+
 - Performance optimization
 - Comprehensive testing
 - Documentation
 - Migration guide
 
 **Tasks:**
+
 1. Performance testing and optimization
 2. Unit tests for Mastra integration
 3. E2E tests for agent flows
@@ -1557,6 +1649,7 @@ flowmaestro/
 6. Training materials for team
 
 **Deliverables:**
+
 - ✅ Performance optimized
 - ✅ Tests passing
 - ✅ Documentation complete
@@ -1572,6 +1665,7 @@ flowmaestro/
 **Impact:** Development velocity temporarily slows
 
 **Mitigation:**
+
 1. **Training:** 2-day workshop on Mastra fundamentals
 2. **Documentation:** Internal guide with FlowMaestro-specific examples
 3. **Pair Programming:** Senior devs pair with junior devs for first few agents
@@ -1587,12 +1681,14 @@ flowmaestro/
 **Impact:** Dependent on Mastra team for bug fixes and features
 
 **Mitigation:**
+
 1. **Open Source:** Mastra is MIT licensed, can fork if needed
 2. **Active Maintenance:** 18k stars, 257 contributors, regular updates
 3. **Abstraction Layer:** Create FlowMaestro wrapper around Mastra APIs
 4. **Fallback Plan:** Keep custom ReAct loop as backup (don't delete immediately)
 
 **Example Abstraction:**
+
 ```typescript
 // backend/src/mastra/agent-runtime.ts
 export interface AgentRuntime {
@@ -1625,12 +1721,14 @@ const runtime: AgentRuntime = new MastraRuntime(config);
 **Impact:** Breaking changes for existing agents
 
 **Mitigation:**
+
 1. **Dual Mode:** Run old and new agent systems in parallel during migration
 2. **Feature Flags:** Use flags to toggle Mastra on/off per agent
 3. **Database Compatibility:** New memory tables don't affect existing tables
 4. **Gradual Migration:** Migrate agents one at a time
 
 **Migration Script:**
+
 ```typescript
 // backend/src/scripts/migrate-agent-to-mastra.ts
 export async function migrateAgent(agentId: string) {
@@ -1647,8 +1745,8 @@ export async function migrateAgent(agentId: string) {
         metadata: {
             ...agent.metadata,
             mastra_enabled: true,
-            migrated_at: new Date(),
-        },
+            migrated_at: new Date()
+        }
     });
 
     console.log(`Agent ${agentId} migrated to Mastra ✅`);
@@ -1663,12 +1761,14 @@ export async function migrateAgent(agentId: string) {
 **Impact:** Mastra adds latency vs custom implementation
 
 **Mitigation:**
+
 1. **Benchmark:** Test Mastra performance vs custom ReAct loop
 2. **Optimize:** Use Mastra's caching and optimization features
 3. **Monitor:** Add observability to track latency
 4. **Fallback:** If performance issues, optimize specific bottlenecks
 
 **Expected Performance:**
+
 - Mastra is production-tested by thousands of developers
 - Unlikely to be slower than custom implementation
 - Likely faster due to optimizations (parallel tool execution, caching)
@@ -1681,12 +1781,14 @@ export async function migrateAgent(agentId: string) {
 **Impact:** Mastra conflicts with Temporal or existing infrastructure
 
 **Mitigation:**
+
 1. **Isolated Testing:** Test Mastra in sandbox environment first
 2. **Gradual Integration:** Start with non-critical agents
 3. **Monitoring:** Watch for errors or unexpected behavior
 4. **Rollback Plan:** Keep old implementation for quick rollback
 
 **Compatibility Note:**
+
 - Mastra doesn't require replacing Temporal
 - Mastra agents can run inside Temporal activities
 - No conflicts with PostgreSQL, Redis, or WebSockets
@@ -1698,6 +1800,7 @@ export async function migrateAgent(agentId: string) {
 ### 9.1 Converting FlowMaestro Agent to Mastra
 
 **Before (FlowMaestro custom):**
+
 ```typescript
 // 387 lines of custom workflow code
 export async function agentOrchestratorWorkflow(input) {
@@ -1710,7 +1813,7 @@ export async function agentOrchestratorWorkflow(input) {
             model: agent.model,
             provider: agent.provider,
             messages: conversationHistory,
-            tools: agent.available_tools,
+            tools: agent.available_tools
         });
 
         // Handle tool calls...
@@ -1724,6 +1827,7 @@ export async function agentOrchestratorWorkflow(input) {
 ```
 
 **After (with Mastra):**
+
 ```typescript
 // 50 lines with Mastra
 import { Agent } from "@mastra/core";
@@ -1741,10 +1845,10 @@ export async function executeAgentWithMastra(input) {
             connectionString: process.env.DATABASE_URL,
             tableName: "agent_memory",
             userId: input.userId,
-            agentId: input.agentId,
+            agentId: input.agentId
         }),
         maxSteps: agentConfig.max_iterations,
-        temperature: agentConfig.temperature,
+        temperature: agentConfig.temperature
     });
 
     const result = await agent.generate(input.message, {
@@ -1752,9 +1856,9 @@ export async function executeAgentWithMastra(input) {
             await emitAgentEvent({
                 executionId: input.executionId,
                 type: "step",
-                step,
+                step
             });
-        },
+        }
     });
 
     return result;
@@ -1768,6 +1872,7 @@ export async function executeAgentWithMastra(input) {
 ### 9.2 Tool Conversion Pattern
 
 **FlowMaestro Tool:**
+
 ```typescript
 const tool: Tool = {
     id: "get-weather",
@@ -1778,15 +1883,16 @@ const tool: Tool = {
         type: "object",
         properties: {
             city: { type: "string" },
-            unit: { type: "string", enum: ["celsius", "fahrenheit"] },
+            unit: { type: "string", enum: ["celsius", "fahrenheit"] }
         },
-        required: ["city"],
+        required: ["city"]
     },
-    config: { functionName: "get_weather" },
+    config: { functionName: "get_weather" }
 };
 ```
 
 **Mastra Tool:**
+
 ```typescript
 import { createTool } from "@mastra/core/tools";
 import { z } from "zod";
@@ -1796,27 +1902,26 @@ const getWeatherTool = createTool({
     description: "Get weather for a city",
     inputSchema: z.object({
         city: z.string().describe("City name"),
-        unit: z.enum(["celsius", "fahrenheit"]).default("celsius"),
+        unit: z.enum(["celsius", "fahrenheit"]).default("celsius")
     }),
     outputSchema: z.object({
         temperature: z.number(),
         conditions: z.string(),
-        humidity: z.number().optional(),
+        humidity: z.number().optional()
     }),
     execute: async ({ context }) => {
         const { city, unit } = context; // Fully typed ✅
         const weather = await fetchWeather(city, unit);
         return weather; // Must match outputSchema ✅
-    },
+    }
 });
 ```
 
 **Conversion Helper:**
+
 ```typescript
 // backend/src/mastra/tools/convert-tools.ts
-export function convertFlowMaestroToolToMastra(
-    tool: Tool
-): MastraTool {
+export function convertFlowMaestroToolToMastra(tool: Tool): MastraTool {
     return createTool({
         id: tool.id,
         description: tool.description,
@@ -1831,7 +1936,7 @@ export function convertFlowMaestroToolToMastra(
                 case "knowledge_base":
                     return await queryKnowledgeBase(tool.config.knowledgeBaseId, context);
             }
-        },
+        }
     });
 }
 ```
@@ -1841,6 +1946,7 @@ export function convertFlowMaestroToolToMastra(
 ### 9.3 Streaming Implementation
 
 **Backend Endpoint:**
+
 ```typescript
 // backend/src/api/routes/agents/stream.ts
 import { FastifyRequest, FastifyReply } from "fastify";
@@ -1870,9 +1976,9 @@ export async function streamAgentHandler(
             // Emit events for WebSocket clients
             await emitAgentStepEvent({
                 executionId: step.executionId,
-                step,
+                step
             });
-        },
+        }
     });
 
     // Return SSE stream
@@ -1884,6 +1990,7 @@ export async function streamAgentHandler(
 ```
 
 **Frontend Component:**
+
 ```typescript
 // frontend/src/components/agents/StreamingAgentChat.tsx
 import React from "react";
@@ -1957,6 +2064,7 @@ export function StreamingAgentChat({ agentId }: { agentId: string }) {
 ### 9.4 RAG Memory Implementation
 
 **Backend Setup:**
+
 ```typescript
 // backend/src/mastra/memory/rag-setup.ts
 import { RAG } from "@mastra/rag";
@@ -1969,15 +2077,15 @@ export const ragMemory = new RAG({
         tableName: "agent_memory",
         embeddingColumn: "embedding",
         contentColumn: "content",
-        metadataColumn: "metadata",
+        metadataColumn: "metadata"
     }),
     embedding: new OpenAIEmbedding({
         apiKey: process.env.OPENAI_API_KEY,
         model: "text-embedding-3-small",
-        dimensions: 1536,
+        dimensions: 1536
     }),
     chunkSize: 512,
-    chunkOverlap: 50,
+    chunkOverlap: 50
 });
 
 // Add documents
@@ -1992,8 +2100,8 @@ export async function addMemory(
         metadata: {
             agentId,
             userId,
-            ...metadata,
-        },
+            ...metadata
+        }
     });
 }
 
@@ -2008,19 +2116,20 @@ export async function queryMemory(
         topK,
         filter: {
             agentId,
-            userId,
-        },
+            userId
+        }
     });
 
-    return results.map(r => ({
+    return results.map((r) => ({
         content: r.content,
         score: r.score,
-        metadata: r.metadata,
+        metadata: r.metadata
     }));
 }
 ```
 
 **Agent Integration:**
+
 ```typescript
 import { Agent } from "@mastra/core";
 import { createTool } from "@mastra/core/tools";
@@ -2030,18 +2139,14 @@ const searchMemoryTool = createTool({
     id: "search-memory",
     description: "Search conversation history and context",
     inputSchema: z.object({
-        query: z.string().describe("What to search for"),
+        query: z.string().describe("What to search for")
     }),
     execute: async ({ context }) => {
-        const results = await queryMemory(
-            agentId,
-            userId,
-            context.query
-        );
+        const results = await queryMemory(agentId, userId, context.query);
         return {
-            results: results.map(r => r.content),
+            results: results.map((r) => r.content)
         };
-    },
+    }
 });
 
 const agent = new Agent({
@@ -2051,7 +2156,7 @@ const agent = new Agent({
     instructions: `
         You have access to conversation history via the search_memory tool.
         When a user refers to past conversations, use this tool to retrieve context.
-    `,
+    `
 });
 ```
 
@@ -2060,6 +2165,7 @@ const agent = new Agent({
 ### 9.5 MCP Server Setup
 
 **Expose FlowMaestro Workflows:**
+
 ```typescript
 // backend/src/mcp/server.ts
 import { MCPServer } from "@mastra/mcp";
@@ -2072,14 +2178,14 @@ import { executeWorkflow } from "../temporal/client";
 const mcpServer = new MCPServer({
     name: "flowmaestro",
     version: "1.0.0",
-    description: "FlowMaestro workflow automation platform",
+    description: "FlowMaestro workflow automation platform"
 });
 
 // Dynamically load workflows and expose as tools
 async function loadWorkflowTools() {
     const workflows = await workflowRepository.findAll();
 
-    return workflows.map(workflow => {
+    return workflows.map((workflow) => {
         return createTool({
             id: `workflow_${workflow.id}`,
             description: workflow.description || workflow.name,
@@ -2087,17 +2193,17 @@ async function loadWorkflowTools() {
             execute: async ({ context }) => {
                 const result = await executeWorkflow({
                     workflowId: workflow.id,
-                    inputs: context,
+                    inputs: context
                 });
                 return result;
-            },
+            }
         });
     });
 }
 
 // Register tools
 const tools = await loadWorkflowTools();
-tools.forEach(tool => mcpServer.addTool(tool));
+tools.forEach((tool) => mcpServer.addTool(tool));
 
 // Start server
 mcpServer.listen(3100, () => {
@@ -2108,14 +2214,15 @@ export { mcpServer };
 ```
 
 **Usage from Claude Desktop:**
+
 ```json
 // ~/.config/claude/config.json
 {
-  "mcpServers": {
-    "flowmaestro": {
-      "url": "http://localhost:3100"
+    "mcpServers": {
+        "flowmaestro": {
+            "url": "http://localhost:3100"
+        }
     }
-  }
 }
 ```
 
@@ -2139,6 +2246,7 @@ Now Claude Desktop can execute FlowMaestro workflows! 🎉
 8. ✅ **TypeScript-Native:** Perfect alignment with FlowMaestro's stack
 
 **Strategic Fit:**
+
 - Mastra complements FlowMaestro's existing infrastructure
 - No need to replace Temporal, PostgreSQL, or Redis
 - Hybrid architecture leverages best of both worlds
@@ -2151,6 +2259,7 @@ Now Claude Desktop can execute FlowMaestro workflows! 🎉
 **Confidence Level:** 9/10
 
 **Rationale:**
+
 1. Provides 70% of missing functionality immediately
 2. Production-tested by thousands of developers
 3. Active development and community support
@@ -2160,12 +2269,14 @@ Now Claude Desktop can execute FlowMaestro workflows! 🎉
 ### 10.3 Next Steps
 
 **Immediate Actions (This Week):**
+
 1. ✅ Share this analysis with engineering team
 2. ✅ Schedule architecture review meeting
 3. ✅ Get buy-in from stakeholders
 4. ✅ Assign technical lead for Mastra integration
 
 **Phase 1 - Proof of Concept (Next 2-3 Weeks):**
+
 1. Install Mastra in development environment
 2. Create one pilot agent using Mastra
 3. Test memory, streaming, and tool execution
@@ -2173,6 +2284,7 @@ Now Claude Desktop can execute FlowMaestro workflows! 🎉
 5. Present findings to team
 
 **Phase 2 - Production Rollout (3-4 Months):**
+
 1. Follow implementation roadmap (Sections 7)
 2. Migrate agents incrementally
 3. Build agent builder UI
@@ -2180,6 +2292,7 @@ Now Claude Desktop can execute FlowMaestro workflows! 🎉
 5. Train team on Mastra
 
 **Success Metrics:**
+
 - [ ] Agent development time reduced by 60%+
 - [ ] All 40+ LLM providers supported
 - [ ] RAG memory working for all agents
@@ -2190,6 +2303,7 @@ Now Claude Desktop can execute FlowMaestro workflows! 🎉
 ### 10.4 Questions & Discussion
 
 **Key Questions to Resolve:**
+
 1. Do we keep Temporal or migrate to Mastra workflows? (Recommend: Keep both)
 2. When should we start Phase 1? (Recommend: Immediately)
 3. Who will be the technical lead? (Need: Senior full-stack engineer)
@@ -2197,6 +2311,7 @@ Now Claude Desktop can execute FlowMaestro workflows! 🎉
 5. Any concerns about external dependency? (Mitigation plan in Section 8)
 
 **Open Discussion Topics:**
+
 - Alternative approaches
 - Concerns or objections
 - Timeline adjustments
@@ -2207,6 +2322,7 @@ Now Claude Desktop can execute FlowMaestro workflows! 🎉
 ## Appendix A: Useful Links
 
 **Mastra.ai Resources:**
+
 - Official Website: https://mastra.ai
 - Documentation: https://mastra.ai/docs
 - GitHub Repository: https://github.com/mastra-ai/mastra
@@ -2214,12 +2330,14 @@ Now Claude Desktop can execute FlowMaestro workflows! 🎉
 - Blog: https://mastra.ai/blog
 
 **Tutorials & Examples:**
+
 - Quick Start (5 min): https://workos.com/blog/mastra-ai-quick-start
 - MCP Integration: https://docs.mcp.run/integrating/tutorials/mcpx-mastra-ts
 - RAG Tutorial: https://developer.couchbase.com/tutorial-rag-mastra-couchbase-nextjs
 - Vercel AI SDK: https://mastra.ai/blog/using-ai-sdk-with-mastra
 
 **Related Technologies:**
+
 - Vercel AI SDK: https://sdk.vercel.ai
 - Model Context Protocol: https://modelcontextprotocol.io
 - OpenTelemetry: https://opentelemetry.io
@@ -2249,6 +2367,7 @@ Now Claude Desktop can execute FlowMaestro workflows! 🎉
 ---
 
 **Document Statistics:**
+
 - Words: ~15,000
 - Sections: 10 major + 2 appendices
 - Code Examples: 25+

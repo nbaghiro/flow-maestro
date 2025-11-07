@@ -8,8 +8,10 @@ import { deleteAgentHandler } from "./delete";
 import { executeAgentHandler } from "./execute";
 import { sendMessageHandler } from "./send-message";
 import { getExecutionHandler } from "./get-execution";
+import { listExecutionsHandler } from "./list-executions";
 import { addToolHandler } from "./add-tool";
 import { removeToolHandler } from "./remove-tool";
+import { streamAgentHandler } from "./stream";
 
 export async function agentRoutes(fastify: FastifyInstance) {
     // All agent routes require authentication
@@ -28,6 +30,8 @@ export async function agentRoutes(fastify: FastifyInstance) {
 
     // Agent execution
     fastify.post("/:id/execute", executeAgentHandler);
-    fastify.post("/:id/executions/:executionId/message", sendMessageHandler);
+    fastify.get("/:id/executions", listExecutionsHandler);
     fastify.get("/:id/executions/:executionId", getExecutionHandler);
+    fastify.get("/:id/executions/:executionId/stream", streamAgentHandler);
+    fastify.post("/:id/executions/:executionId/message", sendMessageHandler);
 }

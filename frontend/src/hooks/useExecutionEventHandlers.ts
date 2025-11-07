@@ -12,101 +12,109 @@ export function useExecutionEventHandlers() {
 
     useEffect(() => {
         // Execution lifecycle events
-        const handleExecutionStarted = (event: any) => {
+        const handleExecutionStarted = (event: unknown) => {
             console.log("[WS] Execution started:", event);
+            const e = event as Record<string, unknown>;
             addExecutionLog({
                 level: "info",
-                message: `Workflow started: ${event.workflowName} (${event.totalNodes} nodes)`,
-                timestamp: new Date(event.timestamp)
+                message: `Workflow started: ${e.workflowName as string} (${e.totalNodes as number} nodes)`,
+                timestamp: new Date(e.timestamp as string)
             });
         };
 
-        const handleExecutionProgress = (event: any) => {
+        const handleExecutionProgress = (event: unknown) => {
             console.log("[WS] Execution progress:", event);
+            const e = event as Record<string, unknown>;
             addExecutionLog({
                 level: "info",
-                message: `Progress: ${event.completed}/${event.total} nodes (${event.percentage}%)`,
-                timestamp: new Date(event.timestamp)
+                message: `Progress: ${e.completed as number}/${e.total as number} nodes (${e.percentage as number}%)`,
+                timestamp: new Date(e.timestamp as string)
             });
         };
 
-        const handleExecutionCompleted = (event: any) => {
+        const handleExecutionCompleted = (event: unknown) => {
             console.log("[WS] Execution completed:", event);
+            const e = event as Record<string, unknown>;
             updateExecutionStatus("completed");
             addExecutionLog({
                 level: "success",
-                message: `Workflow completed successfully in ${event.duration}ms`,
-                timestamp: new Date(event.timestamp)
+                message: `Workflow completed successfully in ${e.duration as number}ms`,
+                timestamp: new Date(e.timestamp as string)
             });
         };
 
-        const handleExecutionFailed = (event: any) => {
+        const handleExecutionFailed = (event: unknown) => {
             console.log("[WS] Execution failed:", event);
+            const e = event as Record<string, unknown>;
             updateExecutionStatus("failed");
             addExecutionLog({
                 level: "error",
-                message: `Workflow failed: ${event.error}`,
-                timestamp: new Date(event.timestamp)
+                message: `Workflow failed: ${e.error as string}`,
+                timestamp: new Date(e.timestamp as string)
             });
         };
 
         // Node lifecycle events
-        const handleNodeStarted = (event: any) => {
+        const handleNodeStarted = (event: unknown) => {
             console.log("[WS] Node started:", event);
-            updateNodeState(event.nodeId, {
+            const e = event as Record<string, unknown>;
+            updateNodeState(e.nodeId as string, {
                 status: "running",
-                startedAt: new Date(event.timestamp)
+                startedAt: new Date(e.timestamp as string)
             });
             addExecutionLog({
                 level: "info",
-                message: `Node started: ${event.nodeName} (${event.nodeType})`,
-                nodeId: event.nodeId,
-                timestamp: new Date(event.timestamp)
+                message: `Node started: ${e.nodeName as string} (${e.nodeType as string})`,
+                nodeId: e.nodeId as string,
+                timestamp: new Date(e.timestamp as string)
             });
         };
 
-        const handleNodeCompleted = (event: any) => {
+        const handleNodeCompleted = (event: unknown) => {
             console.log("[WS] Node completed:", event);
-            updateNodeState(event.nodeId, {
+            const e = event as Record<string, unknown>;
+            updateNodeState(e.nodeId as string, {
                 status: "success",
-                completedAt: new Date(event.timestamp),
-                output: event.output,
-                duration: event.duration
+                completedAt: new Date(e.timestamp as string),
+                output: e.output as unknown as import("@flowmaestro/shared").JsonValue | undefined,
+                duration: e.duration as number
             });
             addExecutionLog({
                 level: "success",
-                message: `Node completed in ${event.duration}ms`,
-                nodeId: event.nodeId,
-                timestamp: new Date(event.timestamp)
+                message: `Node completed in ${e.duration as number}ms`,
+                nodeId: e.nodeId as string,
+                timestamp: new Date(e.timestamp as string)
             });
         };
 
-        const handleNodeFailed = (event: any) => {
+        const handleNodeFailed = (event: unknown) => {
             console.log("[WS] Node failed:", event);
-            updateNodeState(event.nodeId, {
+            const e = event as Record<string, unknown>;
+            updateNodeState(e.nodeId as string, {
                 status: "error",
-                completedAt: new Date(event.timestamp),
-                error: event.error
+                completedAt: new Date(e.timestamp as string),
+                error: e.error as string
             });
             addExecutionLog({
                 level: "error",
-                message: `Node failed: ${event.error}`,
-                nodeId: event.nodeId,
-                timestamp: new Date(event.timestamp)
+                message: `Node failed: ${e.error as string}`,
+                nodeId: e.nodeId as string,
+                timestamp: new Date(e.timestamp as string)
             });
         };
 
-        const handleNodeRetry = (event: any) => {
+        const handleNodeRetry = (event: unknown) => {
             console.log("[WS] Node retry:", event);
+            const e = event as Record<string, unknown>;
             addExecutionLog({
                 level: "warning",
-                message: `Retrying node (attempt ${event.attempt}): ${event.error}`,
-                nodeId: event.nodeId,
-                timestamp: new Date(event.timestamp)
+                message: `Retrying node (attempt ${e.attempt as number}): ${e.error as string}`,
+                nodeId: e.nodeId as string,
+                timestamp: new Date(e.timestamp as string)
             });
         };
 
-        const handleNodeStream = (event: any) => {
+        const handleNodeStream = (event: unknown) => {
             console.log("[WS] Node stream:", event);
             // Handle streaming data (e.g., LLM token generation)
             // You can implement custom handling for streaming nodes here

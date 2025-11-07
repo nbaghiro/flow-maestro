@@ -7,7 +7,7 @@ export async function createConnectionRoute(fastify: FastifyInstance) {
     fastify.post(
         "/",
         {
-            preHandler: [authMiddleware, validateBody(createConnectionSchema)],
+            preHandler: [authMiddleware, validateBody(createConnectionSchema)]
         },
         async (request, reply) => {
             const connectionRepository = new ConnectionRepository();
@@ -15,12 +15,12 @@ export async function createConnectionRoute(fastify: FastifyInstance) {
 
             const connection = await connectionRepository.create({
                 ...body,
-                user_id: request.user!.id,
+                user_id: request.user!.id
             });
 
             return reply.status(201).send({
                 success: true,
-                data: connection,
+                data: connection
             });
         }
     );

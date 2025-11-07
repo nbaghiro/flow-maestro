@@ -11,7 +11,7 @@ export interface ExtractedText {
         pages?: number;
         wordCount?: number;
         language?: string;
-        [key: string]: any;
+        [key: string]: unknown;
     };
 }
 
@@ -68,12 +68,14 @@ export class TextExtractor {
                 };
             } else if (contentType.includes("application/pdf")) {
                 // For PDFs from URLs, we'd need to save temporarily
-                throw new Error("PDF URLs are not yet supported. Please download and upload the file.");
+                throw new Error(
+                    "PDF URLs are not yet supported. Please download and upload the file."
+                );
             } else {
                 throw new Error(`Unsupported content type: ${contentType}`);
             }
-        } catch (error: any) {
-            throw new Error(`Failed to fetch URL: ${error.message}`);
+        } catch (error: unknown) {
+            throw new Error(`Failed to fetch URL: ${error instanceof Error ? error.message : "Unknown error"}`);
         }
     }
 
@@ -91,11 +93,11 @@ export class TextExtractor {
                 content: data.text,
                 metadata: {
                     pages: data.total,
-                    wordCount: this.countWords(data.text),
+                    wordCount: this.countWords(data.text)
                 }
             };
-        } catch (error: any) {
-            throw new Error(`Failed to extract text from PDF: ${error.message}`);
+        } catch (error: unknown) {
+            throw new Error(`Failed to extract text from PDF: ${error instanceof Error ? error.message : "Unknown error"}`);
         }
     }
 
@@ -114,8 +116,8 @@ export class TextExtractor {
                     messages: result.messages // Any warnings during extraction
                 }
             };
-        } catch (error: any) {
-            throw new Error(`Failed to extract text from DOCX: ${error.message}`);
+        } catch (error: unknown) {
+            throw new Error(`Failed to extract text from DOCX: ${error instanceof Error ? error.message : "Unknown error"}`);
         }
     }
 
@@ -132,8 +134,8 @@ export class TextExtractor {
                     wordCount: this.countWords(content)
                 }
             };
-        } catch (error: any) {
-            throw new Error(`Failed to read text file: ${error.message}`);
+        } catch (error: unknown) {
+            throw new Error(`Failed to read text file: ${error instanceof Error ? error.message : "Unknown error"}`);
         }
     }
 
@@ -185,9 +187,7 @@ export class TextExtractor {
                 .trim();
 
             // Combine title, description, and content
-            const fullText = [title, description, content]
-                .filter(Boolean)
-                .join("\n\n");
+            const fullText = [title, description, content].filter(Boolean).join("\n\n");
 
             return {
                 content: fullText,
@@ -198,8 +198,8 @@ export class TextExtractor {
                     source: sourceUrl
                 }
             };
-        } catch (error: any) {
-            throw new Error(`Failed to extract text from HTML: ${error.message}`);
+        } catch (error: unknown) {
+            throw new Error(`Failed to extract text from HTML: ${error instanceof Error ? error.message : "Unknown error"}`);
         }
     }
 
@@ -222,8 +222,8 @@ export class TextExtractor {
                     structure: "json"
                 }
             };
-        } catch (error: any) {
-            throw new Error(`Failed to extract text from JSON: ${error.message}`);
+        } catch (error: unknown) {
+            throw new Error(`Failed to extract text from JSON: ${error instanceof Error ? error.message : "Unknown error"}`);
         }
     }
 
@@ -274,15 +274,15 @@ export class TextExtractor {
                     wordCount: this.countWords(fullText)
                 }
             };
-        } catch (error: any) {
-            throw new Error(`Failed to extract text from CSV: ${error.message}`);
+        } catch (error: unknown) {
+            throw new Error(`Failed to extract text from CSV: ${error instanceof Error ? error.message : "Unknown error"}`);
         }
     }
 
     /**
      * Recursively extract text from JSON objects
      */
-    private extractTextFromObject(obj: any, depth: number = 0): string[] {
+    private extractTextFromObject(obj: unknown, depth: number = 0): string[] {
         const textParts: string[] = [];
         const maxDepth = 10; // Prevent infinite recursion
 
@@ -301,7 +301,7 @@ export class TextExtractor {
                 if (obj.hasOwnProperty(key)) {
                     // Include the key as context
                     textParts.push(`${key}:`);
-                    textParts.push(...this.extractTextFromObject(obj[key], depth + 1));
+                    textParts.push(...this.extractTextFromObject(obj[key as keyof typeof obj] as unknown, depth + 1));
                 }
             }
         } else if (typeof obj === "number" || typeof obj === "boolean") {

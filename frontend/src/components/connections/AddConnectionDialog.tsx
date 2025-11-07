@@ -44,7 +44,7 @@ export function AddConnectionDialog({
     const [connectionMethod, setConnectionMethod] = useState<ConnectionMethod | null>(null);
     const [provider, setProvider] = useState<string>("");
     const [name, setName] = useState<string>("");
-    const [config, setConfig] = useState<Record<string, any>>({});
+    const [config, setConfig] = useState<Record<string, unknown>>({});
     const [testing, setTesting] = useState(false);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -124,25 +124,37 @@ export function AddConnectionDialog({
 
         // Build data based on connection method
         if (connectionMethod === "api_key") {
-            input.data = {
-                api_key: config.apiKey || "",
-                api_secret: config.apiSecret
+            const data: Record<string, string> = {
+                api_key: (config.apiKey as string) || ""
             };
+            if (config.apiSecret) {
+                data.api_secret = config.apiSecret as string;
+            }
+            input.data = data as import("@flowmaestro/shared").JsonObject;
         } else if (connectionMethod === "mcp") {
-            input.data = {
-                server_url: config.serverUrl || "",
-                auth_type: config.authType || "none",
-                api_key: config.apiKey,
-                bearer_token: config.bearerToken,
-                username: config.username,
-                password: config.password
+            const data: Record<string, string> = {
+                server_url: (config.serverUrl as string) || "",
+                auth_type: (config.authType as string) || "none"
             };
-            input.mcp_server_url = config.serverUrl;
+            if (config.apiKey) {
+                data.api_key = config.apiKey as string;
+            }
+            if (config.bearerToken) {
+                data.bearer_token = config.bearerToken as string;
+            }
+            if (config.username) {
+                data.username = config.username as string;
+            }
+            if (config.password) {
+                data.password = config.password as string;
+            }
+            input.data = data as import("@flowmaestro/shared").JsonObject;
+            input.mcp_server_url = config.serverUrl as string | undefined;
         } else if (connectionMethod === "basic_auth") {
             input.data = {
-                username: config.username || "",
-                password: config.password || ""
-            };
+                username: (config.username as string) || "",
+                password: (config.password as string) || ""
+            } as import("@flowmaestro/shared").JsonObject;
         }
 
         return input;
@@ -262,7 +274,7 @@ export function AddConnectionDialog({
                                     </label>
                                     <input
                                         type="password"
-                                        value={config.apiKey || ""}
+                                        value={(config.apiKey as string) || ""}
                                         onChange={(e) =>
                                             setConfig({ ...config, apiKey: e.target.value })
                                         }
@@ -277,7 +289,7 @@ export function AddConnectionDialog({
                                         </label>
                                         <input
                                             type="password"
-                                            value={config.apiSecret || ""}
+                                            value={(config.apiSecret as string) || ""}
                                             onChange={(e) =>
                                                 setConfig({
                                                     ...config,
@@ -300,7 +312,7 @@ export function AddConnectionDialog({
                                     </label>
                                     <input
                                         type="url"
-                                        value={config.serverUrl || ""}
+                                        value={(config.serverUrl as string) || ""}
                                         onChange={(e) =>
                                             setConfig({ ...config, serverUrl: e.target.value })
                                         }
@@ -313,7 +325,7 @@ export function AddConnectionDialog({
                                         Authentication Type
                                     </label>
                                     <select
-                                        value={config.authType || "none"}
+                                        value={(config.authType as string) || "none"}
                                         onChange={(e) =>
                                             setConfig({ ...config, authType: e.target.value })
                                         }
@@ -332,7 +344,7 @@ export function AddConnectionDialog({
                                         </label>
                                         <input
                                             type="password"
-                                            value={config.apiKey || ""}
+                                            value={(config.apiKey as string) || ""}
                                             onChange={(e) =>
                                                 setConfig({ ...config, apiKey: e.target.value })
                                             }
@@ -347,7 +359,7 @@ export function AddConnectionDialog({
                                         </label>
                                         <input
                                             type="password"
-                                            value={config.bearerToken || ""}
+                                            value={(config.bearerToken as string) || ""}
                                             onChange={(e) =>
                                                 setConfig({
                                                     ...config,
@@ -366,7 +378,7 @@ export function AddConnectionDialog({
                                             </label>
                                             <input
                                                 type="text"
-                                                value={config.username || ""}
+                                                value={(config.username as string) || ""}
                                                 onChange={(e) =>
                                                     setConfig({
                                                         ...config,
@@ -382,7 +394,7 @@ export function AddConnectionDialog({
                                             </label>
                                             <input
                                                 type="password"
-                                                value={config.password || ""}
+                                                value={(config.password as string) || ""}
                                                 onChange={(e) =>
                                                     setConfig({
                                                         ...config,

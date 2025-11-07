@@ -29,28 +29,28 @@ This guide provides comprehensive instructions for deploying FlowMaestro to Goog
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                     Cloud Load Balancer                      │
-│                    (SSL Termination)                         │
+│                     Cloud Load Balancer                     │
+│                    (SSL Termination)                        │
 └──────────────┬──────────────────────────────────────────────┘
                │
-    ┌──────────┴──────────┬───────────────────┐
-    │                     │                   │
+    ┌──────────┴──────────┬──────────────────┐
+    │                     │                  │
 ┌───▼────┐         ┌──────▼──────┐      ┌────▼─────┐
 │  CDN   │         │   Ingress   │      │   CDN    │
 │Frontend│         │  (GKE)      │      │Marketing │
 └────────┘         └──────┬──────┘      └──────────┘
                           │
-              ┌───────────┴────────────┐
-              │                        │
+              ┌───────────┴───────────┐
+              │                       │
          ┌────▼─────┐          ┌──────▼──────┐
          │API Server│          │Temporal     │
          │(3 pods)  │          │Worker       │
          │          │          │(2 pods)     │
          └────┬─────┘          └──────┬──────┘
               │                       │
-    ┌─────────┼───────────────────────┼──────────┐
-    │         │                       │          │
-┌───▼────┐ ┌─▼──────┐        ┌───────▼────┐  ┌──▼──────────┐
+    ┌─────────┼───────────────────────┼─────────┐
+    │         │                       │         │
+┌───▼────┐ ┌─-▼─────┐        ┌───────-▼───┐  ┌──▼──────────┐
 │Cloud   │ │Memory  │        │Temporal    │  │Secret       │
 │SQL     │ │store   │        │Cloud       │  │Manager      │
 │Postgres│ │Redis   │        │(External)  │  │             │
@@ -266,6 +266,7 @@ The Pulumi infrastructure will provision the following components (see `infrastr
 #### Secret Manager (`secrets.ts`)
 
 Stores sensitive credentials:
+
 - `flowmaestro-db-password`
 - `flowmaestro-jwt-secret`
 - `flowmaestro-encryption-key`
@@ -631,6 +632,7 @@ kubectl describe managedcertificate flowmaestro-cert -n flowmaestro
 ### API Server Deployment
 
 Key features:
+
 - **Replicas**: 3 (HPA: 3-10 based on CPU/memory)
 - **Resources**: 500m-2000m CPU, 512Mi-2Gi memory
 - **Health checks**: Liveness and readiness probes on `/health`
@@ -640,6 +642,7 @@ Key features:
 ### Temporal Worker Deployment
 
 Key features:
+
 - **Replicas**: 2 (HPA: 2-5 based on CPU)
 - **Resources**: 1000m-4000m CPU, 1Gi-4Gi memory
 - **Command**: Override to run worker entry point
@@ -649,6 +652,7 @@ Key features:
 ### Frontend Deployment
 
 Key features:
+
 - **Replicas**: 2
 - **Resources**: 100m-500m CPU, 128Mi-512Mi memory
 - **Image**: Nginx with built React SPA
@@ -658,6 +662,7 @@ Key features:
 ### Database Migration Job
 
 Key features:
+
 - **Type**: Job (runs once)
 - **Restart policy**: OnFailure
 - **Command**: `npm run db:migrate`
@@ -728,63 +733,63 @@ Located at `cloudbuild.yaml`:
 
 ```yaml
 steps:
-  # Build backend image
-  - name: 'gcr.io/cloud-builders/docker'
-    args:
-      - 'build'
-      - '-f'
-      - 'backend/Dockerfile'
-      - '-t'
-      - '${_REGISTRY}/${_BACKEND_IMAGE}:$SHORT_SHA'
-      - '-t'
-      - '${_REGISTRY}/${_BACKEND_IMAGE}:latest'
-      - '.'
+    # Build backend image
+    - name: "gcr.io/cloud-builders/docker"
+      args:
+          - "build"
+          - "-f"
+          - "backend/Dockerfile"
+          - "-t"
+          - "${_REGISTRY}/${_BACKEND_IMAGE}:$SHORT_SHA"
+          - "-t"
+          - "${_REGISTRY}/${_BACKEND_IMAGE}:latest"
+          - "."
 
-  # Build frontend image
-  - name: 'gcr.io/cloud-builders/docker'
-    args:
-      - 'build'
-      - '-f'
-      - 'frontend/Dockerfile'
-      - '--build-arg'
-      - 'VITE_API_URL=${_API_URL}'
-      - '--build-arg'
-      - 'VITE_WS_URL=${_WS_URL}'
-      - '-t'
-      - '${_REGISTRY}/${_FRONTEND_IMAGE}:$SHORT_SHA'
-      - '-t'
-      - '${_REGISTRY}/${_FRONTEND_IMAGE}:latest'
-      - '.'
+    # Build frontend image
+    - name: "gcr.io/cloud-builders/docker"
+      args:
+          - "build"
+          - "-f"
+          - "frontend/Dockerfile"
+          - "--build-arg"
+          - "VITE_API_URL=${_API_URL}"
+          - "--build-arg"
+          - "VITE_WS_URL=${_WS_URL}"
+          - "-t"
+          - "${_REGISTRY}/${_FRONTEND_IMAGE}:$SHORT_SHA"
+          - "-t"
+          - "${_REGISTRY}/${_FRONTEND_IMAGE}:latest"
+          - "."
 
-  # Push images
-  - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', '--all-tags', '${_REGISTRY}/${_BACKEND_IMAGE}']
+    # Push images
+    - name: "gcr.io/cloud-builders/docker"
+      args: ["push", "--all-tags", "${_REGISTRY}/${_BACKEND_IMAGE}"]
 
-  - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', '--all-tags', '${_REGISTRY}/${_FRONTEND_IMAGE}']
+    - name: "gcr.io/cloud-builders/docker"
+      args: ["push", "--all-tags", "${_REGISTRY}/${_FRONTEND_IMAGE}"]
 
-  # Deploy to GKE
-  - name: 'gcr.io/cloud-builders/gke-deploy'
-    args:
-      - 'run'
-      - '--filename=k8s/overlays/production'
-      - '--image=${_REGISTRY}/${_BACKEND_IMAGE}:$SHORT_SHA'
-      - '--location=${_GKE_REGION}'
-      - '--cluster=${_GKE_CLUSTER}'
-      - '--namespace=flowmaestro'
+    # Deploy to GKE
+    - name: "gcr.io/cloud-builders/gke-deploy"
+      args:
+          - "run"
+          - "--filename=k8s/overlays/production"
+          - "--image=${_REGISTRY}/${_BACKEND_IMAGE}:$SHORT_SHA"
+          - "--location=${_GKE_REGION}"
+          - "--cluster=${_GKE_CLUSTER}"
+          - "--namespace=flowmaestro"
 
 substitutions:
-  _REGISTRY: 'us-central1-docker.pkg.dev/${PROJECT_ID}/flowmaestro'
-  _BACKEND_IMAGE: 'backend'
-  _FRONTEND_IMAGE: 'frontend'
-  _GKE_CLUSTER: 'flowmaestro-cluster'
-  _GKE_REGION: 'us-central1'
-  _API_URL: 'https://api.yourdomain.com'
-  _WS_URL: 'wss://api.yourdomain.com'
+    _REGISTRY: "us-central1-docker.pkg.dev/${PROJECT_ID}/flowmaestro"
+    _BACKEND_IMAGE: "backend"
+    _FRONTEND_IMAGE: "frontend"
+    _GKE_CLUSTER: "flowmaestro-cluster"
+    _GKE_REGION: "us-central1"
+    _API_URL: "https://api.yourdomain.com"
+    _WS_URL: "wss://api.yourdomain.com"
 
 options:
-  machineType: 'E2_HIGHCPU_8'
-  logging: CLOUD_LOGGING_ONLY
+    machineType: "E2_HIGHCPU_8"
+    logging: CLOUD_LOGGING_ONLY
 ```
 
 ### Set up Cloud Build Trigger
@@ -806,11 +811,13 @@ gcloud builds triggers create github \
 ### Cloud Logging
 
 Logs are automatically collected from:
+
 - GKE pod stdout/stderr
 - Cloud SQL query logs (optional)
 - Load Balancer access logs
 
 **View logs:**
+
 ```bash
 # API server logs
 gcloud logging read "resource.type=k8s_container AND resource.labels.pod_name=~'api-server.*'" --limit 50 --format json
@@ -822,16 +829,19 @@ gcloud logging read "resource.type=k8s_container AND resource.labels.pod_name=~'
 ### Cloud Monitoring
 
 **Dashboards** (see `infrastructure/monitoring.ts`):
+
 - API server metrics (request rate, latency, errors)
 - Worker metrics (activity execution, failures)
 - Database metrics (connections, query latency)
 - Redis metrics (memory usage, hit rate)
 
 **Uptime Checks:**
+
 - API health endpoint: `https://api.yourdomain.com/health`
 - Frontend: `https://app.yourdomain.com`
 
 **Alert Policies:**
+
 - API server error rate > 5%
 - API server p95 latency > 2s
 - Database CPU > 80%
@@ -845,6 +855,7 @@ gcloud logging read "resource.type=k8s_container AND resource.labels.pod_name=~'
 ### Horizontal Pod Autoscaling
 
 **API Server HPA:**
+
 ```yaml
 minReplicas: 3
 maxReplicas: 10
@@ -853,6 +864,7 @@ targetMemoryUtilizationPercentage: 80
 ```
 
 **Temporal Worker HPA:**
+
 ```yaml
 minReplicas: 2
 maxReplicas: 5
@@ -862,6 +874,7 @@ targetCPUUtilizationPercentage: 75
 ### Database Scaling
 
 **Cloud SQL:**
+
 - Vertical scaling: Upgrade machine type
 - Read replicas: Add read replicas for read-heavy workloads
 - Connection pooling: Configured via `max_connections`
@@ -869,6 +882,7 @@ targetCPUUtilizationPercentage: 75
 ### Redis Scaling
 
 **Memorystore:**
+
 - Vertical scaling: Increase memory tier
 - Standard tier: Automatic failover
 
@@ -912,16 +926,16 @@ targetCPUUtilizationPercentage: 75
 
 ### Estimated Monthly Costs (Production)
 
-| Service | Configuration | Estimated Cost |
-|---------|--------------|----------------|
-| GKE Autopilot | ~10 vCPUs, 20GB RAM | $250-400 |
-| Cloud SQL | db-custom-2-7680 HA | $180-220 |
-| Memorystore Redis | 5GB Standard | $150-180 |
-| Cloud Load Balancer | Global HTTPS | $20-30 |
-| Cloud CDN | 100GB egress | $10-20 |
-| Cloud Storage | 10GB, 1M requests | $5-10 |
-| Temporal Cloud | Depends on plan | $200-500 |
-| **Total** | | **$815-1,360/month** |
+| Service             | Configuration       | Estimated Cost       |
+| ------------------- | ------------------- | -------------------- |
+| GKE Autopilot       | ~10 vCPUs, 20GB RAM | $250-400             |
+| Cloud SQL           | db-custom-2-7680 HA | $180-220             |
+| Memorystore Redis   | 5GB Standard        | $150-180             |
+| Cloud Load Balancer | Global HTTPS        | $20-30               |
+| Cloud CDN           | 100GB egress        | $10-20               |
+| Cloud Storage       | 10GB, 1M requests   | $5-10                |
+| Temporal Cloud      | Depends on plan     | $200-500             |
+| **Total**           |                     | **$815-1,360/month** |
 
 ### Cost Optimization Tips
 
@@ -939,21 +953,25 @@ targetCPUUtilizationPercentage: 75
 ### Backup Strategy
 
 **Cloud SQL:**
+
 - Automated daily backups (retained 7 days)
 - Point-in-time recovery (7 days)
 - Manual snapshots before major changes
 
 **Redis:**
+
 - RDB snapshots (automated)
 - Ephemeral data (can be rebuilt)
 
 **Application Data:**
+
 - Workflow definitions stored in PostgreSQL
 - Execution history in Temporal Cloud (durable)
 
 ### Recovery Procedures
 
 **Database Restore:**
+
 ```bash
 # List backups
 gcloud sql backups list --instance=flowmaestro-db
@@ -963,6 +981,7 @@ gcloud sql backups restore BACKUP_ID --backup-instance=flowmaestro-db
 ```
 
 **Application Rollback:**
+
 ```bash
 # Rollback to previous deployment
 kubectl rollout undo deployment/api-server -n flowmaestro

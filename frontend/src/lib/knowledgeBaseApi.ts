@@ -34,7 +34,7 @@ export interface KnowledgeDocument {
     file_type: string;
     file_size: bigint | null;
     content: string | null;
-    metadata: Record<string, any>;
+    metadata: Record<string, unknown>;
     status: "pending" | "processing" | "ready" | "failed";
     error_message: string | null;
     processing_started_at: string | null;
@@ -58,7 +58,7 @@ export interface ChunkSearchResult {
     document_name: string;
     chunk_index: number;
     content: string;
-    metadata: Record<string, any>;
+    metadata: Record<string, unknown>;
     similarity: number;
 }
 
@@ -78,7 +78,7 @@ export interface QueryKnowledgeBaseInput {
     query: string;
 }
 
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
     success: boolean;
     data?: T;
     error?: string;

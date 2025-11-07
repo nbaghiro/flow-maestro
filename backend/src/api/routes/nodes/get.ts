@@ -10,7 +10,7 @@ export async function getNodeMetadataRoute(fastify: FastifyInstance) {
             preHandler: [authMiddleware, validateParams(nodeTypeParamSchema)]
         },
         async (request, reply) => {
-            const { type } = request.params as any;
+            const { type } = request.params as { type: string };
 
             if (!nodeRegistry.hasNode(type)) {
                 throw new NotFoundError(`Node type '${type}' not found`);

@@ -21,7 +21,7 @@ const integrations: Integration[] = [
     { name: "Teams", category: "Communication", icon: <MessageSquare /> },
     { name: "Temporal", category: "Orchestration", icon: <Zap /> },
     { name: "OpenAI", category: "AI", icon: <Zap /> },
-    { name: "Anthropic", category: "AI", icon: <Zap /> },
+    { name: "Anthropic", category: "AI", icon: <Zap /> }
 ];
 
 export const Integrations: React.FC = () => {
@@ -49,8 +49,8 @@ export const Integrations: React.FC = () => {
                         <span className="gradient-text"> Everything</span>
                     </h2>
                     <p className="text-xl text-gray-400 max-w-2xl mx-auto">
-                        Pre-built integrations for the tools you already use.
-                        Plus custom API support for anything else.
+                        Pre-built integrations for the tools you already use. Plus custom API
+                        support for anything else.
                     </p>
                 </motion.div>
 
@@ -73,12 +73,8 @@ export const Integrations: React.FC = () => {
                                 <div className="w-12 h-12 rounded-lg bg-primary-500/10 flex items-center justify-center mb-3 text-primary-400 group-hover:bg-primary-500/20 transition-colors">
                                     {integration.icon}
                                 </div>
-                                <h3 className="font-semibold text-sm mb-1">
-                                    {integration.name}
-                                </h3>
-                                <p className="text-xs text-gray-400">
-                                    {integration.category}
-                                </p>
+                                <h3 className="font-semibold text-sm mb-1">{integration.name}</h3>
+                                <p className="text-xs text-gray-400">{integration.category}</p>
                             </div>
                         </motion.div>
                     ))}
@@ -91,9 +87,7 @@ export const Integrations: React.FC = () => {
                     transition={{ duration: 0.6, delay: 0.4 }}
                     className="text-center"
                 >
-                    <p className="text-gray-400 mb-4">
-                        + 98 more integrations available
-                    </p>
+                    <p className="text-gray-400 mb-4">+ 98 more integrations available</p>
                     <button className="px-6 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg font-semibold transition-all duration-200">
                         View All Integrations
                     </button>

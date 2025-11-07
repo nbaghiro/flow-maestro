@@ -52,7 +52,10 @@ class Database {
         return Database.instance;
     }
 
-    public async query<T extends QueryResultRow = any>(text: string, params?: any[]): Promise<QueryResult<T>> {
+    public async query<T extends QueryResultRow = QueryResultRow>(
+        text: string,
+        params?: unknown[]
+    ): Promise<QueryResult<T>> {
         const start = Date.now();
         try {
             const result = await this.pool.query<T>(text, params);

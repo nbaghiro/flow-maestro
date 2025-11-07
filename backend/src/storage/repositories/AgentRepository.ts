@@ -1,5 +1,27 @@
 import { db } from "../database";
-import { AgentModel, CreateAgentInput, UpdateAgentInput } from "../models/Agent";
+import { AgentModel, CreateAgentInput, UpdateAgentInput, Tool, MemoryConfig } from "../models/Agent";
+import type { JsonObject } from "@flowmaestro/shared";
+
+// Database row interface
+interface AgentRow {
+    id: string;
+    user_id: string;
+    name: string;
+    description: string | null;
+    model: string;
+    provider: string;
+    connection_id: string | null;
+    system_prompt: string;
+    temperature: number | string;
+    max_tokens: number | string;
+    max_iterations: number | string;
+    available_tools: Tool[] | string;
+    memory_config: MemoryConfig | string;
+    metadata: JsonObject | string;
+    created_at: string | Date;
+    updated_at: string | Date;
+    deleted_at: string | Date | null;
+}
 
 export class AgentRepository {
     async create(input: CreateAgentInput): Promise<AgentModel> {
@@ -29,8 +51,8 @@ export class AgentRepository {
             JSON.stringify(input.metadata || {})
         ];
 
-        const result = await db.query<AgentModel>(query, values);
-        return this.mapRow(result.rows[0]);
+        const result = await db.query(query, values);
+        return this.mapRow(result.rows[0] as AgentRow);
     }
 
     async findById(id: string): Promise<AgentModel | null> {
@@ -39,8 +61,8 @@ export class AgentRepository {
             WHERE id = $1 AND deleted_at IS NULL
         `;
 
-        const result = await db.query<AgentModel>(query, [id]);
-        return result.rows.length > 0 ? this.mapRow(result.rows[0]) : null;
+        const result = await db.query(query, [id]);
+        return result.rows.length > 0 ? this.mapRow(result.rows[0] as AgentRow) : null;
     }
 
     async findByIdAndUserId(id: string, userId: string): Promise<AgentModel | null> {
@@ -49,8 +71,8 @@ export class AgentRepository {
             WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL
         `;
 
-        const result = await db.query<AgentModel>(query, [id, userId]);
-        return result.rows.length > 0 ? this.mapRow(result.rows[0]) : null;
+        const result = await db.query(query, [id, userId]);
+        return result.rows.length > 0 ? this.mapRow(result.rows[0] as AgentRow) : null;
     }
 
     async findByUserId(
@@ -75,18 +97,18 @@ export class AgentRepository {
 
         const [countResult, agentsResult] = await Promise.all([
             db.query<{ count: string }>(countQuery, [userId]),
-            db.query<AgentModel>(query, [userId, limit, offset])
+            db.query(query, [userId, limit, offset])
         ]);
 
         return {
-            agents: agentsResult.rows.map((row) => this.mapRow(row)),
+            agents: agentsResult.rows.map((row) => this.mapRow(row as AgentRow)),
             total: parseInt(countResult.rows[0].count)
         };
     }
 
     async update(id: string, input: UpdateAgentInput): Promise<AgentModel | null> {
         const updates: string[] = [];
-        const values: any[] = [];
+        const values: unknown[] = [];
         let paramIndex = 1;
 
         if (input.name !== undefined) {
@@ -161,8 +183,8 @@ export class AgentRepository {
             RETURNING *
         `;
 
-        const result = await db.query<AgentModel>(query, values);
-        return result.rows.length > 0 ? this.mapRow(result.rows[0]) : null;
+        const result = await db.query(query, values);
+        return result.rows.length > 0 ? this.mapRow(result.rows[0] as AgentRow) : null;
     }
 
     async delete(id: string): Promise<boolean> {
@@ -186,19 +208,28 @@ export class AgentRepository {
         return (result.rowCount || 0) > 0;
     }
 
-    private mapRow(row: any): AgentModel {
+    private mapRow(row: AgentRow): AgentModel {
         return {
-            ...row,
-            available_tools: typeof row.available_tools === "string"
-                ? JSON.parse(row.available_tools)
-                : row.available_tools,
-            memory_config: typeof row.memory_config === "string"
-                ? JSON.parse(row.memory_config)
-                : row.memory_config,
-            metadata: typeof row.metadata === "string"
-                ? JSON.parse(row.metadata)
-                : row.metadata,
-            temperature: parseFloat(row.temperature),
+            id: row.id,
+            user_id: row.user_id,
+            name: row.name,
+            description: row.description,
+            model: row.model,
+            provider: row.provider as "openai" | "anthropic" | "google" | "cohere",
+            connection_id: row.connection_id,
+            system_prompt: row.system_prompt,
+            temperature: typeof row.temperature === "string" ? parseFloat(row.temperature) : row.temperature,
+            max_tokens: typeof row.max_tokens === "string" ? parseInt(row.max_tokens) : row.max_tokens,
+            max_iterations: typeof row.max_iterations === "string" ? parseInt(row.max_iterations) : row.max_iterations,
+            available_tools:
+                typeof row.available_tools === "string"
+                    ? JSON.parse(row.available_tools)
+                    : row.available_tools,
+            memory_config:
+                typeof row.memory_config === "string"
+                    ? JSON.parse(row.memory_config)
+                    : row.memory_config,
+            metadata: typeof row.metadata === "string" ? JSON.parse(row.metadata) : row.metadata,
             created_at: new Date(row.created_at),
             updated_at: new Date(row.updated_at),
             deleted_at: row.deleted_at ? new Date(row.deleted_at) : null

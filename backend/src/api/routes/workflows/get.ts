@@ -11,7 +11,7 @@ export async function getWorkflowRoute(fastify: FastifyInstance) {
         },
         async (request, reply) => {
             const workflowRepository = new WorkflowRepository();
-            const { id } = request.params as any;
+            const { id } = request.params as { id: string };
 
             const workflow = await workflowRepository.findById(id);
 

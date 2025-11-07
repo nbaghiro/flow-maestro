@@ -4,13 +4,10 @@ import { AgentRepository } from "../../../storage/repositories/AgentRepository";
 import { NotFoundError } from "../../middleware";
 
 const getAgentParamsSchema = z.object({
-    id: z.string().uuid(),
+    id: z.string().uuid()
 });
 
-export async function getAgentHandler(
-    request: FastifyRequest,
-    reply: FastifyReply
-): Promise<void> {
+export async function getAgentHandler(request: FastifyRequest, reply: FastifyReply): Promise<void> {
     const userId = request.user!.id;
     const { id } = getAgentParamsSchema.parse(request.params);
 
@@ -23,6 +20,6 @@ export async function getAgentHandler(
 
     reply.send({
         success: true,
-        data: agent,
+        data: agent
     });
 }

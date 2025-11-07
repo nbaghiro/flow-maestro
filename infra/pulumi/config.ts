@@ -61,7 +61,7 @@ const defaults = {
     dbBackupEnabled: true,
     redisVersion: "REDIS_7_0",
     redisMemorySizeGb: 5,
-    redisTier: "STANDARD_HA" as const,
+    redisTier: "STANDARD_HA" as const
 };
 
 // Export configuration
@@ -108,7 +108,7 @@ export const infrastructureConfig: InfrastructureConfig = {
     openaiApiKey: config.getSecret("openaiApiKey"),
     anthropicApiKey: config.getSecret("anthropicApiKey"),
     googleApiKey: config.getSecret("googleApiKey"),
-    cohereApiKey: config.getSecret("cohereApiKey"),
+    cohereApiKey: config.getSecret("cohereApiKey")
 };
 
 // Helper function to create resource names
@@ -121,6 +121,6 @@ export function resourceLabels(): { [key: string]: string } {
     return {
         app: infrastructureConfig.appName,
         environment: infrastructureConfig.environment,
-        "managed-by": "pulumi",
+        "managed-by": "pulumi"
     };
 }

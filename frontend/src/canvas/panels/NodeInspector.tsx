@@ -49,8 +49,8 @@ export function NodeInspector() {
         selectNode(null);
     };
 
-    const handleUpdate = (config: any) => {
-        updateNode(node.id, config);
+    const handleUpdate = (config: unknown) => {
+        updateNode(node.id, config as unknown as import("@flowmaestro/shared").JsonObject);
     };
 
     const handleNameChange = (newName: string) => {

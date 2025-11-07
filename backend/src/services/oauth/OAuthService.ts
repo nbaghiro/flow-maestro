@@ -1,6 +1,6 @@
-import axios from 'axios';
-import { randomBytes } from 'crypto';
-import { getOAuthProvider, OAuthProvider } from './OAuthProviderRegistry';
+import axios from "axios";
+import { randomBytes } from "crypto";
+import { getOAuthProvider, OAuthProvider } from "./OAuthProviderRegistry";
 
 /**
  * OAuth state token data
@@ -8,6 +8,17 @@ import { getOAuthProvider, OAuthProvider } from './OAuthProviderRegistry';
 interface StateTokenData {
     userId: string;
     expiresAt: number;
+}
+
+/**
+ * OAuth token data from provider
+ */
+interface OAuthToken {
+    access_token: string;
+    refresh_token?: string;
+    token_type?: string;
+    expires_in?: number;
+    scope?: string;
 }
 
 /**
@@ -22,7 +33,7 @@ export interface OAuthTokenResult {
         expires_in?: number;
         scope?: string;
     };
-    accountInfo: any;
+    accountInfo: unknown;
 }
 
 /**
@@ -54,14 +65,14 @@ export class OAuthService {
         const params = new URLSearchParams({
             client_id: config.clientId,
             redirect_uri: config.redirectUri,
-            response_type: 'code',
+            response_type: "code",
             state,
             ...config.authParams
         });
 
         // Add scopes if provider uses them
         if (config.scopes && config.scopes.length > 0) {
-            params.set('scope', config.scopes.join(' '));
+            params.set("scope", config.scopes.join(" "));
         }
 
         const authUrl = `${config.authUrl}?${params.toString()}`;
@@ -84,7 +95,7 @@ export class OAuthService {
         // Validate state token (CSRF protection)
         const stateData = this.validateStateToken(state);
         if (!stateData) {
-            throw new Error('Invalid or expired state token');
+            throw new Error("Invalid or expired state token");
         }
 
         console.log(`[OAuth] Exchanging code for token: ${provider}`);
@@ -96,12 +107,13 @@ export class OAuthService {
             console.log(`[OAuth] Token exchange successful for ${provider}`);
 
             // Get user info from provider
-            let accountInfo = {};
+            let accountInfo: Record<string, unknown> = {};
             if (config.getUserInfo) {
                 try {
-                    accountInfo = await config.getUserInfo(tokenData.access_token);
+                    const userInfo = await config.getUserInfo(tokenData.access_token);
+                    accountInfo = userInfo as Record<string, unknown>;
                     console.log(`[OAuth] Retrieved user info for ${provider}:`, accountInfo);
-                } catch (error) {
+                } catch (error: unknown) {
                     console.error(`[OAuth] Failed to get user info for ${provider}:`, error);
                     // Continue anyway, user info is optional
                 }
@@ -112,21 +124,24 @@ export class OAuthService {
                 tokens: {
                     access_token: tokenData.access_token,
                     refresh_token: tokenData.refresh_token,
-                    token_type: tokenData.token_type || 'Bearer',
+                    token_type: tokenData.token_type || "Bearer",
                     expires_in: tokenData.expires_in,
                     scope: tokenData.scope
                 },
                 accountInfo
             };
-        } catch (error: any) {
-            console.error(`[OAuth] Token exchange failed for ${provider}:`, error.response?.data || error.message);
-            throw new Error(
-                `Failed to exchange authorization code: ${
-                    error.response?.data?.error_description ||
-                    error.response?.data?.error ||
-                    error.message
-                }`
+        } catch (error: unknown) {
+            const axiosError = error as { response?: { data?: { error_description?: string; error?: string } }; message?: string };
+            const errorMsg =
+                axiosError.response?.data?.error_description ||
+                axiosError.response?.data?.error ||
+                axiosError.message ||
+                "Unknown error";
+            console.error(
+                `[OAuth] Token exchange failed for ${provider}:`,
+                axiosError.response?.data || axiosError.message
             );
+            throw new Error(`Failed to exchange authorization code: ${errorMsg}`);
         }
     }
 
@@ -152,11 +167,11 @@ export class OAuthService {
         console.log(`[OAuth] Refreshing token for ${provider}`);
 
         try {
-            const params: any = {
+            const params: Record<string, string> = {
                 client_id: config.clientId,
                 client_secret: config.clientSecret,
                 refresh_token: refreshToken,
-                grant_type: 'refresh_token'
+                grant_type: "refresh_token"
             };
 
             const response = await axios.post(
@@ -164,8 +179,8 @@ export class OAuthService {
                 new URLSearchParams(params).toString(),
                 {
                     headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                        'Accept': 'application/json'
+                        "Content-Type": "application/x-www-form-urlencoded",
+                        Accept: "application/json"
                     }
                 }
             );
@@ -177,18 +192,21 @@ export class OAuthService {
             return {
                 access_token: tokenData.access_token,
                 refresh_token: tokenData.refresh_token || refreshToken, // Some providers don't return new refresh token
-                token_type: tokenData.token_type || 'Bearer',
+                token_type: tokenData.token_type || "Bearer",
                 expires_in: tokenData.expires_in
             };
-        } catch (error: any) {
-            console.error(`[OAuth] Token refresh failed for ${provider}:`, error.response?.data || error.message);
-            throw new Error(
-                `Failed to refresh token: ${
-                    error.response?.data?.error_description ||
-                    error.response?.data?.error ||
-                    error.message
-                }`
+        } catch (error: unknown) {
+            const axiosError = error as { response?: { data?: { error_description?: string; error?: string } }; message?: string };
+            const errorMsg =
+                axiosError.response?.data?.error_description ||
+                axiosError.response?.data?.error ||
+                axiosError.message ||
+                "Unknown error";
+            console.error(
+                `[OAuth] Token refresh failed for ${provider}:`,
+                axiosError.response?.data || axiosError.message
             );
+            throw new Error(`Failed to refresh token: ${errorMsg}`);
         }
     }
 
@@ -207,21 +225,21 @@ export class OAuthService {
         console.log(`[OAuth] Revoking token for ${provider}`);
 
         try {
-            await axios.post(
-                config.revokeUrl,
-                null,
-                {
-                    params: { token: accessToken },
-                    headers: {
-                        'Authorization': `Bearer ${accessToken}`,
-                        'Content-Type': 'application/x-www-form-urlencoded'
-                    }
+            await axios.post(config.revokeUrl, null, {
+                params: { token: accessToken },
+                headers: {
+                    Authorization: `Bearer ${accessToken}`,
+                    "Content-Type": "application/x-www-form-urlencoded"
                 }
-            );
+            });
 
             console.log(`[OAuth] Token revoked successfully for ${provider}`);
-        } catch (error: any) {
-            console.error(`[OAuth] Token revocation failed for ${provider}:`, error.response?.data || error.message);
+        } catch (error: unknown) {
+            const axiosError = error as { response?: { data?: unknown }; message?: string };
+            console.error(
+                `[OAuth] Token revocation failed for ${provider}:`,
+                axiosError.response?.data || axiosError.message
+            );
             // Don't throw - revocation failure shouldn't block deletion
         }
     }
@@ -229,37 +247,37 @@ export class OAuthService {
     /**
      * Perform token exchange (handles provider-specific quirks)
      */
-    private async performTokenExchange(config: OAuthProvider, code: string): Promise<any> {
-        const params: any = {
+    private async performTokenExchange(config: OAuthProvider, code: string): Promise<OAuthToken> {
+        const params: Record<string, string> = {
             client_id: config.clientId,
             client_secret: config.clientSecret,
             code,
             redirect_uri: config.redirectUri,
-            grant_type: 'authorization_code',
-            ...config.tokenParams
+            grant_type: "authorization_code",
+            ...(config.tokenParams || {})
         };
 
         // Notion requires Basic Auth instead of client_id/client_secret in body
-        const isNotion = config.name === 'notion';
+        const isNotion = config.name === "notion";
 
-        const headers: any = {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'Accept': 'application/json'
+        const headers: Record<string, string> = {
+            "Content-Type": "application/x-www-form-urlencoded",
+            Accept: "application/json"
         };
 
         if (isNotion) {
             // Notion uses Basic Auth
-            const credentials = Buffer.from(`${config.clientId}:${config.clientSecret}`).toString('base64');
-            headers['Authorization'] = `Basic ${credentials}`;
+            const credentials = Buffer.from(`${config.clientId}:${config.clientSecret}`).toString(
+                "base64"
+            );
+            headers["Authorization"] = `Basic ${credentials}`;
             delete params.client_id;
             delete params.client_secret;
         }
 
-        const response = await axios.post(
-            config.tokenUrl,
-            new URLSearchParams(params).toString(),
-            { headers }
-        );
+        const response = await axios.post(config.tokenUrl, new URLSearchParams(params).toString(), {
+            headers
+        });
 
         return response.data;
     }
@@ -268,7 +286,7 @@ export class OAuthService {
      * Generate a secure state token for CSRF protection
      */
     private generateStateToken(userId: string): string {
-        const state = randomBytes(32).toString('hex');
+        const state = randomBytes(32).toString("hex");
 
         this.stateStore.set(state, {
             userId,
@@ -288,12 +306,12 @@ export class OAuthService {
         const data = this.stateStore.get(state);
 
         if (!data) {
-            console.error('[OAuth] State token not found');
+            console.error("[OAuth] State token not found");
             return null;
         }
 
         if (data.expiresAt < Date.now()) {
-            console.error('[OAuth] State token expired');
+            console.error("[OAuth] State token expired");
             this.stateStore.delete(state);
             return null;
         }

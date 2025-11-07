@@ -4,8 +4,8 @@ import { OutputSettingsSection } from "../../../components/OutputSettingsSection
 import { CodeInput } from "../../../components/CodeInput";
 
 interface ConditionalNodeConfigProps {
-    data: any;
-    onUpdate: (config: any) => void;
+    data: Record<string, unknown>;
+    onUpdate: (config: unknown) => void;
 }
 
 const conditionTypes = [
@@ -27,12 +27,12 @@ const operators = [
 ];
 
 export function ConditionalNodeConfig({ data, onUpdate }: ConditionalNodeConfigProps) {
-    const [conditionType, setConditionType] = useState(data.conditionType || "simple");
-    const [leftValue, setLeftValue] = useState(data.leftValue || "");
-    const [operator, setOperator] = useState(data.operator || "==");
-    const [rightValue, setRightValue] = useState(data.rightValue || "");
-    const [expression, setExpression] = useState(data.expression || "");
-    const [outputVariable, setOutputVariable] = useState(data.outputVariable || "");
+    const [conditionType, setConditionType] = useState((data.conditionType as string) || "simple");
+    const [leftValue, setLeftValue] = useState((data.leftValue as string) || "");
+    const [operator, setOperator] = useState((data.operator as string) || "==");
+    const [rightValue, setRightValue] = useState((data.rightValue as string) || "");
+    const [expression, setExpression] = useState((data.expression as string) || "");
+    const [outputVariable, setOutputVariable] = useState((data.outputVariable as string) || "");
 
     useEffect(() => {
         onUpdate({
@@ -148,7 +148,7 @@ export function ConditionalNodeConfig({ data, onUpdate }: ConditionalNodeConfigP
 
             <FormSection title="Output Settings">
                 <OutputSettingsSection
-                    nodeName={data.label || "Conditional"}
+                    nodeName={(data.label as string) || "Conditional"}
                     nodeType="conditional"
                     value={outputVariable}
                     onChange={setOutputVariable}

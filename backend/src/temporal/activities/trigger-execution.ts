@@ -3,6 +3,7 @@
  * Handles workflow executions initiated by triggers
  */
 
+import type { JsonValue } from "@flowmaestro/shared";
 import { WorkflowRepository } from "../../storage/repositories/WorkflowRepository";
 import { TriggerRepository } from "../../storage/repositories/TriggerRepository";
 import { ExecutionRepository } from "../../storage/repositories/ExecutionRepository";
@@ -10,13 +11,13 @@ import { ExecutionRepository } from "../../storage/repositories/ExecutionReposit
 export interface TriggerExecutionInput {
     triggerId: string;
     workflowId: string;
-    payload?: Record<string, any>;
+    payload?: Record<string, JsonValue>;
 }
 
 export interface TriggerExecutionResult {
     executionId: string;
-    workflowDefinition: any;
-    inputs: Record<string, any>;
+    workflowDefinition: unknown;
+    inputs: Record<string, JsonValue>;
 }
 
 /**
@@ -50,9 +51,12 @@ export async function prepareTriggeredExecution(
         }
 
         // Create execution record
+        // Cast payload to ensure it's compatible with JsonValue
+        const jsonPayload = payload as Record<string, JsonValue>;
+
         const execution = await executionRepo.create({
             workflow_id: workflowId,
-            inputs: payload
+            inputs: jsonPayload
         });
 
         // Update execution with trigger info and set to running
@@ -63,7 +67,7 @@ export async function prepareTriggeredExecution(
                 triggerId: triggerId,
                 triggerType: trigger.trigger_type,
                 triggerName: trigger.name
-            },
+            } as Record<string, JsonValue>,
             started_at: new Date()
         });
 
@@ -73,7 +77,7 @@ export async function prepareTriggeredExecution(
         await triggerRepo.createExecution({
             trigger_id: triggerId,
             execution_id: executionId,
-            trigger_payload: payload
+            trigger_payload: jsonPayload
         });
 
         // Record trigger fired
@@ -84,10 +88,10 @@ export async function prepareTriggeredExecution(
         return {
             executionId,
             workflowDefinition: workflow.definition,
-            inputs: payload
+            inputs: jsonPayload
         };
     } catch (error) {
-        console.error(`Failed to prepare triggered execution:`, error);
+        console.error("Failed to prepare triggered execution:", error);
         throw error;
     }
 }
@@ -99,7 +103,7 @@ export async function prepareTriggeredExecution(
 export async function completeTriggeredExecution(
     executionId: string,
     success: boolean,
-    outputs?: Record<string, any>,
+    outputs?: Record<string, JsonValue>,
     error?: string
 ): Promise<void> {
     const executionRepo = new ExecutionRepository();
@@ -107,12 +111,14 @@ export async function completeTriggeredExecution(
     try {
         await executionRepo.update(executionId, {
             status: success ? "completed" : "failed",
-            outputs: outputs || undefined,
+            outputs: outputs ? (outputs as Record<string, JsonValue>) : undefined,
             error: error || undefined,
             completed_at: new Date()
         });
 
-        console.log(`Completed triggered execution: ${executionId} (${success ? 'success' : 'failed'})`);
+        console.log(
+            `Completed triggered execution: ${executionId} (${success ? "success" : "failed"})`
+        );
     } catch (err) {
         console.error(`Failed to complete triggered execution ${executionId}:`, err);
         throw err;

@@ -34,8 +34,8 @@ export function Register() {
         try {
             await register(email, password, name || undefined);
             navigate("/app");
-        } catch (err: any) {
-            setError(err.message || "Failed to register. Please try again.");
+        } catch (err: unknown) {
+            setError((err as Error).message || "Failed to register. Please try again.");
         } finally {
             setIsLoading(false);
         }

@@ -1,12 +1,12 @@
-import type { JsonObject } from '@flowmaestro/shared';
-import { interpolateVariables } from './utils';
+import type { JsonObject } from "@flowmaestro/shared";
+import { interpolateVariables } from "./utils";
 
 export interface WaitNodeConfig {
-    waitType: 'duration' | 'until';
+    waitType: "duration" | "until";
 
     // For duration
     duration?: number; // Milliseconds
-    durationUnit?: 'ms' | 'seconds' | 'minutes' | 'hours' | 'days';
+    durationUnit?: "ms" | "seconds" | "minutes" | "hours" | "days";
     durationValue?: number; // e.g., 5 (minutes)
 
     // For until
@@ -41,7 +41,7 @@ export async function executeWaitNode(
     let reason: string | undefined;
 
     switch (config.waitType) {
-        case 'duration':
+        case "duration":
             waitMs = calculateDuration(config);
             console.log(`[Wait] Waiting for ${waitMs}ms`);
 
@@ -49,11 +49,11 @@ export async function executeWaitNode(
                 await sleep(waitMs);
             } else {
                 skipped = true;
-                reason = 'Duration is zero or negative';
+                reason = "Duration is zero or negative";
             }
             break;
 
-        case 'until':
+        case "until":
             if (!config.timestamp) {
                 throw new Error('Timestamp is required for "until" wait type');
             }
@@ -71,9 +71,11 @@ export async function executeWaitNode(
                 console.log(`[Wait] Waiting until ${targetTime.toISOString()} (${waitMs}ms)`);
                 await sleep(waitMs);
             } else {
-                console.log(`[Wait] Target time ${targetTime.toISOString()} already passed, continuing immediately`);
+                console.log(
+                    `[Wait] Target time ${targetTime.toISOString()} already passed, continuing immediately`
+                );
                 skipped = true;
-                reason = 'Target time already passed';
+                reason = "Target time already passed";
                 waitMs = 0;
             }
             break;
@@ -92,7 +94,7 @@ export async function executeWaitNode(
         startTime: startTime.toISOString(),
         endTime: endTime.toISOString(),
         actualWaitDuration: actualDuration,
-        ...(skipped ? { skipped, reason } : {}),
+        ...(skipped ? { skipped, reason } : {})
     };
 
     if (config.outputVariable) {
@@ -120,10 +122,10 @@ function calculateDuration(config: WaitNodeConfig): number {
         seconds: 1000,
         minutes: 60 * 1000,
         hours: 60 * 60 * 1000,
-        days: 24 * 60 * 60 * 1000,
+        days: 24 * 60 * 60 * 1000
     };
 
-    const multiplier = multipliers[config.durationUnit || 'ms'];
+    const multiplier = multipliers[config.durationUnit || "ms"];
     return value * multiplier;
 }
 
@@ -131,5 +133,5 @@ function calculateDuration(config: WaitNodeConfig): number {
  * Sleep for specified milliseconds
  */
 function sleep(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
 }

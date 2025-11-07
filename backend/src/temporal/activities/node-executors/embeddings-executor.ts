@@ -1,19 +1,19 @@
-import OpenAI from 'openai';
-import type { JsonObject, JsonValue } from '@flowmaestro/shared';
-import { CohereClient } from 'cohere-ai';
-import { GoogleGenerativeAI } from '@google/generative-ai';
-import { interpolateVariables } from './utils';
+import OpenAI from "openai";
+import type { JsonObject, JsonValue } from "@flowmaestro/shared";
+import { CohereClient } from "cohere-ai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import { interpolateVariables } from "./utils";
 
 export interface EmbeddingsNodeConfig {
-    provider: 'openai' | 'cohere' | 'google';
+    provider: "openai" | "cohere" | "google";
     model: string;
 
     // Input
     input: string | string[]; // Text or array of texts
-    inputTruncate?: 'start' | 'end' | 'none'; // How to handle long inputs (Cohere)
+    inputTruncate?: "start" | "end" | "none"; // How to handle long inputs (Cohere)
 
     // For search use cases (Cohere)
-    taskType?: 'search_document' | 'search_query' | 'classification' | 'clustering';
+    taskType?: "search_document" | "search_query" | "classification" | "clustering";
 
     // Batching
     batchSize?: number; // Process in batches
@@ -48,15 +48,15 @@ export async function executeEmbeddingsNode(
     let result: JsonObject;
 
     switch (config.provider) {
-        case 'openai':
+        case "openai":
             result = await executeOpenAI(config, context);
             break;
 
-        case 'cohere':
+        case "cohere":
             result = await executeCohere(config, context);
             break;
 
-        case 'google':
+        case "google":
             result = await executeGoogle(config, context);
             break;
 
@@ -67,10 +67,12 @@ export async function executeEmbeddingsNode(
     const processingTime = Date.now() - startTime;
     result.metadata = {
         ...(result.metadata as JsonObject),
-        processingTime,
+        processingTime
     };
 
-    console.log(`[Embeddings] Generated ${(result.embeddings as JsonValue[])?.length || 0} embeddings in ${processingTime}ms`);
+    console.log(
+        `[Embeddings] Generated ${(result.embeddings as JsonValue[])?.length || 0} embeddings in ${processingTime}ms`
+    );
 
     if (config.outputVariable) {
         return { [config.outputVariable]: result } as unknown as JsonObject;
@@ -88,16 +90,18 @@ async function executeOpenAI(
 ): Promise<JsonObject> {
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
-        throw new Error('OPENAI_API_KEY environment variable is not set');
+        throw new Error("OPENAI_API_KEY environment variable is not set");
     }
 
     const openai = new OpenAI({ apiKey });
 
     // Prepare input texts
     const inputs = Array.isArray(config.input) ? config.input : [config.input];
-    const interpolatedInputs = inputs.map(text => interpolateVariables(text, context));
+    const interpolatedInputs = inputs.map((text) => interpolateVariables(text, context));
 
-    console.log(`[Embeddings/OpenAI] Generating embeddings for ${interpolatedInputs.length} input(s)`);
+    console.log(
+        `[Embeddings/OpenAI] Generating embeddings for ${interpolatedInputs.length} input(s)`
+    );
 
     // Process in batches if specified
     const batchSize = config.batchSize || 2048; // OpenAI supports up to 2048 inputs
@@ -108,32 +112,34 @@ async function executeOpenAI(
         const batch = interpolatedInputs.slice(i, i + batchSize);
 
         const response = await openai.embeddings.create({
-            model: config.model || 'text-embedding-3-small',
-            input: batch,
+            model: config.model || "text-embedding-3-small",
+            input: batch
         });
 
-        const embeddings = response.data.map(item => item.embedding);
+        const embeddings = response.data.map((item) => item.embedding);
         allEmbeddings.push(...embeddings);
 
         if (response.usage) {
             totalTokens += response.usage.total_tokens;
         }
 
-        console.log(`[Embeddings/OpenAI] Processed batch ${Math.floor(i / batchSize) + 1}, embeddings: ${embeddings.length}`);
+        console.log(
+            `[Embeddings/OpenAI] Processed batch ${Math.floor(i / batchSize) + 1}, embeddings: ${embeddings.length}`
+        );
     }
 
     const dimensions = allEmbeddings[0]?.length || 0;
 
     return {
         embeddings: allEmbeddings,
-        model: config.model || 'text-embedding-3-small',
-        provider: 'openai',
+        model: config.model || "text-embedding-3-small",
+        provider: "openai",
         metadata: {
             dimensions,
             inputCount: interpolatedInputs.length,
             tokensUsed: totalTokens,
-            processingTime: 0,
-        },
+            processingTime: 0
+        }
     } as unknown as JsonObject;
 }
 
@@ -146,24 +152,31 @@ async function executeCohere(
 ): Promise<JsonObject> {
     const apiKey = process.env.COHERE_API_KEY;
     if (!apiKey) {
-        throw new Error('COHERE_API_KEY environment variable is not set');
+        throw new Error("COHERE_API_KEY environment variable is not set");
     }
 
     const cohere = new CohereClient({ token: apiKey });
 
     // Prepare input texts
     const inputs = Array.isArray(config.input) ? config.input : [config.input];
-    const interpolatedInputs = inputs.map(text => interpolateVariables(text, context));
+    const interpolatedInputs = inputs.map((text) => interpolateVariables(text, context));
 
-    console.log(`[Embeddings/Cohere] Generating embeddings for ${interpolatedInputs.length} input(s)`);
+    console.log(
+        `[Embeddings/Cohere] Generating embeddings for ${interpolatedInputs.length} input(s)`
+    );
 
-    const truncateValue = config.inputTruncate === 'start' ? 'START' : config.inputTruncate === 'end' ? 'END' : 'NONE';
+    const truncateValue =
+        config.inputTruncate === "start"
+            ? "START"
+            : config.inputTruncate === "end"
+              ? "END"
+              : "NONE";
 
     const response = await cohere.embed({
         texts: interpolatedInputs,
-        model: config.model || 'embed-english-v3.0',
+        model: config.model || "embed-english-v3.0",
         inputType: mapTaskTypeToInputType(config.taskType),
-        truncate: truncateValue,
+        truncate: truncateValue
     });
 
     const embeddings = Array.isArray(response.embeddings) ? response.embeddings : [];
@@ -171,13 +184,13 @@ async function executeCohere(
 
     return {
         embeddings,
-        model: config.model || 'embed-english-v3.0',
-        provider: 'cohere',
+        model: config.model || "embed-english-v3.0",
+        provider: "cohere",
         metadata: {
             dimensions,
             inputCount: interpolatedInputs.length,
-            processingTime: 0,
-        },
+            processingTime: 0
+        }
     } as unknown as JsonObject;
 }
 
@@ -190,19 +203,21 @@ async function executeGoogle(
 ): Promise<JsonObject> {
     const apiKey = process.env.GOOGLE_API_KEY;
     if (!apiKey) {
-        throw new Error('GOOGLE_API_KEY environment variable is not set');
+        throw new Error("GOOGLE_API_KEY environment variable is not set");
     }
 
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({
-        model: config.model || 'embedding-001',
+        model: config.model || "embedding-001"
     });
 
     // Prepare input texts
     const inputs = Array.isArray(config.input) ? config.input : [config.input];
-    const interpolatedInputs = inputs.map(text => interpolateVariables(text, context));
+    const interpolatedInputs = inputs.map((text) => interpolateVariables(text, context));
 
-    console.log(`[Embeddings/Google] Generating embeddings for ${interpolatedInputs.length} input(s)`);
+    console.log(
+        `[Embeddings/Google] Generating embeddings for ${interpolatedInputs.length} input(s)`
+    );
 
     const embeddings: number[][] = [];
 
@@ -216,30 +231,32 @@ async function executeGoogle(
 
     return {
         embeddings,
-        model: config.model || 'embedding-001',
-        provider: 'google',
+        model: config.model || "embedding-001",
+        provider: "google",
         metadata: {
             dimensions,
             inputCount: interpolatedInputs.length,
-            processingTime: 0,
-        },
+            processingTime: 0
+        }
     } as unknown as JsonObject;
 }
 
 /**
  * Map task type to Cohere input type
  */
-function mapTaskTypeToInputType(taskType?: string): 'search_document' | 'search_query' | 'classification' | 'clustering' {
+function mapTaskTypeToInputType(
+    taskType?: string
+): "search_document" | "search_query" | "classification" | "clustering" {
     switch (taskType) {
-        case 'search_document':
-            return 'search_document';
-        case 'search_query':
-            return 'search_query';
-        case 'classification':
-            return 'classification';
-        case 'clustering':
-            return 'clustering';
+        case "search_document":
+            return "search_document";
+        case "search_query":
+            return "search_query";
+        case "classification":
+            return "classification";
+        case "clustering":
+            return "clustering";
         default:
-            return 'search_document'; // Default
+            return "search_document"; // Default
     }
 }

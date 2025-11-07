@@ -6,8 +6,8 @@ import { useQuery } from "@tanstack/react-query";
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
 interface KnowledgeBaseQueryNodeConfigProps {
-    data: any;
-    onUpdate: (config: any) => void;
+    data: Record<string, unknown>;
+    onUpdate: (config: unknown) => void;
 }
 
 interface KnowledgeBase {
@@ -27,9 +27,9 @@ export function KnowledgeBaseQueryNodeConfig({
     data,
     onUpdate
 }: KnowledgeBaseQueryNodeConfigProps) {
-    const [knowledgeBaseId, setKnowledgeBaseId] = useState(data.knowledgeBaseId || "");
-    const [queryText, setQueryText] = useState(data.queryText || "");
-    const [outputVariable, setOutputVariable] = useState(data.outputVariable || "");
+    const [knowledgeBaseId, setKnowledgeBaseId] = useState((data.knowledgeBaseId as string) || "");
+    const [queryText, setQueryText] = useState((data.queryText as string) || "");
+    const [outputVariable, setOutputVariable] = useState((data.outputVariable as string) || "");
 
     // Fetch available knowledge bases
     const { data: kbData, isLoading } = useQuery({
@@ -153,7 +153,7 @@ Or use: {{input.question}}"
                     </div>
 
                     <OutputSettingsSection
-                        nodeName={data.label || "KB Query"}
+                        nodeName={(data.label as string) || "KB Query"}
                         nodeType="knowledgeBaseQuery"
                         value={outputVariable}
                         onChange={setOutputVariable}

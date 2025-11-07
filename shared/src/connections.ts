@@ -3,6 +3,8 @@
  * These types are shared between frontend and backend for external service connections
  */
 
+import type { JsonSchema, JsonValue } from "./json-types";
+
 export type ConnectionMethod = "api_key" | "oauth2" | "mcp" | "basic_auth" | "custom";
 export type ConnectionStatus = "active" | "invalid" | "expired" | "revoked";
 
@@ -74,8 +76,8 @@ export interface MCPToolParameter {
     type: string; // "string", "number", "boolean", "object", "array"
     description?: string;
     required?: boolean;
-    default?: any;
-    schema?: Record<string, any>; // JSON Schema for complex types
+    default?: JsonValue;
+    schema?: JsonSchema; // JSON Schema for complex types
 }
 
 /**
@@ -88,7 +90,7 @@ export interface MCPTool {
     returns?: {
         type: string;
         description?: string;
-        schema?: Record<string, any>;
+        schema?: JsonSchema;
     };
 }
 
@@ -133,16 +135,16 @@ export interface ConnectionMetadata {
         email?: string;
         username?: string;
         workspace?: string;
-        [key: string]: any;
+        [key: string]: JsonValue | undefined;
     };
-    provider_config?: Record<string, any>;
+    provider_config?: Record<string, JsonValue>;
     // MCP-specific metadata
     mcp_version?: string;
     mcp_server_info?: {
         name?: string;
         version?: string;
         description?: string;
-        [key: string]: any;
+        [key: string]: JsonValue | undefined;
     };
 }
 
@@ -156,7 +158,7 @@ export interface ConnectionCapabilities {
         requests_per_second?: number;
         requests_per_day?: number;
     };
-    [key: string]: any; // Provider-specific capabilities
+    [key: string]: JsonValue | undefined; // Provider-specific capabilities
 }
 
 /**

@@ -4,8 +4,8 @@ import { OutputSettingsSection } from "../../../components/OutputSettingsSection
 import { CodeInput } from "../../../components/CodeInput";
 
 interface CodeNodeConfigProps {
-    data: any;
-    onUpdate: (config: any) => void;
+    data: Record<string, unknown>;
+    onUpdate: (config: unknown) => void;
 }
 
 const languages = [
@@ -15,11 +15,11 @@ const languages = [
 ];
 
 export function CodeNodeConfig({ data, onUpdate }: CodeNodeConfigProps) {
-    const [language, setLanguage] = useState(data.language || "javascript");
-    const [code, setCode] = useState(data.code || "");
-    const [timeout, setTimeout] = useState(data.timeout || 30);
-    const [memoryLimit, setMemoryLimit] = useState(data.memoryLimit || 256);
-    const [outputVariable, setOutputVariable] = useState(data.outputVariable || "");
+    const [language, setLanguage] = useState((data.language as string) || "javascript");
+    const [code, setCode] = useState((data.code as string) || "");
+    const [timeout, setTimeout] = useState((data.timeout as number) || 30);
+    const [memoryLimit, setMemoryLimit] = useState((data.memoryLimit as number) || 256);
+    const [outputVariable, setOutputVariable] = useState((data.outputVariable as string) || "");
 
     useEffect(() => {
         onUpdate({
@@ -152,7 +152,7 @@ return result`;
 
             <FormSection title="Output Settings">
                 <OutputSettingsSection
-                    nodeName={data.label || "Code"}
+                    nodeName={(data.label as string) || "Code"}
                     nodeType="code"
                     value={outputVariable}
                     onChange={setOutputVariable}

@@ -35,28 +35,35 @@ export function AgentChat({ agent }: AgentChatProps) {
     useEffect(() => {
         if (!currentExecution) return;
 
-        const handleMessage = (data: any) => {
+        const handleMessage = (event: unknown) => {
+            const data = event as {
+                executionId?: string;
+                message?: ConversationMessage;
+            };
             if (data.executionId === currentExecution.id) {
                 if (data.message) {
-                    setMessages((prev) => [...prev, data.message]);
+                    setMessages((prev) => [...prev, data.message!]);
                 }
             }
         };
 
-        const handleThinking = (data: any) => {
+        const handleThinking = (event: unknown) => {
+            const data = event as { executionId?: string };
             if (data.executionId === currentExecution.id) {
                 // Could show a "thinking..." indicator
                 console.log("Agent is thinking...");
             }
         };
 
-        const handleCompleted = (data: any) => {
+        const handleCompleted = (event: unknown) => {
+            const data = event as { executionId?: string };
             if (data.executionId === currentExecution.id) {
                 setIsSending(false);
             }
         };
 
-        const handleFailed = (data: any) => {
+        const handleFailed = (event: unknown) => {
+            const data = event as { executionId?: string; error?: unknown };
             if (data.executionId === currentExecution.id) {
                 setIsSending(false);
                 // Could show error message

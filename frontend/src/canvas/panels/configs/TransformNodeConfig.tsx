@@ -4,8 +4,8 @@ import { OutputSettingsSection } from "../../../components/OutputSettingsSection
 import { CodeInput } from "../../../components/CodeInput";
 
 interface TransformNodeConfigProps {
-    data: any;
-    onUpdate: (config: any) => void;
+    data: Record<string, unknown>;
+    onUpdate: (config: unknown) => void;
 }
 
 const operations = [
@@ -19,17 +19,17 @@ const operations = [
 ];
 
 export function TransformNodeConfig({ data, onUpdate }: TransformNodeConfigProps) {
-    const [operation, setOperation] = useState(data.operation || "map");
-    const [inputData, setInputData] = useState(data.inputData || "");
-    const [expression, setExpression] = useState(data.expression || "");
-    const [outputVariable, setOutputVariable] = useState(data.outputVariable || "");
+    const [operation, setOperation] = useState((data.operation as string) || "map");
+    const [inputData, setInputData] = useState((data.inputData as string) || "");
+    const [expression, setExpression] = useState((data.expression as string) || "");
+    const [outputVariable, setOutputVariable] = useState((data.outputVariable as string) || "");
 
     // Sync state when data prop changes (e.g., loading from database)
     useEffect(() => {
-        if (data.operation) setOperation(data.operation);
-        if (data.inputData) setInputData(data.inputData);
-        if (data.expression) setExpression(data.expression);
-        if (data.outputVariable) setOutputVariable(data.outputVariable);
+        if (data.operation) setOperation(data.operation as string);
+        if (data.inputData) setInputData(data.inputData as string);
+        if (data.expression) setExpression(data.expression as string);
+        if (data.outputVariable) setOutputVariable(data.outputVariable as string);
     }, [data.operation, data.inputData, data.expression, data.outputVariable]);
 
     useEffect(() => {
@@ -158,7 +158,7 @@ export function TransformNodeConfig({ data, onUpdate }: TransformNodeConfigProps
 
             <FormSection title="Output Settings">
                 <OutputSettingsSection
-                    nodeName={data.label || "Transform"}
+                    nodeName={(data.label as string) || "Transform"}
                     nodeType="transform"
                     value={outputVariable}
                     onChange={setOutputVariable}

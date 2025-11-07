@@ -1,6 +1,6 @@
 import { FastifyInstance } from "fastify";
 import { WorkflowRepository } from "../../../storage/repositories";
-import { createWorkflowSchema } from "../../schemas/workflow-schemas";
+import { createWorkflowSchema, CreateWorkflowRequest } from "../../schemas/workflow-schemas";
 import { authMiddleware, validateRequest } from "../../middleware";
 
 export async function createWorkflowRoute(fastify: FastifyInstance) {
@@ -11,7 +11,7 @@ export async function createWorkflowRoute(fastify: FastifyInstance) {
         },
         async (request, reply) => {
             const workflowRepository = new WorkflowRepository();
-            const body = request.body as any;
+            const body = request.body as CreateWorkflowRequest;
 
             const workflow = await workflowRepository.create({
                 name: body.name,

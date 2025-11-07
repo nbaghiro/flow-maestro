@@ -7,11 +7,11 @@ import { NotFoundError, BadRequestError } from "../../middleware";
 
 const sendMessageParamsSchema = z.object({
     id: z.string().uuid(), // agent ID
-    executionId: z.string().uuid(),
+    executionId: z.string().uuid()
 });
 
 const sendMessageSchema = z.object({
-    message: z.string().min(1),
+    message: z.string().min(1)
 });
 
 export async function sendMessageHandler(
@@ -46,7 +46,7 @@ export async function sendMessageHandler(
 
         reply.send({
             success: true,
-            message: "Message sent successfully",
+            message: "Message sent successfully"
         });
     } catch (error) {
         throw new BadRequestError(

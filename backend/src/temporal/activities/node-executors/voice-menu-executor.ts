@@ -5,24 +5,24 @@ import { CallExecutionRepository } from "../../../storage/repositories/CallExecu
 import { globalEventEmitter } from "../../../shared/events/EventEmitter";
 
 export interface MenuOption {
-    key: string;                        // "1", "2", "support", etc.
-    label: string;                      // "Sales", "Support", etc.
-    value?: string;                     // Optional value to return
+    key: string; // "1", "2", "support", etc.
+    label: string; // "Sales", "Support", etc.
+    value?: string; // Optional value to return
 }
 
 export interface VoiceMenuNodeConfig {
-    prompt: string;                     // Menu prompt (supports variables)
-    options: MenuOption[];              // Menu options
-    inputMethod?: "voice" | "dtmf" | "both";  // How user can respond (default: "both")
-    maxRetries?: number;                // Max invalid attempts (default: 2)
-    retryPrompt?: string;               // What to say on invalid input
-    timeoutSeconds?: number;            // Timeout for user response (default: 10)
-    outputVariable?: string;            // Where to store result
+    prompt: string; // Menu prompt (supports variables)
+    options: MenuOption[]; // Menu options
+    inputMethod?: "voice" | "dtmf" | "both"; // How user can respond (default: "both")
+    maxRetries?: number; // Max invalid attempts (default: 2)
+    retryPrompt?: string; // What to say on invalid input
+    timeoutSeconds?: number; // Timeout for user response (default: 10)
+    outputVariable?: string; // Where to store result
 }
 
 export interface VoiceMenuNodeResult {
     success: boolean;
-    selectedOption: string | null;
+    selectedOption?: string;
     selectedLabel?: string;
     selectedValue?: string;
     inputMethod?: "voice" | "dtmf";
@@ -54,7 +54,7 @@ export async function executeVoiceMenuNode(
     const prompt = interpolateVariables(config.prompt, context);
 
     console.log(`[VoiceMenu] Prompt: "${prompt}"`);
-    console.log(`[VoiceMenu] Options:`, config.options);
+    console.log("[VoiceMenu] Options:", config.options);
 
     const commandBus = getVoiceCommandBus();
     const maxRetries = config.maxRetries || 2;
@@ -63,12 +63,13 @@ export async function executeVoiceMenuNode(
     try {
         while (retryCount <= maxRetries) {
             // Play prompt (or retry prompt)
-            const currentPrompt = retryCount === 0
-                ? prompt
-                : interpolateVariables(
-                    config.retryPrompt || "I didn't understand. Please try again.",
-                    context
-                );
+            const currentPrompt =
+                retryCount === 0
+                    ? prompt
+                    : interpolateVariables(
+                          config.retryPrompt || "I didn't understand. Please try again.",
+                          context
+                      );
 
             await commandBus.sendCommand(
                 callExecutionId,
@@ -84,7 +85,7 @@ export async function executeVoiceMenuNode(
                 {
                     options: config.options,
                     inputMethod: config.inputMethod || "both",
-                    timeoutSeconds: config.timeoutSeconds || 10,
+                    timeoutSeconds: config.timeoutSeconds || 10
                 },
                 (config.timeoutSeconds || 10) * 1000 + 10000
             );
@@ -93,16 +94,20 @@ export async function executeVoiceMenuNode(
                 throw new Error(response.error || "Menu interaction failed");
             }
 
-            const selectedKey = response.result?.selectedOption;
-            const inputMethod = response.result?.inputMethod;
+            interface MenuCommandResult {
+                selectedOption?: string;
+                inputMethod?: "voice" | "dtmf";
+            }
+
+            const commandResult = (response.result || {}) as MenuCommandResult;
+            const selectedKey = typeof commandResult.selectedOption === "string" ? commandResult.selectedOption : null;
+            const inputMethod = commandResult.inputMethod;
 
             // Check if valid option was selected
-            const selectedOption = config.options.find((opt) => opt.key === selectedKey);
+            const selectedOption = selectedKey ? config.options.find((opt) => opt.key === selectedKey) : null;
 
             if (selectedOption) {
-                console.log(
-                    `[VoiceMenu] User selected: ${selectedKey} (${selectedOption.label})`
-                );
+                console.log(`[VoiceMenu] User selected: ${selectedKey} (${selectedOption.label})`);
 
                 // Log the interaction
                 const callRepo = new CallExecutionRepository();
@@ -112,31 +117,26 @@ export async function executeVoiceMenuNode(
                     speaker: "user",
                     text: selectionText,
                     started_at: new Date(),
-                    is_final: true,
+                    is_final: true
                 });
 
                 // Emit real-time transcript event
-                globalEventEmitter.emitCallTranscript(
-                    callExecutionId,
-                    "user",
-                    selectionText,
-                    true
-                );
+                globalEventEmitter.emitCallTranscript(callExecutionId, "user", selectionText, true);
 
                 const result: VoiceMenuNodeResult = {
                     success: true,
-                    selectedOption: selectedKey,
+                    selectedOption: selectedKey || undefined,
                     selectedLabel: selectedOption.label,
-                    selectedValue: selectedOption.value || selectedKey,
+                    selectedValue: selectedOption.value || selectedKey || undefined,
                     inputMethod,
-                    retryCount,
+                    retryCount
                 };
 
                 if (config.outputVariable) {
                     return {
                         [config.outputVariable]: result,
                         // Also set a convenience variable for routing
-                        [`${config.outputVariable}_value`]: selectedOption.value || selectedKey,
+                        [`${config.outputVariable}_value`]: selectedOption.value || selectedKey
                     } as unknown as JsonObject;
                 }
 
@@ -144,7 +144,7 @@ export async function executeVoiceMenuNode(
                     selectedOption: selectedKey,
                     selectedLabel: selectedOption.label,
                     selectedValue: selectedOption.value || selectedKey,
-                    inputMethod,
+                    inputMethod
                 } as unknown as JsonObject;
             } else {
                 // Invalid selection
@@ -159,14 +159,15 @@ export async function executeVoiceMenuNode(
 
         // Should not reach here
         throw new Error("Menu interaction failed after retries");
-    } catch (error: any) {
-        console.error("[VoiceMenu] Error:", error.message);
+    } catch (error: unknown) {
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        console.error("[VoiceMenu] Error:", errorMsg);
 
         const result: VoiceMenuNodeResult = {
             success: false,
-            selectedOption: null,
+            selectedOption: undefined,
             retryCount,
-            error: error.message,
+            error: errorMsg
         };
 
         if (config.outputVariable) {

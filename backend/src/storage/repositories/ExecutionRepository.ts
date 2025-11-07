@@ -1,6 +1,20 @@
 import { db } from "../database";
 import { ExecutionModel, CreateExecutionInput, UpdateExecutionInput } from "../models/Execution";
-import { ExecutionStatus } from "@flowmaestro/shared";
+import { ExecutionStatus, JsonValue } from "@flowmaestro/shared";
+
+// Database row interface
+interface ExecutionRow {
+    id: string;
+    workflow_id: string;
+    status: ExecutionStatus;
+    inputs: Record<string, JsonValue> | string | null;
+    outputs: Record<string, JsonValue> | string | null;
+    current_state: JsonValue | string | null;
+    error: string | null;
+    started_at: string | Date | null;
+    completed_at: string | Date | null;
+    created_at: string | Date;
+}
 
 export class ExecutionRepository {
     async create(input: CreateExecutionInput): Promise<ExecutionModel> {
@@ -16,8 +30,8 @@ export class ExecutionRepository {
             "pending" as ExecutionStatus
         ];
 
-        const result = await db.query<ExecutionModel>(query, values);
-        return this.mapRow(result.rows[0]);
+        const result = await db.query(query, values);
+        return this.mapRow(result.rows[0] as ExecutionRow);
     }
 
     async findById(id: string): Promise<ExecutionModel | null> {
@@ -26,8 +40,8 @@ export class ExecutionRepository {
             WHERE id = $1
         `;
 
-        const result = await db.query<ExecutionModel>(query, [id]);
-        return result.rows.length > 0 ? this.mapRow(result.rows[0]) : null;
+        const result = await db.query(query, [id]);
+        return result.rows.length > 0 ? this.mapRow(result.rows[0] as ExecutionRow) : null;
     }
 
     async findByWorkflowId(
@@ -52,11 +66,11 @@ export class ExecutionRepository {
 
         const [countResult, executionsResult] = await Promise.all([
             db.query<{ count: string }>(countQuery, [workflowId]),
-            db.query<ExecutionModel>(query, [workflowId, limit, offset])
+            db.query(query, [workflowId, limit, offset])
         ]);
 
         return {
-            executions: executionsResult.rows.map((row) => this.mapRow(row)),
+            executions: executionsResult.rows.map((row) => this.mapRow(row as ExecutionRow)),
             total: parseInt(countResult.rows[0].count)
         };
     }
@@ -75,13 +89,13 @@ export class ExecutionRepository {
             LIMIT $2 OFFSET $3
         `;
 
-        const result = await db.query<ExecutionModel>(query, [status, limit, offset]);
-        return result.rows.map((row) => this.mapRow(row));
+        const result = await db.query(query, [status, limit, offset]);
+        return result.rows.map((row) => this.mapRow(row as ExecutionRow));
     }
 
     async update(id: string, input: UpdateExecutionInput): Promise<ExecutionModel | null> {
         const updates: string[] = [];
-        const values: any[] = [];
+        const values: unknown[] = [];
         let paramIndex = 1;
 
         if (input.status !== undefined) {
@@ -126,8 +140,8 @@ export class ExecutionRepository {
             RETURNING *
         `;
 
-        const result = await db.query<ExecutionModel>(query, values);
-        return result.rows.length > 0 ? this.mapRow(result.rows[0]) : null;
+        const result = await db.query(query, values);
+        return result.rows.length > 0 ? this.mapRow(result.rows[0] as ExecutionRow) : null;
     }
 
     async delete(id: string): Promise<boolean> {
@@ -143,7 +157,7 @@ export class ExecutionRepository {
     async getLogs(
         executionId: string,
         options: { limit?: number; offset?: number; level?: string; nodeId?: string } = {}
-    ): Promise<{ logs: any[]; total: number }> {
+    ): Promise<{ logs: unknown[]; total: number }> {
         const limit = options.limit || 100;
         const offset = options.offset || 0;
 
@@ -158,8 +172,8 @@ export class ExecutionRepository {
             WHERE execution_id = $1
         `;
 
-        const countParams: any[] = [executionId];
-        const queryParams: any[] = [executionId];
+        const countParams: unknown[] = [executionId];
+        const queryParams: unknown[] = [executionId];
         let paramIndex = 2;
 
         if (options.level) {
@@ -183,13 +197,17 @@ export class ExecutionRepository {
 
         const [countResult, logsResult] = await Promise.all([
             db.query<{ count: string }>(countQuery, countParams),
-            db.query<any>(query, queryParams)
+            db.query(query, queryParams)
         ]);
 
         return {
             logs: logsResult.rows.map((row) => ({
                 ...row,
-                metadata: row.metadata ? (typeof row.metadata === "string" ? JSON.parse(row.metadata) : row.metadata) : null,
+                metadata: row.metadata
+                    ? typeof row.metadata === "string"
+                        ? JSON.parse(row.metadata)
+                        : row.metadata
+                    : null,
                 created_at: new Date(row.created_at)
             })),
             total: parseInt(countResult.rows[0].count)
@@ -211,12 +229,12 @@ export class ExecutionRepository {
             SELECT * FROM flowmaestro.executions
         `;
 
-        const countParams: any[] = [];
-        const queryParams: any[] = [];
+        const countParams: unknown[] = [];
+        const queryParams: unknown[] = [];
 
         if (options.status) {
-            countQuery += ` WHERE status = $1`;
-            query += ` WHERE status = $1`;
+            countQuery += " WHERE status = $1";
+            query += " WHERE status = $1";
             countParams.push(options.status);
             queryParams.push(options.status);
         }
@@ -225,22 +243,40 @@ export class ExecutionRepository {
         queryParams.push(limit, offset);
 
         const [countResult, executionsResult] = await Promise.all([
-            db.query<{ count: string }>(countQuery, countParams.length > 0 ? countParams : undefined),
-            db.query<ExecutionModel>(query, queryParams)
+            db.query<{ count: string }>(
+                countQuery,
+                countParams.length > 0 ? countParams : undefined
+            ),
+            db.query(query, queryParams)
         ]);
 
         return {
-            executions: executionsResult.rows.map((row) => this.mapRow(row)),
+            executions: executionsResult.rows.map((row) => this.mapRow(row as ExecutionRow)),
             total: parseInt(countResult.rows[0].count)
         };
     }
 
-    private mapRow(row: any): ExecutionModel {
+    private mapRow(row: ExecutionRow): ExecutionModel {
         return {
-            ...row,
-            inputs: row.inputs ? (typeof row.inputs === "string" ? JSON.parse(row.inputs) : row.inputs) : null,
-            outputs: row.outputs ? (typeof row.outputs === "string" ? JSON.parse(row.outputs) : row.outputs) : null,
-            current_state: row.current_state ? (typeof row.current_state === "string" ? JSON.parse(row.current_state) : row.current_state) : null,
+            id: row.id,
+            workflow_id: row.workflow_id,
+            status: row.status,
+            inputs: row.inputs
+                ? typeof row.inputs === "string"
+                    ? JSON.parse(row.inputs)
+                    : row.inputs
+                : null,
+            outputs: row.outputs
+                ? typeof row.outputs === "string"
+                    ? JSON.parse(row.outputs)
+                    : row.outputs
+                : null,
+            current_state: row.current_state
+                ? typeof row.current_state === "string"
+                    ? JSON.parse(row.current_state)
+                    : row.current_state
+                : null,
+            error: row.error,
             created_at: new Date(row.created_at),
             started_at: row.started_at ? new Date(row.started_at) : null,
             completed_at: row.completed_at ? new Date(row.completed_at) : null

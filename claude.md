@@ -7,21 +7,23 @@ This document provides coding standards, architectural context, and best practic
 ## General Coding Style
 
 ### Code Formatting
-- **Indentation**: 4 spaces (no tabs)
+
+- **Indentation**: 4 spaces (no tabs) - enforced by Prettier via `tabWidth: 4`
 - **Quotes**: Double quotes for strings
 - **Semicolons**: Required at the end of statements
-- **Line Length**: Prefer 80-100 characters, max 120
-- **Trailing Commas**: Use in multi-line objects and arrays
+- **Line Length**: 100 characters max - enforced by Prettier via `printWidth: 100`
+- **Trailing Commas**: Not required - enforced by Prettier via `trailingComma: "none"`
 
 ### TypeScript Standards
+
 - **No `any` type**: Always use proper typing. Use `unknown` if type is truly unknown, then narrow with type guards
 - **Strict Mode**: TypeScript strict mode is enabled across all workspaces with explicit flags:
-  - `noImplicitAny: true` - No implicit any types allowed
-  - `strictNullChecks: true` - Null and undefined must be explicitly handled
-  - `strictFunctionTypes: true` - Function types are checked strictly
-  - `strictBindCallApply: true` - bind, call, apply are type-checked
-  - `strictPropertyInitialization: true` - Class properties must be initialized
-  - `noImplicitThis: true` - `this` expressions must have explicit types
+    - `noImplicitAny: true` - No implicit any types allowed
+    - `strictNullChecks: true` - Null and undefined must be explicitly handled
+    - `strictFunctionTypes: true` - Function types are checked strictly
+    - `strictBindCallApply: true` - bind, call, apply are type-checked
+    - `strictPropertyInitialization: true` - Class properties must be initialized
+    - `noImplicitThis: true` - `this` expressions must have explicit types
 - **Type Definitions**: Export interfaces and types for shared data structures
 - **Type Imports**: Use `import type` for type-only imports
 - **Generic Constraints**: Use proper generic constraints instead of `any`
@@ -32,35 +34,37 @@ This document provides coding standards, architectural context, and best practic
 **CRITICAL**: Before committing any code changes, you MUST:
 
 1. **Run TypeScript Compiler** to check for errors:
-   ```bash
-   # Check all packages
-   npx tsc --noEmit
 
-   # Or check specific packages
-   cd backend && npx tsc --noEmit
-   cd frontend && npx tsc --noEmit
-   cd shared && npx tsc --noEmit
-   ```
+    ```bash
+    # Check all packages
+    npx tsc --noEmit
+
+    # Or check specific packages
+    cd backend && npx tsc --noEmit
+    cd frontend && npx tsc --noEmit
+    cd shared && npx tsc --noEmit
+    ```
 
 2. **Fix ALL Type Errors**: Do not commit code with TypeScript errors. Common issues:
-   - Implicit `any` types - add explicit type annotations
-   - Missing return types - add explicit return type declarations
-   - Undefined/null access - add null checks or optional chaining
-   - Type mismatches - ensure types align correctly
-   - Missing imports - import types from shared package
+    - Implicit `any` types - add explicit type annotations
+    - Missing return types - add explicit return type declarations
+    - Undefined/null access - add null checks or optional chaining
+    - Type mismatches - ensure types align correctly
+    - Missing imports - import types from shared package
 
 3. **Address Type Warnings**: Fix warnings about:
-   - Unused variables or imports (remove or prefix with `_`)
-   - Unreachable code
-   - Deprecated API usage
-   - Type assertion usage (prefer type guards)
+    - Unused variables or imports (remove or prefix with `_`)
+    - Unreachable code
+    - Deprecated API usage
+    - Type assertion usage (prefer type guards)
 
 4. **Run Linter** to catch additional issues:
-   ```bash
-   npm run lint
-   ```
+    ```bash
+    npm run lint
+    ```
 
 **Why This Matters**:
+
 - Type errors in production can cause runtime failures
 - Implicit `any` bypasses type safety and defeats the purpose of TypeScript
 - Type warnings indicate potential bugs or code quality issues
@@ -71,13 +75,13 @@ This document provides coding standards, architectural context, and best practic
 ```typescript
 // ❌ BAD
 function processData(data: any) {
-    const result = data.map(item => {
+    const result = data.map((item) => {
         return {
             id: item.id,
             name: item.name
-        }
-    })
-    alert("Data processed!")
+        };
+    });
+    alert("Data processed!");
 }
 
 // ✅ GOOD
@@ -90,7 +94,7 @@ function processData(data: DataItem[]): DataItem[] {
     const result = data.map((item) => {
         return {
             id: item.id,
-            name: item.name,
+            name: item.name
         };
     });
 
@@ -106,6 +110,7 @@ function processData(data: DataItem[]): DataItem[] {
 ## Frontend-Specific Guidelines
 
 ### Technology Stack
+
 - **Framework**: React 18.2.0 with TypeScript
 - **Build Tool**: Vite (fast HMR and builds)
 - **State Management**: Zustand 4.5.0 (NOT Redux)
@@ -133,6 +138,7 @@ frontend/src/
 ### UI/UX Standards
 
 #### Dialogs and Modals
+
 **CRITICAL**: Never use browser `alert()`, `confirm()`, or `prompt()`. Always use custom dialog components.
 
 ```typescript
@@ -167,6 +173,7 @@ import { ConfirmDialog } from "../components/common/ConfirmDialog";
 ```
 
 #### Available Dialog Components
+
 - `Dialog` (frontend/src/components/common/Dialog.tsx) - Base dialog with title, content, and close
 - `ConfirmDialog` (frontend/src/components/common/ConfirmDialog.tsx) - Two-action confirmation
 - Form dialogs - See examples like `CreateWorkflowDialog.tsx` for form patterns
@@ -174,6 +181,7 @@ import { ConfirmDialog } from "../components/common/ConfirmDialog";
 ### State Management Patterns
 
 #### Zustand Stores
+
 Use Zustand for client-side state. Follow the existing store pattern:
 
 ```typescript
@@ -198,11 +206,12 @@ export const useMyStore = create<MyStore>((set, get) => ({
         set({ selectedItem: item || null });
     },
 
-    clearSelection: () => set({ selectedItem: null }),
+    clearSelection: () => set({ selectedItem: null })
 }));
 ```
 
 #### TanStack Query for API Calls
+
 Use TanStack Query (React Query) for all server state:
 
 ```typescript
@@ -212,7 +221,7 @@ import { api } from "../lib/api";
 // Fetch data
 const { data, isLoading, error } = useQuery({
     queryKey: ["workflows"],
-    queryFn: () => api.getWorkflows(),
+    queryFn: () => api.getWorkflows()
 });
 
 // Mutations
@@ -221,13 +230,14 @@ const mutation = useMutation({
     mutationFn: (data: CreateWorkflowData) => api.createWorkflow(data),
     onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["workflows"] });
-    },
+    }
 });
 ```
 
 ### Component Patterns
 
 #### Functional Components with TypeScript
+
 ```typescript
 import React from "react";
 
@@ -256,6 +266,7 @@ export const MyComponent: React.FC<MyComponentProps> = ({
 ```
 
 #### Event Handlers
+
 ```typescript
 const handleClick = (event: React.MouseEvent<HTMLButtonElement>): void => {
     event.preventDefault();
@@ -306,6 +317,7 @@ React.useEffect(() => {
 ## Backend-Specific Guidelines
 
 ### Technology Stack
+
 - **Framework**: Fastify 5.6.1 (NOT Express)
 - **Runtime**: Node.js 20+
 - **Database**: PostgreSQL 15 with connection pooling
@@ -354,13 +366,13 @@ const createWorkflowSchema = z.object({
     description: z.string().optional(),
     definition: z.object({
         nodes: z.array(z.any()),
-        edges: z.array(z.any()),
-    }),
+        edges: z.array(z.any())
+    })
 });
 
 export async function createWorkflowHandler(
     request: FastifyRequest,
-    reply: FastifyReply,
+    reply: FastifyReply
 ): Promise<void> {
     // Validate request body
     const body = createWorkflowSchema.parse(request.body);
@@ -374,13 +386,13 @@ export async function createWorkflowHandler(
         userId,
         name: body.name,
         description: body.description,
-        definition: body.definition,
+        definition: body.definition
     });
 
     // Return standard response
     reply.code(201).send({
         success: true,
-        data: workflow,
+        data: workflow
     });
 }
 ```
@@ -449,7 +461,12 @@ export class WorkflowRepository {
 Use custom error classes:
 
 ```typescript
-import { AppError, ValidationError, NotFoundError, UnauthorizedError } from "../../../shared/errors";
+import {
+    AppError,
+    ValidationError,
+    NotFoundError,
+    UnauthorizedError
+} from "../../../shared/errors";
 
 // In handlers
 if (!workflow) {
@@ -481,11 +498,7 @@ Routes use this middleware order:
 import { authenticate } from "../../middleware/auth";
 
 // Register route
-fastify.post(
-    "/api/workflows",
-    { preHandler: [authenticate] },
-    createWorkflowHandler
-);
+fastify.post("/api/workflows", { preHandler: [authenticate] }, createWorkflowHandler);
 ```
 
 ### Temporal Workflows
@@ -498,7 +511,7 @@ import { ActivityContext } from "../../types";
 
 export async function executeMyNode(
     context: ActivityContext,
-    config: MyNodeConfig,
+    config: MyNodeConfig
 ): Promise<ActivityContext> {
     // Validate config
     if (!config.requiredField) {
@@ -513,8 +526,8 @@ export async function executeMyNode(
         ...context,
         variables: {
             ...context.variables,
-            [config.outputVariable]: result,
-        },
+            [config.outputVariable]: result
+        }
     };
 }
 ```
@@ -533,11 +546,13 @@ export async function executeMyNode(
 ## Testing Guidelines
 
 ### Frontend Testing
+
 - **Unit Tests**: Vitest for component and utility testing
 - **E2E Tests**: Playwright for user flow testing
 - **Test Files**: Co-locate with components (`MyComponent.test.tsx`)
 
 ### Backend Testing
+
 - **Integration Tests**: Jest + Supertest for API endpoint testing
 - **Test Location**: `backend/tests/integration/`
 - **Test Pattern**: Test happy path, error cases, and edge cases
@@ -551,7 +566,7 @@ describe("POST /api/workflows", () => {
             .send({
                 name: "Test Workflow",
                 description: "Test description",
-                definition: { nodes: [], edges: [] },
+                definition: { nodes: [], edges: [] }
             });
 
         expect(response.status).toBe(201);
@@ -566,6 +581,7 @@ describe("POST /api/workflows", () => {
 ## Common Patterns
 
 ### Loading States
+
 ```typescript
 if (isLoading) {
     return <div>Loading...</div>;
@@ -579,10 +595,11 @@ return <div>{/* Render data */}</div>;
 ```
 
 ### Form Handling
+
 ```typescript
 const [formData, setFormData] = React.useState({
     name: "",
-    description: "",
+    description: ""
 });
 const [errors, setErrors] = React.useState<Record<string, string>>({});
 
@@ -611,6 +628,7 @@ const handleSubmit = async (e: React.FormEvent): Promise<void> => {
 ```
 
 ### Async Operations with Loading State
+
 ```typescript
 const [isProcessing, setIsProcessing] = React.useState(false);
 
@@ -636,12 +654,14 @@ const handleAction = async (): Promise<void> => {
 ## Environment Variables
 
 ### Frontend (.env)
+
 ```
 VITE_API_URL=http://localhost:3001
 VITE_WS_URL=http://localhost:3001
 ```
 
 ### Backend (.env)
+
 ```
 NODE_ENV=development
 PORT=3001
@@ -698,6 +718,7 @@ npm run format         # Format all packages
 ## Additional Documentation
 
 For more detailed architectural documentation, see:
+
 - `_docs/architecture.md` - Comprehensive architecture guide with code examples
 - `_docs/architecture_summary.md` - Quick reference guide
 
@@ -706,6 +727,7 @@ For more detailed architectural documentation, see:
 ## Summary
 
 When working on FlowMaestro:
+
 1. ✅ Use 4 spaces, double quotes, semicolons, and proper TypeScript typing
 2. ✅ Never use `any` type - use proper types or `unknown` with type guards
 3. ✅ Never use browser alerts - always use custom Dialog components

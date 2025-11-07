@@ -1,4 +1,5 @@
 import { FastifyInstance } from "fastify";
+import type { JsonValue } from "@flowmaestro/shared";
 import { getTemporalClient } from "../../../temporal/client";
 import { authMiddleware } from "../../middleware";
 import { TriggerRepository } from "../../../storage/repositories/TriggerRepository";
@@ -8,7 +9,7 @@ import { convertFrontendToBackend } from "../../../shared/utils/workflow-convert
 import { ManualTriggerConfig } from "../../../storage/models/Trigger";
 
 interface ExecuteTriggerBody {
-    inputs?: Record<string, any>;  // Optional inputs override
+    inputs?: Record<string, unknown>; // Optional inputs override
 }
 
 export async function executeTriggerRoute(fastify: FastifyInstance) {
@@ -18,9 +19,9 @@ export async function executeTriggerRoute(fastify: FastifyInstance) {
             preHandler: [authMiddleware]
         },
         async (request, reply) => {
-            const { id } = request.params as any;
+            const { id } = request.params as { id: string };
             const body = (request.body || {}) as ExecuteTriggerBody;
-            const userId = (request as any).userId;
+            const userId = (request as unknown as { userId: string }).userId;
 
             try {
                 const triggerRepo = new TriggerRepository();
@@ -54,16 +55,16 @@ export async function executeTriggerRoute(fastify: FastifyInstance) {
                 }
 
                 // Determine inputs based on trigger type
-                let inputs: Record<string, any> = {};
+                let inputs: Record<string, unknown> = {};
 
-                if (trigger.trigger_type === 'manual') {
+                if (trigger.trigger_type === "manual") {
                     const config = trigger.config as ManualTriggerConfig;
                     // Use provided inputs override, or fallback to trigger config inputs
                     inputs = body.inputs || config.inputs || {};
-                } else if (trigger.trigger_type === 'webhook') {
+                } else if (trigger.trigger_type === "webhook") {
                     // For webhook triggers, use provided inputs
                     inputs = body.inputs || {};
-                } else if (trigger.trigger_type === 'schedule') {
+                } else if (trigger.trigger_type === "schedule") {
                     // For schedule triggers, use provided inputs override or empty
                     inputs = body.inputs || {};
                 } else {
@@ -74,14 +75,14 @@ export async function executeTriggerRoute(fastify: FastifyInstance) {
                 // Create execution record
                 const execution = await executionRepo.create({
                     workflow_id: workflow.id,
-                    inputs
+                    inputs: inputs as Record<string, JsonValue>
                 });
 
                 // Create trigger execution link
                 await triggerRepo.createExecution({
                     trigger_id: trigger.id,
                     execution_id: execution.id,
-                    trigger_payload: inputs
+                    trigger_payload: inputs as Record<string, JsonValue>
                 });
 
                 // Update trigger stats
@@ -92,20 +93,20 @@ export async function executeTriggerRoute(fastify: FastifyInstance) {
                 const workflowId = `execution-${execution.id}`;
 
                 // Convert frontend workflow definition to backend format if needed
-                let backendWorkflowDefinition: any;
-                const workflowDef = workflow.definition as any;
+                let backendWorkflowDefinition: unknown;
+                const workflowDef = workflow.definition as { nodes?: unknown; edges?: unknown };
 
                 // Check if already in backend format (nodes is an object/Record)
                 if (workflowDef.nodes && !Array.isArray(workflowDef.nodes)) {
                     // Already in backend format
                     backendWorkflowDefinition = {
                         name: workflow.name,
-                        ...workflowDef,
+                        ...workflowDef
                     };
                 } else if (workflowDef.nodes && Array.isArray(workflowDef.nodes)) {
                     // Frontend format, needs conversion
                     backendWorkflowDefinition = convertFrontendToBackend(
-                        workflowDef,
+                        workflow.definition as unknown as { nodes: Array<{ id: string; type: string; data: Record<string, unknown>; position?: { x: number; y: number } }>; edges: Array<{ id: string; source: string; target: string; sourceHandle?: string }> },
                         workflow.name
                     );
                 } else {
@@ -113,18 +114,22 @@ export async function executeTriggerRoute(fastify: FastifyInstance) {
                 }
 
                 // Start the workflow (non-blocking)
-                await client.workflow.start('orchestratorWorkflow', {
-                    taskQueue: 'flowmaestro-orchestrator',
+                await client.workflow.start("orchestratorWorkflow", {
+                    taskQueue: "flowmaestro-orchestrator",
                     workflowId,
-                    args: [{
-                        executionId: execution.id,
-                        workflowDefinition: backendWorkflowDefinition,
-                        inputs,
-                        userId
-                    }],
+                    args: [
+                        {
+                            executionId: execution.id,
+                            workflowDefinition: backendWorkflowDefinition,
+                            inputs,
+                            userId
+                        }
+                    ]
                 });
 
-                fastify.log.info(`Started workflow execution ${execution.id} from trigger ${trigger.id}`);
+                fastify.log.info(
+                    `Started workflow execution ${execution.id} from trigger ${trigger.id}`
+                );
 
                 // Return immediately with execution ID
                 return reply.send({
@@ -137,11 +142,12 @@ export async function executeTriggerRoute(fastify: FastifyInstance) {
                         inputs
                     }
                 });
-            } catch (error: any) {
-                fastify.log.error(`Trigger execution failed: ${error.message}`);
+            } catch (error: unknown) {
+                const errorMsg = error instanceof Error ? error.message : "Trigger execution failed";
+                fastify.log.error(`Trigger execution failed: ${errorMsg}`);
                 return reply.status(500).send({
                     success: false,
-                    error: error.message || 'Trigger execution failed'
+                    error: errorMsg
                 });
             }
         }

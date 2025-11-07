@@ -34,7 +34,7 @@ interface ConnectionStore {
     clearError: () => void;
 
     // MCP-specific actions
-    discoverMCPTools: (request: MCPDiscoveryRequest) => Promise<{ tools: any[]; server_info: any }>;
+    discoverMCPTools: (request: MCPDiscoveryRequest) => Promise<{ tools: unknown[]; server_info: unknown }>;
     refreshMCPToolsById: (id: string) => Promise<void>;
 }
 

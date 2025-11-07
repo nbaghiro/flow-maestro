@@ -1,5 +1,5 @@
-import type { JsonObject, JsonValue } from '@flowmaestro/shared';
-import { interpolateVariables } from './utils';
+import type { JsonObject, JsonValue } from "@flowmaestro/shared";
+import { interpolateVariables } from "./utils";
 
 export interface SwitchCase {
     value: string;
@@ -28,14 +28,18 @@ export async function executeSwitchNode(
     // Interpolate and evaluate the expression
     const expressionValue = interpolateVariables(config.expression, context);
 
-    console.log(`[Switch] Evaluating expression: ${config.expression} → ${JSON.stringify(expressionValue)}`);
+    console.log(
+        `[Switch] Evaluating expression: ${config.expression} → ${JSON.stringify(expressionValue)}`
+    );
 
     // Try to match against each case
     for (const switchCase of config.cases) {
         const caseValue = interpolateVariables(switchCase.value, context);
 
         if (matchesCase(expressionValue, caseValue)) {
-            console.log(`[Switch] Matched case: ${switchCase.value} (${switchCase.label || 'unlabeled'})`);
+            console.log(
+                `[Switch] Matched case: ${switchCase.value} (${switchCase.label || "unlabeled"})`
+            );
 
             return {
                 matchedCase: switchCase.value,
@@ -74,7 +78,7 @@ function matchesCase(expressionValue: JsonValue, caseValue: JsonValue): boolean 
     const caseStr = String(caseValue);
 
     // Check for wildcard patterns
-    if (caseStr.includes('*') || caseStr.includes('?')) {
+    if (caseStr.includes("*") || caseStr.includes("?")) {
         return matchesWildcard(exprStr, caseStr);
     }
 
@@ -96,10 +100,10 @@ function matchesCase(expressionValue: JsonValue, caseValue: JsonValue): boolean 
 function matchesWildcard(str: string, pattern: string): boolean {
     // Convert wildcard pattern to regex
     const regexPattern = pattern
-        .replace(/[.+^${}()|[\]\\]/g, '\\$&') // Escape regex special chars
-        .replace(/\*/g, '.*') // * matches any characters
-        .replace(/\?/g, '.'); // ? matches single character
+        .replace(/[.+^${}()|[\]\\]/g, "\\$&") // Escape regex special chars
+        .replace(/\*/g, ".*") // * matches any characters
+        .replace(/\?/g, "."); // ? matches single character
 
-    const regex = new RegExp(`^${regexPattern}$`, 'i'); // Case-insensitive
+    const regex = new RegExp(`^${regexPattern}$`, "i"); // Case-insensitive
     return regex.test(str);
 }

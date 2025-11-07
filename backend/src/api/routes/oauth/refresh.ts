@@ -58,7 +58,7 @@ export async function refreshRoute(fastify: FastifyInstance) {
                     });
                 }
 
-                if (connection.connection_method !== 'oauth2') {
+                if (connection.connection_method !== "oauth2") {
                     return reply.status(400).send({
                         success: false,
                         error: "Connection is not an OAuth token"
@@ -78,12 +78,12 @@ export async function refreshRoute(fastify: FastifyInstance) {
                     message: "Token refreshed successfully",
                     data: updatedConnection
                 });
-            } catch (error: any) {
+            } catch (error: unknown) {
                 fastify.log.error(error, `Failed to refresh token for connection ${connectionId}`);
 
                 return reply.status(400).send({
                     success: false,
-                    error: error.message || "Failed to refresh token"
+                    error: error instanceof Error ? error.message : "Unknown error while refreshing token"
                 });
             }
         }

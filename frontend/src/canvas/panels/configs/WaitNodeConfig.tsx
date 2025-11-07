@@ -4,8 +4,8 @@ import { OutputSettingsSection } from "../../../components/OutputSettingsSection
 import { CodeInput } from "../../../components/CodeInput";
 
 interface WaitNodeConfigProps {
-    data: any;
-    onUpdate: (config: any) => void;
+    data: Record<string, unknown>;
+    onUpdate: (config: unknown) => void;
 }
 
 const waitTypes = [
@@ -22,13 +22,13 @@ const timeUnits = [
 ];
 
 export function WaitNodeConfig({ data, onUpdate }: WaitNodeConfigProps) {
-    const [waitType, setWaitType] = useState(data.waitType || "duration");
-    const [duration, setDuration] = useState(data.duration || 5);
-    const [unit, setUnit] = useState(data.unit || "seconds");
-    const [timestamp, setTimestamp] = useState(data.timestamp || "");
-    const [condition, setCondition] = useState(data.condition || "");
-    const [pollingInterval, setPollingInterval] = useState(data.pollingInterval || 5);
-    const [outputVariable, setOutputVariable] = useState(data.outputVariable || "");
+    const [waitType, setWaitType] = useState((data.waitType as string) || "duration");
+    const [duration, setDuration] = useState((data.duration as number) || 5);
+    const [unit, setUnit] = useState((data.unit as string) || "seconds");
+    const [timestamp, setTimestamp] = useState((data.timestamp as string) || "");
+    const [condition, setCondition] = useState((data.condition as string) || "");
+    const [pollingInterval, setPollingInterval] = useState((data.pollingInterval as number) || 5);
+    const [outputVariable, setOutputVariable] = useState((data.outputVariable as string) || "");
 
     useEffect(() => {
         onUpdate({
@@ -156,7 +156,7 @@ export function WaitNodeConfig({ data, onUpdate }: WaitNodeConfigProps) {
 
             <FormSection title="Output Settings">
                 <OutputSettingsSection
-                    nodeName={data.label || "Wait"}
+                    nodeName={(data.label as string) || "Wait"}
                     nodeType="wait"
                     value={outputVariable}
                     onChange={setOutputVariable}

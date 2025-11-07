@@ -27,8 +27,8 @@ export interface ToolConfig {
 export interface MemoryConfig {
     type: MemoryType;
     max_messages: number;
-    summary_interval?: number;  // For summary type
-    vector_store_id?: string;   // For vector type
+    summary_interval?: number; // For summary type
+    vector_store_id?: string; // For vector type
 }
 
 export interface AgentModel {

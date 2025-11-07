@@ -1,4 +1,5 @@
 import { db } from "../database";
+import type { JsonValue } from "@flowmaestro/shared";
 import {
     KnowledgeChunkModel,
     CreateKnowledgeChunkInput,
@@ -6,6 +7,18 @@ import {
     SearchChunksInput
 } from "../models/KnowledgeChunk";
 import { toSql } from "pgvector";
+
+interface KnowledgeChunkRow {
+    id: string;
+    document_id: string;
+    knowledge_base_id: string;
+    chunk_index: number;
+    content: string;
+    embedding: string | number[] | null;
+    token_count: number | null;
+    metadata: string | Record<string, JsonValue>;
+    created_at: string | Date;
+}
 
 export class KnowledgeChunkRepository {
     async create(input: CreateKnowledgeChunkInput): Promise<KnowledgeChunkModel> {
@@ -26,8 +39,8 @@ export class KnowledgeChunkRepository {
             JSON.stringify(input.metadata || {})
         ];
 
-        const result = await db.query<KnowledgeChunkModel>(query, values);
-        return this.mapRow(result.rows[0]);
+        const result = await db.query<KnowledgeChunkRow>(query, values);
+        return this.mapRow(result.rows[0] as KnowledgeChunkRow);
     }
 
     async batchInsert(inputs: CreateKnowledgeChunkInput[]): Promise<KnowledgeChunkModel[]> {
@@ -37,7 +50,7 @@ export class KnowledgeChunkRepository {
 
         // Build a batch insert query
         const placeholders: string[] = [];
-        const values: any[] = [];
+        const values: unknown[] = [];
         let paramIndex = 1;
 
         inputs.forEach((input) => {
@@ -62,8 +75,8 @@ export class KnowledgeChunkRepository {
             RETURNING *
         `;
 
-        const result = await db.query<KnowledgeChunkModel>(query, values);
-        return result.rows.map((row) => this.mapRow(row));
+        const result = await db.query<KnowledgeChunkRow>(query, values);
+        return result.rows.map((row) => this.mapRow(row as KnowledgeChunkRow));
     }
 
     async findById(id: string): Promise<KnowledgeChunkModel | null> {
@@ -72,8 +85,8 @@ export class KnowledgeChunkRepository {
             WHERE id = $1
         `;
 
-        const result = await db.query<KnowledgeChunkModel>(query, [id]);
-        return result.rows.length > 0 ? this.mapRow(result.rows[0]) : null;
+        const result = await db.query<KnowledgeChunkRow>(query, [id]);
+        return result.rows.length > 0 ? this.mapRow(result.rows[0] as KnowledgeChunkRow) : null;
     }
 
     async findByDocumentId(documentId: string): Promise<KnowledgeChunkModel[]> {
@@ -83,8 +96,8 @@ export class KnowledgeChunkRepository {
             ORDER BY chunk_index ASC
         `;
 
-        const result = await db.query<KnowledgeChunkModel>(query, [documentId]);
-        return result.rows.map((row) => this.mapRow(row));
+        const result = await db.query<KnowledgeChunkRow>(query, [documentId]);
+        return result.rows.map((row) => this.mapRow(row as KnowledgeChunkRow));
     }
 
     async searchSimilar(input: SearchChunksInput): Promise<ChunkSearchResult[]> {
@@ -111,12 +124,7 @@ export class KnowledgeChunkRepository {
             LIMIT $4
         `;
 
-        const values = [
-            toSql(query_embedding),
-            knowledge_base_id,
-            similarity_threshold,
-            top_k
-        ];
+        const values = [toSql(query_embedding), knowledge_base_id, similarity_threshold, top_k];
 
         const result = await db.query(query, values);
 
@@ -126,9 +134,7 @@ export class KnowledgeChunkRepository {
             document_name: row.document_name,
             chunk_index: row.chunk_index,
             content: row.content,
-            metadata: typeof row.metadata === "string"
-                ? JSON.parse(row.metadata)
-                : row.metadata,
+            metadata: typeof row.metadata === "string" ? JSON.parse(row.metadata) : row.metadata,
             similarity: parseFloat(row.similarity)
         }));
     }
@@ -161,8 +167,8 @@ export class KnowledgeChunkRepository {
             RETURNING *
         `;
 
-        const result = await db.query<KnowledgeChunkModel>(query, [toSql(embedding), id]);
-        return result.rows.length > 0 ? this.mapRow(result.rows[0]) : null;
+        const result = await db.query<KnowledgeChunkRow>(query, [toSql(embedding), id]);
+        return result.rows.length > 0 ? this.mapRow(result.rows[0] as KnowledgeChunkRow) : null;
     }
 
     async countByKnowledgeBaseId(knowledgeBaseId: string): Promise<number> {
@@ -176,27 +182,27 @@ export class KnowledgeChunkRepository {
         return parseInt(result.rows[0].count);
     }
 
-    private mapRow(row: any): KnowledgeChunkModel {
+    private mapRow(row: KnowledgeChunkRow): KnowledgeChunkModel {
         return {
             ...row,
             embedding: row.embedding ? this.parseVector(row.embedding) : null,
-            metadata: typeof row.metadata === "string"
-                ? JSON.parse(row.metadata)
-                : row.metadata,
+            metadata: typeof row.metadata === "string" ? JSON.parse(row.metadata) : row.metadata,
             created_at: new Date(row.created_at)
         };
     }
 
-    private parseVector(vectorString: string): number[] | null {
+    private parseVector(vectorString: string | number[]): number[] | null {
         if (!vectorString) return null;
+        if (Array.isArray(vectorString)) return vectorString;
 
         // pgvector returns vectors as "[1,2,3]" strings
         try {
             // Remove brackets and split by comma
-            const cleaned = vectorString.replace(/[\[\]]/g, '');
-            return cleaned.split(',').map((v) => parseFloat(v.trim()));
-        } catch (error) {
-            console.error('Error parsing vector:', error);
+            const cleaned = vectorString.replace(/[\[\]]/g, "");
+            return cleaned.split(",").map((v) => parseFloat(v.trim()));
+        } catch (error: unknown) {
+            const msg = error instanceof Error ? error.message : "Unknown error";
+            console.error("Error parsing vector:", msg);
             return null;
         }
     }

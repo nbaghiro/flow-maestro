@@ -13,7 +13,7 @@ export async function removeToolHandler(
     reply: FastifyReply
 ): Promise<void> {
     const { id: agentId, toolId } = request.params;
-    const userId = (request.user as any).id;
+    const userId = (request.user as { id: string }).id;
 
     const agentRepo = new AgentRepository();
 
@@ -23,7 +23,7 @@ export async function removeToolHandler(
     if (!agent) {
         reply.code(404).send({
             success: false,
-            error: "Agent not found",
+            error: "Agent not found"
         });
         return;
     }
@@ -34,7 +34,7 @@ export async function removeToolHandler(
     if (toolIndex === -1) {
         reply.code(404).send({
             success: false,
-            error: "Tool not found",
+            error: "Tool not found"
         });
         return;
     }
@@ -44,13 +44,13 @@ export async function removeToolHandler(
 
     // Update the agent
     const updatedAgent = await agentRepo.update(agentId, {
-        available_tools: updatedTools,
+        available_tools: updatedTools
     });
 
     if (!updatedAgent) {
         reply.code(500).send({
             success: false,
-            error: "Failed to update agent",
+            error: "Failed to update agent"
         });
         return;
     }
@@ -58,7 +58,7 @@ export async function removeToolHandler(
     reply.code(200).send({
         success: true,
         data: {
-            agent: updatedAgent,
-        },
+            agent: updatedAgent
+        }
     });
 }

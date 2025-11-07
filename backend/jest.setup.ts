@@ -21,8 +21,7 @@ process.env.POSTGRES_HOST = process.env.POSTGRES_HOST || "localhost";
 process.env.POSTGRES_PORT = process.env.POSTGRES_PORT || "5432";
 process.env.POSTGRES_DB = process.env.POSTGRES_DB || "flowmaestro";
 process.env.POSTGRES_USER = process.env.POSTGRES_USER || "flowmaestro";
-process.env.POSTGRES_PASSWORD =
-    process.env.POSTGRES_PASSWORD || "flowmaestro_dev_password";
+process.env.POSTGRES_PASSWORD = process.env.POSTGRES_PASSWORD || "flowmaestro_dev_password";
 
 // Temporal test configuration
 process.env.TEMPORAL_ADDRESS = process.env.TEMPORAL_ADDRESS || "localhost:7233";
@@ -43,7 +42,7 @@ global.console = {
     info: jest.fn(),
     // Keep error and warn for debugging
     error: console.error,
-    warn: console.warn,
+    warn: console.warn
 };
 
 // Global test database pool
@@ -63,12 +62,12 @@ export function getGlobalTestPool(): Pool {
             password: process.env.POSTGRES_PASSWORD,
             max: 10,
             idleTimeoutMillis: 30000,
-            connectionTimeoutMillis: 2000,
+            connectionTimeoutMillis: 2000
         });
 
         // Set search path to include flowmaestro schema on every new connection
-        globalTestPool.on('connect', async (client) => {
-            await client.query('SET search_path TO flowmaestro, public');
+        globalTestPool.on("connect", async (client) => {
+            await client.query("SET search_path TO flowmaestro, public");
         });
     }
     return globalTestPool;
@@ -99,7 +98,7 @@ afterAll(async () => {
 
 // Mock nanoid to avoid ES module issues
 jest.mock("nanoid", () => ({
-    nanoid: jest.fn(() => `test-id-${Date.now()}-${Math.random()}`),
+    nanoid: jest.fn(() => `test-id-${Date.now()}-${Math.random()}`)
 }));
 
 // Mock pdf-parse module to avoid dealing with its complex export pattern
@@ -113,7 +112,7 @@ jest.mock("pdf-parse", () => {
             info: {},
             metadata: null,
             text: text,
-            version: "1.0.0",
+            version: "1.0.0"
         };
     });
 });

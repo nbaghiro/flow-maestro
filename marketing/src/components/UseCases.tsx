@@ -2,14 +2,7 @@ import React from "react";
 import { motion } from "framer-motion";
 import { useInView } from "framer-motion";
 import * as Tabs from "@radix-ui/react-tabs";
-import {
-    BarChart,
-    Users,
-    Cog,
-    GitBranch,
-    CheckCircle2,
-    ArrowRight,
-} from "lucide-react";
+import { BarChart, Users, Cog, GitBranch, CheckCircle2, ArrowRight } from "lucide-react";
 import { WorkflowAnimation } from "./animations/WorkflowAnimation";
 import { AgentAnimation } from "./animations/AgentAnimation";
 import { HybridAnimation } from "./animations/HybridAnimation";
@@ -38,9 +31,9 @@ const useCases: UseCase[] = [
             "Conditional branching and loops",
             "Parallel execution for performance",
             "Schedule recurring workflows",
-            "Real-time monitoring and debugging",
+            "Real-time monitoring and debugging"
         ],
-        gradient: "from-blue-500/20 to-cyan-500/20",
+        gradient: "from-blue-500/20 to-cyan-500/20"
     },
     {
         id: "agent-deployment",
@@ -54,9 +47,9 @@ const useCases: UseCase[] = [
             "MCP server integration for tool access",
             "Context-aware decision making",
             "Learning from execution history",
-            "Agent-to-agent communication",
+            "Agent-to-agent communication"
         ],
-        gradient: "from-purple-500/20 to-pink-500/20",
+        gradient: "from-purple-500/20 to-pink-500/20"
     },
     {
         id: "hybrid-systems",
@@ -70,9 +63,9 @@ const useCases: UseCase[] = [
             "Agents execute workflows as sub-tasks",
             "Shared context and data between both",
             "Unified monitoring and observability",
-            "Fallback from agent to workflow when needed",
+            "Fallback from agent to workflow when needed"
         ],
-        gradient: "from-green-500/20 to-emerald-500/20",
+        gradient: "from-green-500/20 to-emerald-500/20"
     },
     {
         id: "enterprise-scale",
@@ -86,10 +79,10 @@ const useCases: UseCase[] = [
             "Automatic retries with backoff",
             "Version control and rollbacks",
             "Multi-tenant isolation",
-            "SOC 2 compliance ready",
+            "SOC 2 compliance ready"
         ],
-        gradient: "from-orange-500/20 to-red-500/20",
-    },
+        gradient: "from-orange-500/20 to-red-500/20"
+    }
 ];
 
 export const UseCases: React.FC = () => {
@@ -115,17 +108,13 @@ export const UseCases: React.FC = () => {
                         <span className="gradient-text"> Execution Model</span>
                     </h2>
                     <p className="text-xl text-gray-400 max-w-2xl mx-auto">
-                        Deterministic workflows, autonomous agents, or both
-                        working together. You decide what fits your use case.
+                        Deterministic workflows, autonomous agents, or both working together. You
+                        decide what fits your use case.
                     </p>
                 </motion.div>
 
                 {/* Tabs */}
-                <Tabs.Root
-                    value={activeTab}
-                    onValueChange={setActiveTab}
-                    className="w-full"
-                >
+                <Tabs.Root value={activeTab} onValueChange={setActiveTab} className="w-full">
                     {/* Tab List */}
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
@@ -175,28 +164,19 @@ export const UseCases: React.FC = () => {
                                             </span>
                                         </div>
 
-                                        <h3 className="text-3xl font-bold mb-4">
-                                            {useCase.title}
-                                        </h3>
+                                        <h3 className="text-3xl font-bold mb-4">{useCase.title}</h3>
 
                                         <p className="text-gray-300 text-lg mb-8">
                                             {useCase.description}
                                         </p>
 
                                         <ul className="space-y-4 mb-8">
-                                            {useCase.features.map(
-                                                (feature, index) => (
-                                                    <li
-                                                        key={index}
-                                                        className="flex items-start gap-3"
-                                                    >
-                                                        <CheckCircle2 className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
-                                                        <span className="text-gray-300">
-                                                            {feature}
-                                                        </span>
-                                                    </li>
-                                                )
-                                            )}
+                                            {useCase.features.map((feature, index) => (
+                                                <li key={index} className="flex items-start gap-3">
+                                                    <CheckCircle2 className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
+                                                    <span className="text-gray-300">{feature}</span>
+                                                </li>
+                                            ))}
                                         </ul>
 
                                         <button className="group inline-flex items-center gap-2 px-6 py-3 bg-white text-black font-semibold rounded-lg hover:bg-gray-100 transition-colors">
@@ -214,9 +194,7 @@ export const UseCases: React.FC = () => {
                                             {useCase.id === "agent-deployment" && (
                                                 <AgentAnimation />
                                             )}
-                                            {useCase.id === "hybrid-systems" && (
-                                                <HybridAnimation />
-                                            )}
+                                            {useCase.id === "hybrid-systems" && <HybridAnimation />}
                                             {useCase.id === "enterprise-scale" && (
                                                 <EnterpriseAnimation />
                                             )}

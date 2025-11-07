@@ -35,22 +35,24 @@ export class SchedulerService {
                 scheduleId,
                 spec: {
                     cronExpressions: [config.cronExpression],
-                    timezone: config.timezone || 'UTC'
+                    timezone: config.timezone || "UTC"
                 },
                 action: {
-                    type: 'startWorkflow',
-                    workflowType: 'triggeredWorkflow',
-                    args: [{
-                        triggerId,
-                        workflowId,
-                        payload: {}
-                    }],
-                    taskQueue: 'flowmaestro-orchestrator',
+                    type: "startWorkflow",
+                    workflowType: "triggeredWorkflow",
+                    args: [
+                        {
+                            triggerId,
+                            workflowId,
+                            payload: {}
+                        }
+                    ],
+                    taskQueue: "flowmaestro-orchestrator",
                     workflowId: `${scheduleId}-${Date.now()}`
                 },
                 policies: {
                     overlap: ScheduleOverlapPolicy.BUFFER_ONE,
-                    catchupWindow: '1 minute'
+                    catchupWindow: "1 minute"
                 },
                 state: {
                     paused: !config.enabled,
@@ -75,10 +77,7 @@ export class SchedulerService {
     /**
      * Update an existing scheduled trigger
      */
-    async updateScheduledTrigger(
-        triggerId: string,
-        config: ScheduleTriggerConfig
-    ): Promise<void> {
+    async updateScheduledTrigger(triggerId: string, config: ScheduleTriggerConfig): Promise<void> {
         const trigger = await this.triggerRepo.findById(triggerId);
         if (!trigger) {
             throw new Error(`Trigger not found: ${triggerId}`);
@@ -99,7 +98,7 @@ export class SchedulerService {
                     ...schedule,
                     spec: {
                         cronExpressions: [config.cronExpression],
-                        timezone: config.timezone || 'UTC'
+                        timezone: config.timezone || "UTC"
                     },
                     state: {
                         ...schedule.state,
@@ -128,7 +127,7 @@ export class SchedulerService {
 
         try {
             const handle = client.schedule.getHandle(trigger.temporal_schedule_id);
-            await handle.pause('Paused by user');
+            await handle.pause("Paused by user");
 
             await this.triggerRepo.update(triggerId, { enabled: false });
             console.log(`Paused schedule: ${trigger.temporal_schedule_id}`);
@@ -151,7 +150,7 @@ export class SchedulerService {
 
         try {
             const handle = client.schedule.getHandle(trigger.temporal_schedule_id);
-            await handle.unpause('Resumed by user');
+            await handle.unpause("Resumed by user");
 
             await this.triggerRepo.update(triggerId, { enabled: true });
             console.log(`Resumed schedule: ${trigger.temporal_schedule_id}`);
@@ -191,7 +190,7 @@ export class SchedulerService {
     /**
      * Get schedule information from Temporal
      */
-    async getScheduleInfo(triggerId: string): Promise<any> {
+    async getScheduleInfo(triggerId: string): Promise<unknown> {
         const trigger = await this.triggerRepo.findById(triggerId);
         if (!trigger || !trigger.temporal_schedule_id) {
             throw new Error(`Trigger not found or has no schedule: ${triggerId}`);
@@ -211,7 +210,10 @@ export class SchedulerService {
                 nextRunTime: description.info.nextActionTimes?.[0]
             };
         } catch (error) {
-            console.error(`Failed to get schedule info for ${trigger.temporal_schedule_id}:`, error);
+            console.error(
+                `Failed to get schedule info for ${trigger.temporal_schedule_id}:`,
+                error
+            );
             throw new Error(`Failed to get schedule info: ${error}`);
         }
     }
@@ -244,9 +246,9 @@ export class SchedulerService {
      * This ensures schedules are synced with Temporal after a restart
      */
     async initializeScheduledTriggers(): Promise<void> {
-        console.log('Initializing scheduled triggers...');
+        console.log("Initializing scheduled triggers...");
 
-        const scheduledTriggers = await this.triggerRepo.findByType('schedule');
+        const scheduledTriggers = await this.triggerRepo.findByType("schedule");
 
         for (const trigger of scheduledTriggers) {
             try {
@@ -262,16 +264,14 @@ export class SchedulerService {
                         continue;
                     } catch (error) {
                         // Schedule doesn't exist, will recreate
-                        console.log(`Schedule not found in Temporal, recreating: ${trigger.temporal_schedule_id}`);
+                        console.log(
+                            `Schedule not found in Temporal, recreating: ${trigger.temporal_schedule_id}`
+                        );
                     }
                 }
 
                 // Create the schedule
-                await this.createScheduledTrigger(
-                    trigger.id,
-                    trigger.workflow_id,
-                    config
-                );
+                await this.createScheduledTrigger(trigger.id, trigger.workflow_id, config);
 
                 console.log(`Initialized schedule for trigger: ${trigger.id}`);
             } catch (error) {

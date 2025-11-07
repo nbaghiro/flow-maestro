@@ -6,17 +6,17 @@ function createSecret(name: string, secretData: pulumi.Output<string> | string) 
     const secret = new gcp.secretmanager.Secret(resourceName(name), {
         secretId: resourceName(name),
         replication: {
-            auto: {},
+            auto: {}
         },
         labels: {
             app: infrastructureConfig.appName,
-            environment: infrastructureConfig.environment,
-        },
+            environment: infrastructureConfig.environment
+        }
     });
 
     new gcp.secretmanager.SecretVersion(resourceName(`${name}-version`), {
         secret: secret.id,
-        secretData: secretData,
+        secretData: secretData
     });
 
     return secret;
@@ -73,5 +73,5 @@ export const secretOutputs = {
     openaiApiKeySecretId: openaiApiKeySecret?.id,
     anthropicApiKeySecretId: anthropicApiKeySecret?.id,
     googleApiKeySecretId: googleApiKeySecret?.id,
-    cohereApiKeySecretId: cohereApiKeySecret?.id,
+    cohereApiKeySecretId: cohereApiKeySecret?.id
 };

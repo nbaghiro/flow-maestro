@@ -1,10 +1,10 @@
-import type { JsonObject, JsonValue } from '@flowmaestro/shared';
-import { interpolateWithObjectSupport } from './utils';
+import type { JsonObject, JsonValue } from "@flowmaestro/shared";
+import { interpolateWithObjectSupport } from "./utils";
 
 export interface OutputNodeConfig {
     outputName: string;
     value: string;
-    format: 'json' | 'string' | 'number' | 'boolean';
+    format: "json" | "string" | "number" | "boolean";
     description?: string;
 }
 
@@ -20,10 +20,13 @@ export async function executeOutputNode(
     context: JsonObject
 ): Promise<JsonObject> {
     // Interpolate variables in value
-    let value: JsonValue = interpolateWithObjectSupport(config.value, context);
+    const interpolated = interpolateWithObjectSupport(config.value, context);
+
+    // Ensure interpolated value is JsonValue-compatible
+    const jsonValue = interpolated as JsonValue;
 
     // Format conversion
-    value = formatValue(value, config.format);
+    const value = formatValue(jsonValue, config.format);
 
     console.log(`[Output] Set output '${config.outputName}' (${config.format})`);
 
@@ -35,16 +38,15 @@ export async function executeOutputNode(
 
 function formatValue(value: JsonValue, format: string): JsonValue {
     switch (format) {
-        case 'json':
-            return typeof value === 'string' ? JSON.parse(value) : value;
-        case 'string':
+        case "json":
+            return typeof value === "string" ? JSON.parse(value) : value;
+        case "string":
             return String(value);
-        case 'number':
+        case "number":
             return Number(value);
-        case 'boolean':
+        case "boolean":
             return Boolean(value);
         default:
             return value;
     }
 }
-

@@ -10,14 +10,14 @@ export interface VoiceCommand {
     type: "speak" | "listen" | "menu" | "hangup" | "transfer" | "dtmf_collect" | "record";
     requestId: string;
     callExecutionId: string;
-    payload: Record<string, any>;
+    payload: Record<string, unknown>;
 }
 
 export interface VoiceCommandResponse {
     requestId: string;
     callExecutionId: string;
     success: boolean;
-    result?: Record<string, any>;
+    result?: Record<string, unknown>;
     error?: string;
 }
 
@@ -25,17 +25,20 @@ export interface VoiceEvent {
     type: string;
     callExecutionId: string;
     timestamp: number;
-    data: Record<string, any>;
+    data: Record<string, unknown>;
 }
 
 export class VoiceCommandBus {
     private publisher: Redis;
     private subscriber: Redis;
-    private pendingRequests: Map<string, {
-        resolve: (response: VoiceCommandResponse) => void;
-        reject: (error: Error) => void;
-        timeout: NodeJS.Timeout;
-    }>;
+    private pendingRequests: Map<
+        string,
+        {
+            resolve: (response: VoiceCommandResponse) => void;
+            reject: (error: Error) => void;
+            timeout: NodeJS.Timeout;
+        }
+    >;
 
     constructor() {
         const redisUrl = process.env.REDIS_URL || "redis://localhost:6379";
@@ -66,7 +69,7 @@ export class VoiceCommandBus {
     async sendCommand(
         callExecutionId: string,
         type: VoiceCommand["type"],
-        payload: Record<string, any>,
+        payload: Record<string, unknown>,
         timeoutMs: number = 30000
     ): Promise<VoiceCommandResponse> {
         const requestId = nanoid();
@@ -75,7 +78,7 @@ export class VoiceCommandBus {
             type,
             requestId,
             callExecutionId,
-            payload,
+            payload
         };
 
         // Create promise that will be resolved when response arrives
@@ -88,15 +91,12 @@ export class VoiceCommandBus {
             this.pendingRequests.set(requestId, {
                 resolve,
                 reject,
-                timeout,
+                timeout
             });
         });
 
         // Publish command
-        await this.publisher.publish(
-            `voice:commands:${callExecutionId}`,
-            JSON.stringify(command)
-        );
+        await this.publisher.publish(`voice:commands:${callExecutionId}`, JSON.stringify(command));
 
         console.log(`[VoiceCommandBus] Sent command: ${type} (${requestId})`);
 

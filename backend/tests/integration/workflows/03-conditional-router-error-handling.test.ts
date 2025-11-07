@@ -69,7 +69,7 @@ describe("Workflow 3: Conditional Router with Error Handling", () => {
 
     afterAll(async () => {
         // Clean up test table
-        await pool.query(`DROP TABLE IF EXISTS test_users`);
+        await pool.query("DROP TABLE IF EXISTS test_users");
 
         // Clean up test data
         if (connectionFactory) {
@@ -85,10 +85,7 @@ describe("Workflow 3: Conditional Router with Error Handling", () => {
 
     it("should route to API branch when source is 'api'", async () => {
         // Execute workflow with source="api"
-        const result = await testHarness.executeWorkflow(
-            workflowDefinition,
-            { source: "api" }
-        );
+        const result = await testHarness.executeWorkflow(workflowDefinition, { source: "api" });
 
         // Verify workflow succeeded
         expect(result.success).toBe(true);
@@ -118,10 +115,9 @@ describe("Workflow 3: Conditional Router with Error Handling", () => {
 
     it("should route to database branch when source is 'database'", async () => {
         // Execute workflow with source="database"
-        const result = await testHarness.executeWorkflow(
-            workflowDefinition,
-            { source: "database" }
-        );
+        const result = await testHarness.executeWorkflow(workflowDefinition, {
+            source: "database"
+        });
 
         // Verify workflow succeeded
         expect(result.success).toBe(true);
@@ -153,20 +149,16 @@ describe("Workflow 3: Conditional Router with Error Handling", () => {
 
     it("should verify only one branch executes (branch isolation)", async () => {
         // Test API branch
-        const apiResult = await testHarness.executeWorkflow(
-            workflowDefinition,
-            { source: "api" }
-        );
+        const apiResult = await testHarness.executeWorkflow(workflowDefinition, { source: "api" });
 
         expect(apiResult.success).toBe(true);
         expect(apiResult.outputs.apiData).toBeDefined();
         expect(apiResult.outputs.dbData).toBeUndefined();
 
         // Test database branch
-        const dbResult = await testHarness.executeWorkflow(
-            workflowDefinition,
-            { source: "database" }
-        );
+        const dbResult = await testHarness.executeWorkflow(workflowDefinition, {
+            source: "database"
+        });
 
         expect(dbResult.success).toBe(true);
         expect(dbResult.outputs.dbData).toBeDefined();
@@ -179,10 +171,7 @@ describe("Workflow 3: Conditional Router with Error Handling", () => {
 
     it("should transform data correctly from both sources", async () => {
         // Test API source transformation
-        const apiResult = await testHarness.executeWorkflow(
-            workflowDefinition,
-            { source: "api" }
-        );
+        const apiResult = await testHarness.executeWorkflow(workflowDefinition, { source: "api" });
 
         expect(apiResult.success).toBe(true);
         expect(apiResult.outputs.normalizedData).toMatchObject({
@@ -191,14 +180,13 @@ describe("Workflow 3: Conditional Router with Error Handling", () => {
             email: expect.any(String),
             city: expect.any(String),
             company: expect.any(String),
-            source: "api",
+            source: "api"
         });
 
         // Test database source transformation
-        const dbResult = await testHarness.executeWorkflow(
-            workflowDefinition,
-            { source: "database" }
-        );
+        const dbResult = await testHarness.executeWorkflow(workflowDefinition, {
+            source: "database"
+        });
 
         expect(dbResult.success).toBe(true);
         expect(dbResult.outputs.normalizedData).toMatchObject({
@@ -207,7 +195,7 @@ describe("Workflow 3: Conditional Router with Error Handling", () => {
             email: expect.any(String),
             city: expect.any(String),
             company: expect.any(String),
-            source: "database",
+            source: "database"
         });
 
         // Both should have the same structure (normalized)
@@ -217,10 +205,7 @@ describe("Workflow 3: Conditional Router with Error Handling", () => {
     });
 
     it("should complete within reasonable time", async () => {
-        const result = await testHarness.executeWorkflow(
-            workflowDefinition,
-            { source: "api" }
-        );
+        const result = await testHarness.executeWorkflow(workflowDefinition, { source: "api" });
 
         expect(result.success).toBe(true);
         expect(result.duration).toBeLessThan(15000); // Should complete within 15 seconds
@@ -228,10 +213,7 @@ describe("Workflow 3: Conditional Router with Error Handling", () => {
 
     it("should handle case-insensitive source values", async () => {
         // Test with uppercase "API"
-        const result1 = await testHarness.executeWorkflow(
-            workflowDefinition,
-            { source: "API" }
-        );
+        const result1 = await testHarness.executeWorkflow(workflowDefinition, { source: "API" });
 
         // The conditional executor uses case-insensitive comparison
         expect(result1.success).toBe(true);
@@ -241,10 +223,7 @@ describe("Workflow 3: Conditional Router with Error Handling", () => {
 
     it("should handle invalid source values by taking false branch", async () => {
         // Test with invalid source value (not "api")
-        const result = await testHarness.executeWorkflow(
-            workflowDefinition,
-            { source: "invalid" }
-        );
+        const result = await testHarness.executeWorkflow(workflowDefinition, { source: "invalid" });
 
         // Should take false branch (database)
         expect(result.success).toBe(true);

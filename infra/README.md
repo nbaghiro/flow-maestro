@@ -62,6 +62,7 @@ cd infra
 ```
 
 The script will:
+
 1. Verify prerequisites
 2. Gather configuration
 3. Create Artifact Registry
@@ -560,16 +561,17 @@ pulumi stack rm production
 
 Production infrastructure costs approximately **$810-1,350/month**:
 
-| Service | Configuration | Monthly Cost |
-|---------|--------------|--------------|
-| GKE Autopilot | ~10 vCPUs, 20GB RAM | $250-400 |
-| Cloud SQL | HA, 2 vCPUs, 7.5GB | $180-220 |
-| Memorystore Redis | 5GB Standard | $150-180 |
-| Load Balancer | Global HTTPS | $20-30 |
-| Cloud CDN | 100GB egress | $10-20 |
-| Temporal Cloud | Depends on plan | $200-500 |
+| Service           | Configuration       | Monthly Cost |
+| ----------------- | ------------------- | ------------ |
+| GKE Autopilot     | ~10 vCPUs, 20GB RAM | $250-400     |
+| Cloud SQL         | HA, 2 vCPUs, 7.5GB  | $180-220     |
+| Memorystore Redis | 5GB Standard        | $150-180     |
+| Load Balancer     | Global HTTPS        | $20-30       |
+| Cloud CDN         | 100GB egress        | $10-20       |
+| Temporal Cloud    | Depends on plan     | $200-500     |
 
 **Cost Optimization Tips:**
+
 - Use Autopilot GKE (pay for pods only)
 - Enable Cloud CDN caching
 - Use committed use discounts (37% savings)
@@ -655,8 +657,8 @@ pulumi up -v=9
 
 ## 📚 Additional Documentation
 
-- **Detailed Infrastructure Guide**: [../_docs/infrastructure-setup.md](../_docs/infrastructure-setup.md)
-- **Architecture Overview**: [../_docs/architecture.md](../_docs/architecture.md)
+- **Detailed Infrastructure Guide**: [../\_docs/infrastructure-setup.md](../_docs/infrastructure-setup.md)
+- **Architecture Overview**: [../\_docs/architecture.md](../_docs/architecture.md)
 - **Development Guidelines**: [../claude.md](../claude.md)
 - **Project README**: [../README.md](../README.md)
 

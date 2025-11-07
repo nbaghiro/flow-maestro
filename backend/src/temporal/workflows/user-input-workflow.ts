@@ -5,7 +5,7 @@ export interface UserInputWorkflowInput {
     nodeId: string;
     prompt: string;
     inputType: string;
-    validation?: Record<string, any>;
+    validation?: Record<string, unknown>;
     timeoutMs?: number;
 }
 

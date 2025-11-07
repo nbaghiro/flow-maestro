@@ -55,7 +55,7 @@ export function CreateWorkflowDialog({ isOpen, onClose, onCreate }: CreateWorkfl
             const nodeEntries = Object.entries(parsed.nodes);
             if (nodeEntries.length > 0) {
                 for (const [nodeId, node] of nodeEntries) {
-                    const nodeObj = node as any;
+                    const nodeObj = node as Record<string, unknown>;
                     if (!nodeObj.type || typeof nodeObj.type !== "string") {
                         return {
                             valid: false,
@@ -74,10 +74,8 @@ export function CreateWorkflowDialog({ isOpen, onClose, onCreate }: CreateWorkfl
                             error: `Invalid node '${nodeId}': Missing 'position' property`
                         };
                     }
-                    if (
-                        typeof nodeObj.position.x !== "number" ||
-                        typeof nodeObj.position.y !== "number"
-                    ) {
+                    const position = nodeObj.position as Record<string, unknown>;
+                    if (typeof position.x !== "number" || typeof position.y !== "number") {
                         return {
                             valid: false,
                             error: `Invalid node '${nodeId}': Position must have x and y coordinates`
@@ -92,8 +90,9 @@ export function CreateWorkflowDialog({ isOpen, onClose, onCreate }: CreateWorkfl
             }
 
             return { valid: true, data: parsed };
-        } catch (err: any) {
-            return { valid: false, error: `JSON parse error: ${err.message}` };
+        } catch (err: unknown) {
+            const errorObj = err as { message?: string };
+            return { valid: false, error: `JSON parse error: ${errorObj.message || "Unknown error"}` };
         }
     };
 
@@ -169,8 +168,8 @@ export function CreateWorkflowDialog({ isOpen, onClose, onCreate }: CreateWorkfl
             setParsedWorkflow(null);
             setShowJsonImport(false);
             onClose();
-        } catch (err: any) {
-            setError(err.message || "Failed to create workflow");
+        } catch (err: unknown) {
+            setError(err instanceof Error ? err.message : "Failed to create workflow");
         } finally {
             setIsCreating(false);
         }

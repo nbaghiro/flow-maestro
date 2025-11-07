@@ -10,7 +10,7 @@ export async function createKnowledgeBaseRoute(fastify: FastifyInstance) {
         },
         async (request, reply) => {
             const kbRepository = new KnowledgeBaseRepository();
-            const body = request.body as any;
+            const body = request.body as { name: string; description?: string; config?: Record<string, unknown> };
 
             const knowledgeBase = await kbRepository.create({
                 user_id: request.user!.id,

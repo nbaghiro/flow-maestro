@@ -70,7 +70,7 @@ export async function emitExecutionStarted(input: EmitExecutionStartedInput): Pr
         timestamp: Date.now(),
         executionId,
         workflowName,
-        totalNodes,
+        totalNodes
     });
 }
 
@@ -85,7 +85,7 @@ export async function emitExecutionProgress(input: EmitExecutionProgressInput): 
         executionId,
         completed,
         total,
-        percentage,
+        percentage
     });
 }
 
@@ -100,7 +100,7 @@ export async function emitExecutionCompleted(input: EmitExecutionCompletedInput)
         executionId,
         status: "completed",
         outputs,
-        duration,
+        duration
     });
 }
 
@@ -115,7 +115,7 @@ export async function emitExecutionFailed(input: EmitExecutionFailedInput): Prom
         executionId,
         status: "failed",
         error,
-        ...(failedNodeId && { failedNodeId }),
+        ...(failedNodeId && { failedNodeId })
     });
 }
 
@@ -130,7 +130,7 @@ export async function emitNodeStarted(input: EmitNodeStartedInput): Promise<void
         executionId,
         nodeId,
         nodeName,
-        nodeType,
+        nodeType
     });
 }
 
@@ -148,7 +148,7 @@ export async function emitNodeCompleted(input: EmitNodeCompletedInput): Promise<
         nodeType,
         output,
         duration,
-        ...(metadata && { metadata }),
+        ...(metadata && { metadata })
     });
 }
 
@@ -164,6 +164,6 @@ export async function emitNodeFailed(input: EmitNodeFailedInput): Promise<void> 
         nodeId,
         nodeName,
         nodeType,
-        error,
+        error
     });
 }

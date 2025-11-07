@@ -1,10 +1,13 @@
-import { executeLLMNode, type LLMNodeConfig } from '../temporal/activities/node-executors/llm-executor';
-import { ConnectionRepository } from '../storage/repositories/ConnectionRepository';
-import { getDefaultModelForProvider } from '@flowmaestro/shared';
+import {
+    executeLLMNode,
+    type LLMNodeConfig
+} from "../temporal/activities/node-executors/llm-executor";
+import { ConnectionRepository } from "../storage/repositories/ConnectionRepository";
+import { getDefaultModelForProvider } from "@flowmaestro/shared";
 
 export interface WorkflowGenerationRequest {
     userPrompt: string;
-    connectionId: string;
+    connectionId?: string;
     userId: string;
 }
 
@@ -13,7 +16,7 @@ export interface GeneratedWorkflow {
         id: string;
         type: string;
         label: string;
-        config: Record<string, any>;
+        config: Record<string, unknown>;
     }>;
     edges: Array<{
         source: string;
@@ -145,7 +148,7 @@ Config:
   "label": string,
   "placeholder": string,
   "required": boolean,
-  "defaultValue": any,
+  "defaultValue": unknown,
   "choices": array (for choice type),
   "variable": string (variable name to store input)
 }
@@ -342,18 +345,21 @@ export async function generateWorkflow(
 ): Promise<GeneratedWorkflow> {
     const systemPrompt = buildSystemPrompt();
 
-    console.log('[Workflow Generator] Generating workflow for user:', request.userId);
-    console.log('[Workflow Generator] User prompt:', request.userPrompt);
+    console.log("[Workflow Generator] Generating workflow for user:", request.userId);
+    console.log("[Workflow Generator] User prompt:", request.userPrompt);
 
     // Fetch connection to determine provider
     const connectionRepository = new ConnectionRepository();
+    if (!request.connectionId) {
+        throw new Error("Connection ID is required for workflow generation");
+    }
     const connection = await connectionRepository.findByIdWithData(request.connectionId);
 
     if (!connection) {
         throw new Error(`Connection with ID ${request.connectionId} not found`);
     }
 
-    if (connection.status !== 'active') {
+    if (connection.status !== "active") {
         throw new Error(`Connection is not active (status: ${connection.status})`);
     }
 
@@ -365,17 +371,17 @@ export async function generateWorkflow(
         throw new Error(`Unsupported LLM provider: ${provider}`);
     }
 
-    console.log('[Workflow Generator] Using provider:', provider, 'model:', model);
+    console.log("[Workflow Generator] Using provider:", provider, "model:", model);
 
     // Prepare LLM configuration
     const llmConfig: LLMNodeConfig = {
-        provider: provider as any,
+        provider: provider as "openai" | "anthropic" | "google" | "cohere",
         model,
         connectionId: request.connectionId,
         systemPrompt,
         prompt: request.userPrompt,
         temperature: 0.7,
-        maxTokens: 3000, // Allow larger response for complex workflows
+        maxTokens: 3000 // Allow larger response for complex workflows
     };
 
     // Call LLM
@@ -383,11 +389,11 @@ export async function generateWorkflow(
 
     // Extract text from result
     const text = result.text;
-    if (typeof text !== 'string') {
-        throw new Error('LLM result did not contain a text string');
+    if (typeof text !== "string") {
+        throw new Error("LLM result did not contain a text string");
     }
 
-    console.log('[Workflow Generator] LLM response length:', text.length);
+    console.log("[Workflow Generator] LLM response length:", text.length);
 
     // Parse JSON response
     let workflow: GeneratedWorkflow;
@@ -401,14 +407,18 @@ export async function generateWorkflow(
 
         workflow = JSON.parse(jsonText);
     } catch (error) {
-        console.error('[Workflow Generator] Failed to parse LLM response:', text);
-        throw new Error('Failed to parse workflow JSON from LLM response. Please try again.');
+        console.error("[Workflow Generator] Failed to parse LLM response:", text);
+        throw new Error("Failed to parse workflow JSON from LLM response. Please try again.");
     }
 
     // Validate workflow structure
     validateWorkflow(workflow);
 
-    console.log('[Workflow Generator] Successfully generated workflow with', workflow.nodes.length, 'nodes');
+    console.log(
+        "[Workflow Generator] Successfully generated workflow with",
+        workflow.nodes.length,
+        "nodes"
+    );
 
     return workflow;
 }
@@ -416,55 +426,63 @@ export async function generateWorkflow(
 /**
  * Validate generated workflow structure
  */
-function validateWorkflow(workflow: any): void {
-    if (!workflow || typeof workflow !== 'object') {
-        throw new Error('Workflow must be an object');
+function validateWorkflow(workflow: unknown): void {
+    if (!workflow || typeof workflow !== "object") {
+        throw new Error("Workflow must be an object");
     }
 
-    if (!Array.isArray(workflow.nodes)) {
-        throw new Error('Workflow must have a nodes array');
+    const wf = workflow as {
+        nodes?: unknown[];
+        edges?: unknown[];
+        metadata?: { name?: string; entryNodeId?: string };
+    };
+
+    if (!Array.isArray(wf.nodes)) {
+        throw new Error("Workflow must have a nodes array");
     }
 
-    if (!Array.isArray(workflow.edges)) {
-        throw new Error('Workflow must have an edges array');
+    if (!Array.isArray(wf.edges)) {
+        throw new Error("Workflow must have an edges array");
     }
 
-    if (!workflow.metadata || typeof workflow.metadata !== 'object') {
-        throw new Error('Workflow must have a metadata object');
+    if (!wf.metadata || typeof wf.metadata !== "object") {
+        throw new Error("Workflow must have a metadata object");
     }
 
-    if (!workflow.metadata.name) {
-        throw new Error('Workflow metadata must have a name');
+    if (!wf.metadata.name) {
+        throw new Error("Workflow metadata must have a name");
     }
 
-    if (!workflow.metadata.entryNodeId) {
-        throw new Error('Workflow metadata must have an entryNodeId');
+    if (!wf.metadata.entryNodeId) {
+        throw new Error("Workflow metadata must have an entryNodeId");
     }
 
-    if (workflow.nodes.length === 0) {
-        throw new Error('Workflow must have at least one node');
+    if (wf.nodes.length === 0) {
+        throw new Error("Workflow must have at least one node");
     }
 
     // Validate each node has required fields
-    for (const node of workflow.nodes) {
-        if (!node.id || !node.type || !node.label || !node.config) {
+    for (const node of wf.nodes) {
+        const n = node as { id?: string; type?: string; label?: string; config?: unknown };
+        if (!n.id || !n.type || !n.label || !n.config) {
             throw new Error(`Invalid node structure: ${JSON.stringify(node)}`);
         }
     }
 
     // Validate edges reference existing nodes
-    const nodeIds = new Set(workflow.nodes.map((n: any) => n.id));
-    for (const edge of workflow.edges) {
-        if (!nodeIds.has(edge.source)) {
-            throw new Error(`Edge references non-existent source node: ${edge.source}`);
+    const nodeIds = new Set(wf.nodes.map((n: unknown) => (n as { id: string }).id));
+    for (const edge of wf.edges) {
+        const e = edge as { source?: string; target?: string };
+        if (!e.source || !nodeIds.has(e.source)) {
+            throw new Error(`Edge references non-existent source node: ${e.source}`);
         }
-        if (!nodeIds.has(edge.target)) {
-            throw new Error(`Edge references non-existent target node: ${edge.target}`);
+        if (!e.target || !nodeIds.has(e.target)) {
+            throw new Error(`Edge references non-existent target node: ${e.target}`);
         }
     }
 
     // Validate entry node exists
-    if (!nodeIds.has(workflow.metadata.entryNodeId)) {
-        throw new Error(`Entry node ${workflow.metadata.entryNodeId} does not exist`);
+    if (!nodeIds.has(wf.metadata.entryNodeId)) {
+        throw new Error(`Entry node ${wf.metadata.entryNodeId} does not exist`);
     }
 }

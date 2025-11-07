@@ -9,17 +9,12 @@ export const EnterpriseAnimation: React.FC = () => {
         { x: 100, y: 200, delay: 0.5 },
         { x: 180, y: 200, delay: 0.6 },
         { x: 220, y: 200, delay: 0.7 },
-        { x: 300, y: 200, delay: 0.8 },
+        { x: 300, y: 200, delay: 0.8 }
     ];
 
     return (
         <div className="relative w-full h-full flex items-center justify-center">
-            <svg
-                width="100%"
-                height="100%"
-                viewBox="0 0 400 300"
-                className="max-w-md mx-auto"
-            >
+            <svg width="100%" height="100%" viewBox="0 0 400 300" className="max-w-md mx-auto">
                 {/* Connection Lines */}
                 <motion.g opacity="0.3">
                     {/* Center to Ring 1 */}
@@ -51,7 +46,7 @@ export const EnterpriseAnimation: React.FC = () => {
                         { x1: 140, y1: 150, x2: 100, y2: 200 },
                         { x1: 140, y1: 150, x2: 180, y2: 200 },
                         { x1: 260, y1: 150, x2: 220, y2: 200 },
-                        { x1: 260, y1: 150, x2: 300, y2: 200 },
+                        { x1: 260, y1: 150, x2: 300, y2: 200 }
                     ].map((line, i) => (
                         <motion.line
                             key={i}
@@ -83,12 +78,12 @@ export const EnterpriseAnimation: React.FC = () => {
                             initial={{ r: 12, opacity: 0 }}
                             animate={{
                                 r: [12, 18, 12],
-                                opacity: [0.3, 0, 0.3],
+                                opacity: [0.3, 0, 0.3]
                             }}
                             transition={{
                                 delay: node.delay + 1.5,
                                 duration: 2,
-                                repeat: Infinity,
+                                repeat: Infinity
                             }}
                         />
 
@@ -104,7 +99,7 @@ export const EnterpriseAnimation: React.FC = () => {
                             animate={{ scale: 1 }}
                             transition={{
                                 delay: node.delay,
-                                type: "spring",
+                                type: "spring"
                             }}
                         />
 
@@ -131,19 +126,15 @@ export const EnterpriseAnimation: React.FC = () => {
                         fill="#8b5cf6"
                         initial={{ opacity: 0 }}
                         animate={{
-                            cx: [
-                                200,
-                                i % 2 === 0 ? 140 : 260,
-                                i % 2 === 0 ? 100 : 300,
-                            ],
+                            cx: [200, i % 2 === 0 ? 140 : 260, i % 2 === 0 ? 100 : 300],
                             cy: [100, 150, 200],
-                            opacity: [0, 1, 0],
+                            opacity: [0, 1, 0]
                         }}
                         transition={{
                             delay: 2 + i * 0.5,
                             duration: 1.5,
                             repeat: Infinity,
-                            repeatDelay: 1,
+                            repeatDelay: 1
                         }}
                     />
                 ))}
@@ -154,22 +145,10 @@ export const EnterpriseAnimation: React.FC = () => {
                     animate={{ opacity: 1 }}
                     transition={{ delay: 1.5 }}
                 >
-                    <text
-                        x="200"
-                        y="70"
-                        fill="#94a3b8"
-                        fontSize="10"
-                        textAnchor="middle"
-                    >
+                    <text x="200" y="70" fill="#94a3b8" fontSize="10" textAnchor="middle">
                         Master Node
                     </text>
-                    <text
-                        x="200"
-                        y="250"
-                        fill="#94a3b8"
-                        fontSize="10"
-                        textAnchor="middle"
-                    >
+                    <text x="200" y="250" fill="#94a3b8" fontSize="10" textAnchor="middle">
                         Distributed Execution
                     </text>
                 </motion.g>
@@ -200,13 +179,7 @@ export const EnterpriseAnimation: React.FC = () => {
                         strokeWidth="1"
                     />
                     <circle cx="165" cy="32" r="3" fill="#4ade80" />
-                    <text
-                        x="200"
-                        y="37"
-                        fill="#4ade80"
-                        fontSize="10"
-                        textAnchor="middle"
-                    >
+                    <text x="200" y="37" fill="#4ade80" fontSize="10" textAnchor="middle">
                         99.9% Uptime
                     </text>
                 </motion.g>

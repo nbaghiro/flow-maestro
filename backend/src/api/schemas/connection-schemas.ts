@@ -9,7 +9,7 @@ export const connectionStatusSchema = z.enum(["active", "invalid", "expired", "r
 // API Key data schema
 const apiKeyDataSchema = z.object({
     api_key: z.string(),
-    api_secret: z.string().optional(),
+    api_secret: z.string().optional()
 });
 
 // OAuth2 token data schema
@@ -18,18 +18,18 @@ const oauth2TokenDataSchema = z.object({
     refresh_token: z.string().optional(),
     token_type: z.string(),
     expires_in: z.number().optional(),
-    scope: z.string().optional(),
+    scope: z.string().optional()
 });
 
 // Basic auth data schema
 const basicAuthDataSchema = z.object({
     username: z.string(),
-    password: z.string(),
+    password: z.string()
 });
 
 // Custom header data schema
 const customHeaderDataSchema = z.object({
-    headers: z.record(z.string()),
+    headers: z.record(z.string())
 });
 
 // MCP auth type schema
@@ -45,7 +45,7 @@ const mcpConnectionDataSchema = z.object({
     password: z.string().optional(),
     custom_headers: z.record(z.string()).optional(),
     protocol: z.enum(["http", "https", "ws", "wss"]).optional(),
-    timeout: z.number().positive().optional(),
+    timeout: z.number().positive().optional()
 });
 
 // Union of all connection data types
@@ -54,7 +54,7 @@ const connectionDataSchema = z.union([
     oauth2TokenDataSchema,
     basicAuthDataSchema,
     customHeaderDataSchema,
-    mcpConnectionDataSchema,
+    mcpConnectionDataSchema
 ]);
 
 // MCP tool parameter schema
@@ -64,7 +64,7 @@ const mcpToolParameterSchema = z.object({
     description: z.string().optional(),
     required: z.boolean().optional(),
     default: z.any().optional(),
-    schema: z.record(z.any()).optional(),
+    schema: z.record(z.any()).optional()
 });
 
 // MCP tool schema
@@ -76,9 +76,9 @@ const mcpToolSchema = z.object({
         .object({
             type: z.string(),
             description: z.string().optional(),
-            schema: z.record(z.any()).optional(),
+            schema: z.record(z.any()).optional()
         })
-        .optional(),
+        .optional()
 });
 
 // Connection metadata schema
@@ -90,14 +90,14 @@ const connectionMetadataSchema = z
             .object({
                 email: z.string().optional(),
                 username: z.string().optional(),
-                workspace: z.string().optional(),
+                workspace: z.string().optional()
             })
             .catchall(z.any())
             .optional(),
         provider_config: z.record(z.any()).optional(),
         // MCP-specific metadata
         mcp_version: z.string().optional(),
-        mcp_server_info: z.record(z.any()).optional(),
+        mcp_server_info: z.record(z.any()).optional()
     })
     .optional();
 
@@ -109,9 +109,9 @@ const connectionCapabilitiesSchema = z
         rate_limit: z
             .object({
                 requests_per_second: z.number().optional(),
-                requests_per_day: z.number().optional(),
+                requests_per_day: z.number().optional()
             })
-            .optional(),
+            .optional()
     })
     .catchall(z.any())
     .optional();
@@ -126,7 +126,7 @@ export const createConnectionSchema = z.object({
     status: connectionStatusSchema.optional(),
     mcp_server_url: z.string().url().optional(),
     mcp_tools: z.array(mcpToolSchema).optional(),
-    capabilities: connectionCapabilitiesSchema,
+    capabilities: connectionCapabilitiesSchema
 });
 
 // Update connection request
@@ -136,7 +136,7 @@ export const updateConnectionSchema = z.object({
     metadata: connectionMetadataSchema,
     status: connectionStatusSchema.optional(),
     mcp_tools: z.array(mcpToolSchema).optional(),
-    capabilities: connectionCapabilitiesSchema,
+    capabilities: connectionCapabilitiesSchema
 });
 
 // Query parameters for listing connections
@@ -153,17 +153,17 @@ export const listConnectionsQuerySchema = z.object({
         .string()
         .transform((val) => parseInt(val))
         .pipe(z.number().min(0))
-        .optional(),
+        .optional()
 });
 
 // URL parameters
 export const connectionIdParamSchema = z.object({
-    id: z.string().uuid(),
+    id: z.string().uuid()
 });
 
 // Test connection request
 export const testConnectionSchema = z.object({
-    test_endpoint: z.string().url().optional(), // Optional custom endpoint to test against
+    test_endpoint: z.string().url().optional() // Optional custom endpoint to test against
 });
 
 // MCP discovery request (test before saving)
@@ -175,13 +175,13 @@ export const mcpDiscoverySchema = z.object({
     username: z.string().optional(),
     password: z.string().optional(),
     custom_headers: z.record(z.string()).optional(),
-    timeout: z.number().positive().optional(),
+    timeout: z.number().positive().optional()
 });
 
 // MCP tool execution request
 export const mcpToolExecutionSchema = z.object({
     tool: z.string(),
-    parameters: z.record(z.any()),
+    parameters: z.record(z.any())
 });
 
 export type CreateConnectionRequest = z.infer<typeof createConnectionSchema>;

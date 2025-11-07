@@ -10,7 +10,7 @@ import { X } from "lucide-react";
 interface VariableDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    onConfirm: (variableName: string, initialValue: any) => void;
+    onConfirm: (variableName: string, initialValue: unknown) => void;
     title?: string;
     description?: string;
 }
@@ -44,13 +44,14 @@ export function VariableDialog({
         }
 
         // Parse value based on type
-        let parsedValue: any = initialValue;
+        let parsedValue: unknown = initialValue;
         if (valueType === "number") {
-            parsedValue = initialValue === "" ? 0 : Number(initialValue);
-            if (isNaN(parsedValue)) {
+            const numValue = initialValue === "" ? 0 : Number(initialValue);
+            if (isNaN(numValue)) {
                 setError("Invalid number");
                 return;
             }
+            parsedValue = numValue;
         } else if (valueType === "boolean") {
             parsedValue = initialValue === "true" || initialValue === "1";
         }
@@ -126,7 +127,9 @@ export function VariableDialog({
                             <select
                                 value={valueType}
                                 onChange={(e) => {
-                                    setValueType(e.target.value as any);
+                                    setValueType(
+                                        e.target.value as "string" | "number" | "boolean"
+                                    );
                                     setInitialValue("");
                                 }}
                                 className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"

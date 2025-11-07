@@ -380,16 +380,23 @@ export function KnowledgeBaseDetail() {
                                             {result.metadata &&
                                                 Object.keys(result.metadata).length > 0 && (
                                                     <div className="mt-2 flex flex-wrap gap-2">
-                                                        {result.metadata.page && (
-                                                            <span className="text-xs px-2 py-1 bg-muted rounded">
-                                                                Page {result.metadata.page}
-                                                            </span>
-                                                        )}
-                                                        {result.metadata.section && (
-                                                            <span className="text-xs px-2 py-1 bg-muted rounded">
-                                                                {result.metadata.section}
-                                                            </span>
-                                                        )}
+                                                        {(() => {
+                                                            const meta = result.metadata as Record<string, unknown>;
+                                                            return (
+                                                                <>
+                                                                    {meta.page && (
+                                                                        <span className="text-xs px-2 py-1 bg-muted rounded">
+                                                                            Page {String(meta.page)}
+                                                                        </span>
+                                                                    )}
+                                                                    {meta.section && (
+                                                                        <span className="text-xs px-2 py-1 bg-muted rounded">
+                                                                            {String(meta.section)}
+                                                                        </span>
+                                                                    )}
+                                                                </>
+                                                            );
+                                                        })()}
                                                     </div>
                                                 )}
                                         </div>

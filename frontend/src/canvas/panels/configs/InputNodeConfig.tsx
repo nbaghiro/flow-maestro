@@ -3,8 +3,8 @@ import { FormField, FormSection } from "../../../components/FormField";
 import { Info } from "lucide-react";
 
 interface InputNodeConfigProps {
-    data: any;
-    onUpdate: (config: any) => void;
+    data: Record<string, unknown>;
+    onUpdate: (config: unknown) => void;
 }
 
 const inputTypes = [
@@ -45,14 +45,14 @@ const validationPresets = {
 };
 
 export function InputNodeConfig({ data, onUpdate }: InputNodeConfigProps) {
-    const [inputName, setInputName] = useState(data.inputName || "");
-    const [inputType, setInputType] = useState(data.inputType || "text");
-    const [description, setDescription] = useState(data.description || "");
-    const [defaultValue, setDefaultValue] = useState(data.defaultValue || "");
-    const [required, setRequired] = useState(data.required ?? true);
-    const [validation, setValidation] = useState(data.validation || "");
-    const [minValue, setMinValue] = useState(data.minValue || "");
-    const [maxValue, setMaxValue] = useState(data.maxValue || "");
+    const [inputName, setInputName] = useState((data.inputName as string) || "");
+    const [inputType, setInputType] = useState((data.inputType as string) || "text");
+    const [description, setDescription] = useState((data.description as string) || "");
+    const [defaultValue, setDefaultValue] = useState((data.defaultValue as string) || "");
+    const [required, setRequired] = useState((data.required as boolean) ?? true);
+    const [validation, setValidation] = useState((data.validation as string) || "");
+    const [minValue, setMinValue] = useState((data.minValue as string) || "");
+    const [maxValue, setMaxValue] = useState((data.maxValue as string) || "");
 
     useEffect(() => {
         onUpdate({

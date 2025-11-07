@@ -7,7 +7,7 @@ import { PageHeader } from "../components/common/PageHeader";
 export function Agents() {
     const navigate = useNavigate();
     const { agents, isLoading, error, fetchAgents, deleteAgent } = useAgentStore();
-    const [agentToDelete, setAgentToDelete] = useState<any | null>(null);
+    const [agentToDelete, setAgentToDelete] = useState<{ id: string; name: string } | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
     const [openMenuId, setOpenMenuId] = useState<string | null>(null);
     const menuRef = useRef<HTMLDivElement>(null);

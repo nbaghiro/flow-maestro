@@ -10,11 +10,14 @@ export async function listKnowledgeBasesRoute(fastify: FastifyInstance) {
         },
         async (request, reply) => {
             const kbRepository = new KnowledgeBaseRepository();
-            const query = request.query as any;
+            const query = request.query as { limit?: string; offset?: string };
+
+            const limit = query.limit ? parseInt(query.limit) : 50;
+            const offset = query.offset ? parseInt(query.offset) : 0;
 
             const result = await kbRepository.findByUserId(request.user!.id, {
-                limit: query.limit ? parseInt(query.limit) : 50,
-                offset: query.offset ? parseInt(query.offset) : 0
+                limit,
+                offset
             });
 
             return reply.send({
@@ -22,8 +25,8 @@ export async function listKnowledgeBasesRoute(fastify: FastifyInstance) {
                 data: result.knowledgeBases,
                 pagination: {
                     total: result.total,
-                    limit: query.limit ? parseInt(query.limit) : 50,
-                    offset: query.offset ? parseInt(query.offset) : 0
+                    limit,
+                    offset
                 }
             });
         }

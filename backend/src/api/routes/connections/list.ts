@@ -7,7 +7,7 @@ export async function listConnectionsRoute(fastify: FastifyInstance) {
     fastify.get(
         "/",
         {
-            preHandler: [authMiddleware, validateQuery(listConnectionsQuerySchema)],
+            preHandler: [authMiddleware, validateQuery(listConnectionsQuerySchema)]
         },
         async (request, reply) => {
             const connectionRepository = new ConnectionRepository();
@@ -18,7 +18,7 @@ export async function listConnectionsRoute(fastify: FastifyInstance) {
                 offset: query.offset,
                 provider: query.provider,
                 connection_method: query.connection_method,
-                status: query.status,
+                status: query.status
             });
 
             return reply.send({
@@ -27,8 +27,8 @@ export async function listConnectionsRoute(fastify: FastifyInstance) {
                 pagination: {
                     total: result.total,
                     limit: query.limit || 50,
-                    offset: query.offset || 0,
-                },
+                    offset: query.offset || 0
+                }
             });
         }
     );

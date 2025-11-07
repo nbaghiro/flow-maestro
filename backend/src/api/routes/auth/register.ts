@@ -1,6 +1,6 @@
 import { FastifyInstance } from "fastify";
 import { UserRepository } from "../../../storage/repositories";
-import { registerSchema } from "../../schemas/auth-schemas";
+import { registerSchema, RegisterRequest } from "../../schemas/auth-schemas";
 import { validateRequest, ValidationError } from "../../middleware";
 import { PasswordUtils } from "../../../shared/utils/password";
 
@@ -12,7 +12,7 @@ export async function registerRoute(fastify: FastifyInstance) {
         },
         async (request, reply) => {
             const userRepository = new UserRepository();
-            const body = request.body as any;
+            const body = request.body as RegisterRequest;
 
             // Check if user already exists
             const existingUser = await userRepository.findByEmail(body.email);

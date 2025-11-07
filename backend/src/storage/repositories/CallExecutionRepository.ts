@@ -8,7 +8,70 @@ import {
     CallEvent,
     CreateCallEventInput,
     CallStatus,
+    CallDirection,
+    Speaker,
+    EventSeverity,
+    AudioQualityMetrics
 } from "../models/CallExecution";
+
+// Database row interfaces matching the PostgreSQL table structure
+interface CallExecutionRow {
+    id: string;
+    trigger_id: string;
+    execution_id: string | null;
+    user_id: string;
+    call_sid: string;
+    livekit_room_name: string | null;
+    caller_number: string;
+    called_number: string;
+    direction: CallDirection;
+    call_status: CallStatus;
+    initiated_at: string | Date;
+    answered_at: string | Date | null;
+    ended_at: string | Date | null;
+    call_duration_seconds: number | null;
+    caller_name: string | null;
+    caller_location: string | null;
+    caller_carrier: string | null;
+    recording_enabled: boolean;
+    recording_url: string | null;
+    recording_duration_seconds: number | null;
+    hangup_cause: string | null;
+    error_message: string | null;
+    audio_quality_metrics: AudioQualityMetrics | string | null;
+    cost_amount: number | null;
+    cost_currency: string;
+    created_at: string | Date;
+    updated_at: string | Date;
+}
+
+interface CallTranscriptRow {
+    id: string;
+    call_execution_id: string;
+    speaker: Speaker;
+    text: string;
+    confidence: number | null;
+    language: string;
+    started_at: string | Date;
+    ended_at: string | Date | null;
+    duration_ms: number | null;
+    audio_segment_url: string | null;
+    is_final: boolean;
+    interrupted: boolean;
+    node_id: string | null;
+    created_at: string | Date;
+}
+
+interface CallEventRow {
+    id: string;
+    call_execution_id: string;
+    event_type: string;
+    event_data: string | Record<string, unknown> | null;
+    severity: EventSeverity;
+    timestamp: string | Date;
+    node_id: string | null;
+    activity_id: string | null;
+}
 
 export class CallExecutionRepository {
     /**
@@ -35,11 +98,11 @@ export class CallExecutionRepository {
             input.caller_name || null,
             input.caller_location || null,
             input.caller_carrier || null,
-            input.recording_enabled !== undefined ? input.recording_enabled : false,
+            input.recording_enabled !== undefined ? input.recording_enabled : false
         ];
 
-        const result = await db.query<any>(query, values);
-        return this.mapCallExecutionRow(result.rows[0]);
+        const result = await db.query(query, values);
+        return this.mapCallExecutionRow(result.rows[0] as CallExecutionRow);
     }
 
     /**
@@ -51,8 +114,8 @@ export class CallExecutionRepository {
             WHERE id = $1
         `;
 
-        const result = await db.query<any>(query, [id]);
-        return result.rows.length > 0 ? this.mapCallExecutionRow(result.rows[0]) : null;
+        const result = await db.query(query, [id]);
+        return result.rows.length > 0 ? this.mapCallExecutionRow(result.rows[0] as CallExecutionRow) : null;
     }
 
     /**
@@ -64,8 +127,8 @@ export class CallExecutionRepository {
             WHERE call_sid = $1
         `;
 
-        const result = await db.query<any>(query, [callSid]);
-        return result.rows.length > 0 ? this.mapCallExecutionRow(result.rows[0]) : null;
+        const result = await db.query(query, [callSid]);
+        return result.rows.length > 0 ? this.mapCallExecutionRow(result.rows[0] as CallExecutionRow) : null;
     }
 
     /**
@@ -93,12 +156,12 @@ export class CallExecutionRepository {
 
         const [countResult, executionsResult] = await Promise.all([
             db.query<{ count: string }>(countQuery, [triggerId]),
-            db.query<any>(query, [triggerId, limit, offset]),
+            db.query(query, [triggerId, limit, offset])
         ]);
 
         return {
-            executions: executionsResult.rows.map((row) => this.mapCallExecutionRow(row)),
-            total: parseInt(countResult.rows[0].count),
+            executions: executionsResult.rows.map((row) => this.mapCallExecutionRow(row as CallExecutionRow)),
+            total: parseInt(countResult.rows[0].count)
         };
     }
 
@@ -110,17 +173,17 @@ export class CallExecutionRepository {
             SELECT * FROM flowmaestro.call_executions
             WHERE call_status IN ('initiated', 'ringing', 'active')
         `;
-        const values: any[] = [];
+        const values: unknown[] = [];
 
         if (userId) {
-            query += ` AND user_id = $1`;
+            query += " AND user_id = $1";
             values.push(userId);
         }
 
-        query += ` ORDER BY initiated_at DESC`;
+        query += " ORDER BY initiated_at DESC";
 
-        const result = await db.query<any>(query, values);
-        return result.rows.map((row) => this.mapCallExecutionRow(row));
+        const result = await db.query(query, values);
+        return result.rows.map((row) => this.mapCallExecutionRow(row as CallExecutionRow));
     }
 
     /**
@@ -128,7 +191,7 @@ export class CallExecutionRepository {
      */
     async update(id: string, input: UpdateCallExecutionInput): Promise<CallExecution | null> {
         const updates: string[] = [];
-        const values: any[] = [];
+        const values: unknown[] = [];
         let paramIndex = 1;
 
         if (input.execution_id !== undefined) {
@@ -208,8 +271,8 @@ export class CallExecutionRepository {
             RETURNING *
         `;
 
-        const result = await db.query<any>(query, values);
-        return result.rows.length > 0 ? this.mapCallExecutionRow(result.rows[0]) : null;
+        const result = await db.query(query, values);
+        return result.rows.length > 0 ? this.mapCallExecutionRow(result.rows[0] as CallExecutionRow) : null;
     }
 
     /**
@@ -252,11 +315,11 @@ export class CallExecutionRepository {
             input.audio_segment_url || null,
             input.is_final !== undefined ? input.is_final : true,
             input.interrupted !== undefined ? input.interrupted : false,
-            input.node_id || null,
+            input.node_id || null
         ];
 
-        const result = await db.query<any>(query, values);
-        return this.mapCallTranscriptRow(result.rows[0]);
+        const result = await db.query(query, values);
+        return this.mapCallTranscriptRow(result.rows[0] as CallTranscriptRow);
     }
 
     /**
@@ -269,8 +332,8 @@ export class CallExecutionRepository {
             ORDER BY started_at ASC
         `;
 
-        const result = await db.query<any>(query, [callExecutionId]);
-        return result.rows.map((row) => this.mapCallTranscriptRow(row));
+        const result = await db.query(query, [callExecutionId]);
+        return result.rows.map((row) => this.mapCallTranscriptRow(row as CallTranscriptRow));
     }
 
     // ===== Call Event Methods =====
@@ -294,11 +357,11 @@ export class CallExecutionRepository {
             input.severity || "info",
             input.timestamp || new Date(),
             input.node_id || null,
-            input.activity_id || null,
+            input.activity_id || null
         ];
 
-        const result = await db.query<any>(query, values);
-        return this.mapCallEventRow(result.rows[0]);
+        const result = await db.query(query, values);
+        return this.mapCallEventRow(result.rows[0] as CallEventRow);
     }
 
     /**
@@ -326,12 +389,12 @@ export class CallExecutionRepository {
 
         const [countResult, eventsResult] = await Promise.all([
             db.query<{ count: string }>(countQuery, [callExecutionId]),
-            db.query<any>(query, [callExecutionId, limit, offset]),
+            db.query(query, [callExecutionId, limit, offset])
         ]);
 
         return {
-            events: eventsResult.rows.map((row) => this.mapCallEventRow(row)),
-            total: parseInt(countResult.rows[0].count),
+            events: eventsResult.rows.map((row) => this.mapCallEventRow(row as CallEventRow)),
+            total: parseInt(countResult.rows[0].count)
         };
     }
 
@@ -340,7 +403,7 @@ export class CallExecutionRepository {
     /**
      * Map database row to CallExecution model
      */
-    private mapCallExecutionRow(row: any): CallExecution {
+    private mapCallExecutionRow(row: CallExecutionRow): CallExecution {
         return {
             id: row.id,
             trigger_id: row.trigger_id,
@@ -371,14 +434,14 @@ export class CallExecutionRepository {
             cost_amount: row.cost_amount,
             cost_currency: row.cost_currency,
             created_at: new Date(row.created_at),
-            updated_at: new Date(row.updated_at),
+            updated_at: new Date(row.updated_at)
         };
     }
 
     /**
      * Map database row to CallTranscript model
      */
-    private mapCallTranscriptRow(row: any): CallTranscript {
+    private mapCallTranscriptRow(row: CallTranscriptRow): CallTranscript {
         return {
             id: row.id.toString(),
             call_execution_id: row.call_execution_id,
@@ -393,24 +456,27 @@ export class CallExecutionRepository {
             is_final: row.is_final,
             interrupted: row.interrupted,
             node_id: row.node_id,
-            created_at: new Date(row.created_at),
+            created_at: new Date(row.created_at)
         };
     }
 
     /**
      * Map database row to CallEvent model
      */
-    private mapCallEventRow(row: any): CallEvent {
+    private mapCallEventRow(row: CallEventRow): CallEvent {
+        const eventData = typeof row.event_data === "string"
+            ? JSON.parse(row.event_data) as Record<string, unknown>
+            : row.event_data;
+
         return {
             id: row.id.toString(),
             call_execution_id: row.call_execution_id,
             event_type: row.event_type,
-            event_data:
-                typeof row.event_data === "string" ? JSON.parse(row.event_data) : row.event_data,
+            event_data: eventData as Record<string, import("@flowmaestro/shared").JsonValue> | null,
             severity: row.severity,
             timestamp: new Date(row.timestamp),
             node_id: row.node_id,
-            activity_id: row.activity_id,
+            activity_id: row.activity_id
         };
     }
 }

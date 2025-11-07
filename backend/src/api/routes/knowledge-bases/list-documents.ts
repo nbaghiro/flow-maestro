@@ -1,5 +1,9 @@
 import { FastifyInstance } from "fastify";
-import { KnowledgeBaseRepository, KnowledgeDocumentRepository } from "../../../storage/repositories";
+import type { DocumentStatus } from "../../../storage/models/KnowledgeDocument";
+import {
+    KnowledgeBaseRepository,
+    KnowledgeDocumentRepository
+} from "../../../storage/repositories";
 import { authMiddleware } from "../../middleware";
 
 export async function listDocumentsRoute(fastify: FastifyInstance) {
@@ -12,7 +16,7 @@ export async function listDocumentsRoute(fastify: FastifyInstance) {
             const kbRepository = new KnowledgeBaseRepository();
             const docRepository = new KnowledgeDocumentRepository();
             const params = request.params as { id: string };
-            const query = request.query as any;
+            const query = request.query as { limit?: string; offset?: string; status?: DocumentStatus };
 
             // Verify ownership
             const kb = await kbRepository.findById(params.id);
@@ -30,9 +34,12 @@ export async function listDocumentsRoute(fastify: FastifyInstance) {
                 });
             }
 
+            const limit = query.limit ? parseInt(query.limit) : 50;
+            const offset = query.offset ? parseInt(query.offset) : 0;
+
             const result = await docRepository.findByKnowledgeBaseId(params.id, {
-                limit: query.limit ? parseInt(query.limit) : 50,
-                offset: query.offset ? parseInt(query.offset) : 0,
+                limit,
+                offset,
                 status: query.status
             });
 
@@ -41,8 +48,8 @@ export async function listDocumentsRoute(fastify: FastifyInstance) {
                 data: result.documents,
                 pagination: {
                     total: result.total,
-                    limit: query.limit ? parseInt(query.limit) : 50,
-                    offset: query.offset ? parseInt(query.offset) : 0
+                    limit,
+                    offset
                 }
             });
         }

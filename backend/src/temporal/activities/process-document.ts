@@ -1,3 +1,4 @@
+import type { JsonValue } from "@flowmaestro/shared";
 import {
     KnowledgeDocumentRepository,
     KnowledgeChunkRepository,
@@ -31,8 +32,8 @@ const embeddingService = new EmbeddingService();
 function sanitizeText(text: string): string {
     // Remove null bytes and other control characters except newlines/tabs
     return text
-        .replace(/\x00/g, '') // Remove null bytes
-        .replace(/[\x01-\x08\x0B-\x0C\x0E-\x1F\x7F]/g, '') // Remove other control chars
+        .replace(/\x00/g, "") // Remove null bytes
+        .replace(/[\x01-\x08\x0B-\x0C\x0E-\x1F\x7F]/g, "") // Remove other control chars
         .trim();
 }
 
@@ -56,7 +57,7 @@ export async function extractTextActivity(input: ProcessDocumentInput): Promise<
             document?.name || "Unknown"
         );
 
-        let extractedText: { content: string; metadata: Record<string, any> };
+        let extractedText: { content: string; metadata: Record<string, unknown> };
 
         if (input.sourceUrl) {
             // Extract from URL
@@ -76,9 +77,12 @@ export async function extractTextActivity(input: ProcessDocumentInput): Promise<
         }
 
         // Update document with extracted content and metadata
+        // Cast metadata to DocumentMetadata since TextExtractor returns Record<string, unknown>
+        const documentMetadata = extractedText.metadata as Record<string, JsonValue | undefined>;
+
         await documentRepository.update(input.documentId, {
             content: sanitizedContent,
-            metadata: extractedText.metadata
+            metadata: documentMetadata
         });
 
         console.log(
@@ -86,15 +90,16 @@ export async function extractTextActivity(input: ProcessDocumentInput): Promise<
         );
 
         return sanitizedContent;
-    } catch (error: any) {
-        console.error(`[extractTextActivity] Error:`, error);
-        await documentRepository.updateStatus(input.documentId, "failed", error.message);
+    } catch (error: unknown) {
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        console.error("[extractTextActivity] Error:", error);
+        await documentRepository.updateStatus(input.documentId, "failed", errorMsg);
 
         // Emit document failed event
         globalEventEmitter.emitDocumentFailed(
             input.knowledgeBaseId,
             input.documentId,
-            error.message
+            errorMsg
         );
 
         throw error;
@@ -108,7 +113,7 @@ export async function chunkTextActivity(input: ProcessDocumentInput & { content:
     Array<{
         content: string;
         index: number;
-        metadata: any;
+        metadata: unknown;
     }>
 > {
     console.log(`[chunkTextActivity] Starting text chunking for document ${input.documentId}`);
@@ -136,7 +141,7 @@ export async function chunkTextActivity(input: ProcessDocumentInput & { content:
         });
 
         // Sanitize each chunk to ensure no invalid characters
-        const sanitizedChunks = chunks.map(chunk => ({
+        const sanitizedChunks = chunks.map((chunk) => ({
             ...chunk,
             content: sanitizeText(chunk.content)
         }));
@@ -144,15 +149,16 @@ export async function chunkTextActivity(input: ProcessDocumentInput & { content:
         console.log(`[chunkTextActivity] Created ${sanitizedChunks.length} chunks`);
 
         return sanitizedChunks;
-    } catch (error: any) {
-        console.error(`[chunkTextActivity] Error:`, error);
-        await documentRepository.updateStatus(input.documentId, "failed", error.message);
+    } catch (error: unknown) {
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        console.error("[chunkTextActivity] Error:", error);
+        await documentRepository.updateStatus(input.documentId, "failed", errorMsg);
 
         // Emit document failed event
         globalEventEmitter.emitDocumentFailed(
             input.knowledgeBaseId,
             input.documentId,
-            error.message
+            errorMsg
         );
 
         throw error;
@@ -168,13 +174,11 @@ export async function generateAndStoreEmbeddingsActivity(
         chunks: Array<{
             content: string;
             index: number;
-            metadata: any;
+            metadata: unknown;
         }>;
     }
 ): Promise<{ chunkCount: number; totalTokens: number }> {
-    console.log(
-        `[generateAndStoreEmbeddingsActivity] Processing ${input.chunks.length} chunks`
-    );
+    console.log(`[generateAndStoreEmbeddingsActivity] Processing ${input.chunks.length} chunks`);
 
     try {
         // Get KB config for embedding settings
@@ -187,7 +191,7 @@ export async function generateAndStoreEmbeddingsActivity(
         const texts = input.chunks.map((chunk) => chunk.content);
 
         // Generate embeddings
-        console.log(`[generateAndStoreEmbeddingsActivity] Generating embeddings...`);
+        console.log("[generateAndStoreEmbeddingsActivity] Generating embeddings...");
         const result = await embeddingService.generateEmbeddings(
             texts,
             {
@@ -203,7 +207,7 @@ export async function generateAndStoreEmbeddingsActivity(
         );
 
         // Store chunks with embeddings immediately
-        console.log(`[generateAndStoreEmbeddingsActivity] Storing chunks in database...`);
+        console.log("[generateAndStoreEmbeddingsActivity] Storing chunks in database...");
         const chunkInputs: CreateKnowledgeChunkInput[] = input.chunks.map((chunk, index) => ({
             document_id: input.documentId,
             knowledge_base_id: input.knowledgeBaseId,
@@ -211,27 +215,30 @@ export async function generateAndStoreEmbeddingsActivity(
             content: chunk.content,
             embedding: result.embeddings[index],
             token_count: embeddingService.estimateTokens(chunk.content),
-            metadata: chunk.metadata
+            metadata: chunk.metadata as Record<string, JsonValue | undefined>
         }));
 
         // Batch insert chunks
         const createdChunks = await chunkRepository.batchInsert(chunkInputs);
 
-        console.log(`[generateAndStoreEmbeddingsActivity] Successfully stored ${createdChunks.length} chunks`);
+        console.log(
+            `[generateAndStoreEmbeddingsActivity] Successfully stored ${createdChunks.length} chunks`
+        );
 
         return {
             chunkCount: createdChunks.length,
             totalTokens: result.usage.total_tokens
         };
-    } catch (error: any) {
-        console.error(`[generateAndStoreEmbeddingsActivity] Error:`, error);
-        await documentRepository.updateStatus(input.documentId, "failed", error.message);
+    } catch (error: unknown) {
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        console.error("[generateAndStoreEmbeddingsActivity] Error:", error);
+        await documentRepository.updateStatus(input.documentId, "failed", errorMsg);
 
         // Emit document failed event
         globalEventEmitter.emitDocumentFailed(
             input.knowledgeBaseId,
             input.documentId,
-            error.message
+            errorMsg
         );
 
         throw error;
@@ -244,11 +251,13 @@ export async function generateAndStoreEmbeddingsActivity(
 export async function completeDocumentProcessingActivity(
     input: ProcessDocumentInput
 ): Promise<void> {
-    console.log(`[completeDocumentProcessingActivity] Marking document ${input.documentId} as ready`);
+    console.log(
+        `[completeDocumentProcessingActivity] Marking document ${input.documentId} as ready`
+    );
 
     try {
         await documentRepository.updateStatus(input.documentId, "ready");
-        console.log(`[completeDocumentProcessingActivity] Document marked as ready`);
+        console.log("[completeDocumentProcessingActivity] Document marked as ready");
 
         // Get chunk count for the completed document
         const chunks = await chunkRepository.findByDocumentId(input.documentId);
@@ -259,8 +268,8 @@ export async function completeDocumentProcessingActivity(
             input.documentId,
             chunks.length
         );
-    } catch (error: any) {
-        console.error(`[completeDocumentProcessingActivity] Error:`, error);
+    } catch (error: unknown) {
+        console.error("[completeDocumentProcessingActivity] Error:", error);
         throw error;
     }
 }

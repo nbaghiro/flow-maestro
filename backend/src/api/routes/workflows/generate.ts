@@ -10,10 +10,13 @@ export async function generateWorkflowRoute(fastify: FastifyInstance) {
             preHandler: [authMiddleware, validateRequest(generateWorkflowSchema)]
         },
         async (request, reply) => {
-            const body = request.body as any;
+            const body = request.body as { prompt: string; connectionId?: string };
 
             try {
-                console.log('[Generate Route] Received generation request from user:', request.user!.id);
+                console.log(
+                    "[Generate Route] Received generation request from user:",
+                    request.user!.id
+                );
 
                 const workflow = await generateWorkflow({
                     userPrompt: body.prompt,
@@ -26,16 +29,17 @@ export async function generateWorkflowRoute(fastify: FastifyInstance) {
                     data: workflow
                 });
             } catch (error) {
-                console.error('[Generate Route] Error generating workflow:', error);
+                console.error("[Generate Route] Error generating workflow:", error);
 
                 // Return user-friendly error message
-                const message = error instanceof Error ? error.message : 'Failed to generate workflow';
+                const message =
+                    error instanceof Error ? error.message : "Failed to generate workflow";
 
                 return reply.status(500).send({
                     success: false,
                     error: {
                         message,
-                        code: 'WORKFLOW_GENERATION_FAILED'
+                        code: "WORKFLOW_GENERATION_FAILED"
                     }
                 });
             }

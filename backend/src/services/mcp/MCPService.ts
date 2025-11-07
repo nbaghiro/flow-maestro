@@ -2,7 +2,7 @@ import axios, { AxiosInstance, AxiosRequestConfig } from "axios";
 import type {
     MCPConnectionData,
     MCPTool,
-    ConnectionWithData,
+    ConnectionWithData
 } from "../../storage/models/Connection";
 import { validateServerUrl } from "./MCPProviderRegistry";
 
@@ -30,7 +30,7 @@ export interface MCPToolsResponse {
  */
 export interface MCPToolExecutionRequest {
     tool: string;
-    parameters: Record<string, any>;
+    parameters: Record<string, unknown>;
 }
 
 /**
@@ -38,7 +38,7 @@ export interface MCPToolExecutionRequest {
  */
 export interface MCPToolExecutionResponse {
     success: boolean;
-    result?: any;
+    result?: unknown;
     error?: string;
 }
 
@@ -56,8 +56,8 @@ export class MCPService {
             timeout: auth?.timeout || 10000,
             headers: {
                 "Content-Type": "application/json",
-                "Accept": "application/json",
-            },
+                Accept: "application/json"
+            }
         };
 
         // Add authentication headers based on auth type
@@ -96,10 +96,7 @@ export class MCPService {
      * Test connection to an MCP server
      * @returns Server info if connection successful
      */
-    async testConnection(
-        serverUrl: string,
-        auth?: MCPConnectionData
-    ): Promise<MCPServerInfo> {
+    async testConnection(serverUrl: string, auth?: MCPConnectionData): Promise<MCPServerInfo> {
         // Validate URL format
         if (!validateServerUrl(serverUrl)) {
             throw new Error("Invalid MCP server URL format");
@@ -119,7 +116,7 @@ export class MCPService {
                     jsonrpc: "2.0",
                     method: "server.info",
                     params: {},
-                    id: 1,
+                    id: 1
                 });
 
                 if (response.data.result) {
@@ -140,17 +137,16 @@ export class MCPService {
                     );
                 }
             }
-            throw new Error(`Failed to test MCP connection: ${error instanceof Error ? error.message : String(error)}`);
+            throw new Error(
+                `Failed to test MCP connection: ${error instanceof Error ? error.message : String(error)}`
+            );
         }
     }
 
     /**
      * Discover available tools from an MCP server
      */
-    async discoverTools(
-        serverUrl: string,
-        auth?: MCPConnectionData
-    ): Promise<MCPToolsResponse> {
+    async discoverTools(serverUrl: string, auth?: MCPConnectionData): Promise<MCPToolsResponse> {
         const client = this.createClient(serverUrl, auth);
 
         try {
@@ -164,7 +160,7 @@ export class MCPService {
                     jsonrpc: "2.0",
                     method: "tools.list",
                     params: {},
-                    id: 2,
+                    id: 2
                 });
 
                 if (response.data.result) {
@@ -181,7 +177,9 @@ export class MCPService {
                     throw new Error("Authentication failed. Cannot discover tools.");
                 }
             }
-            throw new Error(`Failed to discover tools: ${error instanceof Error ? error.message : String(error)}`);
+            throw new Error(
+                `Failed to discover tools: ${error instanceof Error ? error.message : String(error)}`
+            );
         }
     }
 
@@ -206,7 +204,7 @@ export class MCPService {
                     jsonrpc: "2.0",
                     method: "tools.get",
                     params: { tool: toolName },
-                    id: 3,
+                    id: 3
                 });
 
                 if (response.data.result) {
@@ -216,7 +214,9 @@ export class MCPService {
                 throw new Error("Tool not found");
             }
         } catch (error) {
-            throw new Error(`Failed to get tool schema: ${error instanceof Error ? error.message : String(error)}`);
+            throw new Error(
+                `Failed to get tool schema: ${error instanceof Error ? error.message : String(error)}`
+            );
         }
     }
 
@@ -226,7 +226,7 @@ export class MCPService {
     async executeTool(
         connection: ConnectionWithData,
         toolName: string,
-        parameters: Record<string, any>
+        parameters: Record<string, unknown>
     ): Promise<MCPToolExecutionResponse> {
         if (!connection.mcp_server_url) {
             throw new Error("Connection does not have an MCP server URL");
@@ -245,26 +245,29 @@ export class MCPService {
                 return response.data;
             } catch (restError) {
                 // Try JSON-RPC
-                const response = await client.post<{ result: any; error?: any }>("/rpc", {
+                const response = await client.post<{
+                    result: unknown;
+                    error?: { message?: string };
+                }>("/rpc", {
                     jsonrpc: "2.0",
                     method: "tools.execute",
                     params: {
                         tool: toolName,
-                        parameters,
+                        parameters
                     },
-                    id: 4,
+                    id: 4
                 });
 
                 if (response.data.error) {
                     return {
                         success: false,
-                        error: response.data.error.message || "Tool execution failed",
+                        error: response.data.error.message || "Tool execution failed"
                     };
                 }
 
                 return {
                     success: true,
-                    result: response.data.result,
+                    result: response.data.result
                 };
             }
         } catch (error) {
@@ -275,7 +278,9 @@ export class MCPService {
                     throw new Error(error.response.data.error);
                 }
             }
-            throw new Error(`Failed to execute tool: ${error instanceof Error ? error.message : String(error)}`);
+            throw new Error(
+                `Failed to execute tool: ${error instanceof Error ? error.message : String(error)}`
+            );
         }
     }
 

@@ -1,35 +1,71 @@
-import type { JsonObject, JsonValue } from '@flowmaestro/shared';
-import { executeHTTPNode, HTTPNodeConfig, HTTPNodeResult } from './http-executor';
-import { executeLLMNode, LLMNodeConfig, LLMNodeResult } from './llm-executor';
-import { executeTransformNode, TransformNodeConfig, TransformNodeResult } from './transform-executor';
-import { executeFileOperationsNode, FileOperationsNodeConfig, FileOperationsNodeResult } from './file-executor';
-import { executeVariableNode, VariableNodeConfig, VariableNodeResult } from './variable-executor';
-import { executeOutputNode, OutputNodeConfig } from './output-executor';
-import { executeConditionalNode, ConditionalNodeConfig, ConditionalNodeResult } from './conditional-executor';
-import { executeSwitchNode, SwitchNodeConfig, SwitchNodeResult } from './switch-executor';
-import { executeLoopNode, LoopNodeConfig, LoopNodeResult } from './loop-executor';
-import { executeEchoNode, EchoNodeConfig, EchoNodeResult } from './echo-executor';
-import { executeWaitNode, WaitNodeConfig, WaitNodeResult } from './wait-executor';
-import { executeCodeNode, CodeNodeConfig, CodeNodeResult } from './code-executor';
-import { executeVisionNode, VisionNodeConfig, VisionNodeResult } from './vision-executor';
-import { executeAudioNode, AudioNodeConfig, AudioNodeResult } from './audio-executor';
-import { executeEmbeddingsNode, EmbeddingsNodeConfig, EmbeddingsNodeResult } from './embeddings-executor';
-import { executeDatabaseNode, DatabaseNodeConfig, DatabaseNodeResult } from './database-executor';
-import { executeIntegrationNode, IntegrationNodeConfig, IntegrationNodeResult } from './integration-executor';
-import { executeKnowledgeBaseQueryNode, KnowledgeBaseQueryNodeConfig } from './kb-query-executor';
-import { executeVoiceGreetNode, VoiceGreetNodeConfig, VoiceGreetNodeResult } from './voice-greet-executor';
-import { executeVoiceListenNode, VoiceListenNodeConfig, VoiceListenNodeResult } from './voice-listen-executor';
-import { executeVoiceMenuNode, VoiceMenuNodeConfig, VoiceMenuNodeResult } from './voice-menu-executor';
-import { executeVoiceHangupNode, VoiceHangupNodeConfig, VoiceHangupNodeResult } from './voice-hangup-executor';
+import type { JsonObject, JsonValue } from "@flowmaestro/shared";
+import { executeHTTPNode, HTTPNodeConfig, HTTPNodeResult } from "./http-executor";
+import { executeLLMNode, LLMNodeConfig, LLMNodeResult } from "./llm-executor";
+import {
+    executeTransformNode,
+    TransformNodeConfig,
+    TransformNodeResult
+} from "./transform-executor";
+import {
+    executeFileOperationsNode,
+    FileOperationsNodeConfig,
+    FileOperationsNodeResult
+} from "./file-executor";
+import { executeVariableNode, VariableNodeConfig, VariableNodeResult } from "./variable-executor";
+import { executeOutputNode, OutputNodeConfig } from "./output-executor";
+import {
+    executeConditionalNode,
+    ConditionalNodeConfig,
+    ConditionalNodeResult
+} from "./conditional-executor";
+import { executeSwitchNode, SwitchNodeConfig, SwitchNodeResult } from "./switch-executor";
+import { executeLoopNode, LoopNodeConfig, LoopNodeResult } from "./loop-executor";
+import { executeEchoNode, EchoNodeConfig, EchoNodeResult } from "./echo-executor";
+import { executeWaitNode, WaitNodeConfig, WaitNodeResult } from "./wait-executor";
+import { executeCodeNode, CodeNodeConfig, CodeNodeResult } from "./code-executor";
+import { executeVisionNode, VisionNodeConfig, VisionNodeResult } from "./vision-executor";
+import { executeAudioNode, AudioNodeConfig, AudioNodeResult } from "./audio-executor";
+import {
+    executeEmbeddingsNode,
+    EmbeddingsNodeConfig,
+    EmbeddingsNodeResult
+} from "./embeddings-executor";
+import { executeDatabaseNode, DatabaseNodeConfig, DatabaseNodeResult } from "./database-executor";
+import {
+    executeIntegrationNode,
+    IntegrationNodeConfig,
+    IntegrationNodeResult
+} from "./integration-executor";
+import { executeKnowledgeBaseQueryNode, KnowledgeBaseQueryNodeConfig } from "./kb-query-executor";
+import {
+    executeVoiceGreetNode,
+    VoiceGreetNodeConfig,
+    VoiceGreetNodeResult
+} from "./voice-greet-executor";
+import {
+    executeVoiceListenNode,
+    VoiceListenNodeConfig,
+    VoiceListenNodeResult
+} from "./voice-listen-executor";
+import {
+    executeVoiceMenuNode,
+    VoiceMenuNodeConfig,
+    VoiceMenuNodeResult
+} from "./voice-menu-executor";
+import {
+    executeVoiceHangupNode,
+    VoiceHangupNodeConfig,
+    VoiceHangupNodeResult
+} from "./voice-hangup-executor";
 
 export type NodeConfig =
-    | { type: 'http'; config: HTTPNodeConfig }
-    | { type: 'llm'; config: LLMNodeConfig }
-    | { type: 'transform'; config: TransformNodeConfig }
-    | { type: 'fileOperations'; config: FileOperationsNodeConfig }
-    | { type: 'variable'; config: VariableNodeConfig }
-    | { type: 'output'; config: OutputNodeConfig }
-    | { type: 'input'; config: JsonObject } // Input is handled differently
+    | { type: "http"; config: HTTPNodeConfig }
+    | { type: "llm"; config: LLMNodeConfig }
+    | { type: "transform"; config: TransformNodeConfig }
+    | { type: "fileOperations"; config: FileOperationsNodeConfig }
+    | { type: "variable"; config: VariableNodeConfig }
+    | { type: "output"; config: OutputNodeConfig }
+    | { type: "input"; config: JsonObject } // Input is handled differently
     | { type: string; config: JsonObject }; // Other node types not yet implemented
 
 export type NodeResult =
@@ -56,82 +92,111 @@ export async function executeNode(input: ExecuteNodeInput): Promise<JsonObject> 
     console.log(`[NodeExecutor] Executing ${nodeType} node`);
 
     switch (nodeType) {
-        case 'http':
+        case "http":
             return await executeHTTPNode(nodeConfig as unknown as HTTPNodeConfig, context);
 
-        case 'llm':
+        case "llm":
             return await executeLLMNode(nodeConfig as unknown as LLMNodeConfig, context);
 
-        case 'transform':
-            return await executeTransformNode(nodeConfig as unknown as TransformNodeConfig, context);
+        case "transform":
+            return await executeTransformNode(
+                nodeConfig as unknown as TransformNodeConfig,
+                context
+            );
 
-        case 'fileOperations':
-            return await executeFileOperationsNode(nodeConfig as unknown as FileOperationsNodeConfig, context);
+        case "fileOperations":
+            return await executeFileOperationsNode(
+                nodeConfig as unknown as FileOperationsNodeConfig,
+                context
+            );
 
-        case 'variable':
-            return await executeVariableNode(nodeConfig as unknown as VariableNodeConfig, context, globalStore);
+        case "variable":
+            return await executeVariableNode(
+                nodeConfig as unknown as VariableNodeConfig,
+                context,
+                globalStore
+            );
 
-        case 'output':
+        case "output":
             return await executeOutputNode(nodeConfig as unknown as OutputNodeConfig, context);
 
-        case 'input':
+        case "input":
             // Input nodes are handled at workflow start
-            console.log('[NodeExecutor] Input node - returning stored input value');
-            const inputName = typeof nodeConfig.inputName === 'string' ? nodeConfig.inputName : 'input';
+            console.log("[NodeExecutor] Input node - returning stored input value");
+            const inputName =
+                typeof nodeConfig.inputName === "string" ? nodeConfig.inputName : "input";
             return { [inputName]: context[inputName] } as unknown as JsonObject;
 
-        case 'conditional':
-        case 'switch':
-        case 'loop':
+        case "conditional":
+        case "switch":
+        case "loop":
             // Control flow nodes are handled by the workflow orchestrator
             throw new Error(`${nodeType} nodes must be handled by workflow orchestrator`);
 
-        case 'echo':
+        case "echo":
             return await executeEchoNode(nodeConfig as unknown as EchoNodeConfig, context);
 
-        case 'wait':
+        case "wait":
             return await executeWaitNode(nodeConfig as unknown as WaitNodeConfig, context);
 
-        case 'code':
+        case "code":
             return await executeCodeNode(nodeConfig as unknown as CodeNodeConfig, context);
 
-        case 'vision':
+        case "vision":
             return await executeVisionNode(nodeConfig as unknown as VisionNodeConfig, context);
 
-        case 'audio':
+        case "audio":
             return await executeAudioNode(nodeConfig as unknown as AudioNodeConfig, context);
 
-        case 'embeddings':
-            return await executeEmbeddingsNode(nodeConfig as unknown as EmbeddingsNodeConfig, context);
+        case "embeddings":
+            return await executeEmbeddingsNode(
+                nodeConfig as unknown as EmbeddingsNodeConfig,
+                context
+            );
 
-        case 'database':
+        case "database":
             return await executeDatabaseNode(nodeConfig as unknown as DatabaseNodeConfig, context);
 
-        case 'integration':
-            return await executeIntegrationNode(nodeConfig as unknown as IntegrationNodeConfig, context);
+        case "integration":
+            return await executeIntegrationNode(
+                nodeConfig as unknown as IntegrationNodeConfig,
+                context
+            );
 
-        case 'knowledgeBaseQuery':
+        case "knowledgeBaseQuery":
             return await executeKnowledgeBaseQueryNode({
                 nodeType,
                 nodeConfig,
                 context
             });
 
-        case 'voiceGreet':
-        case 'voice_greet':
-            return await executeVoiceGreetNode(nodeConfig as unknown as VoiceGreetNodeConfig, context);
+        case "voiceGreet":
+        case "voice_greet":
+            return await executeVoiceGreetNode(
+                nodeConfig as unknown as VoiceGreetNodeConfig,
+                context
+            );
 
-        case 'voiceListen':
-        case 'voice_listen':
-            return await executeVoiceListenNode(nodeConfig as unknown as VoiceListenNodeConfig, context);
+        case "voiceListen":
+        case "voice_listen":
+            return await executeVoiceListenNode(
+                nodeConfig as unknown as VoiceListenNodeConfig,
+                context
+            );
 
-        case 'voiceMenu':
-        case 'voice_menu':
-            return await executeVoiceMenuNode(nodeConfig as unknown as VoiceMenuNodeConfig, context);
+        case "voiceMenu":
+        case "voice_menu":
+            return await executeVoiceMenuNode(
+                nodeConfig as unknown as VoiceMenuNodeConfig,
+                context
+            );
 
-        case 'voiceHangup':
-        case 'voice_hangup':
-            return await executeVoiceHangupNode(nodeConfig as unknown as VoiceHangupNodeConfig, context);
+        case "voiceHangup":
+        case "voice_hangup":
+            return await executeVoiceHangupNode(
+                nodeConfig as unknown as VoiceHangupNodeConfig,
+                context
+            );
 
         default:
             throw new Error(`Node type '${nodeType}' not yet implemented`);

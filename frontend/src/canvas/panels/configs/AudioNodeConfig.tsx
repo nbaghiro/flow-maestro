@@ -9,8 +9,8 @@ import {
 } from "@flowmaestro/shared";
 
 interface AudioNodeConfigProps {
-    data: any;
-    onUpdate: (config: any) => void;
+    data: Record<string, unknown>;
+    onUpdate: (config: unknown) => void;
 }
 
 const operations = [
@@ -28,17 +28,17 @@ const voices = [
 ];
 
 export function AudioNodeConfig({ data, onUpdate }: AudioNodeConfigProps) {
-    const [operation, setOperation] = useState(data.operation || "transcribe");
-    const [provider, setProvider] = useState(data.provider || "openai");
+    const [operation, setOperation] = useState((data.operation as string) || "transcribe");
+    const [provider, setProvider] = useState((data.provider as string) || "openai");
     const [model, setModel] = useState(
-        data.model || getDefaultModelForProvider(data.provider || "openai")
+        (data.model as string) || getDefaultModelForProvider((data.provider as string) || "openai")
     );
-    const [audioInput, setAudioInput] = useState(data.audioInput || "");
-    const [textInput, setTextInput] = useState(data.textInput || "");
-    const [voice, setVoice] = useState(data.voice || "alloy");
-    const [speed, setSpeed] = useState(data.speed || 1.0);
-    const [language, setLanguage] = useState(data.language || "en");
-    const [outputVariable, setOutputVariable] = useState(data.outputVariable || "");
+    const [audioInput, setAudioInput] = useState((data.audioInput as string) || "");
+    const [textInput, setTextInput] = useState((data.textInput as string) || "");
+    const [voice, setVoice] = useState((data.voice as string) || "alloy");
+    const [speed, setSpeed] = useState((data.speed as number) || 1.0);
+    const [language, setLanguage] = useState((data.language as string) || "en");
+    const [outputVariable, setOutputVariable] = useState((data.outputVariable as string) || "");
 
     useEffect(() => {
         onUpdate({
@@ -102,7 +102,7 @@ export function AudioNodeConfig({ data, onUpdate }: AudioNodeConfigProps) {
                         onChange={(e) => setModel(e.target.value)}
                         className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                     >
-                        {LLM_MODELS_BY_PROVIDER[provider]?.map((m) => (
+                        {LLM_MODELS_BY_PROVIDER[provider as keyof typeof LLM_MODELS_BY_PROVIDER]?.map((m) => (
                             <option key={m.value} value={m.value}>
                                 {m.label}
                             </option>
@@ -181,7 +181,7 @@ export function AudioNodeConfig({ data, onUpdate }: AudioNodeConfigProps) {
 
             <FormSection title="Output Settings">
                 <OutputSettingsSection
-                    nodeName={data.label || "Audio"}
+                    nodeName={(data.label as string) || "Audio"}
                     nodeType="audio"
                     value={outputVariable}
                     onChange={setOutputVariable}

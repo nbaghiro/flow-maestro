@@ -26,10 +26,7 @@ describe("Debug: Simple HTTP + Transform", () => {
     });
 
     it("should execute HTTP and Transform nodes", async () => {
-        const result = await testHarness.executeWorkflow(
-            workflowDefinition,
-            {}
-        );
+        const result = await testHarness.executeWorkflow(workflowDefinition, {});
 
         console.error("🔍 Simple workflow result:", JSON.stringify(result, null, 2));
 

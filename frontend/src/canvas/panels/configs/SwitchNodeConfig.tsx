@@ -4,8 +4,8 @@ import { OutputSettingsSection } from "../../../components/OutputSettingsSection
 import { Plus, Trash2 } from "lucide-react";
 
 interface SwitchNodeConfigProps {
-    data: any;
-    onUpdate: (config: any) => void;
+    data: Record<string, unknown>;
+    onUpdate: (config: unknown) => void;
 }
 
 const matchTypes = [
@@ -20,13 +20,13 @@ interface SwitchCase {
 }
 
 export function SwitchNodeConfig({ data, onUpdate }: SwitchNodeConfigProps) {
-    const [inputVariable, setInputVariable] = useState(data.inputVariable || "");
-    const [matchType, setMatchType] = useState(data.matchType || "exact");
+    const [inputVariable, setInputVariable] = useState((data.inputVariable as string) || "");
+    const [matchType, setMatchType] = useState((data.matchType as string) || "exact");
     const [cases, setCases] = useState<SwitchCase[]>(
-        data.cases || [{ value: "", label: "Case 1" }]
+        (data.cases as SwitchCase[]) || [{ value: "", label: "Case 1" }]
     );
-    const [hasDefault, setHasDefault] = useState(data.hasDefault ?? true);
-    const [outputVariable, setOutputVariable] = useState(data.outputVariable || "");
+    const [hasDefault, setHasDefault] = useState((data.hasDefault as boolean) ?? true);
+    const [outputVariable, setOutputVariable] = useState((data.outputVariable as string) || "");
 
     useEffect(() => {
         onUpdate({
@@ -152,7 +152,7 @@ export function SwitchNodeConfig({ data, onUpdate }: SwitchNodeConfigProps) {
 
             <FormSection title="Output Settings">
                 <OutputSettingsSection
-                    nodeName={data.label || "Switch"}
+                    nodeName={(data.label as string) || "Switch"}
                     nodeType="switch"
                     value={outputVariable}
                     onChange={setOutputVariable}

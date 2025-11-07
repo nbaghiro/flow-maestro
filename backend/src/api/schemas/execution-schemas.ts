@@ -4,14 +4,30 @@ import { z } from "zod";
 export const listExecutionsQuerySchema = z.object({
     workflowId: z.string().uuid().optional(),
     status: z.enum(["pending", "running", "completed", "failed", "cancelled"]).optional(),
-    limit: z.string().transform((val) => parseInt(val)).pipe(z.number().min(1).max(100)).optional(),
-    offset: z.string().transform((val) => parseInt(val)).pipe(z.number().min(0)).optional()
+    limit: z
+        .string()
+        .transform((val) => parseInt(val))
+        .pipe(z.number().min(1).max(100))
+        .optional(),
+    offset: z
+        .string()
+        .transform((val) => parseInt(val))
+        .pipe(z.number().min(0))
+        .optional()
 });
 
 // Query parameters for getting logs
 export const getLogsQuerySchema = z.object({
-    limit: z.string().transform((val) => parseInt(val)).pipe(z.number().min(1).max(1000)).optional(),
-    offset: z.string().transform((val) => parseInt(val)).pipe(z.number().min(0)).optional(),
+    limit: z
+        .string()
+        .transform((val) => parseInt(val))
+        .pipe(z.number().min(1).max(1000))
+        .optional(),
+    offset: z
+        .string()
+        .transform((val) => parseInt(val))
+        .pipe(z.number().min(0))
+        .optional(),
     level: z.enum(["info", "warn", "error", "debug"]).optional(),
     nodeId: z.string().optional()
 });

@@ -12,7 +12,7 @@ export async function mcpDiscoverRoute(fastify: FastifyInstance) {
     fastify.post(
         "/mcp/discover",
         {
-            preHandler: [authMiddleware, validateBody(mcpDiscoverySchema)],
+            preHandler: [authMiddleware, validateBody(mcpDiscoverySchema)]
         },
         async (request, reply) => {
             const mcpService = getMCPService();
@@ -27,7 +27,7 @@ export async function mcpDiscoverRoute(fastify: FastifyInstance) {
                 username: body.username,
                 password: body.password,
                 custom_headers: body.custom_headers,
-                timeout: body.timeout,
+                timeout: body.timeout
             };
 
             try {
@@ -42,8 +42,8 @@ export async function mcpDiscoverRoute(fastify: FastifyInstance) {
                     data: {
                         server_info: serverInfo,
                         tools: toolsResponse.tools,
-                        tool_count: toolsResponse.tools.length,
-                    },
+                        tool_count: toolsResponse.tools.length
+                    }
                 });
             } catch (error) {
                 return reply.status(400).send({
@@ -53,9 +53,9 @@ export async function mcpDiscoverRoute(fastify: FastifyInstance) {
                         error instanceof Error
                             ? {
                                   message: error.message,
-                                  server_url: body.server_url,
+                                  server_url: body.server_url
                               }
-                            : undefined,
+                            : undefined
                 });
             }
         }

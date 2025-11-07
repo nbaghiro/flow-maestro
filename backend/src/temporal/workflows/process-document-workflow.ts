@@ -1,5 +1,6 @@
 import { proxyActivities } from "@temporalio/workflow";
 import type * as activities from "../activities/process-document";
+import type { DocumentFileType } from "../../storage/models/KnowledgeDocument";
 
 // Proxy the activities with retry policies
 const {
@@ -54,7 +55,7 @@ export async function processDocumentWorkflow(
             knowledgeBaseId: input.knowledgeBaseId,
             filePath: input.filePath,
             sourceUrl: input.sourceUrl,
-            fileType: input.fileType as any,
+            fileType: input.fileType as DocumentFileType,
             userId: input.userId
         });
 
@@ -68,7 +69,7 @@ export async function processDocumentWorkflow(
             knowledgeBaseId: input.knowledgeBaseId,
             filePath: input.filePath,
             sourceUrl: input.sourceUrl,
-            fileType: input.fileType as any,
+            fileType: input.fileType as DocumentFileType,
             userId: input.userId,
             content
         });
@@ -84,7 +85,7 @@ export async function processDocumentWorkflow(
             knowledgeBaseId: input.knowledgeBaseId,
             filePath: input.filePath,
             sourceUrl: input.sourceUrl,
-            fileType: input.fileType as any,
+            fileType: input.fileType as DocumentFileType,
             userId: input.userId,
             chunks
         });
@@ -99,7 +100,7 @@ export async function processDocumentWorkflow(
             knowledgeBaseId: input.knowledgeBaseId,
             filePath: input.filePath,
             sourceUrl: input.sourceUrl,
-            fileType: input.fileType as any,
+            fileType: input.fileType as DocumentFileType,
             userId: input.userId
         });
 
@@ -112,14 +113,14 @@ export async function processDocumentWorkflow(
             success: true,
             chunkCount
         };
-    } catch (error: any) {
-        console.error(`[processDocumentWorkflow] Error processing document:`, error);
+    } catch (error: unknown) {
+        console.error("[processDocumentWorkflow] Error processing document:", error);
 
         return {
             documentId: input.documentId,
             success: false,
             chunkCount: 0,
-            error: error.message
+            error: error instanceof Error ? error.message : "Unknown error while processing document"
         };
     }
 }

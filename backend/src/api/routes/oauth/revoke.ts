@@ -59,7 +59,7 @@ export async function revokeRoute(fastify: FastifyInstance) {
                     });
                 }
 
-                if (connection.connection_method !== 'oauth2') {
+                if (connection.connection_method !== "oauth2") {
                     return reply.status(400).send({
                         success: false,
                         error: "Connection is not an OAuth token"
@@ -73,9 +73,11 @@ export async function revokeRoute(fastify: FastifyInstance) {
                 try {
                     await oauthService.revokeToken(provider, tokenData.access_token);
                     fastify.log.info(`Successfully revoked token on ${provider}'s side`);
-                } catch (error: any) {
+                } catch (error: unknown) {
                     // Log but don't fail - provider revocation is best effort
-                    fastify.log.warn(`Failed to revoke token on ${provider}'s side: ${error?.message || error}`);
+                    fastify.log.warn(
+                        `Failed to revoke token on ${provider}'s side: ${error instanceof Error ? error.message : "Unknown error while revoking token"}`
+                    );
                 }
 
                 // Delete from our database
@@ -86,12 +88,12 @@ export async function revokeRoute(fastify: FastifyInstance) {
                     success: true,
                     message: "Connection revoked successfully"
                 });
-            } catch (error: any) {
+            } catch (error: unknown) {
                 fastify.log.error(error, `Failed to revoke connection ${connectionId}`);
 
                 return reply.status(500).send({
                     success: false,
-                    error: error.message || "Failed to revoke connection"
+                    error: error instanceof Error ? error.message : "Unknown error while revoking connection"
                 });
             }
         }

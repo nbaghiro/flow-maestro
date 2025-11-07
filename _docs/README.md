@@ -17,9 +17,11 @@ FlowMaestro is a visual workflow and AI agent builder that enables users to crea
 These documents cover the main features of FlowMaestro:
 
 #### [workflows.md](./workflows.md)
+
 **Workflow System** - Complete guide to the workflow builder
 
 **Topics covered:**
+
 - Workflow execution system (Temporal orchestration)
 - 20+ node types catalog (LLM, HTTP, Transform, Conditional, Loop, etc.)
 - Workflow triggers (schedule, webhook, event, manual)
@@ -33,9 +35,11 @@ These documents cover the main features of FlowMaestro:
 ---
 
 #### [agents.md](./agents.md)
+
 **AI Agent System** - Complete agent feature set
 
 **Topics covered:**
+
 - Memory management (buffer, summary, vector memory with RAG)
 - Streaming infrastructure (SSE-based real-time token streaming)
 - LLM provider integration (OpenAI, Anthropic, Google, Cohere)
@@ -51,9 +55,11 @@ These documents cover the main features of FlowMaestro:
 ---
 
 #### [integrations.md](./integrations.md)
+
 **Connections & Integrations** - External service authentication
 
 **Topics covered:**
+
 - Connection methods (API key, OAuth 2.0, MCP)
 - API key authentication for AI providers
 - OAuth 2.0 flow with automatic token refresh
@@ -69,9 +75,11 @@ These documents cover the main features of FlowMaestro:
 ---
 
 #### [temporal.md](./temporal.md)
+
 **Temporal Orchestration** - Durable workflow execution
 
 **Topics covered:**
+
 - Worker configuration and deployment
 - Workflow types (orchestrator, triggered, user-input, long-running)
 - Activity patterns and node executors
@@ -86,9 +94,11 @@ These documents cover the main features of FlowMaestro:
 ### Infrastructure & Operations
 
 #### [infra.md](./infra.md)
+
 **Infrastructure Setup** - Deployment and cloud architecture
 
 **Topics covered:**
+
 - Google Cloud Platform setup
 - Kubernetes (GKE) cluster configuration
 - Cloud SQL PostgreSQL
@@ -104,9 +114,11 @@ These documents cover the main features of FlowMaestro:
 ---
 
 #### [testing.md](./testing.md)
+
 **Testing Strategy** - Integration testing approach
 
 **Topics covered:**
+
 - Testing philosophy (real-world scenarios)
 - Progressive complexity phases
 - Test workflows (from Hello World to ArXiv Researcher)
@@ -122,9 +134,11 @@ These documents cover the main features of FlowMaestro:
 ### Real-Time & Communication
 
 #### [voicecalls.md](./voicecalls.md)
+
 **Voice Input/Output** - Telnyx & LiveKit integration
 
 **Topics covered:**
+
 - Architecture (Telnyx PSTN + LiveKit WebRTC + FlowMaestro)
 - Call flow (8 phases from initiation to termination)
 - Voice pipeline (VAD, STT, LLM, TTS)
@@ -137,9 +151,11 @@ These documents cover the main features of FlowMaestro:
 ---
 
 #### [websocket.md](./websocket.md)
+
 **Real-time Updates** - WebSocket event system
 
 **Topics covered:**
+
 - Architecture overview
 - Event flow diagrams
 - 15 event types (execution, node, user input, KB events, agent streaming)
@@ -158,9 +174,11 @@ These documents cover the main features of FlowMaestro:
 Located in `_docs/experimental/`:
 
 ### [experimental/mastra-agents-system.md](./experimental/mastra-agents-system.md)
+
 Third-party framework analysis comparing custom implementation vs. integrating Mastra.ai
 
 **Topics covered:**
+
 - Comprehensive Mastra.ai feature comparison
 - 15 integration benefits
 - 8 integration opportunities
@@ -172,9 +190,11 @@ Third-party framework analysis comparing custom implementation vs. integrating M
 ---
 
 ### [experimental/paragon-integrations.md](./experimental/paragon-integrations.md)
+
 iPaaS platform evaluation for replacing custom OAuth implementation
 
 **Topics covered:**
+
 - Paragon's 130+ pre-built integrations
 - Complete implementation guide
 - Database schema changes
@@ -189,44 +209,48 @@ iPaaS platform evaluation for replacing custom OAuth implementation
 
 ### By Feature
 
-| Feature | Document | Section |
-|---------|----------|---------|
-| Node types | [workflows.md](./workflows.md) | Node Types Catalog |
-| Triggers | [workflows.md](./workflows.md) | Workflow Triggers |
-| AI generation | [workflows.md](./workflows.md) | AI Workflow Generation |
-| Memory | [agents.md](./agents.md) | Memory Management |
-| Streaming | [agents.md](./agents.md) | Streaming Infrastructure |
-| LLM providers | [agents.md](./agents.md) | LLM Provider Integration |
-| Tools | [agents.md](./agents.md) | Tool Execution System |
-| RAG | [agents.md](./agents.md) | RAG (Knowledge Bases) |
-| Observability | [agents.md](./agents.md) | Observability & Tracing |
-| OAuth | [integrations.md](./integrations.md) | OAuth 2.0 Integration |
-| MCP | [integrations.md](./integrations.md) | Model Context Protocol |
-| Temporal | [temporal.md](./temporal.md) | All sections |
-| Deployment | [infra.md](./infra.md) | All sections |
-| Voice | [voicecalls.md](./voicecalls.md) | All sections |
-| Real-time | [websocket.md](./websocket.md) | All sections |
+| Feature       | Document                             | Section                  |
+| ------------- | ------------------------------------ | ------------------------ |
+| Node types    | [workflows.md](./workflows.md)       | Node Types Catalog       |
+| Triggers      | [workflows.md](./workflows.md)       | Workflow Triggers        |
+| AI generation | [workflows.md](./workflows.md)       | AI Workflow Generation   |
+| Memory        | [agents.md](./agents.md)             | Memory Management        |
+| Streaming     | [agents.md](./agents.md)             | Streaming Infrastructure |
+| LLM providers | [agents.md](./agents.md)             | LLM Provider Integration |
+| Tools         | [agents.md](./agents.md)             | Tool Execution System    |
+| RAG           | [agents.md](./agents.md)             | RAG (Knowledge Bases)    |
+| Observability | [agents.md](./agents.md)             | Observability & Tracing  |
+| OAuth         | [integrations.md](./integrations.md) | OAuth 2.0 Integration    |
+| MCP           | [integrations.md](./integrations.md) | Model Context Protocol   |
+| Temporal      | [temporal.md](./temporal.md)         | All sections             |
+| Deployment    | [infra.md](./infra.md)               | All sections             |
+| Voice         | [voicecalls.md](./voicecalls.md)     | All sections             |
+| Real-time     | [websocket.md](./websocket.md)       | All sections             |
 
 ### By Role
 
 **Frontend Developer**:
+
 1. [workflows.md](./workflows.md) - Canvas UI, node configuration
 2. [agents.md](./agents.md) - Agent builder UI, streaming client
 3. [websocket.md](./websocket.md) - Real-time updates, event handling
 4. [integrations.md](./integrations.md) - Connection picker, OAuth flow
 
 **Backend Developer**:
+
 1. [temporal.md](./temporal.md) - Workflow execution, activity patterns
 2. [agents.md](./agents.md) - LLM integration, tool execution
 3. [integrations.md](./integrations.md) - Connection security, encryption
 4. [websocket.md](./websocket.md) - Event emission, WebSocket management
 
 **DevOps/Infrastructure**:
+
 1. [infra.md](./infra.md) - GCP setup, Kubernetes, monitoring
 2. [temporal.md](./temporal.md) - Worker deployment, scaling
 3. [testing.md](./testing.md) - CI/CD integration, test infrastructure
 
 **Product/Design**:
+
 1. [workflows.md](./workflows.md) - Workflow capabilities, UI patterns
 2. [agents.md](./agents.md) - Agent features, user experience
 3. [integrations.md](./integrations.md) - Supported integrations, connection UX
@@ -244,6 +268,7 @@ iPaaS platform evaluation for replacing custom OAuth implementation
 ### Adding Features
 
 **New Workflow Node Type:**
+
 1. Read [workflows.md](./workflows.md) → Node Types Catalog
 2. Read [temporal.md](./temporal.md) → Activity Patterns
 3. Implement node executor activity
@@ -251,12 +276,14 @@ iPaaS platform evaluation for replacing custom OAuth implementation
 5. Write integration tests (see [testing.md](./testing.md))
 
 **New Agent Tool:**
+
 1. Read [agents.md](./agents.md) → Tool Execution System
 2. Implement tool executor
 3. Add tool configuration UI
 4. Test with agent (see [testing.md](./testing.md))
 
 **New Integration:**
+
 1. Read [integrations.md](./integrations.md) → Connection Methods
 2. Choose auth method (API key, OAuth, MCP)
 3. Implement connection testing service
@@ -264,6 +291,7 @@ iPaaS platform evaluation for replacing custom OAuth implementation
 5. Update connection picker UI
 
 **New LLM Provider:**
+
 1. Read [agents.md](./agents.md) → LLM Provider Integration
 2. Implement provider client (request/response formatting)
 3. Add streaming support
@@ -273,18 +301,21 @@ iPaaS platform evaluation for replacing custom OAuth implementation
 ### Debugging
 
 **Workflow Execution Issues:**
+
 - Check [temporal.md](./temporal.md) → Management section
 - Access Temporal UI (http://localhost:8088)
 - Review workflow execution history
 - Check activity logs
 
 **Agent Response Issues:**
+
 - Check [agents.md](./agents.md) → Observability section
 - Access Jaeger UI for traces
 - Review LLM call logs
 - Check tool execution results
 
 **Real-time Update Issues:**
+
 - Check [websocket.md](./websocket.md) → Error Handling
 - Review WebSocket connection logs
 - Verify event subscriptions

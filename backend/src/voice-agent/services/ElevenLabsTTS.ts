@@ -2,8 +2,8 @@ import { EventEmitter } from "events";
 import axios from "axios";
 
 // Type stubs for browser APIs not available in Node.js
-type AudioBuffer = any;
-type HTMLAudioElement = any;
+type AudioBuffer = unknown;
+type HTMLAudioElement = unknown;
 
 export interface TTSOptions {
     text: string;
@@ -59,28 +59,35 @@ export class ElevenLabsTTS extends EventEmitter {
                     model_id: "eleven_monolingual_v1",
                     voice_settings: {
                         stability: options.stability || 0.5,
-                        similarity_boost: options.similarity_boost || 0.75,
-                    },
+                        similarity_boost: options.similarity_boost || 0.75
+                    }
                 },
                 {
                     headers: {
-                        "Accept": "audio/mpeg",
+                        Accept: "audio/mpeg",
                         "Content-Type": "application/json",
-                        "xi-api-key": apiKey,
+                        "xi-api-key": apiKey
                     },
-                    responseType: "arraybuffer",
+                    responseType: "arraybuffer"
                 }
             );
 
             // Convert MP3 to AudioBuffer
             const audioBuffer = await this.decodeAudioData(response.data);
 
-            console.log(`[ElevenLabsTTS] Synthesis complete (${audioBuffer.duration}s)`);
+            const audioBufferTyped = audioBuffer as {
+                duration: number;
+            };
+            console.log(`[ElevenLabsTTS] Synthesis complete (${audioBufferTyped.duration}s)`);
 
             return audioBuffer;
-        } catch (error: any) {
-            console.error("[ElevenLabsTTS] Synthesis error:", error.response?.data || error.message);
-            throw new Error(`ElevenLabs TTS failed: ${error.message}`);
+        } catch (error: unknown) {
+            const err = error as { response?: { data?: unknown }; message?: string };
+            console.error(
+                "[ElevenLabsTTS] Synthesis error:",
+                err.response?.data || err.message
+            );
+            throw new Error(`ElevenLabs TTS failed: ${err.message}`);
         }
     }
 
@@ -102,26 +109,33 @@ export class ElevenLabsTTS extends EventEmitter {
                     model: "tts-1",
                     input: options.text,
                     voice,
-                    speed: options.speed || 1.0,
+                    speed: options.speed || 1.0
                 },
                 {
                     headers: {
-                        "Authorization": `Bearer ${apiKey}`,
-                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${apiKey}`,
+                        "Content-Type": "application/json"
                     },
-                    responseType: "arraybuffer",
+                    responseType: "arraybuffer"
                 }
             );
 
             // Convert to AudioBuffer
             const audioBuffer = await this.decodeAudioData(response.data);
 
-            console.log(`[ElevenLabsTTS] OpenAI synthesis complete (${audioBuffer.duration}s)`);
+            const audioBufferTyped = audioBuffer as {
+                duration: number;
+            };
+            console.log(`[ElevenLabsTTS] OpenAI synthesis complete (${audioBufferTyped.duration}s)`);
 
             return audioBuffer;
-        } catch (error: any) {
-            console.error("[ElevenLabsTTS] OpenAI TTS error:", error.response?.data || error.message);
-            throw new Error(`OpenAI TTS failed: ${error.message}`);
+        } catch (error: unknown) {
+            const err = error as { response?: { data?: unknown }; message?: string };
+            console.error(
+                "[ElevenLabsTTS] OpenAI TTS error:",
+                err.response?.data || err.message
+            );
+            throw new Error(`OpenAI TTS failed: ${err.message}`);
         }
     }
 
@@ -142,7 +156,7 @@ export class ElevenLabsTTS extends EventEmitter {
             sampleRate: 16000,
             getChannelData: (_channel: number) => new Float32Array(0),
             copyFromChannel: () => {},
-            copyToChannel: () => {},
+            copyToChannel: () => {}
         } as AudioBuffer;
     }
 
@@ -151,8 +165,8 @@ export class ElevenLabsTTS extends EventEmitter {
      */
     async stop(): Promise<void> {
         if (this.currentAudio) {
-            // Note: pause() requires DOM lib, using any type workaround
-            (this.currentAudio as any).pause?.();
+            // Note: pause() requires DOM lib, using type assertion workaround
+            (this.currentAudio as { pause?: () => void }).pause?.();
             this.currentAudio = null;
         }
 

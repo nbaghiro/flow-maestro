@@ -18,14 +18,11 @@ export class TemporalWorkerHelper {
         const temporalAddress = process.env.TEMPORAL_ADDRESS || "localhost:7233";
 
         const connection = await NativeConnection.connect({
-            address: temporalAddress,
+            address: temporalAddress
         });
 
         // Resolve workflows path - use absolute path
-        const workflowsPath = path.resolve(
-            __dirname,
-            "../../src/temporal/workflows.bundle.ts"
-        );
+        const workflowsPath = path.resolve(__dirname, "../../src/temporal/workflows.bundle.ts");
 
         console.log(`Loading workflows from: ${workflowsPath}`);
 
@@ -37,15 +34,8 @@ export class TemporalWorkerHelper {
             activities,
             // Add bundler options to prevent webpack errors
             bundlerOptions: {
-                ignoreModules: [
-                    "@flowmaestro/shared",
-                    "uuid",
-                    "pg",
-                    "redis",
-                    "fastify",
-                    "nanoid",
-                ],
-            },
+                ignoreModules: ["@flowmaestro/shared", "uuid", "pg", "redis", "fastify", "nanoid"]
+            }
         });
 
         // Run worker in background

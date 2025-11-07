@@ -33,6 +33,7 @@ Phase 4 (Advanced)
 ```
 
 This allows developers and users to:
+
 1. Build confidence with simple workflows first
 2. Understand each new concept before adding complexity
 3. Debug issues in isolation
@@ -89,6 +90,7 @@ tests/
 ## Test Workflows
 
 ### Phase 1: Hello World ⭐
+
 **File:** `backend/tests/fixtures/workflows/hello-world.fixture.ts`
 
 **Purpose:** Basic linear execution testing
@@ -96,12 +98,14 @@ tests/
 **Nodes:** Input → Transform → Output
 
 **Test Scenarios:**
+
 - Happy path with valid name
 - Empty name handling
 - Special characters in name
 - Long name handling
 
 **Validates:**
+
 - Basic workflow execution flow
 - Input node functionality
 - Transform node operations
@@ -118,6 +122,7 @@ tests/
 ---
 
 ### Phase 2: Data Enrichment ⭐⭐
+
 **File:** `backend/tests/fixtures/workflows/data-enrichment.fixture.ts`
 
 **Purpose:** HTTP requests and parallel execution
@@ -125,12 +130,14 @@ tests/
 **Nodes:** Input → 2x HTTP (parallel) → Transform → Merge → Output
 
 **Test Scenarios:**
+
 - Valid user data fetch
 - Webhook trigger execution
 - Invalid user ID (404 error)
 - Parallel execution verification
 
 **Validates:**
+
 - HTTP node execution
 - External API integration
 - Parallel node execution (2 simultaneous HTTP calls)
@@ -148,6 +155,7 @@ tests/
 ---
 
 ### Phase 3: Text Analysis ⭐⭐
+
 **File:** `backend/tests/fixtures/workflows/text-analysis.fixture.ts`
 
 **Purpose:** LLM integration and AI workflows
@@ -155,6 +163,7 @@ tests/
 **Nodes:** Input → 2x LLM (parallel) → Transform → Output
 
 **Test Scenarios:**
+
 - Positive sentiment analysis
 - Negative sentiment analysis
 - Neutral sentiment analysis
@@ -163,6 +172,7 @@ tests/
 - Empty text handling
 
 **Validates:**
+
 - LLM node execution (Anthropic Claude)
 - AI credential management
 - Parallel LLM calls
@@ -180,6 +190,7 @@ tests/
 ---
 
 ### Phase 4: Smart Router ⭐⭐⭐
+
 **File:** `backend/tests/fixtures/workflows/smart-router.fixture.ts`
 
 **Purpose:** Conditional logic and branching
@@ -187,6 +198,7 @@ tests/
 **Nodes:** Input → Conditional → Branch A (HTTP) OR Branch B (LLM) → Output
 
 **Test Scenarios:**
+
 - Data route (Branch A) execution
 - Analysis route (Branch B) execution
 - Webhook with data route
@@ -195,6 +207,7 @@ tests/
 - Performance check (confirms single branch)
 
 **Validates:**
+
 - Conditional node logic
 - Branch execution (only one branch runs)
 - Route isolation (Branch A doesn't execute if Branch B chosen)
@@ -211,6 +224,7 @@ tests/
 ---
 
 ### Advanced: ArXiv Researcher ⭐⭐⭐
+
 **File:** `backend/tests/fixtures/workflows/arxiv-researcher.fixture.ts`
 
 **Purpose:** Complex multi-step workflow
@@ -218,6 +232,7 @@ tests/
 **Nodes:** 8 nodes including API, XML parsing, file operations, LLM
 
 **Test Scenarios:**
+
 - Complete research workflow
 - Search query with results
 - PDF download and parsing
@@ -225,6 +240,7 @@ tests/
 - Error handling
 
 **Validates:**
+
 - HTTP node with ArXiv API
 - Transform node (XML parsing, JSONata)
 - Variable node for state management
@@ -244,35 +260,39 @@ tests/
 ### Test Helpers
 
 #### MockAPIs
+
 **File:** `backend/tests/helpers/mock-apis.ts`
 
 Provides pre-configured mocks for common external services, eliminating the need for real API keys or network calls:
 
 ```typescript
 // Mock ArXiv API
-MockAPIs.mockArxivSearch('machine learning', [/* papers */]);
+MockAPIs.mockArxivSearch("machine learning", [
+    /* papers */
+]);
 
 // Mock PDF download
-MockAPIs.mockPDFDownload('http://arxiv.org/pdf/123.pdf', 'PDF content');
+MockAPIs.mockPDFDownload("http://arxiv.org/pdf/123.pdf", "PDF content");
 
 // Mock LLM providers
-MockAPIs.mockAnthropic('prompt', 'response');
-MockAPIs.mockOpenAI('prompt', 'response');
-MockAPIs.mockGoogleAI('prompt', 'response');
-MockAPIs.mockCohere('prompt', 'response');
+MockAPIs.mockAnthropic("prompt", "response");
+MockAPIs.mockOpenAI("prompt", "response");
+MockAPIs.mockGoogleAI("prompt", "response");
+MockAPIs.mockCohere("prompt", "response");
 
 // Mock generic HTTP
-MockAPIs.mockHTTP('https://api.example.com/data', 'GET', { data: 'value' });
+MockAPIs.mockHTTP("https://api.example.com/data", "GET", { data: "value" });
 ```
 
 #### Database Helpers
+
 **File:** `backend/tests/helpers/db-helpers.ts`
 
 Tests use an in-memory SQLite database for fast, isolated execution. The database is automatically cleaned between tests:
 
 ```typescript
 // Seed test data
-const user = seedTestUser({ email: 'test@example.com' });
+const user = seedTestUser({ email: "test@example.com" });
 const workflow = seedTestWorkflow({ user_id: user.id });
 
 // Clean between tests (automatic)
@@ -280,27 +300,30 @@ clearTestData();
 ```
 
 #### Test Server
+
 **File:** `backend/tests/helpers/test-server.ts`
 
 Provides a fully-functional Fastify instance with in-memory database:
 
 ```typescript
 const server = await setupTestServer();
-const token = generateTestToken(server, { id: 'user-1' });
+const token = generateTestToken(server, { id: "user-1" });
 
 // Make requests
 const response = await server.inject({
-    method: 'POST',
-    url: '/api/workflows/execute',
+    method: "POST",
+    url: "/api/workflows/execute",
     headers: { authorization: `Bearer ${token}` },
     payload: { workflowDefinition, inputs }
 });
 ```
 
 #### Temporal Test Environment
+
 **File:** `backend/tests/helpers/test-temporal.ts`
 
 In-memory Temporal environment for testing:
+
 - No external Temporal server required
 - Uses `@temporalio/testing` package
 - Supports worker creation with test activities
@@ -310,9 +333,11 @@ In-memory Temporal environment for testing:
 ### Seeding Test Workflows
 
 #### Seed Script
+
 **File:** `backend/tests/fixtures/workflows/seed-workflows.ts`
 
 **Features:**
+
 - Converts fixture format to database format
 - Inserts all test workflows into database
 - CLI with user ID parameter
@@ -320,14 +345,17 @@ In-memory Temporal environment for testing:
 - Error handling and validation
 
 **Usage:**
+
 ```bash
 npm run seed:test-workflows -- --user-id=<uuid>
 ```
 
 #### Fixtures Index
+
 **File:** `backend/tests/fixtures/workflows/index.ts`
 
 **Features:**
+
 - Central export of all test workflows
 - Utility functions for filtering by complexity
 - Testing order management
@@ -344,8 +372,12 @@ Start by defining the workflow structure and any mock data needed:
 ```typescript
 // tests/fixtures/workflows/my-workflow.fixture.ts
 export const myWorkflowDefinition = {
-    nodes: [/* ... */],
-    edges: [/* ... */]
+    nodes: [
+        /* ... */
+    ],
+    edges: [
+        /* ... */
+    ]
 };
 
 export const myWorkflowMockData = {
@@ -356,8 +388,12 @@ export const myWorkflowTestScenarios = [
     {
         name: "Happy path test",
         triggerType: "manual",
-        inputs: { /* ... */ },
-        expectedOutput: { /* ... */ }
+        inputs: {
+            /* ... */
+        },
+        expectedOutput: {
+            /* ... */
+        }
     }
 ];
 ```
@@ -368,13 +404,16 @@ Integration tests execute nodes step-by-step, building context as they go:
 
 ```typescript
 // tests/integration/workflows/my-workflow.test.ts
-import { executeNode } from '../../../src/temporal/activities/node-executors';
-import { MockAPIs } from '../../helpers/mock-apis';
-import { myWorkflowDefinition, myWorkflowMockData } from '../../fixtures/workflows/my-workflow.fixture';
+import { executeNode } from "../../../src/temporal/activities/node-executors";
+import { MockAPIs } from "../../helpers/mock-apis";
+import {
+    myWorkflowDefinition,
+    myWorkflowMockData
+} from "../../fixtures/workflows/my-workflow.fixture";
 
-describe('My Workflow', () => {
+describe("My Workflow", () => {
     beforeAll(() => {
-        process.env.REQUIRED_API_KEY = 'test-key';
+        process.env.REQUIRED_API_KEY = "test-key";
     });
 
     beforeEach(() => {
@@ -382,12 +421,12 @@ describe('My Workflow', () => {
         MockAPIs.mockHTTP(/* ... */);
     });
 
-    test('should complete successfully', async () => {
-        const context = { input: 'value' };
+    test("should complete successfully", async () => {
+        const context = { input: "value" };
 
         // Execute nodes step by step
         const result1 = await executeNode({
-            nodeType: 'http',
+            nodeType: "http",
             nodeConfig: myWorkflowDefinition.nodes[0].data,
             context
         });
@@ -397,7 +436,7 @@ describe('My Workflow', () => {
         // Continue with other nodes...
 
         // Assert final output
-        expect(context).toHaveProperty('expectedOutput');
+        expect(context).toHaveProperty("expectedOutput");
     });
 });
 ```
@@ -409,15 +448,18 @@ describe('My Workflow', () => {
 ### Currently Tested
 
 **AI/ML Nodes:**
+
 - `llm` - Anthropic Claude integration with prompt handling
 - `vision` - In development
 - `audio` - In development
 - `embeddings` - In development
 
 **HTTP Nodes:**
+
 - `http` - External API calls with various methods and authentication
 
 **Data Nodes:**
+
 - `transform` - XML parsing, JSONata expressions, and custom transformations
 - `variable` - Workflow-level state management
 - `input` - Workflow input handling
@@ -425,6 +467,7 @@ describe('My Workflow', () => {
 - `fileOperations` - PDF parsing and file handling
 
 **Logic Nodes:**
+
 - `conditional` - Branching logic tested
 - `switch` - In development
 - `loop` - In development
@@ -432,10 +475,12 @@ describe('My Workflow', () => {
 - `wait` - In development
 
 **Integration Nodes:**
+
 - `database` - In development
 - `integration` - In development
 
 **User Interaction:**
+
 - `user-input` - Human-in-the-loop (in development)
 
 ---
@@ -482,7 +527,7 @@ Tests run automatically in GitHub Actions without requiring any secrets or exter
 - name: Run Integration Tests
   run: npm run test:integration
   env:
-    NODE_ENV: test
+      NODE_ENV: test
 ```
 
 ---
@@ -494,6 +539,7 @@ Tests run automatically in GitHub Actions without requiring any secrets or exter
 Users should progressively test workflows in the UI:
 
 **Phase 1: Basic Execution**
+
 - [ ] Test with valid name
 - [ ] Test with special characters
 - [ ] Test with empty string
@@ -501,18 +547,21 @@ Users should progressively test workflows in the UI:
 - [ ] Verify timeline visualization
 
 **Phase 2: HTTP & Parallel**
+
 - [ ] Test with valid user ID
 - [ ] Test webhook trigger
 - [ ] Test error handling (invalid ID)
 - [ ] Verify parallel execution performance
 
 **Phase 3: LLM Integration**
+
 - [ ] Test positive sentiment (requires Anthropic key)
 - [ ] Test negative sentiment
 - [ ] Test chat trigger
 - [ ] Verify token tracking
 
 **Phase 4: Conditional Logic**
+
 - [ ] Test data route (Branch A)
 - [ ] Test analysis route (Branch B)
 - [ ] Verify branch isolation
@@ -523,12 +572,14 @@ Users should progressively test workflows in the UI:
 When testing workflows in the UI, users can leverage:
 
 **Real-time Monitoring:**
+
 - Live execution progress
 - Node-by-node status updates
 - Timeline visualization
 - Output preview
 
 **Debugging Tools:**
+
 - Execution logs with timestamps
 - Variable values at each step
 - Error messages and stack traces
@@ -536,6 +587,7 @@ When testing workflows in the UI, users can leverage:
 - Token usage tracking (LLM nodes)
 
 **Results Inspection:**
+
 - Structured output display
 - JSON/object exploration
 - Success/failure indicators
@@ -569,6 +621,7 @@ When adding new node types or features, follow these guidelines:
 ## Future Enhancements
 
 ### Test Fixtures
+
 - [ ] Add more advanced patterns (loops, switches)
 - [ ] Add database integration workflow
 - [ ] Add file upload workflow
@@ -576,6 +629,7 @@ When adding new node types or features, follow these guidelines:
 - [ ] Add long-running workflow example
 
 ### Tooling
+
 - [ ] Automated test runner (run all scenarios)
 - [ ] Test result comparison (expected vs actual)
 - [ ] Performance benchmarking tools
@@ -583,6 +637,7 @@ When adding new node types or features, follow these guidelines:
 - [ ] CI/CD integration for regression testing
 
 ### UI Improvements
+
 - [ ] Implement remaining trigger types (API, Form, Scheduled, etc.)
 - [ ] Add test scenario templates
 - [ ] Add test scenario import/export
@@ -605,12 +660,14 @@ When adding new node types or features, follow these guidelines:
 FlowMaestro's testing strategy combines:
 
 **Developer-Focused Testing:**
+
 - Integration tests with mocked dependencies
 - In-memory database and Temporal environment
 - Fast, reliable CI execution
 - Comprehensive test helpers and utilities
 
 **User-Focused Testing:**
+
 - Progressive complexity workflow fixtures
 - Real-world scenario validation
 - UI-based execution testing

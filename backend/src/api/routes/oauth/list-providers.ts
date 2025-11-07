@@ -15,10 +15,11 @@ export async function listProvidersRoute(fastify: FastifyInstance) {
                 success: true,
                 data: providers
             });
-        } catch (error: any) {
+        } catch (error: unknown) {
+            const errorMsg = error instanceof Error ? error.message : "Unknown error";
             return reply.status(500).send({
                 success: false,
-                error: error.message || "Failed to list OAuth providers"
+                error: errorMsg || "Failed to list OAuth providers"
             });
         }
     });

@@ -45,9 +45,7 @@ describe("LLM Integration: Chained Providers", () => {
         }
 
         openaiConnectionId = await connectionFactory.createOpenAIConnection(openaiApiKey);
-        anthropicConnectionId = await connectionFactory.createAnthropicConnection(
-            anthropicApiKey
-        );
+        anthropicConnectionId = await connectionFactory.createAnthropicConnection(anthropicApiKey);
     });
 
     afterAll(async () => {
@@ -69,7 +67,7 @@ describe("LLM Integration: Chained Providers", () => {
         testWorkflow.nodes["llm-anthropic"].config.connectionId = anthropicConnectionId;
 
         const result = await testHarness.executeWorkflow(testWorkflow, {
-            topic: "artificial intelligence",
+            topic: "artificial intelligence"
         });
 
         // Verify workflow succeeded
@@ -120,7 +118,7 @@ describe("LLM Integration: Chained Providers", () => {
         testWorkflow.nodes["llm-anthropic"].config.connectionId = anthropicConnectionId;
 
         const result = await testHarness.executeWorkflow(testWorkflow, {
-            topic: "quantum computing",
+            topic: "quantum computing"
         });
 
         expect(result.success).toBe(true);
@@ -160,7 +158,7 @@ describe("LLM Integration: Chained Providers", () => {
         testWorkflow.nodes["llm-anthropic"].config.connectionId = anthropicConnectionId;
 
         const result = await testHarness.executeWorkflow(testWorkflow, {
-            topic: "machine learning",
+            topic: "machine learning"
         });
 
         // Should succeed with these models

@@ -15,20 +15,20 @@ const testimonials: Testimonial[] = [
         quote: "FlowMaestro has transformed how we handle data processing. What used to take our team days now runs automatically in minutes.",
         author: "Sarah Chen",
         role: "Head of Engineering",
-        company: "TechCorp",
+        company: "TechCorp"
     },
     {
         quote: "The visual workflow builder is incredibly intuitive. Our non-technical team members can now build complex automations without writing code.",
         author: "Michael Rodriguez",
         role: "Director of Operations",
-        company: "DataFlow Inc",
+        company: "DataFlow Inc"
     },
     {
         quote: "We've reduced operational costs by 60% and increased reliability by moving to FlowMaestro. The Temporal integration is rock solid.",
         author: "Emily Watson",
         role: "CTO",
-        company: "CloudScale",
-    },
+        company: "CloudScale"
+    }
 ];
 
 export const SocialProof: React.FC = () => {
@@ -36,10 +36,7 @@ export const SocialProof: React.FC = () => {
     const isInView = useInView(ref, { once: true, margin: "-100px" });
 
     return (
-        <section
-            ref={ref}
-            className="relative py-24 px-4 sm:px-6 lg:px-8 bg-black"
-        >
+        <section ref={ref} className="relative py-24 px-4 sm:px-6 lg:px-8 bg-black">
             <div className="max-w-7xl mx-auto">
                 {/* Section Header */}
                 <motion.div
@@ -54,15 +51,10 @@ export const SocialProof: React.FC = () => {
                     </h2>
                     <div className="flex items-center justify-center gap-2 mb-4">
                         {[1, 2, 3, 4, 5].map((star) => (
-                            <Star
-                                key={star}
-                                className="w-6 h-6 fill-yellow-400 text-yellow-400"
-                            />
+                            <Star key={star} className="w-6 h-6 fill-yellow-400 text-yellow-400" />
                         ))}
                     </div>
-                    <p className="text-xl text-gray-400">
-                        4.9/5 from 1,200+ reviews
-                    </p>
+                    <p className="text-xl text-gray-400">4.9/5 from 1,200+ reviews</p>
                 </motion.div>
 
                 {/* Testimonials Grid */}
@@ -84,12 +76,9 @@ export const SocialProof: React.FC = () => {
                             <div className="flex items-center gap-4">
                                 <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary-500 to-accent-500"></div>
                                 <div>
-                                    <div className="font-semibold">
-                                        {testimonial.author}
-                                    </div>
+                                    <div className="font-semibold">{testimonial.author}</div>
                                     <div className="text-sm text-gray-400">
-                                        {testimonial.role} at{" "}
-                                        {testimonial.company}
+                                        {testimonial.role} at {testimonial.company}
                                     </div>
                                 </div>
                             </div>
@@ -106,20 +95,13 @@ export const SocialProof: React.FC = () => {
                 >
                     <p className="text-gray-400 mb-8">Trusted by teams at</p>
                     <div className="flex flex-wrap justify-center items-center gap-12 opacity-50">
-                        {[
-                            "TechCorp",
-                            "DataFlow",
-                            "CloudScale",
-                            "AI Labs",
-                            "Enterprise Co",
-                        ].map((company) => (
-                            <div
-                                key={company}
-                                className="text-2xl font-bold text-gray-500"
-                            >
-                                {company}
-                            </div>
-                        ))}
+                        {["TechCorp", "DataFlow", "CloudScale", "AI Labs", "Enterprise Co"].map(
+                            (company) => (
+                                <div key={company} className="text-2xl font-bold text-gray-500">
+                                    {company}
+                                </div>
+                            )
+                        )}
                     </div>
                 </motion.div>
             </div>

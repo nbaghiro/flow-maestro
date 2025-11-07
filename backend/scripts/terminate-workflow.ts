@@ -1,11 +1,11 @@
-import { getTemporalClient } from '../src/temporal/client';
+import { getTemporalClient } from "../src/temporal/client";
 
 async function terminateWorkflow() {
     const workflowId = process.argv[2];
-    const reason = process.argv[3] || 'Manual termination';
+    const reason = process.argv[3] || "Manual termination";
 
     if (!workflowId) {
-        console.error('Usage: npx tsx scripts/terminate-workflow.ts <workflow-id> [reason]');
+        console.error("Usage: npx tsx scripts/terminate-workflow.ts <workflow-id> [reason]");
         process.exit(1);
     }
 
@@ -16,7 +16,7 @@ async function terminateWorkflow() {
         await handle.terminate(reason);
         console.log(`✅ Successfully terminated workflow: ${workflowId}`);
         console.log(`   Reason: ${reason}`);
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error(`❌ Failed to terminate workflow: ${error.message}`);
         process.exit(1);
     }

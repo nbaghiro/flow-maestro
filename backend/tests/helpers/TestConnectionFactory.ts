@@ -10,7 +10,7 @@ export interface TestConnectionConfig {
     name: string;
     provider: string;
     connectionMethod: "api_key" | "oauth2" | "basic_auth";
-    data: Record<string, any>;
+    data: Record<string, unknown>;
 }
 
 export class TestConnectionFactory {
@@ -41,13 +41,7 @@ export class TestConnectionFactory {
              (user_id, name, connection_method, provider, encrypted_data, status)
              VALUES ($1, $2, $3, $4, $5, 'active')
              RETURNING id`,
-            [
-                this.testUserId,
-                config.name,
-                config.connectionMethod,
-                config.provider,
-                encryptedData,
-            ]
+            [this.testUserId, config.name, config.connectionMethod, config.provider, encryptedData]
         );
 
         return result.rows[0].id;
@@ -62,24 +56,22 @@ export class TestConnectionFactory {
             provider: "openai",
             connectionMethod: "api_key",
             data: {
-                api_key: apiKey,
-            },
+                api_key: apiKey
+            }
         });
     }
 
     /**
      * Create Anthropic API key connection
      */
-    async createAnthropicConnection(
-        apiKey: string = "test-anthropic-key"
-    ): Promise<string> {
+    async createAnthropicConnection(apiKey: string = "test-anthropic-key"): Promise<string> {
         return this.createConnection({
             name: "Test Anthropic Connection",
             provider: "anthropic",
             connectionMethod: "api_key",
             data: {
-                api_key: apiKey,
-            },
+                api_key: apiKey
+            }
         });
     }
 
@@ -92,17 +84,15 @@ export class TestConnectionFactory {
             provider: "google",
             connectionMethod: "api_key",
             data: {
-                api_key: apiKey,
-            },
+                api_key: apiKey
+            }
         });
     }
 
     /**
      * Create Slack OAuth connection
      */
-    async createSlackConnection(
-        accessToken: string = "test-slack-token"
-    ): Promise<string> {
+    async createSlackConnection(accessToken: string = "test-slack-token"): Promise<string> {
         return this.createConnection({
             name: "Test Slack Connection",
             provider: "slack",
@@ -112,8 +102,8 @@ export class TestConnectionFactory {
                 tokenType: "Bearer",
                 scope: "chat:write,files:write",
                 teamId: "T12345678",
-                teamName: "Test Team",
-            },
+                teamName: "Test Team"
+            }
         });
     }
 
@@ -129,8 +119,8 @@ export class TestConnectionFactory {
             provider,
             connectionMethod: "basic_auth",
             data: {
-                connectionString,
-            },
+                connectionString
+            }
         });
     }
 
@@ -148,17 +138,17 @@ export class TestConnectionFactory {
             connectionMethod: "basic_auth",
             data: {
                 username,
-                password,
-            },
+                password
+            }
         });
     }
 
     /**
      * Get connection data (decrypted)
      */
-    async getConnectionData(connectionId: string): Promise<Record<string, any>> {
+    async getConnectionData(connectionId: string): Promise<Record<string, unknown>> {
         const result = await this.pool.query<{ encrypted_data: string }>(
-            `SELECT encrypted_data FROM connections WHERE id = $1`,
+            "SELECT encrypted_data FROM connections WHERE id = $1",
             [connectionId]
         );
 
@@ -173,9 +163,6 @@ export class TestConnectionFactory {
      * Delete all test connections
      */
     async cleanup(): Promise<void> {
-        await this.pool.query(
-            `DELETE FROM connections WHERE user_id = $1`,
-            [this.testUserId]
-        );
+        await this.pool.query("DELETE FROM connections WHERE user_id = $1", [this.testUserId]);
     }
 }

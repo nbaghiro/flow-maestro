@@ -104,9 +104,7 @@ describe("Workflow 4: Slack Customer Support Ticket Processor", () => {
         }
 
         slackConnectionId = await connectionFactory.createSlackConnection(slackToken);
-        anthropicConnectionId = await connectionFactory.createAnthropicConnection(
-            anthropicKey
-        );
+        anthropicConnectionId = await connectionFactory.createAnthropicConnection(anthropicKey);
 
         // Create database connections
         const pgConnectionString = `postgresql://${process.env.POSTGRES_USER}:${process.env.POSTGRES_PASSWORD}@${process.env.POSTGRES_HOST}:${process.env.POSTGRES_PORT}/${process.env.POSTGRES_DB}`;
@@ -155,7 +153,7 @@ describe("Workflow 4: Slack Customer Support Ticket Processor", () => {
 
     afterAll(async () => {
         // Clean up PostgreSQL test table
-        await pool.query(`DROP TABLE IF EXISTS support_tickets`);
+        await pool.query("DROP TABLE IF EXISTS support_tickets");
 
         // Clean up MongoDB collection
         if (mongoDb) {
@@ -190,7 +188,7 @@ describe("Workflow 4: Slack Customer Support Ticket Processor", () => {
     afterEach(async () => {
         // Clean up support_tickets table after each test
         try {
-            await pool.query(`DELETE FROM support_tickets`);
+            await pool.query("DELETE FROM support_tickets");
         } catch (error) {
             // Ignore if table doesn't exist
         }
@@ -223,12 +221,13 @@ describe("Workflow 4: Slack Customer Support Ticket Processor", () => {
 
         // Execute workflow with high urgency message
         const result = await testHarness.executeWorkflow(testWorkflow, {
-            message: "URGENT: Payment processing is completely down for all users! Transactions are failing.",
+            message:
+                "URGENT: Payment processing is completely down for all users! Transactions are failing.",
             channel: "C12345TEST",
             userId: "U123TEST",
             threadTs: undefined,
             ticket_number: ticketNumber,
-            pagerduty_webhook_url: webhookUrl,
+            pagerduty_webhook_url: webhookUrl
         });
 
         // Verify workflow succeeded
@@ -260,7 +259,7 @@ describe("Workflow 4: Slack Customer Support Ticket Processor", () => {
 
         // Verify database record
         const dbResult = await pool.query(
-            `SELECT * FROM support_tickets WHERE ticket_number = $1`,
+            "SELECT * FROM support_tickets WHERE ticket_number = $1",
             [ticketNumber]
         );
         expect(dbResult.rows.length).toBe(1);
@@ -297,7 +296,7 @@ describe("Workflow 4: Slack Customer Support Ticket Processor", () => {
             userId: "U123TEST",
             threadTs: undefined,
             ticket_number: ticketNumber,
-            pagerduty_webhook_url: webhookUrl,
+            pagerduty_webhook_url: webhookUrl
         });
 
         // Verify workflow succeeded
@@ -315,7 +314,7 @@ describe("Workflow 4: Slack Customer Support Ticket Processor", () => {
 
         // Verify PostgreSQL record
         const dbResult = await pool.query(
-            `SELECT * FROM support_tickets WHERE ticket_number = $1`,
+            "SELECT * FROM support_tickets WHERE ticket_number = $1",
             [ticketNumber]
         );
         expect(dbResult.rows.length).toBe(1);
@@ -346,12 +345,13 @@ describe("Workflow 4: Slack Customer Support Ticket Processor", () => {
         testWorkflow.nodes["integration-1"].config.connectionId = slackConnectionId;
 
         const result = await testHarness.executeWorkflow(testWorkflow, {
-            message: "Feature request: Can we add dark mode to the settings page? It would be nice to have.",
+            message:
+                "Feature request: Can we add dark mode to the settings page? It would be nice to have.",
             channel: "C12345TEST",
             userId: "U123TEST",
             threadTs: undefined,
             ticket_number: ticketNumber,
-            pagerduty_webhook_url: webhookUrl,
+            pagerduty_webhook_url: webhookUrl
         });
 
         // Verify workflow succeeded
@@ -377,7 +377,7 @@ describe("Workflow 4: Slack Customer Support Ticket Processor", () => {
 
         // Verify PostgreSQL was NOT used
         const dbResult = await pool.query(
-            `SELECT * FROM support_tickets WHERE ticket_number = $1`,
+            "SELECT * FROM support_tickets WHERE ticket_number = $1",
             [ticketNumber]
         );
         expect(dbResult.rows.length).toBe(0);
@@ -406,7 +406,7 @@ describe("Workflow 4: Slack Customer Support Ticket Processor", () => {
             userId: "U123TEST",
             threadTs: undefined,
             ticket_number: ticketNumber,
-            pagerduty_webhook_url: webhookUrl,
+            pagerduty_webhook_url: webhookUrl
         });
 
         expect(result.success).toBe(true);
@@ -414,7 +414,7 @@ describe("Workflow 4: Slack Customer Support Ticket Processor", () => {
 
         // Verify ONLY PostgreSQL has the record
         const pgResult = await pool.query(
-            `SELECT * FROM support_tickets WHERE ticket_number = $1`,
+            "SELECT * FROM support_tickets WHERE ticket_number = $1",
             [ticketNumber]
         );
         expect(pgResult.rows.length).toBe(1);
@@ -450,7 +450,7 @@ describe("Workflow 4: Slack Customer Support Ticket Processor", () => {
             userId: "U123TEST",
             threadTs: threadTs,
             ticket_number: ticketNumber,
-            pagerduty_webhook_url: webhookUrl,
+            pagerduty_webhook_url: webhookUrl
         });
 
         expect(result.success).toBe(true);
@@ -462,8 +462,14 @@ describe("Workflow 4: Slack Customer Support Ticket Processor", () => {
         // Verify database record includes thread_ts
         const dbOrMongo =
             result.outputs.result.ticket.urgency === "low"
-                ? await mongoDb.collection("support_backlog").findOne({ ticket_number: ticketNumber })
-                : (await pool.query(`SELECT * FROM support_tickets WHERE ticket_number = $1`, [ticketNumber])).rows[0];
+                ? await mongoDb
+                      .collection("support_backlog")
+                      .findOne({ ticket_number: ticketNumber })
+                : (
+                      await pool.query("SELECT * FROM support_tickets WHERE ticket_number = $1", [
+                          ticketNumber
+                      ])
+                  ).rows[0];
 
         expect(dbOrMongo).toBeDefined();
         expect(dbOrMongo.thread_ts).toBe(threadTs);
@@ -492,7 +498,7 @@ describe("Workflow 4: Slack Customer Support Ticket Processor", () => {
             userId: "U123TEST",
             threadTs: undefined,
             ticket_number: ticketNumber,
-            pagerduty_webhook_url: webhookUrl,
+            pagerduty_webhook_url: webhookUrl
         });
 
         expect(result.success).toBe(true);

@@ -11,7 +11,7 @@ export async function getTriggerRoute(fastify: FastifyInstance) {
         },
         async (request, reply) => {
             const triggerRepo = new TriggerRepository();
-            const { id } = request.params as any;
+            const { id } = request.params as { id: string };
 
             try {
                 const trigger = await triggerRepo.findById(id);
@@ -25,12 +25,12 @@ export async function getTriggerRoute(fastify: FastifyInstance) {
 
                 // If it's a schedule trigger, get Temporal schedule info
                 let scheduleInfo = null;
-                if (trigger.trigger_type === 'schedule' && trigger.temporal_schedule_id) {
+                if (trigger.trigger_type === "schedule" && trigger.temporal_schedule_id) {
                     try {
                         const schedulerService = new SchedulerService();
                         scheduleInfo = await schedulerService.getScheduleInfo(id);
                     } catch (error) {
-                        console.error('Error fetching schedule info:', error);
+                        console.error("Error fetching schedule info:", error);
                     }
                 }
 
@@ -42,7 +42,7 @@ export async function getTriggerRoute(fastify: FastifyInstance) {
                     }
                 });
             } catch (error) {
-                console.error('Error getting trigger:', error);
+                console.error("Error getting trigger:", error);
                 return reply.status(500).send({
                     success: false,
                     error: String(error)

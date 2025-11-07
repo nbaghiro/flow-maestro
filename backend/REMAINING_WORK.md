@@ -3,6 +3,7 @@
 ## ✅ Completed Components (75%)
 
 ### Backend Infrastructure (100%)
+
 - ✅ Database schema for call executions, transcripts, and events
 - ✅ Type definitions for all call-related models
 - ✅ CallExecutionRepository with full CRUD operations
@@ -14,6 +15,7 @@
 - ✅ Event emitter convenience methods
 
 ### Voice Agent Service (100%)
+
 - ✅ VoiceAgent class with full pipeline orchestration
 - ✅ DeepgramSTT service for streaming speech-to-text
 - ✅ ElevenLabsTTS service for high-quality voice synthesis
@@ -32,10 +34,12 @@
 ### 1. Voice Agent Testing & Integration (Critical)
 
 #### 1.1 Audio Library Integration Testing
+
 **Priority**: HIGH
 **Estimated Time**: 4-6 hours
 
 **Tasks**:
+
 - [ ] Test AudioContext polyfill in Node.js environment
 - [ ] Verify MediaStream handling with node-webrtc
 - [ ] Test audio encoding/decoding with @discordjs/opus
@@ -44,21 +48,25 @@
 - [ ] Verify STT audio streaming to Deepgram
 
 **Potential Issues**:
+
 - `node-webrtc` shows engine compatibility warning (Node v22 vs v0.6)
 - May need alternative WebRTC library or downgrade Node version
 - AudioContext polyfill may have limited feature support
 - Real-time audio processing latency needs measurement
 
 **Fallback Options**:
+
 1. Use `@discordjs/voice` instead of node-webrtc
 2. Implement Python voice agent as separate microservice
 3. Use pre-recorded audio files for testing before live audio
 
 #### 1.2 End-to-End Call Testing
+
 **Priority**: HIGH
 **Estimated Time**: 6-8 hours
 
 **Tasks**:
+
 - [ ] Set up LiveKit server (cloud or local)
 - [ ] Configure Telnyx SIP trunk with LiveKit
 - [ ] Create test phone numbers in Telnyx
@@ -71,6 +79,7 @@
 - [ ] Test multiple concurrent calls
 
 **Required Resources**:
+
 - LiveKit Cloud account or self-hosted server
 - Telnyx account with SIP trunking enabled
 - Test phone number
@@ -78,10 +87,12 @@
 - ElevenLabs API credits
 
 #### 1.3 Error Handling & Resilience
+
 **Priority**: MEDIUM
 **Estimated Time**: 4-6 hours
 
 **Tasks**:
+
 - [ ] Add retry logic for API failures (Deepgram, ElevenLabs)
 - [ ] Handle LiveKit disconnections gracefully
 - [ ] Implement fallback TTS/STT providers
@@ -96,6 +107,7 @@
 ### 2. Frontend Implementation (25% of total project)
 
 #### 2.1 Phone Call Trigger UI
+
 **Priority**: HIGH
 **Estimated Time**: 8-10 hours
 
@@ -110,6 +122,7 @@ frontend/src/components/triggers/
 ```
 
 **Features**:
+
 - [ ] Phone number input with E.164 validation
 - [ ] Telnyx connection selector (from credentials)
 - [ ] Greeting message editor with variable interpolation
@@ -123,12 +136,14 @@ frontend/src/components/triggers/
 - [ ] Timeout settings for menu/listen nodes
 
 **Integration Points**:
+
 - Create/update trigger via API
 - Fetch available Telnyx connections
 - Validate phone number format
 - Preview greeting message with TTS
 
 #### 2.2 Voice Node Types for Workflow Canvas
+
 **Priority**: HIGH
 **Estimated Time**: 10-12 hours
 
@@ -158,7 +173,7 @@ interface VoiceNodeTypes {
         icon: "📋";
         color: "#F59E0B";
         inputs: ["previous"];
-        outputs: string[];  // Dynamic per option
+        outputs: string[]; // Dynamic per option
         config: VoiceMenuNodeConfig;
     };
     voice_hangup: {
@@ -193,6 +208,7 @@ frontend/src/lib/
 ```
 
 **Tasks**:
+
 - [ ] Create voice node components with proper styling
 - [ ] Implement config panels for each node type
 - [ ] Add voice nodes to node palette/sidebar
@@ -204,6 +220,7 @@ frontend/src/lib/
 - [ ] Add node testing mode (mock responses)
 
 #### 2.3 Live Call Monitoring Dashboard
+
 **Priority**: MEDIUM
 **Estimated Time**: 12-15 hours
 
@@ -223,6 +240,7 @@ frontend/src/components/calls/
 ```
 
 **Features**:
+
 - [ ] Real-time list of active calls
 - [ ] Live transcript with speaker labels (user/agent)
 - [ ] Call status indicators (ringing, active, completed)
@@ -235,17 +253,20 @@ frontend/src/components/calls/
 - [ ] Search/filter calls by number, date, status
 
 **WebSocket Integration**:
-- [ ] Subscribe to call:* events
+
+- [ ] Subscribe to call:\* events
 - [ ] Handle call:transcript events for live updates
 - [ ] Handle call:incoming, call:active, call:ended
 - [ ] Update UI state based on events
 - [ ] Show notifications for new calls
 
 #### 2.4 Telnyx Connection Management UI
+
 **Priority**: MEDIUM
 **Estimated Time**: 4-6 hours
 
 **Tasks**:
+
 - [ ] Add Telnyx to connection type dropdown
 - [ ] Create Telnyx credentials form (API key, SIP settings)
 - [ ] Test connection functionality
@@ -254,6 +275,7 @@ frontend/src/components/calls/
 - [ ] Add webhook URL configuration guide
 
 **Integration**:
+
 - [ ] Add Telnyx to `shared/src/types.ts` ConnectionType
 - [ ] Create credential storage in database
 - [ ] Add Telnyx API client to backend
@@ -264,10 +286,12 @@ frontend/src/components/calls/
 ### 3. Documentation & Deployment
 
 #### 3.1 User Documentation
+
 **Priority**: MEDIUM
 **Estimated Time**: 4-6 hours
 
 **Documents to Create**:
+
 - [ ] User guide: Setting up phone call triggers
 - [ ] Tutorial: Building a simple IVR workflow
 - [ ] Tutorial: Voice-powered customer support workflow
@@ -275,10 +299,12 @@ frontend/src/components/calls/
 - [ ] Video walkthrough of phone call features
 
 #### 3.2 Developer Documentation
+
 **Priority**: LOW
 **Estimated Time**: 3-4 hours
 
 **Tasks**:
+
 - [ ] Document voice agent architecture
 - [ ] API documentation for voice endpoints
 - [ ] WebSocket event documentation
@@ -287,10 +313,12 @@ frontend/src/components/calls/
 - [ ] Performance tuning guide
 
 #### 3.3 Deployment Configuration
+
 **Priority**: HIGH
 **Estimated Time**: 6-8 hours
 
 **Tasks**:
+
 - [ ] Add voice worker to Docker Compose
 - [ ] Create production Dockerfile for voice agent
 - [ ] Add environment variables documentation
@@ -303,6 +331,7 @@ frontend/src/components/calls/
 - [ ] Test production deployment
 
 **Environment Variables Needed**:
+
 ```bash
 # LiveKit
 LIVEKIT_WS_URL=wss://your-livekit-server.com
@@ -326,10 +355,12 @@ REDIS_URL=redis://localhost:6379
 ### 4. Performance & Optimization
 
 #### 4.1 Audio Processing Optimization
+
 **Priority**: LOW
 **Estimated Time**: 4-6 hours
 
 **Tasks**:
+
 - [ ] Profile audio processing pipeline
 - [ ] Optimize VAD energy calculation
 - [ ] Implement audio buffer pooling
@@ -338,10 +369,12 @@ REDIS_URL=redis://localhost:6379
 - [ ] Reduce STT/TTS latency
 
 #### 4.2 Scaling Considerations
+
 **Priority**: LOW
 **Estimated Time**: 6-8 hours
 
 **Tasks**:
+
 - [ ] Implement horizontal scaling for voice workers
 - [ ] Add load balancing across workers
 - [ ] Implement call distribution strategy
@@ -356,10 +389,12 @@ REDIS_URL=redis://localhost:6379
 ### 5. Security & Compliance
 
 #### 5.1 Security Hardening
+
 **Priority**: HIGH
 **Estimated Time**: 4-6 hours
 
 **Tasks**:
+
 - [ ] Verify Telnyx webhook signatures
 - [ ] Implement caller ID spoofing protection
 - [ ] Add rate limiting for phone numbers
@@ -370,10 +405,12 @@ REDIS_URL=redis://localhost:6379
 - [ ] Test for injection vulnerabilities
 
 #### 5.2 Compliance
+
 **Priority**: MEDIUM
 **Estimated Time**: 3-4 hours
 
 **Tasks**:
+
 - [ ] Add call recording consent message
 - [ ] Implement GDPR data deletion
 - [ ] Add call data retention policies
@@ -386,18 +423,21 @@ REDIS_URL=redis://localhost:6379
 ## 📋 Implementation Priorities
 
 ### Phase 1: Critical Path (Week 1)
+
 1. Voice agent audio library testing and integration
 2. End-to-end call flow testing with real phone
 3. Phone call trigger UI implementation
 4. Voice node types for workflow canvas
 
 ### Phase 2: Core Features (Week 2)
+
 1. Live call monitoring dashboard
 2. Telnyx connection management UI
 3. Error handling and resilience
 4. Security hardening
 
 ### Phase 3: Polish & Deploy (Week 3)
+
 1. Performance optimization
 2. User documentation
 3. Deployment configuration
@@ -408,31 +448,35 @@ REDIS_URL=redis://localhost:6379
 ## 🔍 Known Issues & Risks
 
 ### High Risk
+
 1. **node-webrtc Compatibility**: Engine warning with Node v22
-   - **Mitigation**: Test with @discordjs/voice or Python fallback
+    - **Mitigation**: Test with @discordjs/voice or Python fallback
 
 2. **Audio Latency**: Real-time processing may have delays
-   - **Mitigation**: Profile and optimize, use faster STT/TTS models
+    - **Mitigation**: Profile and optimize, use faster STT/TTS models
 
 3. **LiveKit Setup**: Requires external service or self-hosting
-   - **Mitigation**: Document both cloud and self-hosted options
+    - **Mitigation**: Document both cloud and self-hosted options
 
 ### Medium Risk
+
 1. **API Rate Limits**: Deepgram/ElevenLabs may have limits
-   - **Mitigation**: Implement caching, fallback providers
+    - **Mitigation**: Implement caching, fallback providers
 
 2. **Concurrent Call Limits**: May need scaling strategy
-   - **Mitigation**: Load testing, horizontal scaling
+    - **Mitigation**: Load testing, horizontal scaling
 
 ### Low Risk
+
 1. **TypeScript Audio APIs**: Less mature than Python
-   - **Mitigation**: Already built, can iterate or replace
+    - **Mitigation**: Already built, can iterate or replace
 
 ---
 
 ## 🎯 Success Criteria
 
 ### Minimum Viable Product (MVP)
+
 - [ ] Can receive incoming call from Telnyx
 - [ ] Agent joins LiveKit room automatically
 - [ ] Can play TTS greeting to caller
@@ -444,6 +488,7 @@ REDIS_URL=redis://localhost:6379
 - [ ] Frontend shows call transcripts in real-time
 
 ### Production Ready
+
 - [ ] All MVP criteria met
 - [ ] Handles 10+ concurrent calls
 - [ ] 99%+ call connection success rate
@@ -459,18 +504,21 @@ REDIS_URL=redis://localhost:6379
 ## 📚 Resources
 
 ### Services to Set Up
+
 - **LiveKit**: https://livekit.io/ (Cloud or self-hosted)
 - **Telnyx**: https://telnyx.com/ (Phone numbers, SIP trunk)
 - **Deepgram**: https://deepgram.com/ (STT credits)
 - **ElevenLabs**: https://elevenlabs.io/ (TTS credits)
 
 ### Development Tools
+
 - **LiveKit CLI**: For local testing
 - **ngrok/localtunnel**: For webhook testing
 - **Postman/Insomnia**: For API testing
 - **Audio test files**: For agent testing
 
 ### Estimated Total Time
+
 - **Testing & Integration**: 14-20 hours
 - **Frontend Implementation**: 34-43 hours
 - **Documentation & Deployment**: 13-18 hours
@@ -483,12 +531,14 @@ REDIS_URL=redis://localhost:6379
 ## 🚀 Quick Start for Testing
 
 ### 1. Start Voice Worker
+
 ```bash
 cd backend
 npm run worker:voice:dev
 ```
 
 ### 2. Set Up Environment Variables
+
 ```bash
 # Add to backend/.env
 LIVEKIT_WS_URL=wss://your-livekit-server.com
@@ -499,18 +549,21 @@ ELEVENLABS_API_KEY=your-key
 ```
 
 ### 3. Test with Mock Room
+
 ```bash
 # Create test script in backend/tests/voice/
 tsx tests/voice/mock-call.ts
 ```
 
 ### 4. Configure Telnyx Webhook
+
 ```
 Webhook URL: https://your-domain.com/api/triggers/phone-call
 Events: call.initiated, call.answered, call.hangup
 ```
 
 ### 5. Make Test Call
+
 ```
 Call your Telnyx number and monitor logs
 ```
@@ -520,18 +573,21 @@ Call your Telnyx number and monitor logs
 ## 💡 Recommendations
 
 ### For Fastest MVP
+
 1. **Skip audio testing initially**: Use mock responses in voice executors
 2. **Test workflow logic first**: Validate command flow without real audio
 3. **Use Python for production**: If TypeScript audio proves too complex
 4. **Start with cloud LiveKit**: Faster than self-hosting
 
 ### For Production Quality
+
 1. **Invest in proper audio setup**: Test thoroughly with real calls
 2. **Implement comprehensive monitoring**: Track call quality metrics
 3. **Add robust error handling**: Graceful failures and retries
 4. **Scale horizontally**: Multiple workers with load balancing
 
 ### For Best User Experience
+
 1. **Real-time UI updates**: WebSocket events for live monitoring
 2. **Clear error messages**: Help users debug call issues
 3. **Voice previews**: Let users hear TTS before using in workflows

@@ -1,8 +1,8 @@
-import { interpolateVariables } from './utils';
-import type { JsonObject, JsonValue } from '@flowmaestro/shared';
+import { interpolateVariables } from "./utils";
+import type { JsonObject, JsonValue } from "@flowmaestro/shared";
 
 export interface LoopNodeConfig {
-    loopType: 'forEach' | 'while' | 'count';
+    loopType: "forEach" | "while" | "count";
 
     // For forEach loops
     arrayPath?: string; // Variable path to array: ${items}, ${data.results}
@@ -37,11 +37,11 @@ export async function executeLoopNode(
     console.log(`[Loop] Type: ${config.loopType}`);
 
     switch (config.loopType) {
-        case 'forEach':
+        case "forEach":
             return await prepareForEachLoop(config, context);
-        case 'while':
+        case "while":
             return await prepareWhileLoop(config, context);
-        case 'count':
+        case "count":
             return await prepareCountLoop(config, context);
         default:
             throw new Error(`Unknown loop type: ${config.loopType}`);
@@ -56,7 +56,7 @@ async function prepareForEachLoop(
     context: JsonObject
 ): Promise<JsonObject> {
     if (!config.arrayPath) {
-        throw new Error('arrayPath is required for forEach loop');
+        throw new Error("arrayPath is required for forEach loop");
     }
 
     // Extract array from context
@@ -64,7 +64,9 @@ async function prepareForEachLoop(
     const array = resolveArrayPath(arrayPath, context);
 
     if (!Array.isArray(array)) {
-        throw new Error(`arrayPath "${config.arrayPath}" did not resolve to an array. Got: ${typeof array}`);
+        throw new Error(
+            `arrayPath "${config.arrayPath}" did not resolve to an array. Got: ${typeof array}`
+        );
     }
 
     console.log(`[Loop] forEach: ${array.length} items`);
@@ -79,12 +81,9 @@ async function prepareForEachLoop(
 /**
  * Prepare while loop - validate condition
  */
-async function prepareWhileLoop(
-    config: LoopNodeConfig,
-    _context: JsonObject
-): Promise<JsonObject> {
+async function prepareWhileLoop(config: LoopNodeConfig, _context: JsonObject): Promise<JsonObject> {
     if (!config.condition) {
-        throw new Error('condition is required for while loop');
+        throw new Error("condition is required for while loop");
     }
 
     const maxIterations = config.maxIterations || 1000;
@@ -102,17 +101,15 @@ async function prepareWhileLoop(
 /**
  * Prepare count loop - simple N iterations
  */
-async function prepareCountLoop(
-    config: LoopNodeConfig,
-    context: JsonObject
-): Promise<JsonObject> {
+async function prepareCountLoop(config: LoopNodeConfig, context: JsonObject): Promise<JsonObject> {
     if (config.count === undefined) {
-        throw new Error('count is required for count loop');
+        throw new Error("count is required for count loop");
     }
 
-    const count = typeof config.count === 'string'
-        ? Number(interpolateVariables(config.count, context))
-        : config.count;
+    const count =
+        typeof config.count === "string"
+            ? Number(interpolateVariables(config.count, context))
+            : config.count;
 
     if (isNaN(count) || count < 0) {
         throw new Error(`Invalid count: ${config.count}`);
@@ -132,7 +129,7 @@ async function prepareCountLoop(
  */
 function resolveArrayPath(path: string, context: JsonObject): JsonValue {
     // If path starts with ${, it's already interpolated, just return it
-    if (!path.includes('$')) {
+    if (!path.includes("$")) {
         // Direct property access
         return context[path];
     }

@@ -135,7 +135,7 @@ export const EXAMPLE_WORKFLOW_PROMPTS = [
     "Use AI to match employees with mentors based on skills and goals",
     "Analyze performance reviews and use AI to identify development opportunities",
     "Generate training content recommendations using AI based on skill gaps",
-    "Use AI to predict employee retention risk and suggest interventions",
+    "Use AI to predict employee retention risk and suggest interventions"
 ];
 
 /**

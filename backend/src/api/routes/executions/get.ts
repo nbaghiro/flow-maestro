@@ -12,7 +12,7 @@ export async function getExecutionRoute(fastify: FastifyInstance) {
         async (request, reply) => {
             const executionRepository = new ExecutionRepository();
             const workflowRepository = new WorkflowRepository();
-            const { id } = request.params as any;
+            const { id } = (request.params as { id: string });
 
             const execution = await executionRepository.findById(id);
 

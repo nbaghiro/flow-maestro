@@ -11,8 +11,8 @@ const addToolSchema = z.object({
     config: z.object({
         workflowId: z.string().optional(),
         functionName: z.string().optional(),
-        knowledgeBaseId: z.string().optional(),
-    }),
+        knowledgeBaseId: z.string().optional()
+    })
 });
 
 interface AddToolParams {
@@ -27,7 +27,7 @@ export async function addToolHandler(
     reply: FastifyReply
 ): Promise<void> {
     const { id: agentId } = request.params;
-    const userId = (request.user as any).id;
+    const userId = (request.user as { id: string }).id;
 
     // Validate request body
     const toolData = addToolSchema.parse(request.body);
@@ -40,7 +40,7 @@ export async function addToolHandler(
     if (!agent) {
         reply.code(404).send({
             success: false,
-            error: "Agent not found",
+            error: "Agent not found"
         });
         return;
     }
@@ -52,7 +52,7 @@ export async function addToolHandler(
         description: toolData.description,
         type: toolData.type,
         schema: toolData.schema,
-        config: toolData.config,
+        config: toolData.config
     };
 
     // Check if tool with same name already exists
@@ -60,7 +60,7 @@ export async function addToolHandler(
     if (existingTool) {
         reply.code(400).send({
             success: false,
-            error: `Tool with name "${newTool.name}" already exists`,
+            error: `Tool with name "${newTool.name}" already exists`
         });
         return;
     }
@@ -70,13 +70,13 @@ export async function addToolHandler(
 
     // Update the agent
     const updatedAgent = await agentRepo.update(agentId, {
-        available_tools: updatedTools,
+        available_tools: updatedTools
     });
 
     if (!updatedAgent) {
         reply.code(500).send({
             success: false,
-            error: "Failed to update agent",
+            error: "Failed to update agent"
         });
         return;
     }
@@ -85,7 +85,7 @@ export async function addToolHandler(
         success: true,
         data: {
             tool: newTool,
-            agent: updatedAgent,
-        },
+            agent: updatedAgent
+        }
     });
 }

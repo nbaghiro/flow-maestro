@@ -213,13 +213,13 @@ export function TriggerCard({ trigger, onUpdate }: TriggerCardProps) {
         setIsRunning(true);
         try {
             // For manual triggers, use the stored inputs
-            let inputs: Record<string, any> | undefined;
+            let inputs: Record<string, unknown> | undefined;
             if (trigger.trigger_type === "manual") {
                 const config = trigger.config as ManualTriggerConfig;
                 inputs = config.inputs;
             }
 
-            const response = await executeTrigger(trigger.id, inputs);
+            const response = await executeTrigger(trigger.id, inputs as unknown as import("@flowmaestro/shared").JsonObject | undefined);
 
             if (response.success && response.data) {
                 // Start execution monitoring in the workflow store

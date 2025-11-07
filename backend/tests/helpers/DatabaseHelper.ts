@@ -49,7 +49,7 @@ export class DatabaseHelper {
             [
                 testUserId,
                 testEmail,
-                '$2a$10$abcdefghijklmnopqrstuv', // Dummy hash for test user
+                "$2a$10$abcdefghijklmnopqrstuv", // Dummy hash for test user
                 `Test User (${timestamp})`
             ]
         );
@@ -62,11 +62,7 @@ export class DatabaseHelper {
     /**
      * Create a test workflow and return workflow ID
      */
-    async createTestWorkflow(
-        userId: string,
-        name: string,
-        definition: object
-    ): Promise<string> {
+    async createTestWorkflow(userId: string, name: string, definition: object): Promise<string> {
         const result = await this.pool.query<{ id: string }>(
             `INSERT INTO workflows (user_id, name, description, definition)
              VALUES ($1, $2, $3, $4)
@@ -79,10 +75,7 @@ export class DatabaseHelper {
     /**
      * Create a test execution and return execution ID
      */
-    async createTestExecution(
-        workflowId: string,
-        inputs: object = {}
-    ): Promise<string> {
+    async createTestExecution(workflowId: string, inputs: object = {}): Promise<string> {
         const result = await this.pool.query<{ id: string }>(
             `INSERT INTO executions (workflow_id, status, inputs, outputs, current_state)
              VALUES ($1, 'running', $2, '{}', '{}')
@@ -95,18 +88,17 @@ export class DatabaseHelper {
     /**
      * Get execution by ID
      */
-    async getExecution(executionId: string): Promise<any> {
-        const result = await this.pool.query(
-            `SELECT * FROM executions WHERE id = $1`,
-            [executionId]
-        );
+    async getExecution(executionId: string): Promise<unknown> {
+        const result = await this.pool.query("SELECT * FROM executions WHERE id = $1", [
+            executionId
+        ]);
         return result.rows[0] || null;
     }
 
     /**
      * Get all execution logs for an execution
      */
-    async getExecutionLogs(executionId: string): Promise<any[]> {
+    async getExecutionLogs(executionId: string): Promise<QueryResultRow[]> {
         const result = await this.pool.query(
             `SELECT * FROM execution_logs
              WHERE execution_id = $1
@@ -121,13 +113,13 @@ export class DatabaseHelper {
      */
     async cleanup(): Promise<void> {
         if (!this.testUserId) {
-            console.warn('No test user ID set, skipping cleanup');
+            console.warn("No test user ID set, skipping cleanup");
             return;
         }
 
         // Safety check: Verify this is a test user by checking email domain
         const userCheck = await this.pool.query<{ email: string }>(
-            `SELECT email FROM users WHERE id = $1`,
+            "SELECT email FROM users WHERE id = $1",
             [this.testUserId]
         );
 
@@ -137,42 +129,35 @@ export class DatabaseHelper {
         }
 
         const email = userCheck.rows[0].email;
-        if (!email.endsWith('@flowmaestro.test')) {
+        if (!email.endsWith("@flowmaestro.test")) {
             throw new Error(
                 `SAFETY CHECK FAILED: Attempted to cleanup non-test user: ${email}. ` +
-                `Test user emails must end with "@flowmaestro.test"`
+                    'Test user emails must end with "@flowmaestro.test"'
             );
         }
 
         try {
             // Delete user-owned data in order (CASCADE should handle some dependencies)
             // Workflows CASCADE to executions → execution_logs
-            await this.pool.query(
-                `DELETE FROM workflows WHERE user_id = $1`,
-                [this.testUserId]
-            );
+            await this.pool.query("DELETE FROM workflows WHERE user_id = $1", [this.testUserId]);
 
             // Knowledge bases CASCADE to documents → chunks
-            await this.pool.query(
-                `DELETE FROM knowledge_bases WHERE user_id = $1`,
-                [this.testUserId]
-            );
+            await this.pool.query("DELETE FROM knowledge_bases WHERE user_id = $1", [
+                this.testUserId
+            ]);
 
             // Connections
-            await this.pool.query(
-                `DELETE FROM connections WHERE user_id = $1`,
-                [this.testUserId]
-            );
+            await this.pool.query("DELETE FROM connections WHERE user_id = $1", [this.testUserId]);
 
             // Finally delete the test user
-            await this.pool.query(
-                `DELETE FROM users WHERE id = $1`,
-                [this.testUserId]
-            );
+            await this.pool.query("DELETE FROM users WHERE id = $1", [this.testUserId]);
 
             console.log(`✅ Cleaned up test user: ${this.testUserId}`);
         } catch (error) {
-            console.error(`Cleanup error for user ${this.testUserId}:`, error instanceof Error ? error.message : error);
+            console.error(
+                `Cleanup error for user ${this.testUserId}:`,
+                error instanceof Error ? error.message : error
+            );
             // Don't throw - allow tests to continue even if cleanup fails
         }
     }
@@ -180,7 +165,10 @@ export class DatabaseHelper {
     /**
      * Execute raw query (for custom test scenarios)
      */
-    async query<T extends QueryResultRow = QueryResultRow>(sql: string, params: any[] = []): Promise<T[]> {
+    async query<T extends QueryResultRow = QueryResultRow>(
+        sql: string,
+        params: unknown[] = []
+    ): Promise<T[]> {
         const result = await this.pool.query<T>(sql, params);
         return result.rows;
     }
@@ -226,8 +214,8 @@ export class DatabaseHelper {
                 JSON.stringify({
                     embeddingModel: "text-embedding-3-small",
                     chunkSize: 500,
-                    chunkOverlap: 50,
-                }),
+                    chunkOverlap: 50
+                })
             ]
         );
 

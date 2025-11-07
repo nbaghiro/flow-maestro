@@ -1,5 +1,5 @@
 import { ExecuteNodeInput } from "./index";
-import type { JsonObject } from '@flowmaestro/shared';
+import type { JsonObject } from "@flowmaestro/shared";
 import { KnowledgeBaseRepository, KnowledgeChunkRepository } from "../../../storage/repositories";
 import { EmbeddingService } from "../../../services/embeddings";
 
@@ -13,9 +13,7 @@ export interface KnowledgeBaseQueryNodeConfig {
  * Execute Knowledge Base Query Node
  * Performs semantic similarity search on a knowledge base
  */
-export async function executeKnowledgeBaseQueryNode(
-    input: ExecuteNodeInput
-): Promise<JsonObject> {
+export async function executeKnowledgeBaseQueryNode(input: ExecuteNodeInput): Promise<JsonObject> {
     const config = input.nodeConfig as unknown as KnowledgeBaseQueryNodeConfig;
     const kbRepository = new KnowledgeBaseRepository();
     const chunkRepository = new KnowledgeChunkRepository();
@@ -90,7 +88,7 @@ export async function executeKnowledgeBaseQueryNode(
                 const sourceInfo = r.documentName
                     ? `[Source: ${r.documentName}, Chunk ${r.chunkIndex}]`
                     : "";
-                const similarity = typeof r.similarity === 'number' ? r.similarity : 0;
+                const similarity = typeof r.similarity === "number" ? r.similarity : 0;
                 return `Result ${index + 1} (similarity: ${similarity.toFixed(3)}):\n${r.content}\n${sourceInfo}`;
             })
             .join("\n\n---\n\n");
@@ -111,7 +109,8 @@ export async function executeKnowledgeBaseQueryNode(
         } as unknown as JsonObject;
     } catch (error: unknown) {
         console.error("[KB Query Executor] Error:", error);
-        const errorMessage = error instanceof Error ? error.message : "Failed to query knowledge base";
+        const errorMessage =
+            error instanceof Error ? error.message : "Failed to query knowledge base";
         return {
             success: false,
             error: errorMessage

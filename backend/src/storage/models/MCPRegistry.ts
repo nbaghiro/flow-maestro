@@ -3,6 +3,8 @@
  * Types for the Model Context Protocol public registry
  */
 
+import type { JsonValue } from "@flowmaestro/shared";
+
 export interface MCPRegistryServer {
     id: string; // e.g., "@modelcontextprotocol/slack"
     name: string;
@@ -25,7 +27,7 @@ export interface MCPRegistryServerDetails extends MCPRegistryServer {
 export interface MCPTool {
     name: string;
     description: string;
-    parameters?: Record<string, any>;
+    parameters?: Record<string, JsonValue>;
 }
 
 export interface MCPRegistryResponse {

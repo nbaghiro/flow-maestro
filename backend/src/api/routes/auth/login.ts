@@ -1,6 +1,6 @@
 import { FastifyInstance } from "fastify";
 import { UserRepository } from "../../../storage/repositories";
-import { loginSchema } from "../../schemas/auth-schemas";
+import { loginSchema, LoginRequest } from "../../schemas/auth-schemas";
 import { validateRequest, UnauthorizedError } from "../../middleware";
 import { PasswordUtils } from "../../../shared/utils/password";
 
@@ -12,7 +12,7 @@ export async function loginRoute(fastify: FastifyInstance) {
         },
         async (request, reply) => {
             const userRepository = new UserRepository();
-            const body = request.body as any;
+            const body = request.body as LoginRequest;
 
             // Find user by email
             const user = await userRepository.findByEmail(body.email);

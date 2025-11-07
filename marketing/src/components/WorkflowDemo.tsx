@@ -1,13 +1,7 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { useInView } from "framer-motion";
-import ReactFlow, {
-    Node,
-    Edge,
-    Controls,
-    Background,
-    BackgroundVariant,
-} from "reactflow";
+import ReactFlow, { Node, Edge, Controls, Background, BackgroundVariant } from "reactflow";
 import "reactflow/dist/style.css";
 import { Play, Sparkles } from "lucide-react";
 
@@ -24,8 +18,8 @@ const initialNodes: Node[] = [
             borderRadius: "12px",
             padding: "12px 24px",
             fontSize: "14px",
-            fontWeight: "600",
-        },
+            fontWeight: "600"
+        }
     },
     {
         id: "2",
@@ -37,8 +31,8 @@ const initialNodes: Node[] = [
             border: "2px solid #64748b",
             borderRadius: "12px",
             padding: "12px 24px",
-            fontSize: "14px",
-        },
+            fontSize: "14px"
+        }
     },
     {
         id: "3",
@@ -51,8 +45,8 @@ const initialNodes: Node[] = [
             borderRadius: "12px",
             padding: "12px 24px",
             fontSize: "14px",
-            fontWeight: "600",
-        },
+            fontWeight: "600"
+        }
     },
     {
         id: "4",
@@ -64,8 +58,8 @@ const initialNodes: Node[] = [
             border: "2px solid #64748b",
             borderRadius: "12px",
             padding: "12px 24px",
-            fontSize: "14px",
-        },
+            fontSize: "14px"
+        }
     },
     {
         id: "5",
@@ -79,9 +73,9 @@ const initialNodes: Node[] = [
             borderRadius: "12px",
             padding: "12px 24px",
             fontSize: "14px",
-            fontWeight: "600",
-        },
-    },
+            fontWeight: "600"
+        }
+    }
 ];
 
 const initialEdges: Edge[] = [
@@ -90,36 +84,36 @@ const initialEdges: Edge[] = [
         source: "1",
         target: "2",
         animated: true,
-        style: { stroke: "#a78bfa", strokeWidth: 2 },
+        style: { stroke: "#a78bfa", strokeWidth: 2 }
     },
     {
         id: "e1-3",
         source: "1",
         target: "3",
         animated: true,
-        style: { stroke: "#d946ef", strokeWidth: 2 },
+        style: { stroke: "#d946ef", strokeWidth: 2 }
     },
     {
         id: "e2-4",
         source: "2",
         target: "4",
         animated: true,
-        style: { stroke: "#a78bfa", strokeWidth: 2 },
+        style: { stroke: "#a78bfa", strokeWidth: 2 }
     },
     {
         id: "e3-4",
         source: "3",
         target: "4",
         animated: true,
-        style: { stroke: "#d946ef", strokeWidth: 2 },
+        style: { stroke: "#d946ef", strokeWidth: 2 }
     },
     {
         id: "e4-5",
         source: "4",
         target: "5",
         animated: true,
-        style: { stroke: "#4ade80", strokeWidth: 2 },
-    },
+        style: { stroke: "#4ade80", strokeWidth: 2 }
+    }
 ];
 
 export const WorkflowDemo: React.FC = () => {
@@ -133,10 +127,7 @@ export const WorkflowDemo: React.FC = () => {
     };
 
     return (
-        <section
-            ref={ref}
-            className="relative py-24 px-4 sm:px-6 lg:px-8 bg-black"
-        >
+        <section ref={ref} className="relative py-24 px-4 sm:px-6 lg:px-8 bg-black">
             <div className="max-w-7xl mx-auto">
                 {/* Section Header */}
                 <motion.div
@@ -147,9 +138,7 @@ export const WorkflowDemo: React.FC = () => {
                 >
                     <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent-500/10 border border-accent-500/20 mb-6">
                         <Sparkles className="w-4 h-4 text-accent-400" />
-                        <span className="text-sm text-accent-300">
-                            Interactive Demo
-                        </span>
+                        <span className="text-sm text-accent-300">Interactive Demo</span>
                     </div>
 
                     <h2 className="text-4xl sm:text-5xl font-bold mb-4">
@@ -157,9 +146,8 @@ export const WorkflowDemo: React.FC = () => {
                         <span className="gradient-text"> Meet Agents</span>
                     </h2>
                     <p className="text-xl text-gray-400 max-w-2xl mx-auto">
-                        Structured workflow nodes (⚙️) handle deterministic
-                        steps, while AI agents (🤖) handle complex reasoning.
-                        They work together seamlessly.
+                        Structured workflow nodes (⚙️) handle deterministic steps, while AI agents
+                        (🤖) handle complex reasoning. They work together seamlessly.
                     </p>
                 </motion.div>
 
@@ -179,9 +167,7 @@ export const WorkflowDemo: React.FC = () => {
                                     <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
                                     <div className="w-3 h-3 rounded-full bg-green-500"></div>
                                 </div>
-                                <span className="ml-4 text-sm text-gray-400">
-                                    Sample Workflow
-                                </span>
+                                <span className="ml-4 text-sm text-gray-400">Sample Workflow</span>
                             </div>
 
                             <button
@@ -227,13 +213,11 @@ export const WorkflowDemo: React.FC = () => {
                                         transition={{
                                             duration: 2,
                                             repeat: Infinity,
-                                            ease: "linear",
+                                            ease: "linear"
                                         }}
                                         className="w-16 h-16 border-4 border-primary-500 border-t-transparent rounded-full mx-auto mb-4"
                                     ></motion.div>
-                                    <p className="text-lg font-semibold">
-                                        Executing workflow...
-                                    </p>
+                                    <p className="text-lg font-semibold">Executing workflow...</p>
                                     <p className="text-sm text-gray-400 mt-2">
                                         Processing nodes in parallel
                                     </p>
@@ -254,7 +238,7 @@ export const WorkflowDemo: React.FC = () => {
                             "🤖 AI Agents",
                             "↔️ Seamless Integration",
                             "🔄 Durable Execution",
-                            "📊 Real-time Monitoring",
+                            "📊 Real-time Monitoring"
                         ].map((feature) => (
                             <div
                                 key={feature}

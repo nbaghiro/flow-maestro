@@ -3,6 +3,7 @@
  * Handles incoming webhook requests and triggers workflow executions
  */
 
+import type { JsonValue } from "@flowmaestro/shared";
 import * as crypto from "crypto";
 import { getTemporalClient } from "../client";
 import { TriggerRepository } from "../../storage/repositories/TriggerRepository";
@@ -11,8 +12,8 @@ import { WebhookTriggerConfig } from "../../storage/models/Trigger";
 export interface WebhookRequestData {
     method: string;
     headers: Record<string, string | string[]>;
-    body: any;
-    query: Record<string, any>;
+    body: unknown;
+    query: Record<string, unknown>;
     path: string;
     ip?: string;
     userAgent?: string;
@@ -46,7 +47,13 @@ export class WebhookService {
             // Find trigger
             const trigger = await this.triggerRepo.findById(triggerId);
             if (!trigger) {
-                await this.logWebhookRequest(triggerId, requestData, 404, null, "Trigger not found");
+                await this.logWebhookRequest(
+                    triggerId,
+                    requestData,
+                    404,
+                    null,
+                    "Trigger not found"
+                );
                 return {
                     success: false,
                     message: "Trigger not found",
@@ -57,7 +64,13 @@ export class WebhookService {
 
             // Check if trigger is enabled
             if (!trigger.enabled) {
-                await this.logWebhookRequest(triggerId, requestData, 403, null, "Trigger is disabled");
+                await this.logWebhookRequest(
+                    triggerId,
+                    requestData,
+                    403,
+                    null,
+                    "Trigger is disabled"
+                );
                 return {
                     success: false,
                     message: "Trigger is disabled",
@@ -68,13 +81,16 @@ export class WebhookService {
 
             // Validate webhook authentication
             const config = trigger.config as WebhookTriggerConfig;
-            if (config.authType === 'hmac' && trigger.webhook_secret) {
-                const isValid = this.verifyHmacSignature(
-                    requestData,
-                    trigger.webhook_secret
-                );
+            if (config.authType === "hmac" && trigger.webhook_secret) {
+                const isValid = this.verifyHmacSignature(requestData, trigger.webhook_secret);
                 if (!isValid) {
-                    await this.logWebhookRequest(triggerId, requestData, 401, null, "Invalid signature");
+                    await this.logWebhookRequest(
+                        triggerId,
+                        requestData,
+                        401,
+                        null,
+                        "Invalid signature"
+                    );
                     return {
                         success: false,
                         message: "Invalid webhook signature",
@@ -85,7 +101,7 @@ export class WebhookService {
             }
 
             // Validate HTTP method if specified
-            if (config.method && config.method !== 'ANY') {
+            if (config.method && config.method !== "ANY") {
                 if (requestData.method.toUpperCase() !== config.method) {
                     await this.logWebhookRequest(
                         triggerId,
@@ -105,9 +121,15 @@ export class WebhookService {
 
             // Check allowed origins if specified
             if (config.allowedOrigins && config.allowedOrigins.length > 0) {
-                const origin = requestData.headers['origin'] as string;
+                const origin = requestData.headers["origin"] as string;
                 if (origin && !config.allowedOrigins.includes(origin)) {
-                    await this.logWebhookRequest(triggerId, requestData, 403, null, "Origin not allowed");
+                    await this.logWebhookRequest(
+                        triggerId,
+                        requestData,
+                        403,
+                        null,
+                        "Origin not allowed"
+                    );
                     return {
                         success: false,
                         message: "Origin not allowed",
@@ -118,10 +140,11 @@ export class WebhookService {
             }
 
             // Prepare payload from request
-            const payload = {
-                headers: requestData.headers,
-                body: requestData.body,
-                query: requestData.query,
+            // Cast to JsonValue-compatible types for Temporal workflow
+            const payload: Record<string, JsonValue> = {
+                headers: requestData.headers as JsonValue,
+                body: requestData.body as JsonValue,
+                query: requestData.query as JsonValue,
                 method: requestData.method,
                 timestamp: new Date().toISOString(),
                 triggerId: triggerId
@@ -131,19 +154,23 @@ export class WebhookService {
             const client = await getTemporalClient();
             const workflowId = `webhook-${triggerId}-${Date.now()}`;
 
-            const handle = await client.workflow.start('triggeredWorkflow', {
-                taskQueue: 'flowmaestro-orchestrator',
+            const handle = await client.workflow.start("triggeredWorkflow", {
+                taskQueue: "flowmaestro-orchestrator",
                 workflowId,
-                args: [{
-                    triggerId: trigger.id,
-                    workflowId: trigger.workflow_id,
-                    payload
-                }]
+                args: [
+                    {
+                        triggerId: trigger.id,
+                        workflowId: trigger.workflow_id,
+                        payload
+                    }
+                ]
             });
 
             const executionId = handle.workflowId;
 
-            console.log(`Started workflow execution ${executionId} from webhook trigger ${triggerId}`);
+            console.log(
+                `Started workflow execution ${executionId} from webhook trigger ${triggerId}`
+            );
 
             // Log successful webhook
             const processingTime = Date.now() - startTime;
@@ -158,8 +185,8 @@ export class WebhookService {
             );
 
             // Return response based on config
-            const responseFormat = config.responseFormat || 'json';
-            if (responseFormat === 'text') {
+            const responseFormat = config.responseFormat || "json";
+            if (responseFormat === "text") {
                 return {
                     success: true,
                     executionId,
@@ -200,34 +227,31 @@ export class WebhookService {
     /**
      * Verify HMAC signature for webhook authentication
      */
-    private verifyHmacSignature(
-        requestData: WebhookRequestData,
-        secret: string
-    ): boolean {
+    private verifyHmacSignature(requestData: WebhookRequestData, secret: string): boolean {
         try {
             // Get signature from headers (common patterns)
             const signature =
-                requestData.headers['x-hub-signature-256'] ||
-                requestData.headers['x-signature'] ||
-                requestData.headers['x-webhook-signature'];
+                requestData.headers["x-hub-signature-256"] ||
+                requestData.headers["x-signature"] ||
+                requestData.headers["x-webhook-signature"];
 
             if (!signature) {
-                console.warn('No signature found in webhook request headers');
+                console.warn("No signature found in webhook request headers");
                 return false;
             }
 
             // Extract signature value (remove algorithm prefix if present)
             let signatureValue = String(signature);
-            if (signatureValue.includes('=')) {
-                signatureValue = signatureValue.split('=')[1];
+            if (signatureValue.includes("=")) {
+                signatureValue = signatureValue.split("=")[1];
             }
 
             // Calculate expected signature
             const payload = JSON.stringify(requestData.body);
             const expectedSignature = crypto
-                .createHmac('sha256', secret)
+                .createHmac("sha256", secret)
                 .update(payload)
-                .digest('hex');
+                .digest("hex");
 
             // Compare signatures (timing-safe comparison)
             return crypto.timingSafeEqual(
@@ -235,7 +259,7 @@ export class WebhookService {
                 Buffer.from(expectedSignature)
             );
         } catch (error) {
-            console.error('Error verifying webhook signature:', error);
+            console.error("Error verifying webhook signature:", error);
             return false;
         }
     }
@@ -247,7 +271,7 @@ export class WebhookService {
         triggerId: string,
         requestData: WebhookRequestData,
         responseStatus: number,
-        responseBody: any,
+        responseBody: unknown,
         error: string | null,
         executionId?: string,
         processingTimeMs?: number
@@ -260,11 +284,11 @@ export class WebhookService {
                 workflow_id: trigger?.workflow_id,
                 request_method: requestData.method,
                 request_path: requestData.path,
-                request_headers: requestData.headers,
-                request_body: requestData.body,
-                request_query: requestData.query,
+                request_headers: requestData.headers as Record<string, JsonValue>,
+                request_body: requestData.body as Record<string, JsonValue> | undefined,
+                request_query: requestData.query as Record<string, JsonValue>,
                 response_status: responseStatus,
-                response_body: responseBody,
+                response_body: responseBody as Record<string, JsonValue> | undefined,
                 error: error || undefined,
                 execution_id: executionId,
                 ip_address: requestData.ip,
@@ -272,7 +296,7 @@ export class WebhookService {
                 processing_time_ms: processingTimeMs
             });
         } catch (err) {
-            console.error('Failed to log webhook request:', err);
+            console.error("Failed to log webhook request:", err);
             // Don't throw - logging failures shouldn't break webhook processing
         }
     }

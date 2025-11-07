@@ -62,9 +62,7 @@
             "config": {
                 "method": "POST",
                 "url": "${pagerduty_webhook_url}",
-                "headers": [
-                    { "key": "Content-Type", "value": "application/json" }
-                ],
+                "headers": [{ "key": "Content-Type", "value": "application/json" }],
                 "body": {
                     "severity": "error",
                     "source": "flowmaestro_support",

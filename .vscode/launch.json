@@ -6,73 +6,45 @@
             "type": "node",
             "request": "launch",
             "runtimeExecutable": "npx",
-            "runtimeArgs": [
-                "tsx",
-                "watch",
-                "src/index.ts"
-            ],
+            "runtimeArgs": ["tsx", "watch", "src/index.ts"],
             "cwd": "${workspaceFolder}/backend",
             "envFile": "${workspaceFolder}/backend/.env",
             "console": "integratedTerminal",
             "internalConsoleOptions": "neverOpen",
-            "skipFiles": [
-                "<node_internals>/**"
-            ],
+            "skipFiles": ["<node_internals>/**"],
             "sourceMaps": true,
             "port": 9229,
-            "outFiles": [
-                "${workspaceFolder}/backend/dist/**/*.js"
-            ],
-            "resolveSourceMapLocations": [
-                "${workspaceFolder}/**",
-                "!**/node_modules/**"
-            ]
+            "outFiles": ["${workspaceFolder}/backend/dist/**/*.js"],
+            "resolveSourceMapLocations": ["${workspaceFolder}/**", "!**/node_modules/**"]
         },
         {
             "name": "Temporal Worker (Hot Reload)",
             "type": "node",
             "request": "launch",
             "runtimeExecutable": "npx",
-            "runtimeArgs": [
-                "nodemon",
-                "--config",
-                "nodemon.temporal.json"
-            ],
+            "runtimeArgs": ["nodemon", "--config", "nodemon.temporal.json"],
             "cwd": "${workspaceFolder}/backend",
             "envFile": "${workspaceFolder}/backend/.env",
             "console": "integratedTerminal",
             "internalConsoleOptions": "neverOpen",
-            "skipFiles": [
-                "<node_internals>/**"
-            ],
+            "skipFiles": ["<node_internals>/**"],
             "restart": true,
             "sourceMaps": true,
             "port": 9230,
-            "outFiles": [
-                "${workspaceFolder}/backend/dist/**/*.js"
-            ],
-            "resolveSourceMapLocations": [
-                "${workspaceFolder}/**",
-                "!**/node_modules/**"
-            ]
+            "outFiles": ["${workspaceFolder}/backend/dist/**/*.js"],
+            "resolveSourceMapLocations": ["${workspaceFolder}/**", "!**/node_modules/**"]
         },
         {
             "name": "Backend API + Temporal Worker",
             "type": "node",
             "request": "launch",
-            "compounds": [
-                "Backend API",
-                "Temporal Worker"
-            ]
+            "compounds": ["Backend API", "Temporal Worker"]
         }
     ],
     "compounds": [
         {
             "name": "Backend API + Temporal Worker",
-            "configurations": [
-                "Backend API",
-                "Temporal Worker (Hot Reload)"
-            ],
+            "configurations": ["Backend API", "Temporal Worker (Hot Reload)"],
             "stopAll": true,
             "presentation": {
                 "hidden": false,

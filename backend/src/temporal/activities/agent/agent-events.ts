@@ -1,4 +1,4 @@
-import type { JsonObject } from "@flowmaestro/shared";
+import type { JsonObject, WebSocketEvent } from "@flowmaestro/shared";
 import type { ConversationMessage } from "../../../storage/models/AgentExecution";
 import { redisEventBus } from "../../../shared/events/RedisEventBus";
 
@@ -20,6 +20,11 @@ export interface EmitAgentMessageInput {
 
 export interface EmitAgentThinkingInput {
     executionId: string;
+}
+
+export interface EmitAgentTokenInput {
+    executionId: string;
+    token: string;
 }
 
 export interface EmitAgentToolCallStartedInput {
@@ -54,7 +59,9 @@ export interface EmitAgentExecutionFailedInput {
 /**
  * Emit agent execution started event
  */
-export async function emitAgentExecutionStarted(input: EmitAgentExecutionStartedInput): Promise<void> {
+export async function emitAgentExecutionStarted(
+    input: EmitAgentExecutionStartedInput
+): Promise<void> {
     const { executionId, agentId, agentName } = input;
     await redisEventBus.publish("agent:events:execution:started", {
         type: "agent:execution:started",
@@ -76,7 +83,7 @@ export async function emitAgentMessage(input: EmitAgentMessageInput): Promise<vo
         content: message.content,
         timestamp: message.timestamp.toISOString(),
         ...(message.tool_calls && {
-            tool_calls: message.tool_calls.map(tc => ({
+            tool_calls: message.tool_calls.map((tc) => ({
                 id: tc.id,
                 name: tc.name,
                 arguments: tc.arguments
@@ -107,9 +114,24 @@ export async function emitAgentThinking(input: EmitAgentThinkingInput): Promise<
 }
 
 /**
+ * Emit token for streaming responses
+ */
+export async function emitAgentToken(input: EmitAgentTokenInput): Promise<void> {
+    const { executionId, token } = input;
+    await redisEventBus.publish("agent:events:token", {
+        type: "agent:token",
+        timestamp: Date.now(),
+        executionId,
+        token
+    } as unknown as WebSocketEvent);
+}
+
+/**
  * Emit tool call started event
  */
-export async function emitAgentToolCallStarted(input: EmitAgentToolCallStartedInput): Promise<void> {
+export async function emitAgentToolCallStarted(
+    input: EmitAgentToolCallStartedInput
+): Promise<void> {
     const { executionId, toolName, arguments: args } = input;
     await redisEventBus.publish("agent:events:tool:call:started", {
         type: "agent:tool:call:started",
@@ -123,7 +145,9 @@ export async function emitAgentToolCallStarted(input: EmitAgentToolCallStartedIn
 /**
  * Emit tool call completed event
  */
-export async function emitAgentToolCallCompleted(input: EmitAgentToolCallCompletedInput): Promise<void> {
+export async function emitAgentToolCallCompleted(
+    input: EmitAgentToolCallCompletedInput
+): Promise<void> {
     const { executionId, toolName, result } = input;
     await redisEventBus.publish("agent:events:tool:call:completed", {
         type: "agent:tool:call:completed",
@@ -151,7 +175,9 @@ export async function emitAgentToolCallFailed(input: EmitAgentToolCallFailedInpu
 /**
  * Emit agent execution completed event
  */
-export async function emitAgentExecutionCompleted(input: EmitAgentExecutionCompletedInput): Promise<void> {
+export async function emitAgentExecutionCompleted(
+    input: EmitAgentExecutionCompletedInput
+): Promise<void> {
     const { executionId, finalMessage, iterations } = input;
     await redisEventBus.publish("agent:events:execution:completed", {
         type: "agent:execution:completed",
@@ -166,7 +192,9 @@ export async function emitAgentExecutionCompleted(input: EmitAgentExecutionCompl
 /**
  * Emit agent execution failed event
  */
-export async function emitAgentExecutionFailed(input: EmitAgentExecutionFailedInput): Promise<void> {
+export async function emitAgentExecutionFailed(
+    input: EmitAgentExecutionFailedInput
+): Promise<void> {
     const { executionId, error } = input;
     await redisEventBus.publish("agent:events:execution:failed", {
         type: "agent:execution:failed",

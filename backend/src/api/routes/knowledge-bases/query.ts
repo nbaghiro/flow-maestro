@@ -70,11 +70,12 @@ export async function queryKnowledgeBaseRoute(fastify: FastifyInstance) {
                         count: results.length
                     }
                 });
-            } catch (error: any) {
+            } catch (error: unknown) {
+                const errorMsg = error instanceof Error ? error.message : "Unknown error";
                 fastify.log.error(error, "Error querying knowledge base");
                 return reply.status(500).send({
                     success: false,
-                    error: `Failed to query knowledge base: ${error.message}`
+                    error: `Failed to query knowledge base: ${errorMsg}`
                 });
             }
         }

@@ -87,9 +87,10 @@ export class EmbeddingService {
                 // Track usage
                 totalPromptTokens += response.usage.prompt_tokens;
                 totalTokens += response.usage.total_tokens;
-            } catch (error: any) {
+            } catch (error: unknown) {
                 // Handle rate limits with retry
-                if (error.status === 429) {
+                const apiError = error as { status?: number };
+                if (apiError.status === 429) {
                     // Wait and retry
                     await this.sleep(1000);
                     // Retry this batch
@@ -106,7 +107,8 @@ export class EmbeddingService {
                     totalPromptTokens += retryResponse.usage.prompt_tokens;
                     totalTokens += retryResponse.usage.total_tokens;
                 } else {
-                    throw new Error(`OpenAI embedding error: ${error.message}`);
+                    const errorMsg = error instanceof Error ? error.message : "Unknown error";
+                    throw new Error(`OpenAI embedding error: ${errorMsg}`);
                 }
             }
         }
@@ -148,7 +150,7 @@ export class EmbeddingService {
                 if (connections.length > 0) {
                     // Find active API key connection
                     const apiKeyConnectionSummary = connections.find(
-                        (c: any) => c.connection_method === "api_key" && c.status === "active"
+                        (c) => c.connection_method === "api_key" && c.status === "active"
                     );
 
                     if (apiKeyConnectionSummary) {
@@ -157,7 +159,11 @@ export class EmbeddingService {
                             apiKeyConnectionSummary.id
                         );
 
-                        if (apiKeyConnection && apiKeyConnection.data && 'api_key' in apiKeyConnection.data) {
+                        if (
+                            apiKeyConnection &&
+                            apiKeyConnection.data &&
+                            "api_key" in apiKeyConnection.data
+                        ) {
                             return apiKeyConnection.data.api_key as string;
                         }
                     }
@@ -214,7 +220,7 @@ export class EmbeddingService {
         const pricePerMillion: Record<string, number> = {
             "text-embedding-3-small": 0.02,
             "text-embedding-3-large": 0.13,
-            "text-embedding-ada-002": 0.10
+            "text-embedding-ada-002": 0.1
         };
 
         const price = pricePerMillion[model] || 0.02;

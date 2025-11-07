@@ -3,18 +3,20 @@
  * Tracks phone call lifecycle and associated data
  */
 
+import type { JsonValue } from "@flowmaestro/shared";
+
 /**
  * Call status values throughout the call lifecycle
  */
 export type CallStatus =
-    | "initiated"    // Call has been initiated but not yet answered
-    | "ringing"      // Phone is ringing
-    | "active"       // Call is active and agent is connected
-    | "completed"    // Call ended normally
-    | "failed"       // Call failed due to error
-    | "no_answer"    // Call was not answered
-    | "busy"         // Called party was busy
-    | "cancelled";   // Call was cancelled before being answered
+    | "initiated" // Call has been initiated but not yet answered
+    | "ringing" // Phone is ringing
+    | "active" // Call is active and agent is connected
+    | "completed" // Call ended normally
+    | "failed" // Call failed due to error
+    | "no_answer" // Call was not answered
+    | "busy" // Called party was busy
+    | "cancelled"; // Call was cancelled before being answered
 
 /**
  * Call direction
@@ -35,10 +37,10 @@ export type EventSeverity = "debug" | "info" | "warning" | "error" | "critical";
  * Audio quality metrics
  */
 export interface AudioQualityMetrics {
-    packetLoss?: number;      // Percentage (0-100)
-    jitter?: number;          // Milliseconds
-    latency?: number;         // Milliseconds
-    avgMos?: number;          // Mean Opinion Score (1-5)
+    packetLoss?: number; // Percentage (0-100)
+    jitter?: number; // Milliseconds
+    latency?: number; // Milliseconds
+    avgMos?: number; // Mean Opinion Score (1-5)
 }
 
 /**
@@ -54,12 +56,12 @@ export interface CallExecution {
     user_id: string;
 
     // Call identification
-    call_sid: string;            // Unique call ID from SIP provider
+    call_sid: string; // Unique call ID from SIP provider
     livekit_room_name: string | null;
 
     // Phone numbers (E.164 format)
-    caller_number: string;       // +15551234567
-    called_number: string;       // +15559876543
+    caller_number: string; // +15551234567
+    called_number: string; // +15559876543
 
     // Call metadata
     direction: CallDirection;
@@ -145,7 +147,7 @@ export interface CallTranscript {
 
     // Transcript content
     text: string;
-    confidence: number | null;   // 0.0 to 1.0
+    confidence: number | null; // 0.0 to 1.0
     language: string;
 
     // Timing
@@ -158,8 +160,8 @@ export interface CallTranscript {
 
     // Metadata
     is_final: boolean;
-    interrupted: boolean;        // true if user barged in
-    node_id: string | null;     // which workflow node generated this
+    interrupted: boolean; // true if user barged in
+    node_id: string | null; // which workflow node generated this
 
     created_at: Date;
 }
@@ -191,8 +193,8 @@ export interface CallEvent {
     call_execution_id: string;
 
     // Event details
-    event_type: string;         // agent_joined, speech_started, tts_complete, error, etc.
-    event_data: Record<string, any> | null;
+    event_type: string; // agent_joined, speech_started, tts_complete, error, etc.
+    event_data: Record<string, JsonValue> | null;
     severity: EventSeverity;
 
     // Timing
@@ -209,7 +211,7 @@ export interface CallEvent {
 export interface CreateCallEventInput {
     call_execution_id: string;
     event_type: string;
-    event_data?: Record<string, any>;
+    event_data?: Record<string, JsonValue>;
     severity?: EventSeverity;
     node_id?: string;
     activity_id?: string;

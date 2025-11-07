@@ -11,7 +11,7 @@ export async function updateKnowledgeBaseRoute(fastify: FastifyInstance) {
         async (request, reply) => {
             const kbRepository = new KnowledgeBaseRepository();
             const params = request.params as { id: string };
-            const body = request.body as any;
+            const body = request.body as { name?: string; description?: string; config?: Record<string, unknown> };
 
             // Verify ownership
             const existing = await kbRepository.findById(params.id);

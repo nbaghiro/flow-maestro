@@ -153,7 +153,9 @@ export function AgentBuilder() {
         }
     };
 
-    const handleAddWorkflows = async (workflows: any[]) => {
+    const handleAddWorkflows = async (
+        workflows: Array<{ id: string; name: string; description?: string }>
+    ) => {
         if (!currentAgent) return;
 
         try {
@@ -315,7 +317,13 @@ export function AgentBuilder() {
                                             onChange={(e) => {
                                                 const [newProvider, newModel] =
                                                     e.target.value.split(":");
-                                                setProvider(newProvider as any);
+                                                setProvider(
+                                                    newProvider as
+                                                        | "openai"
+                                                        | "anthropic"
+                                                        | "google"
+                                                        | "cohere"
+                                                );
                                                 setModel(newModel);
                                             }}
                                             className={cn(

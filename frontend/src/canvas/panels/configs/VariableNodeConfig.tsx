@@ -3,9 +3,9 @@ import { FormField, FormSection } from "../../../components/FormField";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 interface VariableNodeConfigProps {
-    data: any;
+    data: Record<string, unknown>;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    onUpdate: (config: any) => void;
+    onUpdate: (config: unknown) => void;
 }
 
 const operations = [
@@ -29,11 +29,11 @@ const valueTypes = [
 ];
 
 export function VariableNodeConfig({ data, onUpdate }: VariableNodeConfigProps) {
-    const [operation, setOperation] = useState(data.operation || "set");
-    const [variableName, setVariableName] = useState(data.variableName || "");
-    const [value, setValue] = useState(data.value || "");
-    const [scope, setScope] = useState(data.scope || "workflow");
-    const [valueType, setValueType] = useState(data.valueType || "auto");
+    const [operation, setOperation] = useState((data.operation as string) || "set");
+    const [variableName, setVariableName] = useState((data.variableName as string) || "");
+    const [value, setValue] = useState((data.value as string) || "");
+    const [scope, setScope] = useState((data.scope as string) || "workflow");
+    const [valueType, setValueType] = useState((data.valueType as string) || "auto");
 
     useEffect(() => {
         onUpdate({

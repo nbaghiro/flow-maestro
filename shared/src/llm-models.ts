@@ -24,7 +24,7 @@ export const LLM_PROVIDERS: LLMProviderDefinition[] = [
     { value: "openai", label: "OpenAI" },
     { value: "anthropic", label: "Anthropic" },
     { value: "google", label: "Google" },
-    { value: "cohere", label: "Cohere" },
+    { value: "cohere", label: "Cohere" }
 ];
 
 /**
@@ -38,50 +38,50 @@ export const LLM_MODELS_BY_PROVIDER: Record<string, LLMModelDefinition[]> = {
             label: "GPT-4o (Latest, Multimodal)",
             provider: "openai",
             contextWindow: 128000,
-            capabilities: ["text", "vision", "function-calling"],
+            capabilities: ["text", "vision", "function-calling"]
         },
         {
             value: "gpt-4o-mini",
             label: "GPT-4o Mini (Fast, Affordable)",
             provider: "openai",
             contextWindow: 128000,
-            capabilities: ["text", "vision", "function-calling"],
+            capabilities: ["text", "vision", "function-calling"]
         },
         {
             value: "gpt-4-turbo",
             label: "GPT-4 Turbo",
             provider: "openai",
             contextWindow: 128000,
-            capabilities: ["text", "vision", "function-calling"],
+            capabilities: ["text", "vision", "function-calling"]
         },
         {
             value: "gpt-4",
             label: "GPT-4",
             provider: "openai",
             contextWindow: 8192,
-            capabilities: ["text", "function-calling"],
+            capabilities: ["text", "function-calling"]
         },
         {
             value: "gpt-3.5-turbo",
             label: "GPT-3.5 Turbo",
             provider: "openai",
             contextWindow: 16385,
-            capabilities: ["text", "function-calling"],
+            capabilities: ["text", "function-calling"]
         },
         {
             value: "o1-preview",
             label: "o1 Preview (Reasoning)",
             provider: "openai",
             contextWindow: 128000,
-            capabilities: ["text", "reasoning"],
+            capabilities: ["text", "reasoning"]
         },
         {
             value: "o1-mini",
             label: "o1 Mini (Reasoning, Fast)",
             provider: "openai",
             contextWindow: 128000,
-            capabilities: ["text", "reasoning"],
-        },
+            capabilities: ["text", "reasoning"]
+        }
     ],
     anthropic: [
         {
@@ -89,43 +89,43 @@ export const LLM_MODELS_BY_PROVIDER: Record<string, LLMModelDefinition[]> = {
             label: "Claude Sonnet 4.5 (Latest)",
             provider: "anthropic",
             contextWindow: 200000,
-            capabilities: ["text", "vision", "function-calling"],
+            capabilities: ["text", "vision", "function-calling"]
         },
         {
             value: "claude-haiku-4-5-20251001",
             label: "Claude Haiku 4.5 (Fast)",
             provider: "anthropic",
             contextWindow: 200000,
-            capabilities: ["text", "vision", "function-calling"],
+            capabilities: ["text", "vision", "function-calling"]
         },
         {
             value: "claude-opus-4-1-20250805",
             label: "Claude Opus 4.1 (Most Capable)",
             provider: "anthropic",
             contextWindow: 200000,
-            capabilities: ["text", "vision", "function-calling"],
+            capabilities: ["text", "vision", "function-calling"]
         },
         {
             value: "claude-3-7-sonnet-20250219",
             label: "Claude 3.7 Sonnet (Legacy)",
             provider: "anthropic",
             contextWindow: 200000,
-            capabilities: ["text", "vision", "function-calling"],
+            capabilities: ["text", "vision", "function-calling"]
         },
         {
             value: "claude-3-5-haiku-20241022",
             label: "Claude 3.5 Haiku (Legacy)",
             provider: "anthropic",
             contextWindow: 200000,
-            capabilities: ["text", "vision"],
+            capabilities: ["text", "vision"]
         },
         {
             value: "claude-3-haiku-20240307",
             label: "Claude 3 Haiku (Legacy)",
             provider: "anthropic",
             contextWindow: 200000,
-            capabilities: ["text", "vision"],
-        },
+            capabilities: ["text", "vision"]
+        }
     ],
     google: [
         {
@@ -133,21 +133,21 @@ export const LLM_MODELS_BY_PROVIDER: Record<string, LLMModelDefinition[]> = {
             label: "Gemini 2.0 Flash (Experimental)",
             provider: "google",
             contextWindow: 1000000,
-            capabilities: ["text", "vision", "audio", "function-calling"],
+            capabilities: ["text", "vision", "audio", "function-calling"]
         },
         {
             value: "gemini-1.5-pro",
             label: "Gemini 1.5 Pro",
             provider: "google",
             contextWindow: 2000000,
-            capabilities: ["text", "vision", "audio", "function-calling"],
+            capabilities: ["text", "vision", "audio", "function-calling"]
         },
         {
             value: "gemini-1.5-flash",
             label: "Gemini 1.5 Flash (Fast)",
             provider: "google",
             contextWindow: 1000000,
-            capabilities: ["text", "vision", "audio", "function-calling"],
+            capabilities: ["text", "vision", "audio", "function-calling"]
         },
         {
             value: "gemini-pro",
@@ -155,7 +155,7 @@ export const LLM_MODELS_BY_PROVIDER: Record<string, LLMModelDefinition[]> = {
             provider: "google",
             contextWindow: 32000,
             capabilities: ["text"],
-            deprecated: true,
+            deprecated: true
         },
         {
             value: "gemini-ultra",
@@ -163,8 +163,8 @@ export const LLM_MODELS_BY_PROVIDER: Record<string, LLMModelDefinition[]> = {
             provider: "google",
             contextWindow: 32000,
             capabilities: ["text"],
-            deprecated: true,
-        },
+            deprecated: true
+        }
     ],
     cohere: [
         {
@@ -172,30 +172,30 @@ export const LLM_MODELS_BY_PROVIDER: Record<string, LLMModelDefinition[]> = {
             label: "Command R+ (Most Capable)",
             provider: "cohere",
             contextWindow: 128000,
-            capabilities: ["text", "function-calling"],
+            capabilities: ["text", "function-calling"]
         },
         {
             value: "command-r",
             label: "Command R (Balanced)",
             provider: "cohere",
             contextWindow: 128000,
-            capabilities: ["text", "function-calling"],
+            capabilities: ["text", "function-calling"]
         },
         {
             value: "command",
             label: "Command",
             provider: "cohere",
             contextWindow: 4096,
-            capabilities: ["text"],
+            capabilities: ["text"]
         },
         {
             value: "command-light",
             label: "Command Light (Fast)",
             provider: "cohere",
             contextWindow: 4096,
-            capabilities: ["text"],
-        },
-    ],
+            capabilities: ["text"]
+        }
+    ]
 };
 
 /**
@@ -218,7 +218,7 @@ export function getDefaultModelForProvider(provider: string): string {
  */
 export function findModelByValue(modelValue: string): LLMModelDefinition | undefined {
     for (const provider in LLM_MODELS_BY_PROVIDER) {
-        const model = LLM_MODELS_BY_PROVIDER[provider].find(m => m.value === modelValue);
+        const model = LLM_MODELS_BY_PROVIDER[provider].find((m) => m.value === modelValue);
         if (model) return model;
     }
     return undefined;

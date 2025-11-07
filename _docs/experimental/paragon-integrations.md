@@ -5,6 +5,7 @@
 This document provides complete implementation instructions for integrating Paragon into FlowMaestro, replacing the existing custom OAuth system (Slack, Google, Notion) and enhancing MCP server capabilities with access to 130+ integrations.
 
 **What is Paragon?**
+
 - Embedded iPaaS (Integration Platform as a Service)
 - Provides 130+ pre-built integrations (CRM, communication, file storage, project management, etc.)
 - 1000+ pre-built actions via ActionKit API
@@ -12,12 +13,14 @@ This document provides complete implementation instructions for integrating Para
 - MCP server support for AI agents
 
 **What We're Replacing:**
+
 - Custom OAuth implementation (`backend/src/services/oauth/`)
 - Manual token refresh logic
 - Individual OAuth provider configurations
 - Limited to 3 OAuth integrations → Expanding to 130+
 
 **What We're Keeping:**
+
 - API key connections (OpenAI, Anthropic, etc.)
 - Existing MCP server connections (can coexist with Paragon)
 - Connections table structure (extended with Paragon fields)
@@ -77,19 +80,19 @@ This document provides complete implementation instructions for integrating Para
 1. **Create Account:** Sign up at https://useparagon.com
 2. **Create Project:** Dashboard → New Project → "FlowMaestro"
 3. **Generate Signing Key:**
-   - Navigate to: Settings → SDK Setup
-   - Click "Generate New Key"
-   - Download RSA private key (PEM format)
-   - **IMPORTANT:** Store securely, never commit to version control
+    - Navigate to: Settings → SDK Setup
+    - Click "Generate New Key"
+    - Download RSA private key (PEM format)
+    - **IMPORTANT:** Store securely, never commit to version control
 
 4. **Get Project ID:**
-   - Found in dashboard URL: `https://dashboard.useparagon.com/projects/{PROJECT_ID}`
-   - Or: Settings → Project Settings → Project ID
+    - Found in dashboard URL: `https://dashboard.useparagon.com/projects/{PROJECT_ID}`
+    - Or: Settings → Project Settings → Project ID
 
 5. **Enable Integrations:**
-   - Dashboard → Integrations
-   - Enable all integrations you want to support
-   - Configure OAuth credentials (Paragon provides test credentials for development)
+    - Dashboard → Integrations
+    - Enable all integrations you want to support
+    - Configure OAuth credentials (Paragon provides test credentials for development)
 
 ### 2. Environment Variables
 
@@ -259,7 +262,7 @@ export class ParagonTokenManager {
                 sub: userId, // Subject: User ID
                 aud: `useparagon.com/${this.config.projectId}`, // Audience
                 iat: currentTime, // Issued at
-                exp: currentTime + expiresIn, // Expires in 1 hour
+                exp: currentTime + expiresIn // Expires in 1 hour
             },
             this.config.signingKey,
             { algorithm: "RS256" }
@@ -268,7 +271,7 @@ export class ParagonTokenManager {
         return {
             token,
             userId,
-            expiresAt: (currentTime + expiresIn) * 1000, // Convert to milliseconds
+            expiresAt: (currentTime + expiresIn) * 1000 // Convert to milliseconds
         };
     }
 
@@ -282,10 +285,7 @@ export class ParagonTokenManager {
         const expectedSignature = `sha256=${hmac.digest("hex")}`;
 
         try {
-            return crypto.timingSafeEqual(
-                Buffer.from(signature),
-                Buffer.from(expectedSignature)
-            );
+            return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature));
         } catch {
             return false;
         }
@@ -309,7 +309,7 @@ export class ParagonActionKitClient {
         this.projectId = projectId;
         this.client = axios.create({
             baseURL: "https://actionkit.useparagon.com",
-            timeout: 30000,
+            timeout: 30000
         });
     }
 
@@ -335,9 +335,9 @@ export class ParagonActionKitClient {
             `/projects/${this.projectId}/actions?${params.toString()}`,
             {
                 headers: {
-                    "Authorization": `Bearer ${userToken}`,
-                    "Content-Type": "application/json",
-                },
+                    Authorization: `Bearer ${userToken}`,
+                    "Content-Type": "application/json"
+                }
             }
         );
 
@@ -359,21 +359,21 @@ export class ParagonActionKitClient {
                 request,
                 {
                     headers: {
-                        "Authorization": `Bearer ${userToken}`,
-                        "Content-Type": "application/json",
-                    },
+                        Authorization: `Bearer ${userToken}`,
+                        "Content-Type": "application/json"
+                    }
                 }
             );
 
             return {
                 success: true,
-                data: response.data,
+                data: response.data
             };
         } catch (error: any) {
             if (error.response?.data?.error) {
                 return {
                     success: false,
-                    error: error.response.data.error,
+                    error: error.response.data.error
                 };
             }
 
@@ -381,8 +381,8 @@ export class ParagonActionKitClient {
                 success: false,
                 error: {
                     message: error.message || "Unknown error",
-                    type: "INTERNAL_ERROR",
-                },
+                    type: "INTERNAL_ERROR"
+                }
             };
         }
     }
@@ -404,17 +404,17 @@ export class ParagonActionKitClient {
     ): Promise<any> {
         const proxyClient = axios.create({
             baseURL: "https://proxy.useparagon.com",
-            timeout: 30000,
+            timeout: 30000
         });
 
         const response = await proxyClient.request({
             method,
             url: `/projects/${this.projectId}/sdk/proxy/${integration}/${path}`,
             headers: {
-                "Authorization": `Bearer ${userToken}`,
-                "Content-Type": "application/json",
+                Authorization: `Bearer ${userToken}`,
+                "Content-Type": "application/json"
             },
-            data: body,
+            data: body
         });
 
         return response.data;
@@ -440,7 +440,7 @@ export class ParagonService {
         this.config = {
             projectId: process.env.PARAGON_PROJECT_ID || "",
             signingKey: process.env.PARAGON_SIGNING_KEY || "",
-            webhookSecret: process.env.PARAGON_WEBHOOK_SECRET || "",
+            webhookSecret: process.env.PARAGON_WEBHOOK_SECRET || ""
         };
 
         this.tokenManager = new ParagonTokenManager(this.config);
@@ -482,7 +482,7 @@ export class ParagonService {
      */
     getConfig() {
         return {
-            projectId: this.config.projectId,
+            projectId: this.config.projectId
         };
     }
 }
@@ -513,8 +513,8 @@ export async function getParagonTokenHandler(
         success: true,
         data: {
             token: tokenData.token,
-            expiresAt: tokenData.expiresAt,
-        },
+            expiresAt: tokenData.expiresAt
+        }
     });
 }
 ```
@@ -544,14 +544,14 @@ export async function listActionsHandler(
 
     reply.send({
         success: true,
-        data: actions,
+        data: actions
     });
 }
 
 // Execute action
 const executeActionSchema = z.object({
     action: z.string(),
-    parameters: z.record(z.any()),
+    parameters: z.record(z.any())
 });
 
 export async function executeActionHandler(
@@ -562,21 +562,17 @@ export async function executeActionHandler(
     const body = executeActionSchema.parse(request.body);
 
     const paragonService = new ParagonService();
-    const result = await paragonService.executeAction(
-        userId,
-        body.action,
-        body.parameters
-    );
+    const result = await paragonService.executeAction(userId, body.action, body.parameters);
 
     if (result.success) {
         reply.send({
             success: true,
-            data: result.data,
+            data: result.data
         });
     } else {
         reply.code(400).send({
             success: false,
-            error: result.error,
+            error: result.error
         });
     }
 }
@@ -628,24 +624,22 @@ async function processWebhookAsync(payload: ParagonWebhookPayload): Promise<void
                 paragonIntegrationId: payload.integration,
                 paragonCredentialId: payload.credentialId,
                 paragonMetadata: payload.data,
-                status: "active",
+                status: "active"
             });
             break;
 
         case "integration.uninstalled":
             // Mark connection as disconnected
-            await connectionRepo.updateByParagonCredential(
-                payload.credentialId,
-                { status: "disconnected" }
-            );
+            await connectionRepo.updateByParagonCredential(payload.credentialId, {
+                status: "disconnected"
+            });
             break;
 
         case "integration.updated":
             // Update connection metadata
-            await connectionRepo.updateByParagonCredential(
-                payload.credentialId,
-                { paragonMetadata: payload.data }
-            );
+            await connectionRepo.updateByParagonCredential(payload.credentialId, {
+                paragonMetadata: payload.data
+            });
             break;
     }
 }
@@ -996,9 +990,7 @@ export async function executeParagonAction(
     );
 
     if (!result.success) {
-        throw new Error(
-            `Paragon action failed: ${result.error?.message || "Unknown error"}`
-        );
+        throw new Error(`Paragon action failed: ${result.error?.message || "Unknown error"}`);
     }
 
     // Store result in workflow context
@@ -1006,8 +998,8 @@ export async function executeParagonAction(
         ...context,
         variables: {
             ...context.variables,
-            [config.outputVariable]: result.data,
-        },
+            [config.outputVariable]: result.data
+        }
     };
 }
 ```
@@ -1031,20 +1023,20 @@ export const nodeTypes = {
             action: {
                 type: "string",
                 required: true,
-                description: "Action name (e.g., SLACK_SEND_MESSAGE)",
+                description: "Action name (e.g., SLACK_SEND_MESSAGE)"
             },
             parameters: {
                 type: "object",
                 required: true,
-                description: "Action parameters",
+                description: "Action parameters"
             },
             outputVariable: {
                 type: "string",
                 required: true,
-                description: "Variable to store result",
-            },
-        },
-    },
+                description: "Variable to store result"
+            }
+        }
+    }
 };
 ```
 
@@ -1195,7 +1187,7 @@ import { ParagonActionNode } from "../components/canvas/nodes/ParagonActionNode"
 
 export const nodeTypes = {
     // ... existing nodes
-    "paragon-action": ParagonActionNode,
+    "paragon-action": ParagonActionNode
 };
 ```
 
@@ -1254,7 +1246,7 @@ fastify.all("/api/mcp/paragon/*", async (request, reply) => {
     const response = await fetch(targetUrl, {
         method: request.method,
         headers: request.headers as any,
-        body: request.method !== "GET" ? JSON.stringify(request.body) : undefined,
+        body: request.method !== "GET" ? JSON.stringify(request.body) : undefined
     });
 
     const data = await response.json();
@@ -1276,8 +1268,8 @@ const MCP_PROVIDERS = [
         name: "Paragon ActionKit",
         description: "1000+ actions across 130+ integrations",
         mcpServerUrl: "/api/mcp/paragon/sse?user={userId}",
-        category: "integrations",
-    },
+        category: "integrations"
+    }
 ];
 ```
 
@@ -1310,7 +1302,7 @@ export async function executeIntegration(
         return await executeParagonAction(context, {
             action: config.action,
             parameters: config.parameters,
-            outputVariable: config.outputVariable,
+            outputVariable: config.outputVariable
         });
     } else if (connection.connectionMethod === "oauth2") {
         // Use legacy OAuth executor
@@ -1328,29 +1320,29 @@ export async function executeIntegration(
 ### 6.2 Migration Plan
 
 1. **Week 1: Deploy Paragon Integration**
-   - Deploy all Paragon code
-   - Keep legacy OAuth system running
-   - Both systems operational
+    - Deploy all Paragon code
+    - Keep legacy OAuth system running
+    - Both systems operational
 
 2. **Week 2-3: Beta Testing (10% of users)**
-   - Enable Paragon for internal team
-   - Test all critical workflows
-   - Fix any issues
+    - Enable Paragon for internal team
+    - Test all critical workflows
+    - Fix any issues
 
 3. **Week 4-5: Gradual Rollout (50%)**
-   - Show banner: "New integrations available!"
-   - Allow users to reconnect via Paragon
-   - Monitor error rates
+    - Show banner: "New integrations available!"
+    - Allow users to reconnect via Paragon
+    - Monitor error rates
 
 4. **Week 6: Full Rollout (100%)**
-   - All users see Paragon integrations
-   - Legacy OAuth connections still work
-   - Encourage reconnection
+    - All users see Paragon integrations
+    - Legacy OAuth connections still work
+    - Encourage reconnection
 
 5. **Week 10+: Cleanup**
-   - After 30-day safety period
-   - Remove legacy OAuth code
-   - Delete old encrypted_data column
+    - After 30-day safety period
+    - Remove legacy OAuth code
+    - Delete old encrypted_data column
 
 ### 6.3 User Communication
 
@@ -1414,10 +1406,11 @@ export const ParagonMigrationBanner: React.FC = () => {
 ### Available Integrations by Category
 
 #### CRM (11+)
+
 1. **Salesforce** - `salesforce`
-   - Actions: Create/Update/Delete Records, SOQL Query, Get Metadata, Bulk Operations
+    - Actions: Create/Update/Delete Records, SOQL Query, Get Metadata, Bulk Operations
 2. **HubSpot** - `hubspot`
-   - Actions: Contacts, Deals, Companies, Tickets, Lists, Workflows
+    - Actions: Contacts, Deals, Companies, Tickets, Lists, Workflows
 3. **Pipedrive** - `pipedrive`
 4. **Microsoft Dynamics 365 Sales** - `dynamics365sales`
 5. **Zoho CRM** - `zohocrm`
@@ -1429,6 +1422,7 @@ export const ParagonMigrationBanner: React.FC = () => {
 11. **Freshsales** - `freshsales`
 
 #### Communication (4+)
+
 12. **Slack** - `slack`
     - Actions: Send Message, List Channels, Upload File, Get Users
 13. **Microsoft Teams** - `microsoftteams`
@@ -1436,6 +1430,7 @@ export const ParagonMigrationBanner: React.FC = () => {
 15. **Zoom** - `zoom`
 
 #### File Storage (5+)
+
 16. **Google Drive** - `googledrive`
     - Actions: Upload File, Download File, Create Folder, Search, Share
 17. **Dropbox** - `dropbox`
@@ -1444,6 +1439,7 @@ export const ParagonMigrationBanner: React.FC = () => {
 20. **OneDrive** - `onedrive`
 
 #### Project Management (13+)
+
 21. **Jira** - `jira`
     - Actions: Create Issue, Update Issue, Get Issue, Create Comment, Transitions
 22. **Asana** - `asana`
@@ -1461,6 +1457,7 @@ export const ParagonMigrationBanner: React.FC = () => {
 33. **Todoist** - `todoist`
 
 #### Email & Calendar (5+)
+
 34. **Gmail** - `gmail`
     - Actions: Send Email, Get Messages, Search, Labels
 35. **Outlook** - `outlook`
@@ -1470,6 +1467,7 @@ export const ParagonMigrationBanner: React.FC = () => {
 38. **SendGrid** - `sendgrid`
 
 #### Support/Ticketing (6+)
+
 39. **Zendesk** - `zendesk`
 40. **Freshdesk** - `freshdesk`
 41. **Intercom** - `intercom`
@@ -1478,12 +1476,14 @@ export const ParagonMigrationBanner: React.FC = () => {
 44. **ServiceNow** - `servicenow`
 
 #### Accounting & ERP (4+)
+
 45. **QuickBooks** - `quickbooks`
 46. **Xero** - `xero`
 47. **NetSuite** - `netsuite`
 48. **Sage Intacct** - `sageintacct`
 
 #### E-commerce (5+)
+
 49. **Shopify** - `shopify`
 50. **WooCommerce** - `woocommerce`
 51. **BigCommerce** - `bigcommerce`
@@ -1491,6 +1491,7 @@ export const ParagonMigrationBanner: React.FC = () => {
 53. **Square** - `square`
 
 #### Marketing (5+)
+
 54. **Mailchimp** - `mailchimp`
 55. **ActiveCampaign** - `activecampaign`
 56. **Klaviyo** - `klaviyo`
@@ -1498,6 +1499,7 @@ export const ParagonMigrationBanner: React.FC = () => {
 58. **Constant Contact** - `constantcontact`
 
 #### Document Management (5+)
+
 59. **Notion** - `notion`
     - Actions: Create Page, Update Page, Delete Block, Query Database
 60. **Google Docs** - `googledocs`
@@ -1506,6 +1508,7 @@ export const ParagonMigrationBanner: React.FC = () => {
 63. **Microsoft Excel** - `microsoftexcel`
 
 #### Additional Categories (60+)
+
 - Analytics: Google Analytics, Mixpanel, Segment, Amplitude
 - Payments: Stripe, PayPal, Braintree
 - Social Media: Twitter, Facebook, LinkedIn, Instagram
@@ -1522,14 +1525,17 @@ export const ParagonMigrationBanner: React.FC = () => {
 ### Backend Endpoints
 
 #### 1. GET /api/paragon/token
+
 Get Paragon user token for frontend authentication.
 
 **Headers:**
+
 ```
 Authorization: Bearer {your-app-token}
 ```
 
 **Response:**
+
 ```json
 {
     "success": true,
@@ -1541,12 +1547,15 @@ Authorization: Bearer {your-app-token}
 ```
 
 #### 2. GET /api/paragon/actions
+
 List available actions for authenticated user.
 
 **Query Parameters:**
+
 - `categories` (optional): Comma-separated list (e.g., "crm,project_management")
 
 **Response:**
+
 ```json
 {
     "success": true,
@@ -1571,9 +1580,11 @@ List available actions for authenticated user.
 ```
 
 #### 3. POST /api/paragon/actions
+
 Execute an action.
 
 **Request Body:**
+
 ```json
 {
     "action": "SLACK_SEND_MESSAGE",
@@ -1585,6 +1596,7 @@ Execute an action.
 ```
 
 **Response:**
+
 ```json
 {
     "success": true,
@@ -1597,14 +1609,17 @@ Execute an action.
 ```
 
 #### 4. POST /api/paragon/webhook
+
 Receive webhooks from Paragon.
 
 **Headers:**
+
 ```
 X-Paragon-Signature: sha256=abc123def456...
 ```
 
 **Body:**
+
 ```json
 {
     "event": "integration.installed",
@@ -1632,7 +1647,7 @@ describe("ParagonTokenManager", () => {
     const config = {
         projectId: "test-project-id",
         signingKey: "test-signing-key",
-        webhookSecret: "test-webhook-secret",
+        webhookSecret: "test-webhook-secret"
     };
 
     const tokenManager = new ParagonTokenManager(config);
@@ -1693,21 +1708,25 @@ Test complete workflow execution:
 ### Common Issues
 
 **1. "Invalid signature" on webhook:**
+
 - Verify `PARAGON_WEBHOOK_SECRET` matches Paragon dashboard
 - Ensure raw body is used for signature verification
 - Check HMAC algorithm is SHA-256
 
 **2. "User not authenticated" error:**
+
 - Check JWT is properly signed with RS256
 - Verify `PARAGON_PROJECT_ID` is correct
 - Ensure token hasn't expired (1 hour TTL)
 
 **3. "Integration not connected" error:**
+
 - User needs to connect integration via Connect Portal first
 - Check connection exists in database
 - Verify `paragon_credential_id` is set
 
 **4. ActionKit returns empty actions list:**
+
 - User has no integrations connected
 - Check Paragon dashboard: integrations are enabled
 - Verify user token is valid

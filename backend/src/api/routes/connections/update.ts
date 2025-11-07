@@ -4,7 +4,7 @@ import {
     connectionIdParamSchema,
     ConnectionIdParam,
     updateConnectionSchema,
-    UpdateConnectionRequest,
+    UpdateConnectionRequest
 } from "../../schemas/connection-schemas";
 import { authMiddleware, validateParams, validateBody } from "../../middleware";
 
@@ -15,8 +15,8 @@ export async function updateConnectionRoute(fastify: FastifyInstance) {
             preHandler: [
                 authMiddleware,
                 validateParams(connectionIdParamSchema),
-                validateBody(updateConnectionSchema),
-            ],
+                validateBody(updateConnectionSchema)
+            ]
         },
         async (request, reply) => {
             const connectionRepository = new ConnectionRepository();
@@ -28,7 +28,7 @@ export async function updateConnectionRoute(fastify: FastifyInstance) {
             if (ownerId !== request.user!.id) {
                 return reply.status(403).send({
                     success: false,
-                    error: "You do not have permission to update this connection",
+                    error: "You do not have permission to update this connection"
                 });
             }
 
@@ -37,13 +37,13 @@ export async function updateConnectionRoute(fastify: FastifyInstance) {
             if (!connection) {
                 return reply.status(404).send({
                     success: false,
-                    error: "Connection not found",
+                    error: "Connection not found"
                 });
             }
 
             return reply.send({
                 success: true,
-                data: connection,
+                data: connection
             });
         }
     );

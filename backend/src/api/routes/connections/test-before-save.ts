@@ -11,7 +11,7 @@ export async function testBeforeSaveRoute(fastify: FastifyInstance) {
     fastify.post(
         "/test",
         {
-            preHandler: [authMiddleware, validateBody(createConnectionSchema)],
+            preHandler: [authMiddleware, validateBody(createConnectionSchema)]
         },
         async (request, reply) => {
             const connectionTestService = getConnectionTestService();
@@ -33,7 +33,7 @@ export async function testBeforeSaveRoute(fastify: FastifyInstance) {
                 last_tested_at: null,
                 last_used_at: null,
                 created_at: new Date(),
-                updated_at: new Date(),
+                updated_at: new Date()
             };
 
             try {
@@ -43,8 +43,8 @@ export async function testBeforeSaveRoute(fastify: FastifyInstance) {
                     success: true,
                     data: {
                         test_result: testResult,
-                        connection_valid: testResult.success,
-                    },
+                        connection_valid: testResult.success
+                    }
                 });
             } catch (error) {
                 return reply.status(400).send({
@@ -55,9 +55,9 @@ export async function testBeforeSaveRoute(fastify: FastifyInstance) {
                             ? {
                                   message: error.message,
                                   provider: body.provider,
-                                  connection_method: body.connection_method,
+                                  connection_method: body.connection_method
                               }
-                            : undefined,
+                            : undefined
                 });
             }
         }

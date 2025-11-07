@@ -1,5 +1,10 @@
 import { EventEmitter as NodeEventEmitter } from "events";
-import type { WebSocketEvent, WebSocketEventType, JsonObject, JsonValue } from "@flowmaestro/shared";
+import type {
+    WebSocketEvent,
+    WebSocketEventType,
+    JsonObject,
+    JsonValue
+} from "@flowmaestro/shared";
 
 type EventHandler = (event: WebSocketEvent) => void;
 
@@ -56,7 +61,12 @@ export class WorkflowEventEmitter {
         });
     }
 
-    emitExecutionProgress(executionId: string, completed: number, total: number, percentage: number): void {
+    emitExecutionProgress(
+        executionId: string,
+        completed: number,
+        total: number,
+        percentage: number
+    ): void {
         this.emit("execution:progress", {
             executionId,
             completed,
@@ -79,7 +89,7 @@ export class WorkflowEventEmitter {
             executionId,
             status: "failed",
             error,
-            ...(failedNodeId && { failedNodeId }),
+            ...(failedNodeId && { failedNodeId })
         });
     }
 
@@ -92,13 +102,19 @@ export class WorkflowEventEmitter {
         });
     }
 
-    emitNodeCompleted(executionId: string, nodeId: string, output: JsonValue, duration: number, metadata?: JsonObject): void {
+    emitNodeCompleted(
+        executionId: string,
+        nodeId: string,
+        output: JsonValue,
+        duration: number,
+        metadata?: JsonObject
+    ): void {
         this.emit("node:completed", {
             executionId,
             nodeId,
             output,
             duration,
-            ...(metadata && { metadata }),
+            ...(metadata && { metadata })
         });
     }
 
@@ -110,7 +126,13 @@ export class WorkflowEventEmitter {
         });
     }
 
-    emitNodeRetry(executionId: string, nodeId: string, attempt: number, nextRetryIn: number, error: string): void {
+    emitNodeRetry(
+        executionId: string,
+        nodeId: string,
+        attempt: number,
+        nextRetryIn: number,
+        error: string
+    ): void {
         this.emit("node:retry", {
             executionId,
             nodeId,
@@ -128,18 +150,28 @@ export class WorkflowEventEmitter {
         });
     }
 
-    emitUserInputRequired(executionId: string, nodeId: string, prompt: string, inputType: string, validation?: JsonValue): void {
+    emitUserInputRequired(
+        executionId: string,
+        nodeId: string,
+        prompt: string,
+        inputType: string,
+        validation?: JsonValue
+    ): void {
         this.emit("user:input:required", {
             executionId,
             nodeId,
             prompt,
             inputType,
-            ...(validation && { validation }),
+            ...(validation && { validation })
         });
     }
 
     // Knowledge Base events
-    emitDocumentProcessing(knowledgeBaseId: string, documentId: string, documentName: string): void {
+    emitDocumentProcessing(
+        knowledgeBaseId: string,
+        documentId: string,
+        documentName: string
+    ): void {
         this.emit("kb:document:processing", {
             knowledgeBaseId,
             documentId,
@@ -164,12 +196,17 @@ export class WorkflowEventEmitter {
     }
 
     // Call events
-    emitCallIncoming(callExecutionId: string, callerNumber: string, calledNumber: string, userId?: string): void {
+    emitCallIncoming(
+        callExecutionId: string,
+        callerNumber: string,
+        calledNumber: string,
+        userId?: string
+    ): void {
         this.emit("call:incoming", {
             callExecutionId,
             callerNumber,
             calledNumber,
-            ...(userId && { userId }),
+            ...(userId && { userId })
         });
     }
 
@@ -200,7 +237,7 @@ export class WorkflowEventEmitter {
             speaker,
             text,
             isFinal,
-            ...(confidence !== undefined && { confidence }),
+            ...(confidence !== undefined && { confidence })
         });
     }
 
@@ -216,7 +253,7 @@ export class WorkflowEventEmitter {
             duration,
             status,
             ...(hangupCause && { hangupCause }),
-            ...(recordingUrl && { recordingUrl }),
+            ...(recordingUrl && { recordingUrl })
         });
     }
 
@@ -224,7 +261,7 @@ export class WorkflowEventEmitter {
         this.emit("call:error", {
             callExecutionId,
             error,
-            ...(errorCode && { errorCode }),
+            ...(errorCode && { errorCode })
         });
     }
 }

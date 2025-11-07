@@ -9,11 +9,13 @@ export const workflowNodeSchema = z.object({
         x: z.number(),
         y: z.number()
     }),
-    onError: z.object({
-        strategy: z.enum(["continue", "fallback", "goto", "fail"]),
-        fallbackValue: z.any().optional(),
-        gotoNode: z.string().optional()
-    }).optional()
+    onError: z
+        .object({
+            strategy: z.enum(["continue", "fallback", "goto", "fail"]),
+            fallbackValue: z.any().optional(),
+            gotoNode: z.string().optional()
+        })
+        .optional()
 });
 
 // Workflow edge schema
@@ -33,11 +35,13 @@ export const workflowDefinitionSchema = z.object({
     nodes: z.record(workflowNodeSchema),
     edges: z.array(workflowEdgeSchema),
     entryPoint: z.string(),
-    settings: z.object({
-        timeout: z.number().optional(),
-        maxConcurrentNodes: z.number().optional(),
-        enableCache: z.boolean().optional()
-    }).optional()
+    settings: z
+        .object({
+            timeout: z.number().optional(),
+            maxConcurrentNodes: z.number().optional(),
+            enableCache: z.boolean().optional()
+        })
+        .optional()
 });
 
 // Create workflow request
@@ -60,8 +64,16 @@ export const updateWorkflowSchema = z.object({
 
 // Query parameters for listing workflows
 export const listWorkflowsQuerySchema = z.object({
-    limit: z.string().transform((val) => parseInt(val)).pipe(z.number().min(1).max(100)).optional(),
-    offset: z.string().transform((val) => parseInt(val)).pipe(z.number().min(0)).optional()
+    limit: z
+        .string()
+        .transform((val) => parseInt(val))
+        .pipe(z.number().min(1).max(100))
+        .optional(),
+    offset: z
+        .string()
+        .transform((val) => parseInt(val))
+        .pipe(z.number().min(0))
+        .optional()
 });
 
 // URL parameters

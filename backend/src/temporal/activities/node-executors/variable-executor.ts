@@ -1,12 +1,12 @@
-import type { JsonObject, JsonValue } from '@flowmaestro/shared';
-import { interpolateVariables } from './utils';
+import type { JsonObject, JsonValue } from "@flowmaestro/shared";
+import { interpolateVariables } from "./utils";
 
 export interface VariableNodeConfig {
-    operation: 'set' | 'get' | 'delete';
+    operation: "set" | "get" | "delete";
     variableName: string;
     value?: string;
-    scope: 'workflow' | 'global' | 'temporary';
-    valueType?: 'auto' | 'string' | 'number' | 'boolean' | 'json';
+    scope: "workflow" | "global" | "temporary";
+    valueType?: "auto" | "string" | "number" | "boolean" | "json";
 }
 
 export interface VariableNodeResult {
@@ -23,19 +23,21 @@ export async function executeVariableNode(
     context: JsonObject,
     globalStore?: Map<string, JsonValue>
 ): Promise<JsonObject> {
-    console.log(`[Variable] Operation: ${config.operation} on '${config.variableName}' (${config.scope})`);
+    console.log(
+        `[Variable] Operation: ${config.operation} on '${config.variableName}' (${config.scope})`
+    );
 
-    const store = config.scope === 'global' ? globalStore : context;
+    const store = config.scope === "global" ? globalStore : context;
     if (!store) {
         throw new Error(`Storage for scope '${config.scope}' not available`);
     }
 
     switch (config.operation) {
-        case 'set':
+        case "set":
             return setVariable(config, context, store);
-        case 'get':
+        case "get":
             return getVariable(config, store);
-        case 'delete':
+        case "delete":
             return deleteVariable(config, store);
         default:
             throw new Error(`Unsupported variable operation: ${config.operation}`);
@@ -47,10 +49,10 @@ function setVariable(
     context: JsonObject,
     store: VariableStore
 ): VariableNodeResult {
-    let value: JsonValue = interpolateVariables(config.value || '', context);
+    let value: JsonValue = interpolateVariables(config.value || "", context);
 
     // Type conversion
-    if (config.valueType && config.valueType !== 'auto') {
+    if (config.valueType && config.valueType !== "auto") {
         value = convertType(value, config.valueType);
     }
 
@@ -60,28 +62,25 @@ function setVariable(
         store[config.variableName] = value;
     }
 
-    console.log(`[Variable] Set '${config.variableName}' = ${JSON.stringify(value).substring(0, 100)}`);
+    console.log(
+        `[Variable] Set '${config.variableName}' = ${JSON.stringify(value).substring(0, 100)}`
+    );
 
     return { [config.variableName]: value };
 }
 
-function getVariable(
-    config: VariableNodeConfig,
-    store: VariableStore
-): VariableNodeResult {
-    const value = store instanceof Map
-        ? store.get(config.variableName)
-        : store[config.variableName];
+function getVariable(config: VariableNodeConfig, store: VariableStore): VariableNodeResult {
+    const value =
+        store instanceof Map ? store.get(config.variableName) : store[config.variableName];
 
-    console.log(`[Variable] Get '${config.variableName}' = ${JSON.stringify(value).substring(0, 100)}`);
+    console.log(
+        `[Variable] Get '${config.variableName}' = ${JSON.stringify(value).substring(0, 100)}`
+    );
 
     return { [config.variableName]: value ?? null };
 }
 
-function deleteVariable(
-    config: VariableNodeConfig,
-    store: VariableStore
-): VariableNodeResult {
+function deleteVariable(config: VariableNodeConfig, store: VariableStore): VariableNodeResult {
     if (store instanceof Map) {
         store.delete(config.variableName);
     } else {
@@ -95,16 +94,15 @@ function deleteVariable(
 
 function convertType(value: JsonValue, type: string): JsonValue {
     switch (type) {
-        case 'string':
+        case "string":
             return String(value);
-        case 'number':
+        case "number":
             return Number(value);
-        case 'boolean':
-            return value === 'true' || value === true;
-        case 'json':
-            return typeof value === 'string' ? JSON.parse(value) : value;
+        case "boolean":
+            return value === "true" || value === true;
+        case "json":
+            return typeof value === "string" ? JSON.parse(value) : value;
         default:
             return value;
     }
 }
-

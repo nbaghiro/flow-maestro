@@ -14,9 +14,10 @@ import {
 import { cn } from "../../lib/utils";
 import { useState } from "react";
 import { Tooltip } from "../Tooltip";
+import type { LucideIcon } from "lucide-react";
 
 interface NavItem {
-    icon: any;
+    icon: LucideIcon;
     label: string;
     path: string;
     badge?: string;

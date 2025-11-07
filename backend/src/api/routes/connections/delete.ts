@@ -7,7 +7,7 @@ export async function deleteConnectionRoute(fastify: FastifyInstance) {
     fastify.delete(
         "/:id",
         {
-            preHandler: [authMiddleware, validateParams(connectionIdParamSchema)],
+            preHandler: [authMiddleware, validateParams(connectionIdParamSchema)]
         },
         async (request, reply) => {
             const connectionRepository = new ConnectionRepository();
@@ -18,7 +18,7 @@ export async function deleteConnectionRoute(fastify: FastifyInstance) {
             if (ownerId !== request.user!.id) {
                 return reply.status(403).send({
                     success: false,
-                    error: "You do not have permission to delete this connection",
+                    error: "You do not have permission to delete this connection"
                 });
             }
 
@@ -27,13 +27,13 @@ export async function deleteConnectionRoute(fastify: FastifyInstance) {
             if (!deleted) {
                 return reply.status(404).send({
                     success: false,
-                    error: "Connection not found",
+                    error: "Connection not found"
                 });
             }
 
             return reply.send({
                 success: true,
-                message: "Connection deleted successfully",
+                message: "Connection deleted successfully"
             });
         }
     );

@@ -1,12 +1,12 @@
-import { VM } from 'vm2';
-import { spawn } from 'child_process';
-import { writeFile, unlink } from 'fs/promises';
-import * as path from 'path';
-import * as os from 'os';
-import type { JsonObject, JsonValue } from '@flowmaestro/shared';
+import { VM } from "vm2";
+import { spawn } from "child_process";
+import { writeFile, unlink } from "fs/promises";
+import * as path from "path";
+import * as os from "os";
+import type { JsonObject, JsonValue } from "@flowmaestro/shared";
 
 export interface CodeNodeConfig {
-    language: 'javascript' | 'python';
+    language: "javascript" | "python";
     code: string; // The code to execute
     timeout?: number; // Max execution time in ms (default: 30000)
     memory?: number; // Max memory in MB (default: 128)
@@ -48,11 +48,11 @@ export async function executeCodeNode(
     let result: CodeNodeResult;
 
     switch (config.language) {
-        case 'javascript':
+        case "javascript":
             result = await executeJavaScript(config, context);
             break;
 
-        case 'python':
+        case "python":
             result = await executePython(config, context);
             break;
 
@@ -62,7 +62,7 @@ export async function executeCodeNode(
 
     result.metadata = {
         ...result.metadata,
-        executionTime: Date.now() - startTime,
+        executionTime: Date.now() - startTime
     };
 
     console.log(`[Code] Execution completed in ${result.metadata.executionTime}ms`);
@@ -88,27 +88,27 @@ async function executeJavaScript(
     const sandbox: Record<string, unknown> = {
         console: {
             log: (...args: unknown[]) => {
-                const message = args.map(arg =>
-                    typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
-                ).join(' ');
+                const message = args
+                    .map((arg) => (typeof arg === "object" ? JSON.stringify(arg) : String(arg)))
+                    .join(" ");
                 logs.push(message);
-                console.log('[Code/JS]', message);
+                console.log("[Code/JS]", message);
             },
             error: (...args: unknown[]) => {
-                const message = args.map(arg =>
-                    typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
-                ).join(' ');
+                const message = args
+                    .map((arg) => (typeof arg === "object" ? JSON.stringify(arg) : String(arg)))
+                    .join(" ");
                 logs.push(`ERROR: ${message}`);
-                console.error('[Code/JS]', message);
+                console.error("[Code/JS]", message);
             },
             warn: (...args: unknown[]) => {
-                const message = args.map(arg =>
-                    typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
-                ).join(' ');
+                const message = args
+                    .map((arg) => (typeof arg === "object" ? JSON.stringify(arg) : String(arg)))
+                    .join(" ");
                 logs.push(`WARN: ${message}`);
-                console.warn('[Code/JS]', message);
-            },
-        },
+                console.warn("[Code/JS]", message);
+            }
+        }
     };
 
     // Add input variables to sandbox
@@ -129,7 +129,7 @@ async function executeJavaScript(
             sandbox,
             eval: false,
             wasm: false,
-            fixAsync: true,
+            fixAsync: true
         });
 
         // Wrap code to handle both sync and async
@@ -142,16 +142,16 @@ async function executeJavaScript(
         const output = await vm.run(wrappedCode);
 
         return {
-            language: 'javascript',
+            language: "javascript",
             output,
             logs,
             metadata: {
-                executionTime: 0, // Will be set by caller
-            },
+                executionTime: 0 // Will be set by caller
+            }
         };
     } catch (error: unknown) {
         const errorMessage = error instanceof Error ? error.message : String(error);
-        console.error('[Code/JS] Execution failed:', errorMessage);
+        console.error("[Code/JS] Execution failed:", errorMessage);
         throw new Error(`JavaScript execution failed: ${errorMessage}`);
     }
 }
@@ -159,13 +159,13 @@ async function executeJavaScript(
 /**
  * Execute Python code using child process
  */
-async function executePython(
-    config: CodeNodeConfig,
-    context: JsonObject
-): Promise<CodeNodeResult> {
+async function executePython(config: CodeNodeConfig, context: JsonObject): Promise<CodeNodeResult> {
     // Create temporary file for Python code
     const tempDir = os.tmpdir();
-    const tempFile = path.join(tempDir, `flowmaestro-${Date.now()}-${Math.random().toString(36).substring(7)}.py`);
+    const tempFile = path.join(
+        tempDir,
+        `flowmaestro-${Date.now()}-${Math.random().toString(36).substring(7)}.py`
+    );
 
     try {
         // Prepare input variables as JSON
@@ -200,42 +200,44 @@ if 'result' in globals():
     print(json.dumps(result))
 `;
 
-        await writeFile(tempFile, wrappedCode, 'utf-8');
+        await writeFile(tempFile, wrappedCode, "utf-8");
 
         // Execute Python script
         return await new Promise((resolve, reject) => {
-            const python = spawn('python3', [tempFile], {
-                timeout: config.timeout || 30000,
+            const python = spawn("python3", [tempFile], {
+                timeout: config.timeout || 30000
             });
 
-            let stdout = '';
-            let stderr = '';
+            let stdout = "";
+            let stderr = "";
 
-            python.stdout.on('data', (data: Buffer) => {
+            python.stdout.on("data", (data: Buffer) => {
                 stdout += data.toString();
             });
 
-            python.stderr.on('data', (data: Buffer) => {
+            python.stderr.on("data", (data: Buffer) => {
                 stderr += data.toString();
             });
 
-            python.on('error', (error: Error) => {
+            python.on("error", (error: Error) => {
                 unlink(tempFile).catch(() => {});
                 reject(new Error(`Failed to execute Python: ${error.message}`));
             });
 
-            python.on('close', async (code: number | null) => {
+            python.on("close", async (code: number | null) => {
                 // Clean up temp file
                 await unlink(tempFile).catch(() => {});
 
                 if (code === 0) {
                     // Extract output if present
                     let output: JsonValue = null;
-                    const outputMarker = '__FLOWMAESTRO_OUTPUT__';
+                    const outputMarker = "__FLOWMAESTRO_OUTPUT__";
                     const markerIndex = stdout.indexOf(outputMarker);
 
                     if (markerIndex !== -1) {
-                        const outputJson = stdout.substring(markerIndex + outputMarker.length).trim();
+                        const outputJson = stdout
+                            .substring(markerIndex + outputMarker.length)
+                            .trim();
                         const consoleOutput = stdout.substring(0, markerIndex).trim();
 
                         try {
@@ -246,30 +248,32 @@ if 'result' in globals():
                         }
 
                         resolve({
-                            language: 'python',
+                            language: "python",
                             output,
                             stdout: consoleOutput,
                             stderr: stderr.trim(),
                             metadata: {
                                 executionTime: 0,
-                                exitCode: code,
-                            },
+                                exitCode: code
+                            }
                         });
                     } else {
                         // No explicit result, return stdout
                         resolve({
-                            language: 'python',
+                            language: "python",
                             output: stdout.trim(),
                             stdout: stdout.trim(),
                             stderr: stderr.trim(),
                             metadata: {
                                 executionTime: 0,
-                                exitCode: code,
-                            },
+                                exitCode: code
+                            }
                         });
                     }
                 } else {
-                    reject(new Error(`Python execution failed with code ${code}: ${stderr || stdout}`));
+                    reject(
+                        new Error(`Python execution failed with code ${code}: ${stderr || stdout}`)
+                    );
                 }
             });
         });

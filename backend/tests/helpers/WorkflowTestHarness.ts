@@ -8,7 +8,7 @@ import { Pool } from "pg";
 
 export interface WorkflowTestResult {
     success: boolean;
-    outputs: Record<string, any>;
+    outputs: Record<string, unknown>;
     error?: string;
     duration: number;
 }
@@ -29,11 +29,11 @@ export class WorkflowTestHarness {
         const temporalAddress = process.env.TEMPORAL_ADDRESS || "localhost:7233";
 
         this.connection = await Connection.connect({
-            address: temporalAddress,
+            address: temporalAddress
         });
 
         this.client = new Client({
-            connection: this.connection,
+            connection: this.connection
         });
     }
 
@@ -50,8 +50,8 @@ export class WorkflowTestHarness {
      * Execute a workflow and return results using real Temporal server
      */
     async executeWorkflow(
-        workflowDefinition: any,
-        inputs: Record<string, any> = {},
+        workflowDefinition: unknown,
+        inputs: Record<string, unknown> = {},
         executionId?: string
     ): Promise<WorkflowTestResult> {
         if (!this.client) {
@@ -72,9 +72,9 @@ export class WorkflowTestHarness {
                         workflowDefinition,
                         inputs,
                         executionId: executionId || `test-exec-${Date.now()}`,
-                        userId: "00000000-0000-0000-0000-000000000001",
-                    },
-                ],
+                        userId: "00000000-0000-0000-0000-000000000001"
+                    }
+                ]
             });
 
             // Wait for workflow to complete
@@ -85,7 +85,7 @@ export class WorkflowTestHarness {
             return {
                 success: true,
                 outputs: result.outputs || result || {},
-                duration,
+                duration
             };
         } catch (error) {
             const duration = Date.now() - startTime;
@@ -95,7 +95,7 @@ export class WorkflowTestHarness {
                     success: false,
                     outputs: {},
                     error: error.message,
-                    duration,
+                    duration
                 };
             }
 
@@ -103,7 +103,7 @@ export class WorkflowTestHarness {
                 success: false,
                 outputs: {},
                 error: error instanceof Error ? error.message : String(error),
-                duration,
+                duration
             };
         }
     }
@@ -112,8 +112,8 @@ export class WorkflowTestHarness {
      * Execute workflow with timeout
      */
     async executeWorkflowWithTimeout(
-        workflowDefinition: any,
-        inputs: Record<string, any> = {},
+        workflowDefinition: unknown,
+        inputs: Record<string, unknown> = {},
         timeoutMs: number = 30000
     ): Promise<WorkflowTestResult> {
         const timeoutPromise = new Promise<WorkflowTestResult>((resolve) => {
@@ -122,7 +122,7 @@ export class WorkflowTestHarness {
                     success: false,
                     outputs: {},
                     error: `Workflow execution timed out after ${timeoutMs}ms`,
-                    duration: timeoutMs,
+                    duration: timeoutMs
                 });
             }, timeoutMs);
         });
@@ -138,14 +138,13 @@ export class WorkflowTestHarness {
     async verifyExecution(executionId: string): Promise<{
         found: boolean;
         status?: string;
-        outputs?: any;
-        logs?: any[];
+        outputs?: unknown;
+        logs?: unknown[];
     }> {
         // Get execution
-        const execResult = await this.pool.query(
-            `SELECT * FROM executions WHERE id = $1`,
-            [executionId]
-        );
+        const execResult = await this.pool.query("SELECT * FROM executions WHERE id = $1", [
+            executionId
+        ]);
 
         if (execResult.rows.length === 0) {
             return { found: false };
@@ -165,7 +164,7 @@ export class WorkflowTestHarness {
             found: true,
             status: execution.status,
             outputs: execution.outputs,
-            logs: logsResult.rows,
+            logs: logsResult.rows
         };
     }
 
@@ -174,9 +173,7 @@ export class WorkflowTestHarness {
      */
     assertSuccess(result: WorkflowTestResult): void {
         if (!result.success) {
-            throw new Error(
-                `Workflow execution failed: ${result.error || "Unknown error"}`
-            );
+            throw new Error(`Workflow execution failed: ${result.error || "Unknown error"}`);
         }
     }
 
@@ -198,10 +195,7 @@ export class WorkflowTestHarness {
     /**
      * Assert output contains expected values
      */
-    assertOutputContains(
-        result: WorkflowTestResult,
-        expectedOutputs: Record<string, any>
-    ): void {
+    assertOutputContains(result: WorkflowTestResult, expectedOutputs: Record<string, unknown>): void {
         this.assertSuccess(result);
 
         for (const [key, expectedValue] of Object.entries(expectedOutputs)) {

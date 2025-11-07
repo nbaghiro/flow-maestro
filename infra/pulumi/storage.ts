@@ -8,24 +8,24 @@ export const frontendBucket = new gcp.storage.Bucket(resourceName("frontend"), {
     uniformBucketLevelAccess: true,
     website: {
         mainPageSuffix: "index.html",
-        notFoundPage: "index.html",
+        notFoundPage: "index.html"
     },
     corsRules: [
         {
             origins: ["*"],
             methods: ["GET", "HEAD"],
             responseHeaders: ["*"],
-            maxAgeSeconds: 3600,
-        },
+            maxAgeSeconds: 3600
+        }
     ],
-    labels: resourceLabels(),
+    labels: resourceLabels()
 });
 
 // Make frontend bucket publicly readable
 new gcp.storage.BucketIAMBinding(resourceName("frontend-public"), {
     bucket: frontendBucket.name,
     role: "roles/storage.objectViewer",
-    members: ["allUsers"],
+    members: ["allUsers"]
 });
 
 // Create bucket for marketing site static files
@@ -35,24 +35,24 @@ export const marketingBucket = new gcp.storage.Bucket(resourceName("marketing"),
     uniformBucketLevelAccess: true,
     website: {
         mainPageSuffix: "index.html",
-        notFoundPage: "index.html",
+        notFoundPage: "index.html"
     },
     corsRules: [
         {
             origins: ["*"],
             methods: ["GET", "HEAD"],
             responseHeaders: ["*"],
-            maxAgeSeconds: 3600,
-        },
+            maxAgeSeconds: 3600
+        }
     ],
-    labels: resourceLabels(),
+    labels: resourceLabels()
 });
 
 // Make marketing bucket publicly readable
 new gcp.storage.BucketIAMBinding(resourceName("marketing-public"), {
     bucket: marketingBucket.name,
     role: "roles/storage.objectViewer",
-    members: ["allUsers"],
+    members: ["allUsers"]
 });
 
 // Create backend bucket for Cloud CDN (frontend)
@@ -68,8 +68,8 @@ export const frontendBackendBucket = new gcp.compute.BackendBucket(
             defaultTtl: 3600,
             maxTtl: 86400,
             negativeCaching: true,
-            serveWhileStale: 86400,
-        },
+            serveWhileStale: 86400
+        }
     }
 );
 
@@ -86,8 +86,8 @@ export const marketingBackendBucket = new gcp.compute.BackendBucket(
             defaultTtl: 3600,
             maxTtl: 86400,
             negativeCaching: true,
-            serveWhileStale: 86400,
-        },
+            serveWhileStale: 86400
+        }
     }
 );
 
@@ -98,5 +98,5 @@ export const storageOutputs = {
     marketingBucketName: marketingBucket.name,
     marketingBucketUrl: marketingBucket.url,
     frontendBackendBucketId: frontendBackendBucket.id,
-    marketingBackendBucketId: marketingBackendBucket.id,
+    marketingBackendBucketId: marketingBackendBucket.id
 };

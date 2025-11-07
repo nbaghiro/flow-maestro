@@ -38,7 +38,7 @@ export interface MCPProvider {
  * Users can also add custom MCP servers by providing a URL
  */
 export const MCP_PROVIDERS: Record<string, MCPProvider> = {
-    "filesystem": {
+    filesystem: {
         name: "filesystem",
         displayName: "Filesystem MCP",
         description: "Access and manipulate files and directories on the local filesystem",
@@ -46,10 +46,10 @@ export const MCP_PROVIDERS: Record<string, MCPProvider> = {
         authType: "none",
         category: "filesystem",
         protocol: "http",
-        requiresAuth: false,
+        requiresAuth: false
     },
 
-    "postgres": {
+    postgres: {
         name: "postgres",
         displayName: "PostgreSQL MCP",
         description: "Query and manage PostgreSQL databases",
@@ -61,11 +61,11 @@ export const MCP_PROVIDERS: Record<string, MCPProvider> = {
         envVars: {
             serverUrl: "MCP_POSTGRES_URL",
             username: "MCP_POSTGRES_USER",
-            password: "MCP_POSTGRES_PASSWORD",
-        },
+            password: "MCP_POSTGRES_PASSWORD"
+        }
     },
 
-    "mongodb": {
+    mongodb: {
         name: "mongodb",
         displayName: "MongoDB MCP",
         description: "Query and manage MongoDB databases",
@@ -76,11 +76,11 @@ export const MCP_PROVIDERS: Record<string, MCPProvider> = {
         requiresAuth: true,
         envVars: {
             serverUrl: "MCP_MONGODB_URL",
-            apiKey: "MCP_MONGODB_API_KEY",
-        },
+            apiKey: "MCP_MONGODB_API_KEY"
+        }
     },
 
-    "github": {
+    github: {
         name: "github",
         displayName: "GitHub MCP",
         description: "Interact with GitHub repositories, issues, and pull requests",
@@ -90,9 +90,9 @@ export const MCP_PROVIDERS: Record<string, MCPProvider> = {
         protocol: "https",
         requiresAuth: true,
         envVars: {
-            apiKey: "GITHUB_TOKEN",
-        },
-    },
+            apiKey: "GITHUB_TOKEN"
+        }
+    }
 };
 
 /**
@@ -126,7 +126,7 @@ export function listMCPProviders(): Array<{
         description: provider.description,
         category: provider.category,
         requiresAuth: provider.requiresAuth || false,
-        configured: !!provider.defaultServerUrl,
+        configured: !!provider.defaultServerUrl
     }));
 }
 

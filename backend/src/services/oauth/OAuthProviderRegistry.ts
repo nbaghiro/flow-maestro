@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios from "axios";
 
 /**
  * OAuth Provider Configuration
@@ -17,7 +17,7 @@ export interface OAuthProvider {
     // Optional customizations
     authParams?: Record<string, string>;
     tokenParams?: Record<string, string>;
-    getUserInfo?: (accessToken: string) => Promise<any>;
+    getUserInfo?: (accessToken: string) => Promise<unknown>;
     revokeUrl?: string;
     refreshable?: boolean;
 }
@@ -30,36 +30,32 @@ export interface OAuthProvider {
  */
 export const OAUTH_PROVIDERS: Record<string, OAuthProvider> = {
     slack: {
-        name: 'slack',
-        displayName: 'Slack',
-        authUrl: 'https://slack.com/oauth/v2/authorize',
-        tokenUrl: 'https://slack.com/api/oauth.v2.access',
+        name: "slack",
+        displayName: "Slack",
+        authUrl: "https://slack.com/oauth/v2/authorize",
+        tokenUrl: "https://slack.com/api/oauth.v2.access",
         scopes: [
-            'chat:write',
-            'channels:read',
-            'channels:history',
-            'files:write',
-            'users:read',
-            'users:read.email'
+            "chat:write",
+            "channels:read",
+            "channels:history",
+            "files:write",
+            "users:read",
+            "users:read.email"
         ],
-        clientId: process.env.SLACK_CLIENT_ID || '',
-        clientSecret: process.env.SLACK_CLIENT_SECRET || '',
-        redirectUri: `${process.env.API_URL || 'http://localhost:3000'}/api/oauth/slack/callback`,
+        clientId: process.env.SLACK_CLIENT_ID || "",
+        clientSecret: process.env.SLACK_CLIENT_SECRET || "",
+        redirectUri: `${process.env.API_URL || "http://localhost:3000"}/api/oauth/slack/callback`,
         getUserInfo: async (accessToken: string) => {
             try {
-                const response = await axios.post(
-                    'https://slack.com/api/auth.test',
-                    null,
-                    {
-                        headers: {
-                            'Authorization': `Bearer ${accessToken}`,
-                            'Content-Type': 'application/x-www-form-urlencoded'
-                        }
+                const response = await axios.post("https://slack.com/api/auth.test", null, {
+                    headers: {
+                        Authorization: `Bearer ${accessToken}`,
+                        "Content-Type": "application/x-www-form-urlencoded"
                     }
-                );
+                });
 
                 if (!response.data.ok) {
-                    throw new Error(response.data.error || 'Failed to get Slack user info');
+                    throw new Error(response.data.error || "Failed to get Slack user info");
                 }
 
                 return {
@@ -70,49 +66,46 @@ export const OAUTH_PROVIDERS: Record<string, OAuthProvider> = {
                     email: response.data.email || `${response.data.user}@slack`
                 };
             } catch (error) {
-                console.error('[OAuth] Failed to get Slack user info:', error);
+                console.error("[OAuth] Failed to get Slack user info:", error);
                 return {
-                    user: 'Slack User',
-                    email: 'unknown@slack'
+                    user: "Slack User",
+                    email: "unknown@slack"
                 };
             }
         },
-        revokeUrl: 'https://slack.com/api/auth.revoke',
+        revokeUrl: "https://slack.com/api/auth.revoke",
         refreshable: true
     },
 
     google: {
-        name: 'google',
-        displayName: 'Google Workspace',
-        authUrl: 'https://accounts.google.com/o/oauth2/v2/auth',
-        tokenUrl: 'https://oauth2.googleapis.com/token',
+        name: "google",
+        displayName: "Google Workspace",
+        authUrl: "https://accounts.google.com/o/oauth2/v2/auth",
+        tokenUrl: "https://oauth2.googleapis.com/token",
         scopes: [
-            'https://www.googleapis.com/auth/userinfo.email',
-            'https://www.googleapis.com/auth/userinfo.profile',
-            'https://www.googleapis.com/auth/gmail.send',
-            'https://www.googleapis.com/auth/gmail.readonly',
-            'https://www.googleapis.com/auth/gmail.compose',
-            'https://www.googleapis.com/auth/spreadsheets',
-            'https://www.googleapis.com/auth/drive.file',
-            'https://www.googleapis.com/auth/calendar.events'
+            "https://www.googleapis.com/auth/userinfo.email",
+            "https://www.googleapis.com/auth/userinfo.profile",
+            "https://www.googleapis.com/auth/gmail.send",
+            "https://www.googleapis.com/auth/gmail.readonly",
+            "https://www.googleapis.com/auth/gmail.compose",
+            "https://www.googleapis.com/auth/spreadsheets",
+            "https://www.googleapis.com/auth/drive.file",
+            "https://www.googleapis.com/auth/calendar.events"
         ],
         authParams: {
-            access_type: 'offline',  // Required to get refresh token
-            prompt: 'consent'        // Force consent screen to ensure refresh token
+            access_type: "offline", // Required to get refresh token
+            prompt: "consent" // Force consent screen to ensure refresh token
         },
-        clientId: process.env.GOOGLE_CLIENT_ID || '',
-        clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
-        redirectUri: `${process.env.API_URL || 'http://localhost:3000'}/api/oauth/google/callback`,
+        clientId: process.env.GOOGLE_CLIENT_ID || "",
+        clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
+        redirectUri: `${process.env.API_URL || "http://localhost:3000"}/api/oauth/google/callback`,
         getUserInfo: async (accessToken: string) => {
             try {
-                const response = await axios.get(
-                    'https://www.googleapis.com/oauth2/v2/userinfo',
-                    {
-                        headers: {
-                            'Authorization': `Bearer ${accessToken}`
-                        }
+                const response = await axios.get("https://www.googleapis.com/oauth2/v2/userinfo", {
+                    headers: {
+                        Authorization: `Bearer ${accessToken}`
                     }
-                );
+                });
 
                 return {
                     email: response.data.email,
@@ -121,57 +114,54 @@ export const OAUTH_PROVIDERS: Record<string, OAuthProvider> = {
                     userId: response.data.id
                 };
             } catch (error) {
-                console.error('[OAuth] Failed to get Google user info:', error);
+                console.error("[OAuth] Failed to get Google user info:", error);
                 return {
-                    email: 'unknown@google',
-                    name: 'Google User'
+                    email: "unknown@google",
+                    name: "Google User"
                 };
             }
         },
-        revokeUrl: 'https://oauth2.googleapis.com/revoke',
+        revokeUrl: "https://oauth2.googleapis.com/revoke",
         refreshable: true
     },
 
     notion: {
-        name: 'notion',
-        displayName: 'Notion',
-        authUrl: 'https://api.notion.com/v1/oauth/authorize',
-        tokenUrl: 'https://api.notion.com/v1/oauth/token',
+        name: "notion",
+        displayName: "Notion",
+        authUrl: "https://api.notion.com/v1/oauth/authorize",
+        tokenUrl: "https://api.notion.com/v1/oauth/token",
         scopes: [], // Notion doesn't use traditional scopes
         authParams: {
-            owner: 'user'
+            owner: "user"
         },
-        clientId: process.env.NOTION_CLIENT_ID || '',
-        clientSecret: process.env.NOTION_CLIENT_SECRET || '',
-        redirectUri: `${process.env.API_URL || 'http://localhost:3000'}/api/oauth/notion/callback`,
+        clientId: process.env.NOTION_CLIENT_ID || "",
+        clientSecret: process.env.NOTION_CLIENT_SECRET || "",
+        redirectUri: `${process.env.API_URL || "http://localhost:3000"}/api/oauth/notion/callback`,
         tokenParams: {
             // Notion requires Basic Auth for token exchange
-            grant_type: 'authorization_code'
+            grant_type: "authorization_code"
         },
         getUserInfo: async (accessToken: string) => {
             try {
-                const response = await axios.get(
-                    'https://api.notion.com/v1/users/me',
-                    {
-                        headers: {
-                            'Authorization': `Bearer ${accessToken}`,
-                            'Notion-Version': '2022-06-28'
-                        }
+                const response = await axios.get("https://api.notion.com/v1/users/me", {
+                    headers: {
+                        Authorization: `Bearer ${accessToken}`,
+                        "Notion-Version": "2022-06-28"
                     }
-                );
+                });
 
                 return {
-                    workspace: response.data.workspace_name || 'Notion Workspace',
-                    user: response.data.name || 'Notion User',
-                    email: response.data.person?.email || 'unknown@notion',
+                    workspace: response.data.workspace_name || "Notion Workspace",
+                    user: response.data.name || "Notion User",
+                    email: response.data.person?.email || "unknown@notion",
                     userId: response.data.id
                 };
             } catch (error) {
-                console.error('[OAuth] Failed to get Notion user info:', error);
+                console.error("[OAuth] Failed to get Notion user info:", error);
                 return {
-                    workspace: 'Notion Workspace',
-                    user: 'Notion User',
-                    email: 'unknown@notion'
+                    workspace: "Notion Workspace",
+                    user: "Notion User",
+                    email: "unknown@notion"
                 };
             }
         },
@@ -194,7 +184,7 @@ export function getOAuthProvider(provider: string): OAuthProvider {
     if (!config.clientId || !config.clientSecret) {
         throw new Error(
             `OAuth provider ${provider} is not configured. ` +
-            `Please set ${provider.toUpperCase()}_CLIENT_ID and ${provider.toUpperCase()}_CLIENT_SECRET environment variables.`
+                `Please set ${provider.toUpperCase()}_CLIENT_ID and ${provider.toUpperCase()}_CLIENT_SECRET environment variables.`
         );
     }
 
@@ -205,7 +195,7 @@ export function getOAuthProvider(provider: string): OAuthProvider {
  * List all available OAuth providers
  */
 export function listOAuthProviders() {
-    return Object.values(OAUTH_PROVIDERS).map(provider => ({
+    return Object.values(OAUTH_PROVIDERS).map((provider) => ({
         name: provider.name,
         displayName: provider.displayName,
         scopes: provider.scopes,

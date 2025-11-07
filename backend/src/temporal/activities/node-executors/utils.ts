@@ -17,26 +17,26 @@
  */
 export function interpolateVariables(
     str: string,
-    context: Record<string, any>,
+    context: Record<string, unknown>,
     options?: { stringifyObjects?: boolean }
 ): string {
     return str.replace(/\$\{([^}]+)\}/g, (match, varName) => {
         // Split path handling array indices like: firstPaper.link[0].$.href
         // Results in: ['firstPaper', 'link', '0', '$', 'href']
         const keys = varName
-            .replace(/\[(\w+)\]/g, '.$1')  // Convert [0] to .0
-            .replace(/\['([^']+)'\]/g, '.$1')  // Convert ['key'] to .key
-            .replace(/\["([^"]+)"\]/g, '.$1')  // Convert ["key"] to .key
-            .split('.')
-            .filter((k: string) => k !== '');  // Remove empty strings
+            .replace(/\[(\w+)\]/g, ".$1") // Convert [0] to .0
+            .replace(/\['([^']+)'\]/g, ".$1") // Convert ['key'] to .key
+            .replace(/\["([^"]+)"\]/g, ".$1") // Convert ["key"] to .key
+            .split(".")
+            .filter((k: string) => k !== ""); // Remove empty strings
 
-        let value: any = context;
+        let value: unknown = context;
 
         for (const key of keys) {
             if (value === null || value === undefined) {
-                return match;  // Return original if path is invalid
+                return match; // Return original if path is invalid
             }
-            value = value[key];
+            value = (value as Record<string, unknown>)[key];
         }
 
         if (value === undefined) {
@@ -44,7 +44,7 @@ export function interpolateVariables(
         }
 
         // Handle object values
-        if (typeof value === 'object' && options?.stringifyObjects) {
+        if (typeof value === "object" && options?.stringifyObjects) {
             return JSON.stringify(value);
         }
 
@@ -56,15 +56,17 @@ export function interpolateVariables(
  * Advanced interpolation that supports object merging and complex expressions
  * Primarily used by output nodes that need to construct complex JSON
  */
-export function interpolateWithObjectSupport(str: string, context: Record<string, any>): any {
+export function interpolateWithObjectSupport(str: string, context: Record<string, unknown>): unknown {
     // First, always interpolate variables in the string
     const interpolated = interpolateVariables(str, context, { stringifyObjects: true });
 
     // If the result looks like a JSON object/array, try to parse it
-    if (typeof interpolated === 'string') {
+    if (typeof interpolated === "string") {
         const trimmed = interpolated.trim();
-        if ((trimmed.startsWith('{') && trimmed.endsWith('}')) ||
-            (trimmed.startsWith('[') && trimmed.endsWith(']'))) {
+        if (
+            (trimmed.startsWith("{") && trimmed.endsWith("}")) ||
+            (trimmed.startsWith("[") && trimmed.endsWith("]"))
+        ) {
             try {
                 return JSON.parse(interpolated);
             } catch (e) {
@@ -81,23 +83,23 @@ export function interpolateWithObjectSupport(str: string, context: Record<string
  * Deep clone an object to avoid mutation
  */
 export function deepClone<T>(obj: T): T {
-    if (obj === null || typeof obj !== 'object') {
+    if (obj === null || typeof obj !== "object") {
         return obj;
     }
     if (obj instanceof Date) {
-        return new Date(obj.getTime()) as any;
+        return new Date(obj.getTime()) as T;
     }
     if (obj instanceof Array) {
-        return obj.map(item => deepClone(item)) as any;
+        return obj.map((item) => deepClone(item)) as T;
     }
     if (obj instanceof Object) {
-        const cloned = {} as any;
+        const cloned = {} as Record<string, unknown>;
         for (const key in obj) {
-            if (obj.hasOwnProperty(key)) {
-                cloned[key] = deepClone(obj[key]);
+            if (Object.prototype.hasOwnProperty.call(obj, key)) {
+                cloned[key] = deepClone((obj as Record<string, unknown>)[key]);
             }
         }
-        return cloned;
+        return cloned as T;
     }
     return obj;
 }

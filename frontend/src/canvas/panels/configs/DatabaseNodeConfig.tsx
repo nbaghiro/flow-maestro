@@ -5,9 +5,9 @@ import { CodeInput } from "../../../components/CodeInput";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 interface DatabaseNodeConfigProps {
-    data: any;
+    data: Record<string, unknown>;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    onUpdate: (config: any) => void;
+    onUpdate: (config: unknown) => void;
 }
 
 const operations = [
@@ -31,13 +31,13 @@ const returnFormats = [
 ];
 
 export function DatabaseNodeConfig({ data, onUpdate }: DatabaseNodeConfigProps) {
-    const [operation, setOperation] = useState(data.operation || "query");
-    const [databaseType, setDatabaseType] = useState(data.databaseType || "postgresql");
-    const [connectionId, setConnectionId] = useState(data.connectionId || "");
-    const [query, setQuery] = useState(data.query || "");
-    const [parameters, setParameters] = useState(data.parameters || "");
-    const [returnFormat, setReturnFormat] = useState(data.returnFormat || "array");
-    const [outputVariable, setOutputVariable] = useState(data.outputVariable || "");
+    const [operation, setOperation] = useState((data.operation as string) || "query");
+    const [databaseType, setDatabaseType] = useState((data.databaseType as string) || "postgresql");
+    const [connectionId, setConnectionId] = useState((data.connectionId as string) || "");
+    const [query, setQuery] = useState((data.query as string) || "");
+    const [parameters, setParameters] = useState((data.parameters as string) || "");
+    const [returnFormat, setReturnFormat] = useState((data.returnFormat as string) || "array");
+    const [outputVariable, setOutputVariable] = useState((data.outputVariable as string) || "");
 
     useEffect(() => {
         onUpdate({
@@ -191,7 +191,7 @@ export function DatabaseNodeConfig({ data, onUpdate }: DatabaseNodeConfigProps) 
 
             <FormSection title="Output Settings">
                 <OutputSettingsSection
-                    nodeName={data.label || "Database"}
+                    nodeName={(data.label as string) || "Database"}
                     nodeType="database"
                     value={outputVariable}
                     onChange={setOutputVariable}

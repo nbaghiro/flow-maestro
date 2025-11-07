@@ -5,13 +5,13 @@ import { CallExecutionRepository } from "../../../storage/repositories/CallExecu
 import { globalEventEmitter } from "../../../shared/events/EventEmitter";
 
 export interface VoiceListenNodeConfig {
-    prompt?: string;                    // Optional prompt to play before listening
-    maxDuration?: number;               // Max listen duration in seconds (default: 30)
-    endSilenceMs?: number;              // Silence duration to end listening (default: 1500)
-    language?: string;                  // STT language (default: 'en-US')
-    sttProvider?: "deepgram" | "openai";  // STT provider
-    saveToVariable?: string;            // Variable name to store transcript
-    outputVariable?: string;            // Where to store full result
+    prompt?: string; // Optional prompt to play before listening
+    maxDuration?: number; // Max listen duration in seconds (default: 30)
+    endSilenceMs?: number; // Silence duration to end listening (default: 1500)
+    language?: string; // STT language (default: 'en-US')
+    sttProvider?: "deepgram" | "openai"; // STT provider
+    saveToVariable?: string; // Variable name to store transcript
+    outputVariable?: string; // Where to store full result
 }
 
 export interface VoiceListenNodeResult {
@@ -52,7 +52,7 @@ export async function executeVoiceListenNode(
                 "speak",
                 {
                     text: promptText,
-                    interruptible: false,
+                    interruptible: false
                 },
                 30000
             );
@@ -68,7 +68,7 @@ export async function executeVoiceListenNode(
                 maxDuration: config.maxDuration || 30,
                 endSilenceMs: config.endSilenceMs || 1500,
                 language: config.language || "en-US",
-                sttProvider: config.sttProvider || "deepgram",
+                sttProvider: config.sttProvider || "deepgram"
             },
             (config.maxDuration || 30) * 1000 + 10000 // Add 10 seconds buffer
         );
@@ -77,8 +77,16 @@ export async function executeVoiceListenNode(
             throw new Error(response.error || "Speech capture failed");
         }
 
-        const transcript = response.result?.transcript || "";
-        const confidence = response.result?.confidence || 0;
+        interface ListenCommandResult {
+            transcript?: string;
+            confidence?: number;
+            durationMs?: number;
+            timedOut?: boolean;
+        }
+
+        const commandResult = (response.result || {}) as ListenCommandResult;
+        const transcript = typeof commandResult.transcript === "string" ? commandResult.transcript : "";
+        const confidence = typeof commandResult.confidence === "number" ? commandResult.confidence : 0;
 
         console.log(`[VoiceListen] Transcript: "${transcript}" (confidence: ${confidence})`);
 
@@ -91,7 +99,7 @@ export async function executeVoiceListenNode(
             confidence,
             language: config.language || "en-US",
             started_at: new Date(),
-            is_final: true,
+            is_final: true
         });
 
         // Emit real-time transcript event
@@ -107,9 +115,9 @@ export async function executeVoiceListenNode(
             success: true,
             transcript,
             confidence,
-            durationMs: response.result?.durationMs,
+            durationMs: commandResult.durationMs,
             language: config.language || "en-US",
-            timedOut: response.result?.timedOut || false,
+            timedOut: commandResult.timedOut || false
         };
 
         // Build output context
@@ -134,14 +142,15 @@ export async function executeVoiceListenNode(
         console.log("[VoiceListen] Speech capture completed");
 
         return output;
-    } catch (error: any) {
-        console.error("[VoiceListen] Error:", error.message);
+    } catch (error: unknown) {
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        console.error("[VoiceListen] Error:", errorMsg);
 
         const result: VoiceListenNodeResult = {
             success: false,
             transcript: "",
             confidence: 0,
-            error: error.message,
+            error: errorMsg
         };
 
         if (config.outputVariable) {

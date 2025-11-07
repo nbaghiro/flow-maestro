@@ -1,8 +1,8 @@
-import type { JsonObject, JsonValue } from '@flowmaestro/shared';
-import { interpolateVariables } from './utils';
+import type { JsonObject, JsonValue } from "@flowmaestro/shared";
+import { interpolateVariables } from "./utils";
 
 export interface EchoNodeConfig {
-    mode: 'simple' | 'transform' | 'delay' | 'error';
+    mode: "simple" | "transform" | "delay" | "error";
 
     // For simple mode
     message?: string;
@@ -10,7 +10,7 @@ export interface EchoNodeConfig {
     includeTimestamp?: boolean;
 
     // For transform mode
-    transformation?: 'uppercase' | 'lowercase' | 'reverse' | 'json' | 'base64';
+    transformation?: "uppercase" | "lowercase" | "reverse" | "json" | "base64";
     inputVariable?: string;
 
     // For delay mode (testing async)
@@ -18,7 +18,7 @@ export interface EchoNodeConfig {
 
     // For error mode (testing error handling)
     errorMessage?: string;
-    errorType?: 'throw' | 'return';
+    errorType?: "throw" | "return";
 
     outputVariable?: string;
 }
@@ -47,64 +47,61 @@ export async function executeEchoNode(
     let output: JsonValue;
 
     switch (config.mode) {
-        case 'simple':
+        case "simple":
             output = {
-                message: config.message
-                    ? interpolateVariables(config.message, context)
-                    : 'Echo!',
+                message: config.message ? interpolateVariables(config.message, context) : "Echo!",
                 ...(config.includeContext ? { context } : {}),
-                ...(config.includeTimestamp ? { timestamp: new Date().toISOString() } : {}),
+                ...(config.includeTimestamp ? { timestamp: new Date().toISOString() } : {})
             };
             break;
 
-        case 'transform':
+        case "transform":
             const inputValue = config.inputVariable
                 ? context[config.inputVariable]
                 : JSON.stringify(context);
 
-            const inputString = typeof inputValue === 'string'
-                ? inputValue
-                : JSON.stringify(inputValue);
+            const inputString =
+                typeof inputValue === "string" ? inputValue : JSON.stringify(inputValue);
 
             switch (config.transformation) {
-                case 'uppercase':
+                case "uppercase":
                     output = inputString.toUpperCase();
                     break;
-                case 'lowercase':
+                case "lowercase":
                     output = inputString.toLowerCase();
                     break;
-                case 'reverse':
-                    output = inputString.split('').reverse().join('');
+                case "reverse":
+                    output = inputString.split("").reverse().join("");
                     break;
-                case 'json':
+                case "json":
                     output = JSON.stringify(inputValue, null, 2);
                     break;
-                case 'base64':
-                    output = Buffer.from(inputString).toString('base64');
+                case "base64":
+                    output = Buffer.from(inputString).toString("base64");
                     break;
                 default:
                     output = inputValue;
             }
             break;
 
-        case 'delay':
+        case "delay":
             const delay = config.delayMs || 1000;
             console.log(`[Echo] Delaying for ${delay}ms`);
-            await new Promise(resolve => setTimeout(resolve, delay));
+            await new Promise((resolve) => setTimeout(resolve, delay));
             output = {
-                message: 'Delay completed',
-                delayMs: delay,
+                message: "Delay completed",
+                delayMs: delay
             };
             break;
 
-        case 'error':
-            const errorMsg = config.errorMessage || 'Test error from Echo node';
-            if (config.errorType === 'throw') {
+        case "error":
+            const errorMsg = config.errorMessage || "Test error from Echo node";
+            if (config.errorType === "throw") {
                 throw new Error(errorMsg);
             } else {
                 output = {
                     error: true,
-                    message: errorMsg,
+                    message: errorMsg
                 };
             }
             break;
@@ -113,14 +110,14 @@ export async function executeEchoNode(
             throw new Error(`Unsupported echo mode: ${config.mode}`);
     }
 
-    console.log(`[Echo] Output:`, output);
+    console.log("[Echo] Output:", output);
 
     const result: EchoNodeResult = {
         mode: config.mode,
         output,
         metadata: {
-            executionTime: Date.now() - startTime,
-        },
+            executionTime: Date.now() - startTime
+        }
     };
 
     if (config.outputVariable) {

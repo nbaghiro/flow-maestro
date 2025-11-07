@@ -5,7 +5,7 @@ import { infrastructureConfig, resourceName, resourceLabels } from "./config";
 export const network = new gcp.compute.Network(resourceName("network"), {
     name: resourceName("network"),
     autoCreateSubnetworks: false,
-    description: "VPC network for FlowMaestro",
+    description: "VPC network for FlowMaestro"
 });
 
 // Create subnet for GKE cluster
@@ -18,14 +18,14 @@ export const subnet = new gcp.compute.Subnetwork(resourceName("subnet"), {
     secondaryIpRanges: [
         {
             rangeName: "pods",
-            ipCidrRange: "10.4.0.0/14",
+            ipCidrRange: "10.4.0.0/14"
         },
         {
             rangeName: "services",
-            ipCidrRange: "10.8.0.0/20",
-        },
+            ipCidrRange: "10.8.0.0/20"
+        }
     ],
-    description: "Subnet for GKE cluster",
+    description: "Subnet for GKE cluster"
 });
 
 // Create Cloud Router for NAT
@@ -33,7 +33,7 @@ export const router = new gcp.compute.Router(resourceName("router"), {
     name: resourceName("router"),
     region: infrastructureConfig.region,
     network: network.id,
-    description: "Router for Cloud NAT",
+    description: "Router for Cloud NAT"
 });
 
 // Create Cloud NAT for outbound traffic from private GKE nodes
@@ -45,14 +45,14 @@ export const nat = new gcp.compute.RouterNat(resourceName("nat"), {
     sourceSubnetworkIpRangesToNat: "ALL_SUBNETWORKS_ALL_IP_RANGES",
     logConfig: {
         enable: true,
-        filter: "ERRORS_ONLY",
-    },
+        filter: "ERRORS_ONLY"
+    }
 });
 
 // Reserve global static IP for Load Balancer
 export const staticIp = new gcp.compute.GlobalAddress(resourceName("static-ip"), {
     name: resourceName("static-ip"),
-    description: "Static IP for Load Balancer",
+    description: "Static IP for Load Balancer"
 });
 
 // Create private service connection for Cloud SQL and Memorystore
@@ -67,9 +67,9 @@ export const privateVpcConnection = new gcp.servicenetworking.Connection(
                 purpose: "VPC_PEERING",
                 addressType: "INTERNAL",
                 prefixLength: 16,
-                network: network.id,
-            }).name,
-        ],
+                network: network.id
+            }).name
+        ]
     }
 );
 
@@ -80,5 +80,5 @@ export const networkOutputs = {
     subnetId: subnet.id,
     subnetName: subnet.name,
     staticIpAddress: staticIp.address,
-    privateVpcConnectionId: privateVpcConnection.id,
+    privateVpcConnectionId: privateVpcConnection.id
 };

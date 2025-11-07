@@ -136,8 +136,9 @@ export class VoiceAgentWorker {
                 this.activeAgents.delete(roomName);
                 console.log(`🔌 Agent disconnected from room: ${roomName}`);
             });
-        } catch (error: any) {
-            console.error(`❌ Failed to handle room ${roomName}:`, error.message);
+        } catch (error: unknown) {
+            const errorMsg = error instanceof Error ? error.message : String(error);
+            console.error(`❌ Failed to handle room ${roomName}:`, errorMsg);
         }
     }
 
@@ -153,8 +154,8 @@ export class VoiceAgentWorker {
             adaptiveStream: true,
             dynacast: true,
             videoCaptureDefaults: {
-                resolution: VideoPresets.h720.resolution,
-            },
+                resolution: VideoPresets.h720.resolution
+            }
         });
 
         // Connect to room
@@ -175,20 +176,16 @@ export class VoiceAgentWorker {
 
         const { AccessToken } = require("livekit-server-sdk");
 
-        const at = new AccessToken(
-            this.config.livekitApiKey,
-            this.config.livekitApiSecret,
-            {
-                identity: `agent-${Date.now()}`,
-                ttl: "10m",
-            }
-        );
+        const at = new AccessToken(this.config.livekitApiKey, this.config.livekitApiSecret, {
+            identity: `agent-${Date.now()}`,
+            ttl: "10m"
+        });
 
         at.addGrant({
             roomJoin: true,
             room: roomName,
             canPublish: true,
-            canSubscribe: true,
+            canSubscribe: true
         });
 
         return at.toJwt();
@@ -203,7 +200,7 @@ export class VoiceAgentWorker {
     } {
         return {
             activeAgents: this.activeAgents.size,
-            rooms: Array.from(this.activeAgents.keys()),
+            rooms: Array.from(this.activeAgents.keys())
         };
     }
 }
@@ -214,7 +211,7 @@ if (require.main === module) {
         livekitUrl: process.env.LIVEKIT_WS_URL || "ws://localhost:7880",
         livekitApiKey: process.env.LIVEKIT_API_KEY || "",
         livekitApiSecret: process.env.LIVEKIT_API_SECRET || "",
-        redisUrl: process.env.REDIS_URL || "redis://localhost:6379",
+        redisUrl: process.env.REDIS_URL || "redis://localhost:6379"
     });
 
     // Start worker

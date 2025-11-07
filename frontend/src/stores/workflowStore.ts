@@ -32,7 +32,7 @@ export interface CurrentExecution {
     id: string;
     status: "pending" | "running" | "completed" | "failed" | "cancelled";
     nodeStates: Map<string, NodeExecutionState>;
-    variables: Map<string, any>;
+    variables: Map<string, JsonValue>;
     logs: ExecutionLog[];
     startedAt: Date;
     completedAt: Date | null;

@@ -11,7 +11,7 @@ export async function deleteTriggerRoute(fastify: FastifyInstance) {
         },
         async (request, reply) => {
             const triggerRepo = new TriggerRepository();
-            const { id } = request.params as any;
+            const { id } = request.params as { id: string };
 
             fastify.log.info(`Attempting to delete trigger: ${id}`);
 
@@ -28,7 +28,7 @@ export async function deleteTriggerRoute(fastify: FastifyInstance) {
                 fastify.log.info(`Found trigger: ${trigger.id}, type: ${trigger.trigger_type}`);
 
                 // If it's a schedule trigger, delete from Temporal
-                if (trigger.trigger_type === 'schedule') {
+                if (trigger.trigger_type === "schedule") {
                     fastify.log.info(`Deleting scheduled trigger from Temporal: ${id}`);
                     try {
                         const schedulerService = new SchedulerService();
@@ -36,7 +36,10 @@ export async function deleteTriggerRoute(fastify: FastifyInstance) {
                         fastify.log.info(`Successfully deleted schedule from Temporal: ${id}`);
                     } catch (scheduleError) {
                         // Log but continue with database deletion
-                        fastify.log.error(scheduleError as Error, `Failed to delete Temporal schedule, continuing with DB deletion`);
+                        fastify.log.error(
+                            scheduleError as Error,
+                            "Failed to delete Temporal schedule, continuing with DB deletion"
+                        );
                     }
                 }
 
@@ -56,7 +59,7 @@ export async function deleteTriggerRoute(fastify: FastifyInstance) {
                     message: "Trigger deleted"
                 });
             } catch (error) {
-                fastify.log.error(error as Error, 'Error deleting trigger');
+                fastify.log.error(error as Error, "Error deleting trigger");
                 return reply.status(500).send({
                     success: false,
                     error: error instanceof Error ? error.message : String(error)

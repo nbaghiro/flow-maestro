@@ -11,15 +11,12 @@ export async function listWorkflowsRoute(fastify: FastifyInstance) {
         },
         async (request, reply) => {
             const workflowRepository = new WorkflowRepository();
-            const query = request.query as any;
+            const query = request.query as { limit?: number; offset?: number };
 
-            const { workflows, total } = await workflowRepository.findByUserId(
-                request.user!.id,
-                {
-                    limit: query.limit || 50,
-                    offset: query.offset || 0
-                }
-            );
+            const { workflows, total } = await workflowRepository.findByUserId(request.user!.id, {
+                limit: query.limit || 50,
+                offset: query.offset || 0
+            });
 
             const limit = query.limit || 50;
             const offset = query.offset || 0;

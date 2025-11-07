@@ -5,7 +5,7 @@ import { NotFoundError } from "../../middleware";
 
 const getExecutionParamsSchema = z.object({
     id: z.string().uuid(), // agent ID
-    executionId: z.string().uuid(),
+    executionId: z.string().uuid()
 });
 
 export async function getExecutionHandler(
@@ -25,6 +25,6 @@ export async function getExecutionHandler(
 
     reply.send({
         success: true,
-        data: execution,
+        data: execution
     });
 }

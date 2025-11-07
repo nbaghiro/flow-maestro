@@ -20,6 +20,7 @@ Complete guide to the FlowMaestro workflow system, including node types, executi
 ## Overview
 
 FlowMaestro workflows are visual, node-based automations that enable users to:
+
 - Build complex AI-powered workflows using a React Flow canvas
 - Execute workflows durably using Temporal as the orchestration engine
 - Integrate with multiple LLM providers (OpenAI, Anthropic, Google, Cohere)
@@ -44,6 +45,7 @@ FlowMaestro workflows are visual, node-based automations that enable users to:
 ### Temporal Orchestration
 
 FlowMaestro uses [Temporal](https://temporal.io) as its workflow orchestration engine, providing:
+
 - **Durable execution**: Workflows survive process crashes and restarts
 - **Automatic retries**: Failed activities retry with exponential backoff
 - **Timeout handling**: Configurable timeouts for activities and workflows
@@ -77,6 +79,7 @@ FlowMaestro uses [Temporal](https://temporal.io) as its workflow orchestration e
 **File**: `/backend/src/temporal/workflows/orchestrator-workflow.ts`
 
 The orchestrator workflow is the core execution engine that:
+
 1. **Builds dependency graph** from nodes and edges
 2. **Performs topological sort** to determine execution order
 3. **Executes nodes in parallel** when dependencies are satisfied
@@ -84,10 +87,9 @@ The orchestrator workflow is the core execution engine that:
 5. **Handles errors and retries** through Temporal's built-in mechanisms
 
 **Key Implementation**:
+
 ```typescript
-export async function orchestratorWorkflow(
-    input: OrchestratorInput
-): Promise<OrchestratorResult> {
+export async function orchestratorWorkflow(input: OrchestratorInput): Promise<OrchestratorResult> {
     const { workflowDefinition, inputs = {} } = input;
     const { nodes, edges } = workflowDefinition;
 
@@ -103,7 +105,7 @@ export async function orchestratorWorkflow(
         incomingEdges.set(nodeId, []);
     });
 
-    edges.forEach(edge => {
+    edges.forEach((edge) => {
         outgoingEdges.get(edge.source)?.push(edge.target);
         incomingEdges.get(edge.target)?.push(edge.source);
     });
@@ -114,21 +116,17 @@ export async function orchestratorWorkflow(
 
     // Topological execution - process nodes in dependency order
     while (executed.size < nodeMap.size) {
-        const readyNodes = Object.entries(nodes).filter(
-            ([nodeId]) => {
-                if (executed.has(nodeId)) return false;
-                const deps = incomingEdges.get(nodeId) || [];
-                return deps.every(dep => executed.has(dep));
-            }
-        );
+        const readyNodes = Object.entries(nodes).filter(([nodeId]) => {
+            if (executed.has(nodeId)) return false;
+            const deps = incomingEdges.get(nodeId) || [];
+            return deps.every((dep) => executed.has(dep));
+        });
 
         if (readyNodes.length === 0) break; // Cycle detection
 
         // Execute all ready nodes in parallel
         const results = await Promise.all(
-            readyNodes.map(([nodeId, node]) =>
-                executeNode(nodeId, node, context)
-            )
+            readyNodes.map(([nodeId, node]) => executeNode(nodeId, node, context))
         );
 
         // Update context with results
@@ -148,11 +146,13 @@ export async function orchestratorWorkflow(
 ### Activity Pattern
 
 Each node type is implemented as a Temporal activity with:
+
 - **Timeout configuration**: `startToCloseTimeout` (default: 10 minutes)
 - **Retry policy**: 3 attempts with exponential backoff
 - **Context handling**: Receives and returns execution context
 
 **Example Activity**:
+
 ```typescript
 export async function executeLLMNode(
     context: ActivityContext,
@@ -171,7 +171,7 @@ export async function executeLLMNode(
         ...context,
         variables: {
             ...context.variables,
-            [config.outputVariable || 'llmOutput']: result
+            [config.outputVariable || "llmOutput"]: result
         }
     };
 }
@@ -190,6 +190,7 @@ FlowMaestro supports 20+ node types for building comprehensive workflows.
 **Providers**: OpenAI, Anthropic, Google, Cohere
 
 **Configuration**:
+
 ```json
 {
   "provider": "openai" | "anthropic" | "google" | "cohere",
@@ -204,6 +205,7 @@ FlowMaestro supports 20+ node types for building comprehensive workflows.
 ```
 
 **Common Use Cases**:
+
 - Text summarization
 - Content generation
 - Question answering
@@ -212,18 +214,19 @@ FlowMaestro supports 20+ node types for building comprehensive workflows.
 - Translation
 
 **Example**:
+
 ```json
 {
-  "type": "llm",
-  "label": "Summarize Article",
-  "config": {
-    "provider": "openai",
-    "model": "gpt-4",
-    "credentialId": "${userCredentialId}",
-    "prompt": "Summarize the following article in 3 bullet points:\n\n${article}",
-    "temperature": 0.5,
-    "maxTokens": 500
-  }
+    "type": "llm",
+    "label": "Summarize Article",
+    "config": {
+        "provider": "openai",
+        "model": "gpt-4",
+        "credentialId": "${userCredentialId}",
+        "prompt": "Summarize the following article in 3 bullet points:\n\n${article}",
+        "temperature": 0.5,
+        "maxTokens": 500
+    }
 }
 ```
 
@@ -236,6 +239,7 @@ FlowMaestro supports 20+ node types for building comprehensive workflows.
 **Methods**: GET, POST, PUT, DELETE, PATCH
 
 **Configuration**:
+
 ```json
 {
   "method": "GET" | "POST" | "PUT" | "DELETE" | "PATCH",
@@ -249,19 +253,20 @@ FlowMaestro supports 20+ node types for building comprehensive workflows.
 ```
 
 **Example**:
+
 ```json
 {
-  "type": "http",
-  "label": "Fetch News Articles",
-  "config": {
-    "method": "GET",
-    "url": "https://newsapi.org/v2/top-headlines",
-    "queryParams": {
-      "country": "us",
-      "category": "technology"
-    },
-    "credentialId": "${newsApiCredentialId}"
-  }
+    "type": "http",
+    "label": "Fetch News Articles",
+    "config": {
+        "method": "GET",
+        "url": "https://newsapi.org/v2/top-headlines",
+        "queryParams": {
+            "country": "us",
+            "category": "technology"
+        },
+        "credentialId": "${newsApiCredentialId}"
+    }
 }
 ```
 
@@ -274,6 +279,7 @@ FlowMaestro supports 20+ node types for building comprehensive workflows.
 **Outputs**: Two handles - "true" and "false"
 
 **Configuration**:
+
 ```json
 {
   "condition": "string (JavaScript expression or simple comparison)",
@@ -285,28 +291,30 @@ FlowMaestro supports 20+ node types for building comprehensive workflows.
 ```
 
 **Example (Simple)**:
+
 ```json
 {
-  "type": "conditional",
-  "label": "Check Status Code",
-  "config": {
-    "mode": "simple",
-    "leftValue": "${response.status}",
-    "operator": "==",
-    "rightValue": 200
-  }
+    "type": "conditional",
+    "label": "Check Status Code",
+    "config": {
+        "mode": "simple",
+        "leftValue": "${response.status}",
+        "operator": "==",
+        "rightValue": 200
+    }
 }
 ```
 
 **Example (Expression)**:
+
 ```json
 {
-  "type": "conditional",
-  "label": "Validate Response",
-  "config": {
-    "mode": "expression",
-    "condition": "${response.data.length} > 0 && ${response.status} === 200"
-  }
+    "type": "conditional",
+    "label": "Validate Response",
+    "config": {
+        "mode": "expression",
+        "condition": "${response.data.length} > 0 && ${response.status} === 200"
+    }
 }
 ```
 
@@ -319,6 +327,7 @@ FlowMaestro supports 20+ node types for building comprehensive workflows.
 **Methods**: JSONPath, templates, filters
 
 **Configuration**:
+
 ```json
 {
   "mode": "jsonpath" | "template" | "filter",
@@ -330,27 +339,29 @@ FlowMaestro supports 20+ node types for building comprehensive workflows.
 ```
 
 **Example (JSONPath)**:
+
 ```json
 {
-  "type": "transform",
-  "label": "Extract Article Titles",
-  "config": {
-    "mode": "jsonpath",
-    "jsonPath": "$.articles[*].title",
-    "outputVariable": "titles"
-  }
+    "type": "transform",
+    "label": "Extract Article Titles",
+    "config": {
+        "mode": "jsonpath",
+        "jsonPath": "$.articles[*].title",
+        "outputVariable": "titles"
+    }
 }
 ```
 
 **Example (Template)**:
+
 ```json
 {
-  "type": "transform",
-  "label": "Format Output",
-  "config": {
-    "mode": "template",
-    "template": "Summary for ${article.title}:\n\n${summary}"
-  }
+    "type": "transform",
+    "label": "Format Output",
+    "config": {
+        "mode": "template",
+        "template": "Summary for ${article.title}:\n\n${summary}"
+    }
 }
 ```
 
@@ -363,26 +374,28 @@ FlowMaestro supports 20+ node types for building comprehensive workflows.
 **Behavior**: Executes connected nodes for each item
 
 **Configuration**:
+
 ```json
 {
-  "items": "string (variable reference to array, e.g., ${articles})",
-  "itemVariable": "string (variable name for current item, default: item)",
-  "indexVariable": "string (variable name for index, default: index)",
-  "maxConcurrency": "number (default: 1 for sequential, >1 for parallel)"
+    "items": "string (variable reference to array, e.g., ${articles})",
+    "itemVariable": "string (variable name for current item, default: item)",
+    "indexVariable": "string (variable name for index, default: index)",
+    "maxConcurrency": "number (default: 1 for sequential, >1 for parallel)"
 }
 ```
 
 **Example**:
+
 ```json
 {
-  "type": "loop",
-  "label": "Process Each Article",
-  "config": {
-    "items": "${articles}",
-    "itemVariable": "article",
-    "indexVariable": "i",
-    "maxConcurrency": 3
-  }
+    "type": "loop",
+    "label": "Process Each Article",
+    "config": {
+        "items": "${articles}",
+        "itemVariable": "article",
+        "indexVariable": "i",
+        "maxConcurrency": 3
+    }
 }
 ```
 
@@ -393,6 +406,7 @@ FlowMaestro supports 20+ node types for building comprehensive workflows.
 **Purpose**: Image generation and analysis
 
 **Configuration**:
+
 ```json
 {
   "mode": "generate" | "analyze",
@@ -412,6 +426,7 @@ FlowMaestro supports 20+ node types for building comprehensive workflows.
 **Purpose**: Speech-to-text and text-to-speech
 
 **Configuration**:
+
 ```json
 {
   "mode": "transcribe" | "synthesize",
@@ -431,6 +446,7 @@ FlowMaestro supports 20+ node types for building comprehensive workflows.
 **Purpose**: Accept user input at workflow start
 
 **Configuration**:
+
 ```json
 {
   "inputType": "text" | "number" | "file" | "choice",
@@ -444,17 +460,18 @@ FlowMaestro supports 20+ node types for building comprehensive workflows.
 ```
 
 **Example**:
+
 ```json
 {
-  "type": "input",
-  "label": "Enter Topic",
-  "config": {
-    "inputType": "text",
-    "label": "What topic should I search for?",
-    "placeholder": "e.g., artificial intelligence",
-    "required": true,
-    "variable": "topic"
-  }
+    "type": "input",
+    "label": "Enter Topic",
+    "config": {
+        "inputType": "text",
+        "label": "What topic should I search for?",
+        "placeholder": "e.g., artificial intelligence",
+        "required": true,
+        "variable": "topic"
+    }
 }
 ```
 
@@ -465,6 +482,7 @@ FlowMaestro supports 20+ node types for building comprehensive workflows.
 **Purpose**: Display results to user
 
 **Configuration**:
+
 ```json
 {
   "format": "text" | "json" | "markdown" | "html",
@@ -474,15 +492,16 @@ FlowMaestro supports 20+ node types for building comprehensive workflows.
 ```
 
 **Example**:
+
 ```json
 {
-  "type": "output",
-  "label": "Show Results",
-  "config": {
-    "format": "markdown",
-    "value": "${formattedResults}",
-    "label": "Search Results"
-  }
+    "type": "output",
+    "label": "Show Results",
+    "config": {
+        "format": "markdown",
+        "value": "${formattedResults}",
+        "label": "Search Results"
+    }
 }
 ```
 
@@ -495,11 +514,12 @@ FlowMaestro supports 20+ node types for building comprehensive workflows.
 **Outputs**: Multiple named handles based on cases
 
 **Configuration**:
+
 ```json
 {
-  "value": "string (variable to evaluate)",
-  "cases": "Array<{ match: any, output: string }>",
-  "defaultOutput": "string"
+    "value": "string (variable to evaluate)",
+    "cases": "Array<{ match: any, output: string }>",
+    "defaultOutput": "string"
 }
 ```
 
@@ -510,6 +530,7 @@ FlowMaestro supports 20+ node types for building comprehensive workflows.
 **Purpose**: Execute custom JavaScript or Python
 
 **Configuration**:
+
 ```json
 {
   "language": "javascript" | "python",
@@ -526,6 +547,7 @@ FlowMaestro supports 20+ node types for building comprehensive workflows.
 **Purpose**: Delay workflow execution
 
 **Configuration**:
+
 ```json
 {
   "duration": "number (milliseconds)",
@@ -540,6 +562,7 @@ FlowMaestro supports 20+ node types for building comprehensive workflows.
 **Purpose**: Query SQL/NoSQL databases
 
 **Configuration**:
+
 ```json
 {
   "databaseType": "postgres" | "mysql" | "mongodb",
@@ -556,6 +579,7 @@ FlowMaestro supports 20+ node types for building comprehensive workflows.
 **Purpose**: Connect to third-party services
 
 **Configuration**:
+
 ```json
 {
   "service": "slack" | "email" | "googlesheets",
@@ -572,6 +596,7 @@ FlowMaestro supports 20+ node types for building comprehensive workflows.
 **Purpose**: Generate vector embeddings for semantic search
 
 **Configuration**:
+
 ```json
 {
   "provider": "openai" | "cohere",
@@ -588,6 +613,7 @@ FlowMaestro supports 20+ node types for building comprehensive workflows.
 **Purpose**: Set or get workflow-level variables
 
 **Configuration**:
+
 ```json
 {
   "operation": "set" | "get",
@@ -614,17 +640,20 @@ FlowMaestro workflows can be triggered automatically via schedules, webhooks, or
 The trigger system uses three database tables:
 
 **workflow_triggers**:
+
 - Stores trigger configuration (type, config, enabled status)
 - Links to workflows via `workflow_id`
 - Tracks execution metadata (last run, next run, execution count)
 - Stores webhook secrets and Temporal schedule IDs
 
 **trigger_executions**:
+
 - Links triggers to workflow executions
 - Stores trigger payload for debugging
 - Creates audit trail of trigger activations
 
 **webhook_logs**:
+
 - Comprehensive audit log for webhook requests
 - Captures request/response details, processing time
 - Records IP addresses and user agents for security monitoring
@@ -634,6 +663,7 @@ The trigger system uses three database tables:
 Schedule triggers leverage Temporal's scheduling infrastructure for reliable, distributed cron-based execution.
 
 **Features**:
+
 - Standard cron expressions (e.g., `"0 9 * * *"` for daily at 9 AM)
 - Full timezone support (schedule relative to any timezone)
 - Overlap policy (buffer one execution, drop subsequent)
@@ -642,6 +672,7 @@ Schedule triggers leverage Temporal's scheduling infrastructure for reliable, di
 - Automatic sync on startup (schedules persist across server restarts)
 
 **Creating a Schedule Trigger**:
+
 ```bash
 POST /api/triggers
 Authorization: Bearer <token>
@@ -659,6 +690,7 @@ Authorization: Bearer <token>
 ```
 
 **Data Flow**:
+
 ```
 1. User creates schedule trigger via API
    ↓
@@ -684,18 +716,20 @@ Authorization: Bearer <token>
 Webhook triggers enable external services to initiate workflow execution through HTTP requests.
 
 **Features**:
+
 - Unique webhook URL for each trigger (`/api/webhooks/{triggerId}`)
 - Four authentication types:
-  - **None**: For trusted internal networks
-  - **API Key**: Secret key in headers
-  - **HMAC Signature**: Cryptographic request signing (GitHub/Stripe pattern)
-  - **Bearer Token**: Token-based authentication
+    - **None**: For trusted internal networks
+    - **API Key**: Secret key in headers
+    - **HMAC Signature**: Cryptographic request signing (GitHub/Stripe pattern)
+    - **Bearer Token**: Token-based authentication
 - HTTP method validation (GET, POST, PUT, DELETE, PATCH)
 - Origin whitelisting for CORS protection
 - Comprehensive request/response logging
 - Asynchronous execution (202 Accepted response)
 
 **Creating a Webhook Trigger**:
+
 ```bash
 POST /api/triggers
 Authorization: Bearer <token>
@@ -718,6 +752,7 @@ Authorization: Bearer <token>
 ```
 
 **Calling a Webhook**:
+
 ```bash
 POST /api/webhooks/{triggerId}
 X-Signature: sha256=<hmac-signature>
@@ -738,6 +773,7 @@ Content-Type: application/json
 ```
 
 **Data Flow**:
+
 ```
 1. External service sends HTTP request to /api/webhooks/{triggerId}
    ↓
@@ -755,19 +791,23 @@ Content-Type: application/json
 ### Security Features
 
 **Webhook Authentication**:
+
 - HMAC-SHA256 signature verification with timing-safe comparison
 - Unique secret per trigger for granular revocation
 - Bearer token and API key support
 
 **Authorization**:
+
 - Trigger management requires JWT authentication
 - Webhook receiver intentionally public (auth via webhook mechanisms)
 
 **Origin Validation**:
+
 - CORS origin whitelisting
 - Reject requests from unauthorized domains
 
 **Audit Trail**:
+
 - Complete webhook request/response logging
 - Execution tracking (link executions to triggers)
 - IP address and user agent capture
@@ -775,6 +815,7 @@ Content-Type: application/json
 ### Trigger API Endpoints
 
 **Trigger Management**:
+
 - `POST /api/triggers` - Create trigger (registers with Temporal if schedule)
 - `GET /api/triggers` - List triggers (filter by workflowId or type)
 - `GET /api/triggers/:id` - Get trigger (includes live schedule info from Temporal)
@@ -782,9 +823,10 @@ Content-Type: application/json
 - `DELETE /api/triggers/:id` - Delete trigger (removes from Temporal)
 
 **Webhook Receiver**:
+
 - `ANY /api/webhooks/:triggerId` - Public endpoint for webhook requests
-  - Returns 202 Accepted with execution ID
-  - Error codes: 404 (not found), 403 (origin blocked), 401 (auth failed), 405 (method mismatch), 500 (internal error)
+    - Returns 202 Accepted with execution ID
+    - Error codes: 404 (not found), 403 (origin blocked), 401 (auth failed), 405 (method mismatch), 500 (internal error)
 
 ---
 
@@ -808,6 +850,7 @@ FlowMaestro can generate complete, executable workflows from natural language de
 The system prompt (~3000-4000 tokens) consists of four parts:
 
 **1. Role & Objective**:
+
 ```
 You are an expert workflow automation designer for FlowMaestro, a visual workflow builder.
 
@@ -829,44 +872,50 @@ Rules:
 **2. Node Catalog**: Complete specifications for all 16 node types (see [Node Types Catalog](#node-types-catalog) section)
 
 **3. Edge Connection Rules**:
+
 - Node IDs: "node-0", "node-1", "node-2", etc.
 - Source handles: "output" (most nodes), "true"/"false" (conditional), case names (switch)
 - Target handles: "input"
 - Entry point: First node in execution order
 
 **4. Output JSON Schema**:
+
 ```json
 {
-  "nodes": [
-    {
-      "id": "node-0",
-      "type": "input|llm|http|...",
-      "label": "User-friendly name",
-      "config": { /* node-specific config */ }
+    "nodes": [
+        {
+            "id": "node-0",
+            "type": "input|llm|http|...",
+            "label": "User-friendly name",
+            "config": {
+                /* node-specific config */
+            }
+        }
+    ],
+    "edges": [
+        {
+            "source": "node-0",
+            "target": "node-1",
+            "sourceHandle": "output",
+            "targetHandle": "input"
+        }
+    ],
+    "metadata": {
+        "name": "Concise workflow name (3-6 words)",
+        "entryNodeId": "node-0",
+        "description": "Brief description"
     }
-  ],
-  "edges": [
-    {
-      "source": "node-0",
-      "target": "node-1",
-      "sourceHandle": "output",
-      "targetHandle": "input"
-    }
-  ],
-  "metadata": {
-    "name": "Concise workflow name (3-6 words)",
-    "entryNodeId": "node-0",
-    "description": "Brief description"
-  }
 }
 ```
 
 ### Example: API + AI Summarization
 
 **User Input**:
+
 > "Fetch latest tech news from NewsAPI and summarize each article with GPT-4"
 
 **Generated Workflow**:
+
 - **Node 0**: HTTP node to fetch news
 - **Node 1**: Transform node to extract articles
 - **Node 2**: Loop node to process each article
@@ -884,21 +933,23 @@ When nodes are generated, they're positioned automatically:
 3. **Topological Sort**: Order nodes by execution flow
 4. **Level Assignment**: Use BFS to assign depth levels
 5. **Position Calculation**:
-   - x = level × 250
-   - y = 300 + (nodeInLevel × 150)
+    - x = level × 250
+    - y = 300 + (nodeInLevel × 150)
 6. **Special Handling**:
-   - Conditional: True branch up, false branch down
-   - Loop: Stack iterations vertically
-   - Parallel branches: Fan out vertically
+    - Conditional: True branch up, false branch down
+    - Loop: Stack iterations vertically
+    - Parallel branches: Fan out vertically
 
 ### Implementation
 
 **Backend**:
+
 - `/api/workflows/generate` - POST endpoint
 - `/services/workflow-generator.ts` - Prompt building and LLM call
 - Uses `executeLLMNode` with user credentials
 
 **Frontend**:
+
 - `AIGenerateButton.tsx` - Magic wand button
 - `AIGenerateDialog.tsx` - Prompt input modal
 - `workflow-layout.ts` - Auto-layout algorithm
@@ -913,17 +964,19 @@ The Agent workflow node (type: "agent") enables AI agents to be executed as part
 **Purpose**: Execute AI agent conversations within workflows
 
 **Configuration**:
+
 ```json
 {
-  "agentId": "string (REQUIRED - ID of configured agent)",
-  "input": "string (user message, supports variable interpolation)",
-  "conversationId": "string (optional - continue existing conversation)",
-  "streamResponse": "boolean (default: false - stream tokens in real-time)",
-  "outputVariable": "string (optional - variable name for agent response)"
+    "agentId": "string (REQUIRED - ID of configured agent)",
+    "input": "string (user message, supports variable interpolation)",
+    "conversationId": "string (optional - continue existing conversation)",
+    "streamResponse": "boolean (default: false - stream tokens in real-time)",
+    "outputVariable": "string (optional - variable name for agent response)"
 }
 ```
 
 **Features**:
+
 - Execute any configured agent from the agent builder
 - Pass workflow variables as agent input
 - Continue multi-turn conversations
@@ -932,20 +985,22 @@ The Agent workflow node (type: "agent") enables AI agents to be executed as part
 - Memory management (buffer, summary, vector)
 
 **Example**:
+
 ```json
 {
-  "type": "agent",
-  "label": "Research Assistant",
-  "config": {
-    "agentId": "research-agent-uuid",
-    "input": "Research the following topic: ${topic}",
-    "streamResponse": true,
-    "outputVariable": "researchResults"
-  }
+    "type": "agent",
+    "label": "Research Assistant",
+    "config": {
+        "agentId": "research-agent-uuid",
+        "input": "Research the following topic: ${topic}",
+        "streamResponse": true,
+        "outputVariable": "researchResults"
+    }
 }
 ```
 
 **Use Cases**:
+
 - Content analysis and generation within workflows
 - Dynamic decision-making based on AI reasoning
 - Complex research tasks with tool usage
@@ -970,6 +1025,7 @@ FlowMaestro supports powerful variable interpolation throughout workflows.
 ### Execution Context
 
 Each node receives an execution context containing:
+
 - **Workflow inputs**: Initial variables passed at execution start
 - **Previous node outputs**: All upstream node results
 - **Loop variables**: Current item and index (when inside loop)
@@ -1015,6 +1071,7 @@ The FlowMaestro workflow builder provides an intuitive visual interface powered 
 ### Workflow Actions
 
 **Top Bar Actions**:
+
 - **Save**: Persist workflow definition
 - **Test**: Execute workflow with test inputs
 - **Trigger**: Configure triggers (schedule/webhook)
@@ -1022,6 +1079,7 @@ The FlowMaestro workflow builder provides an intuitive visual interface powered 
 - **Settings**: Workflow metadata and configuration
 
 **Context Menu** (right-click node):
+
 - **Edit**: Open configuration panel
 - **Duplicate**: Copy node with config
 - **Delete**: Remove node and connections
@@ -1030,6 +1088,7 @@ The FlowMaestro workflow builder provides an intuitive visual interface powered 
 ### Execution Monitoring
 
 During execution, the canvas shows:
+
 - **Node status**: Pending (gray), Running (blue), Success (green), Error (red)
 - **Progress indicator**: Animated border for active nodes
 - **Execution logs**: Expandable panel with detailed logs

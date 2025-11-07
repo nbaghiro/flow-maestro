@@ -20,8 +20,16 @@ export const updateIntegrationSchema = z.object({
 // Query parameters for listing integrations
 export const listIntegrationsQuerySchema = z.object({
     type: z.string().optional(),
-    limit: z.string().transform((val) => parseInt(val)).pipe(z.number().min(1).max(100)).optional(),
-    offset: z.string().transform((val) => parseInt(val)).pipe(z.number().min(0)).optional()
+    limit: z
+        .string()
+        .transform((val) => parseInt(val))
+        .pipe(z.number().min(1).max(100))
+        .optional(),
+    offset: z
+        .string()
+        .transform((val) => parseInt(val))
+        .pipe(z.number().min(0))
+        .optional()
 });
 
 // URL parameters

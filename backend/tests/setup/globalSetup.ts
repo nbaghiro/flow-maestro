@@ -22,11 +22,10 @@ export function getTestPool(): Pool {
             port: parseInt(process.env.POSTGRES_PORT || "5432"),
             database: process.env.POSTGRES_DB || "flowmaestro",
             user: process.env.POSTGRES_USER || "flowmaestro",
-            password:
-                process.env.POSTGRES_PASSWORD || "flowmaestro_dev_password",
+            password: process.env.POSTGRES_PASSWORD || "flowmaestro_dev_password",
             max: 10,
             idleTimeoutMillis: 30000,
-            connectionTimeoutMillis: 2000,
+            connectionTimeoutMillis: 2000
         });
     }
 
@@ -53,8 +52,7 @@ export default async function globalSetup(): Promise<void> {
     process.env.NODE_ENV = "test";
     process.env.LOG_LEVEL = "error";
     process.env.JWT_SECRET = "test-jwt-secret-key-for-testing";
-    process.env.ENCRYPTION_KEY =
-        "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+    process.env.ENCRYPTION_KEY = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
 
     // Test database connection
     try {

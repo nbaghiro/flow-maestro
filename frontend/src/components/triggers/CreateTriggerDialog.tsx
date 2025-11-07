@@ -57,7 +57,7 @@ export function CreateTriggerDialog({ workflowId, onClose, onSuccess }: CreateTr
         setLoading(true);
 
         try {
-            let config: any;
+            let config: unknown;
             if (triggerType === "schedule") {
                 config = {
                     cronExpression,
@@ -72,7 +72,7 @@ export function CreateTriggerDialog({ workflowId, onClose, onSuccess }: CreateTr
                 };
             } else if (triggerType === "manual") {
                 // Convert inputs array to object, filtering out empty keys
-                const inputsObject: Record<string, any> = {};
+                const inputsObject: Record<string, unknown> = {};
                 manualInputs.forEach(({ key, value }) => {
                     if (key.trim()) {
                         // Try to parse value as JSON, otherwise use as string
@@ -107,7 +107,7 @@ export function CreateTriggerDialog({ workflowId, onClose, onSuccess }: CreateTr
                 name: name.trim(),
                 triggerType,
                 enabled: true,
-                config
+                config: config as Record<string, unknown>
             };
 
             await createTrigger(input);
@@ -396,7 +396,17 @@ export function CreateTriggerDialog({ workflowId, onClose, onSuccess }: CreateTr
                                     </label>
                                     <select
                                         value={webhookMethod}
-                                        onChange={(e) => setWebhookMethod(e.target.value as any)}
+                                        onChange={(e) =>
+                                            setWebhookMethod(
+                                                e.target.value as
+                                                    | "GET"
+                                                    | "POST"
+                                                    | "PUT"
+                                                    | "DELETE"
+                                                    | "PATCH"
+                                                    | "ANY"
+                                            )
+                                        }
                                         className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                                         disabled={loading}
                                     >
@@ -415,7 +425,15 @@ export function CreateTriggerDialog({ workflowId, onClose, onSuccess }: CreateTr
                                     </label>
                                     <select
                                         value={authType}
-                                        onChange={(e) => setAuthType(e.target.value as any)}
+                                        onChange={(e) =>
+                                            setAuthType(
+                                                e.target.value as
+                                                    | "none"
+                                                    | "hmac"
+                                                    | "bearer"
+                                                    | "api_key"
+                                            )
+                                        }
                                         className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                                         disabled={loading}
                                     >

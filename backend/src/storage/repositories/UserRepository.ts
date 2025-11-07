@@ -37,7 +37,7 @@ export class UserRepository {
 
     async update(id: string, input: UpdateUserInput): Promise<UserModel | null> {
         const updates: string[] = [];
-        const values: any[] = [];
+        const values: unknown[] = [];
         let paramIndex = 1;
 
         if (input.email !== undefined) {
@@ -86,12 +86,24 @@ export class UserRepository {
         return (result.rowCount || 0) > 0;
     }
 
-    private mapRow(row: any): UserModel {
+    private mapRow(row: unknown): UserModel {
+        const r = row as {
+            id: string;
+            email: string;
+            password_hash: string;
+            name: string | null;
+            created_at: string | Date;
+            updated_at: string | Date;
+            last_login_at: string | Date | null;
+        };
         return {
-            ...row,
-            created_at: new Date(row.created_at),
-            updated_at: new Date(row.updated_at),
-            last_login_at: row.last_login_at ? new Date(row.last_login_at) : null
+            id: r.id,
+            email: r.email,
+            password_hash: r.password_hash,
+            name: r.name,
+            created_at: new Date(r.created_at),
+            updated_at: new Date(r.updated_at),
+            last_login_at: r.last_login_at ? new Date(r.last_login_at) : null
         };
     }
 }

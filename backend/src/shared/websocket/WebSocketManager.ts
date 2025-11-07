@@ -80,7 +80,9 @@ export class WebSocketManager {
         this.executionSubscribers.get(executionId)!.add(connectionId);
 
         console.log(`Subscribed connection ${connectionId} to execution ${executionId}`);
-        console.log(`Total subscribers for ${executionId}: ${this.executionSubscribers.get(executionId)!.size}`);
+        console.log(
+            `Total subscribers for ${executionId}: ${this.executionSubscribers.get(executionId)!.size}`
+        );
     }
 
     unsubscribeFromExecution(connectionId: string, executionId: string): void {
@@ -103,7 +105,7 @@ export class WebSocketManager {
 
         // If it's an execution-related event, send to subscribers
         if ("executionId" in event) {
-            const executionId = (event as any).executionId;
+            const executionId = (event as WebSocketEvent & { executionId: string }).executionId;
             console.log(`Broadcasting ${event.type} to execution ${executionId} subscribers`);
             this.broadcastToExecution(executionId, event);
         } else {
@@ -145,27 +147,30 @@ export class WebSocketManager {
         });
     }
 
-    private handleMessage(connectionId: string, data: any): void {
+    private handleMessage(connectionId: string, data: unknown): void {
         const connection = this.connections.get(connectionId);
         if (!connection) return;
 
+        // Type guard for message data
+        const message = data as { type?: string; executionId?: string };
+
         // Handle subscription requests
-        if (data.type === "subscribe" && data.executionId) {
-            this.subscribeToExecution(connectionId, data.executionId);
+        if (message.type === "subscribe" && message.executionId) {
+            this.subscribeToExecution(connectionId, message.executionId);
             // Send acknowledgment
             connection.socket.send(
                 JSON.stringify({
                     type: "subscribed",
-                    executionId: data.executionId
+                    executionId: message.executionId
                 })
             );
-        } else if (data.type === "unsubscribe" && data.executionId) {
-            this.unsubscribeFromExecution(connectionId, data.executionId);
+        } else if (message.type === "unsubscribe" && message.executionId) {
+            this.unsubscribeFromExecution(connectionId, message.executionId);
             // Send acknowledgment
             connection.socket.send(
                 JSON.stringify({
                     type: "unsubscribed",
-                    executionId: data.executionId
+                    executionId: message.executionId
                 })
             );
         }

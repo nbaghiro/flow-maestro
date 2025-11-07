@@ -1,7 +1,10 @@
 import { WorkflowDefinition, WorkflowEdge, WorkflowNode } from "@flowmaestro/shared";
 
 export class ValidationError extends Error {
-    constructor(message: string, public details?: any) {
+    constructor(
+        message: string,
+        public details?: unknown
+    ) {
         super(message);
         this.name = "ValidationError";
     }
@@ -50,7 +53,11 @@ export class GraphValidator {
                 throw new ValidationError(`Node ${nodeId} must have a config object`);
             }
 
-            if (!node.position || typeof node.position.x !== "number" || typeof node.position.y !== "number") {
+            if (
+                !node.position ||
+                typeof node.position.x !== "number" ||
+                typeof node.position.y !== "number"
+            ) {
                 throw new ValidationError(`Node ${nodeId} must have valid position coordinates`);
             }
         });
@@ -107,10 +114,9 @@ export class GraphValidator {
                         return true;
                     }
                 } else if (recursionStack.has(neighbor)) {
-                    throw new ValidationError(
-                        `Cycle detected: ${nodeId} → ${neighbor}`,
-                        { path: Array.from(recursionStack) }
-                    );
+                    throw new ValidationError(`Cycle detected: ${nodeId} → ${neighbor}`, {
+                        path: Array.from(recursionStack)
+                    });
                 }
             }
 
@@ -147,10 +153,9 @@ export class GraphValidator {
         );
 
         if (unreachableNodes.length > 0) {
-            throw new ValidationError(
-                "Some nodes are not reachable from entry point",
-                { unreachableNodes }
-            );
+            throw new ValidationError("Some nodes are not reachable from entry point", {
+                unreachableNodes
+            });
         }
     }
 

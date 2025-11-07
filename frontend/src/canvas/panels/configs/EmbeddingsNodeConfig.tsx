@@ -8,8 +8,8 @@ import {
 } from "@flowmaestro/shared";
 
 interface EmbeddingsNodeConfigProps {
-    data: any;
-    onUpdate: (config: any) => void;
+    data: Record<string, unknown>;
+    onUpdate: (config: unknown) => void;
 }
 
 const dimensionsByModel: Record<string, number> = {
@@ -25,15 +25,15 @@ const dimensionsByModel: Record<string, number> = {
 };
 
 export function EmbeddingsNodeConfig({ data, onUpdate }: EmbeddingsNodeConfigProps) {
-    const [provider, setProvider] = useState(data.provider || "openai");
+    const [provider, setProvider] = useState((data.provider as string) || "openai");
     const [model, setModel] = useState(
-        data.model || getDefaultModelForProvider(data.provider || "openai")
+        (data.model as string) || getDefaultModelForProvider((data.provider as string) || "openai")
     );
-    const [input, setInput] = useState(data.input || "");
-    const [batchMode, setBatchMode] = useState(data.batchMode || false);
-    const [outputVariable, setOutputVariable] = useState(data.outputVariable || "");
+    const [input, setInput] = useState((data.input as string) || "");
+    const [batchMode, setBatchMode] = useState((data.batchMode as boolean) || false);
+    const [outputVariable, setOutputVariable] = useState((data.outputVariable as string) || "");
 
-    const dimensions = dimensionsByModel[model] || 1536;
+    const dimensions = dimensionsByModel[model as keyof typeof dimensionsByModel] || 1536;
 
     useEffect(() => {
         onUpdate({
@@ -78,7 +78,7 @@ export function EmbeddingsNodeConfig({ data, onUpdate }: EmbeddingsNodeConfigPro
                         onChange={(e) => setModel(e.target.value)}
                         className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                     >
-                        {LLM_MODELS_BY_PROVIDER[provider]?.map((m) => (
+                        {LLM_MODELS_BY_PROVIDER[provider as keyof typeof LLM_MODELS_BY_PROVIDER]?.map((m) => (
                             <option key={m.value} value={m.value}>
                                 {m.label}
                             </option>
@@ -135,7 +135,7 @@ export function EmbeddingsNodeConfig({ data, onUpdate }: EmbeddingsNodeConfigPro
 
             <FormSection title="Output Settings">
                 <OutputSettingsSection
-                    nodeName={data.label || "Embeddings"}
+                    nodeName={(data.label as string) || "Embeddings"}
                     nodeType="embeddings"
                     value={outputVariable}
                     onChange={setOutputVariable}

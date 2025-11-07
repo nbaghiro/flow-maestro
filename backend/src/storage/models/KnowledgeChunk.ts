@@ -1,10 +1,11 @@
-export interface ChunkMetadata {
+import type { JsonValue } from "@flowmaestro/shared";
+
+export interface ChunkMetadata extends Record<string, JsonValue | undefined> {
     page?: number;
     section?: string;
     heading?: string;
     start_char?: number;
     end_char?: number;
-    [key: string]: any; // Allow additional custom metadata
 }
 
 export interface KnowledgeChunkModel {

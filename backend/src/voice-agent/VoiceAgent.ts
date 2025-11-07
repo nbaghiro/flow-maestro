@@ -1,13 +1,23 @@
-import { Room, RoomEvent, RemoteParticipant, RemoteTrack, RemoteTrackPublication } from "livekit-client";
-import { VoiceCommandBus, VoiceCommand, VoiceCommandResponse } from "../shared/services/VoiceCommandBus";
+import {
+    Room,
+    RoomEvent,
+    RemoteParticipant,
+    RemoteTrack,
+    RemoteTrackPublication
+} from "livekit-client";
+import {
+    VoiceCommandBus,
+    VoiceCommand,
+    VoiceCommandResponse
+} from "../shared/services/VoiceCommandBus";
 import { CallExecutionRepository } from "../storage/repositories/CallExecutionRepository";
 import { DeepgramSTT } from "./services/DeepgramSTT";
 import { ElevenLabsTTS } from "./services/ElevenLabsTTS";
 import { VoiceActivityDetector } from "./services/VoiceActivityDetector";
 
 // Type stubs for browser APIs
-type MediaStream = any;
-type AudioBuffer = any;
+type MediaStream = unknown;
+type AudioBuffer = unknown;
 
 /**
  * VoiceAgent - Handles a single phone call session
@@ -27,11 +37,7 @@ export class VoiceAgent {
     // State
     private currentCommand: VoiceCommand | null = null;
 
-    constructor(
-        room: Room,
-        callExecutionId: string,
-        commandBus: VoiceCommandBus
-    ) {
+    constructor(room: Room, callExecutionId: string, commandBus: VoiceCommandBus) {
         this.room = room;
         this.callExecutionId = callExecutionId;
         this.commandBus = commandBus;
@@ -60,12 +66,12 @@ export class VoiceAgent {
             call_execution_id: this.callExecutionId,
             event_type: "agent:joined",
             event_data: {
-                room_name: this.room.name,
+                room_name: this.room.name
             },
-            severity: "info",
+            severity: "info"
         });
 
-        console.log(`[VoiceAgent] Agent started and listening for commands`);
+        console.log("[VoiceAgent] Agent started and listening for commands");
     }
 
     /**
@@ -87,12 +93,12 @@ export class VoiceAgent {
             call_execution_id: this.callExecutionId,
             event_type: "agent:left",
             event_data: {
-                room_name: this.room.name,
+                room_name: this.room.name
             },
-            severity: "info",
+            severity: "info"
         });
 
-        console.log(`[VoiceAgent] Agent stopped`);
+        console.log("[VoiceAgent] Agent stopped");
     }
 
     /**
@@ -104,12 +110,15 @@ export class VoiceAgent {
             console.log(`[VoiceAgent] Participant connected: ${participant.identity}`);
 
             // Subscribe to their audio track
-            participant.on("trackSubscribed", (track: RemoteTrack, _publication: RemoteTrackPublication) => {
-                if (track.kind === "audio") {
-                    console.log(`[VoiceAgent] Subscribed to audio track`);
-                    this.onAudioTrackReceived(track);
+            participant.on(
+                "trackSubscribed",
+                (track: RemoteTrack, _publication: RemoteTrackPublication) => {
+                    if (track.kind === "audio") {
+                        console.log("[VoiceAgent] Subscribed to audio track");
+                        this.onAudioTrackReceived(track);
+                    }
                 }
-            });
+            );
         });
 
         // Handle participant disconnected
@@ -120,7 +129,7 @@ export class VoiceAgent {
 
         // Handle room disconnected
         this.room.on(RoomEvent.Disconnected, () => {
-            console.log(`[VoiceAgent] Room disconnected`);
+            console.log("[VoiceAgent] Room disconnected");
             this.stop();
         });
     }
@@ -129,13 +138,10 @@ export class VoiceAgent {
      * Subscribe to commands from the backend
      */
     private async subscribeToCommands(): Promise<void> {
-        await this.commandBus.subscribeToEvents(
-            this.callExecutionId,
-            async (_event) => {
-                // For now, we'll implement command handling via the separate subscribe
-                // The VoiceCommandBus will need a method to subscribe to commands
-            }
-        );
+        await this.commandBus.subscribeToEvents(this.callExecutionId, async (_event) => {
+            // For now, we'll implement command handling via the separate subscribe
+            // The VoiceCommandBus will need a method to subscribe to commands
+        });
 
         // We need to add a method to VoiceCommandBus to subscribe to commands
         // For now, let's handle this with Redis directly in the worker
@@ -145,21 +151,21 @@ export class VoiceAgent {
      * Handle audio track from SIP participant
      */
     private onAudioTrackReceived(track: RemoteTrack): void {
-        console.log(`[VoiceAgent] Setting up audio pipeline`);
+        console.log("[VoiceAgent] Setting up audio pipeline");
 
         // Connect audio track to VAD
         this.vad.start(track.mediaStream as MediaStream);
 
         // Set up VAD events
         this.vad.on("speech-start", () => {
-            console.log(`[VoiceAgent] Speech detected`);
+            console.log("[VoiceAgent] Speech detected");
 
             // If currently playing TTS, stop it (interruption)
             if (this.currentCommand?.type === "speak") {
                 this.tts.stop();
                 this.sendCommandResponse(this.currentCommand.requestId, {
                     success: true,
-                    result: { interrupted: true },
+                    result: { interrupted: true }
                 });
                 this.currentCommand = null;
             }
@@ -171,7 +177,7 @@ export class VoiceAgent {
         });
 
         this.vad.on("speech-end", () => {
-            console.log(`[VoiceAgent] Speech ended`);
+            console.log("[VoiceAgent] Speech ended");
 
             // Stop STT if running
             if (this.currentCommand?.type === "listen") {
@@ -188,7 +194,21 @@ export class VoiceAgent {
     private async _handleSpeakCommand(command: VoiceCommand): Promise<void> {
         this.currentCommand = command;
 
-        const { text, voice, voiceProvider, speed, interruptible: _interruptible } = command.payload;
+        const payload = command.payload as {
+            text?: unknown;
+            voice?: unknown;
+            voiceProvider?: unknown;
+            speed?: unknown;
+            interruptible?: unknown;
+        };
+
+        const text = typeof payload.text === "string" ? payload.text : "";
+        const voice = typeof payload.voice === "string" ? payload.voice : "default";
+        const voiceProvider = (payload.voiceProvider === "openai" || payload.voiceProvider === "elevenlabs")
+            ? payload.voiceProvider
+            : "elevenlabs";
+        const speed = typeof payload.speed === "number" ? payload.speed : 1.0;
+        // Note: interruptible handling would be implemented when this method is activated
 
         console.log(`[VoiceAgent] Speaking: "${text}"`);
 
@@ -196,27 +216,32 @@ export class VoiceAgent {
             // Generate TTS audio
             const audioBuffer = await this.tts.synthesize({
                 text,
-                voice: voice || "default",
-                voiceProvider: voiceProvider || "elevenlabs",
-                speed: speed || 1.0,
+                voice,
+                voiceProvider,
+                speed
             });
 
             // Play audio to room
             await this.playAudioToRoom(audioBuffer);
 
+            const audioBufferTyped = audioBuffer as {
+                duration: number;
+            };
+
             // Send success response
             this.sendCommandResponse(command.requestId, {
                 success: true,
                 result: {
-                    durationMs: audioBuffer.duration * 1000,
-                    interrupted: false,
-                },
+                    durationMs: audioBufferTyped.duration * 1000,
+                    interrupted: false
+                }
             });
-        } catch (error: any) {
-            console.error(`[VoiceAgent] Speak error:`, error);
+        } catch (error: unknown) {
+            const errorMsg = error instanceof Error ? error.message : String(error);
+            console.error("[VoiceAgent] Speak error:", errorMsg);
             this.sendCommandResponse(command.requestId, {
                 success: false,
-                error: error.message,
+                error: errorMsg
             });
         } finally {
             this.currentCommand = null;
@@ -231,7 +256,16 @@ export class VoiceAgent {
     private async _handleListenCommand(command: VoiceCommand): Promise<void> {
         this.currentCommand = command;
 
-        const { maxDuration, endSilenceMs, language: _language, sttProvider: _sttProvider } = command.payload;
+        const payload = command.payload as {
+            maxDuration?: unknown;
+            endSilenceMs?: unknown;
+            language?: unknown;
+            sttProvider?: unknown;
+        };
+
+        const maxDuration = typeof payload.maxDuration === "number" ? payload.maxDuration : 30;
+        const endSilenceMs = typeof payload.endSilenceMs === "number" ? payload.endSilenceMs : 1500;
+        // Note: language and sttProvider handling would be implemented when this method is activated
 
         console.log(`[VoiceAgent] Listening for speech (max ${maxDuration}s)`);
 
@@ -246,14 +280,15 @@ export class VoiceAgent {
                     transcript: transcript.text,
                     confidence: transcript.confidence,
                     durationMs: transcript.durationMs,
-                    timedOut: transcript.timedOut,
-                },
+                    timedOut: transcript.timedOut
+                }
             });
-        } catch (error: any) {
-            console.error(`[VoiceAgent] Listen error:`, error);
+        } catch (error: unknown) {
+            const errorMsg = error instanceof Error ? error.message : String(error);
+            console.error("[VoiceAgent] Listen error:", errorMsg);
             this.sendCommandResponse(command.requestId, {
                 success: false,
-                error: error.message,
+                error: errorMsg
             });
         } finally {
             this.currentCommand = null;
@@ -268,7 +303,17 @@ export class VoiceAgent {
     private async _handleMenuCommand(command: VoiceCommand): Promise<void> {
         this.currentCommand = command;
 
-        const { options, inputMethod, timeoutSeconds } = command.payload;
+        const payload = command.payload as {
+            options?: unknown;
+            inputMethod?: unknown;
+            timeoutSeconds?: unknown;
+        };
+
+        const options = Array.isArray(payload.options)
+            ? payload.options as Array<{ key: string; label: string }>
+            : [];
+        const inputMethod = payload.inputMethod;
+        const timeoutSeconds = typeof payload.timeoutSeconds === "number" ? payload.timeoutSeconds : 10;
 
         console.log(`[VoiceAgent] Presenting menu with ${options.length} options`);
 
@@ -284,16 +329,17 @@ export class VoiceAgent {
                     success: true,
                     result: {
                         selectedOption,
-                        inputMethod: "voice",
-                    },
+                        inputMethod: "voice"
+                    }
                 });
             }
             // TODO: Implement DTMF handling
-        } catch (error: any) {
-            console.error(`[VoiceAgent] Menu error:`, error);
+        } catch (error: unknown) {
+            const errorMsg = error instanceof Error ? error.message : String(error);
+            console.error("[VoiceAgent] Menu error:", errorMsg);
             this.sendCommandResponse(command.requestId, {
                 success: false,
-                error: error.message,
+                error: errorMsg
             });
         } finally {
             this.currentCommand = null;
@@ -306,20 +352,21 @@ export class VoiceAgent {
      */
     // @ts-expect-error - Method reserved for future command handling implementation
     private async _handleHangupCommand(command: VoiceCommand): Promise<void> {
-        console.log(`[VoiceAgent] Hanging up call`);
+        console.log("[VoiceAgent] Hanging up call");
 
         try {
             await this.stop();
 
             this.sendCommandResponse(command.requestId, {
                 success: true,
-                result: {},
+                result: {}
             });
-        } catch (error: any) {
-            console.error(`[VoiceAgent] Hangup error:`, error);
+        } catch (error: unknown) {
+            const errorMsg = error instanceof Error ? error.message : String(error);
+            console.error("[VoiceAgent] Hangup error:", errorMsg);
             this.sendCommandResponse(command.requestId, {
                 success: false,
-                error: error.message,
+                error: errorMsg
             });
         }
     }
@@ -349,15 +396,20 @@ export class VoiceAgent {
                     text: finalTranscript,
                     confidence,
                     durationMs: Date.now() - startTime,
-                    timedOut: true,
+                    timedOut: true
                 });
             }, maxDurationMs);
 
             // STT result handler
-            this.stt.on("transcript", (result: any) => {
-                if (result.is_final) {
-                    finalTranscript = result.text;
-                    confidence = result.confidence || 0;
+            this.stt.on("transcript", (result: unknown) => {
+                const transcriptResult = result as {
+                    is_final?: boolean;
+                    text?: string;
+                    confidence?: number;
+                };
+                if (transcriptResult.is_final) {
+                    finalTranscript = transcriptResult.text || "";
+                    confidence = transcriptResult.confidence || 0;
                     speechDetected = true;
                 }
             });
@@ -371,7 +423,7 @@ export class VoiceAgent {
                             text: finalTranscript,
                             confidence,
                             durationMs: Date.now() - startTime,
-                            timedOut: false,
+                            timedOut: false
                         });
                     }, endSilenceMs);
                 }
@@ -382,7 +434,10 @@ export class VoiceAgent {
     /**
      * Match transcript text to menu option
      */
-    private matchTranscriptToOption(transcript: string, options: any[]): string | null {
+    private matchTranscriptToOption(
+        transcript: string,
+        options: Array<{ key: string; label: string }>
+    ): string | null {
         const lowerTranscript = transcript.toLowerCase();
 
         // Try exact key match
@@ -408,7 +463,10 @@ export class VoiceAgent {
     private async playAudioToRoom(audioBuffer: AudioBuffer): Promise<void> {
         // TODO: Implement audio playback to room
         // This requires creating a local audio track and publishing it
-        console.log(`[VoiceAgent] Playing audio (${audioBuffer.duration}s)`);
+        const audioBufferTyped = audioBuffer as {
+            duration: number;
+        };
+        console.log(`[VoiceAgent] Playing audio (${audioBufferTyped.duration}s)`);
     }
 
     /**
@@ -420,15 +478,23 @@ export class VoiceAgent {
             callExecutionId: this.callExecutionId,
             success: response.success || false,
             result: response.result,
-            error: response.error,
+            error: response.error
         };
 
-        // Publish response
+        // Publish response - convert to Record<string, unknown>
+        const eventData: Record<string, unknown> = {
+            requestId: fullResponse.requestId,
+            callExecutionId: fullResponse.callExecutionId,
+            success: fullResponse.success,
+            result: fullResponse.result,
+            error: fullResponse.error
+        };
+
         this.commandBus.publishEvent({
             type: "command:response",
             callExecutionId: this.callExecutionId,
             timestamp: Date.now(),
-            data: fullResponse,
+            data: eventData
         });
     }
 }

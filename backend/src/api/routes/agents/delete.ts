@@ -4,7 +4,7 @@ import { AgentRepository } from "../../../storage/repositories/AgentRepository";
 import { NotFoundError } from "../../middleware";
 
 const deleteAgentParamsSchema = z.object({
-    id: z.string().uuid(),
+    id: z.string().uuid()
 });
 
 export async function deleteAgentHandler(
@@ -30,6 +30,6 @@ export async function deleteAgentHandler(
 
     reply.send({
         success: true,
-        message: "Agent deleted successfully",
+        message: "Agent deleted successfully"
     });
 }

@@ -1,15 +1,18 @@
-import { proxyActivities, condition, defineSignal, setHandler, continueAsNew } from "@temporalio/workflow";
+import {
+    proxyActivities,
+    condition,
+    defineSignal,
+    setHandler,
+    continueAsNew
+} from "@temporalio/workflow";
 import type * as activities from "../activities";
 import type { ConversationMessage, ToolCall } from "../../storage/models/AgentExecution";
 import type { Tool } from "../../storage/models/Agent";
 
 // Proxy activities
-const {
-    getAgentConfig,
-    callLLM,
-    executeToolCall,
-    saveAgentCheckpoint
-} = proxyActivities<typeof activities>({
+const { getAgentConfig, callLLM, executeToolCall, saveAgentCheckpoint } = proxyActivities<
+    typeof activities
+>({
     startToCloseTimeout: "10 minutes",
     retry: {
         maximumAttempts: 3,
@@ -96,7 +99,9 @@ export async function agentOrchestratorWorkflow(
 ): Promise<AgentOrchestratorResult> {
     const { executionId, agentId, userId, initialMessage, messages = [], iterations = 0 } = input;
 
-    console.log(`[Agent] Starting orchestrator for execution ${executionId}, iteration ${iterations}`);
+    console.log(
+        `[Agent] Starting orchestrator for execution ${executionId}, iteration ${iterations}`
+    );
 
     // Load agent configuration
     const agent = await getAgentConfig({ agentId, userId });
@@ -226,7 +231,7 @@ export async function agentOrchestratorWorkflow(
         if (!hasToolCalls) {
             // Check if agent needs user input
             if (llmResponse.requiresUserInput) {
-                console.log(`[Agent] Waiting for user input`);
+                console.log("[Agent] Waiting for user input");
 
                 // Wait for user message signal (5 minute timeout)
                 const receivedInput = await condition(() => pendingUserMessage !== null, 300000);
@@ -270,7 +275,7 @@ export async function agentOrchestratorWorkflow(
             }
 
             // Agent is done
-            console.log(`[Agent] Agent completed task`);
+            console.log("[Agent] Agent completed task");
 
             await emitAgentExecutionCompleted({
                 executionId,
@@ -320,7 +325,6 @@ export async function agentOrchestratorWorkflow(
                     toolName: toolCall.name,
                     result: toolResult
                 });
-
             } catch (error) {
                 const errorMessage = error instanceof Error ? error.message : "Unknown tool error";
                 console.error(`[Agent] Tool ${toolCall.name} failed: ${errorMessage}`);

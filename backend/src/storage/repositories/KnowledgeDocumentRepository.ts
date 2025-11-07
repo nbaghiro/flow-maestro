@@ -1,10 +1,32 @@
 import { db } from "../database";
+import type { JsonValue } from "@flowmaestro/shared";
 import {
     KnowledgeDocumentModel,
     CreateKnowledgeDocumentInput,
     UpdateKnowledgeDocumentInput,
-    DocumentStatus
+    DocumentStatus,
+    DocumentSourceType,
+    DocumentFileType
 } from "../models/KnowledgeDocument";
+
+interface KnowledgeDocumentRow {
+    id: string;
+    knowledge_base_id: string;
+    name: string;
+    source_type: string;
+    source_url: string | null;
+    file_path: string | null;
+    file_type: string;
+    file_size: number | null;
+    content: string | null;
+    metadata: string | Record<string, JsonValue>;
+    status: DocumentStatus;
+    error_message: string | null;
+    processing_started_at: string | Date | null;
+    processing_completed_at: string | Date | null;
+    created_at: string | Date;
+    updated_at: string | Date;
+}
 
 export class KnowledgeDocumentRepository {
     async create(input: CreateKnowledgeDocumentInput): Promise<KnowledgeDocumentModel> {
@@ -24,11 +46,11 @@ export class KnowledgeDocumentRepository {
             input.file_type,
             input.file_size || null,
             JSON.stringify(input.metadata || {}),
-            'pending' // Initial status
+            "pending" // Initial status
         ];
 
-        const result = await db.query<KnowledgeDocumentModel>(query, values);
-        return this.mapRow(result.rows[0]);
+        const result = await db.query<KnowledgeDocumentRow>(query, values);
+        return this.mapRow(result.rows[0] as KnowledgeDocumentRow);
     }
 
     async findById(id: string): Promise<KnowledgeDocumentModel | null> {
@@ -37,8 +59,8 @@ export class KnowledgeDocumentRepository {
             WHERE id = $1
         `;
 
-        const result = await db.query<KnowledgeDocumentModel>(query, [id]);
-        return result.rows.length > 0 ? this.mapRow(result.rows[0]) : null;
+        const result = await db.query<KnowledgeDocumentRow>(query, [id]);
+        return result.rows.length > 0 ? this.mapRow(result.rows[0] as KnowledgeDocumentRow) : null;
     }
 
     async findByKnowledgeBaseId(
@@ -59,12 +81,12 @@ export class KnowledgeDocumentRepository {
             WHERE knowledge_base_id = $1
         `;
 
-        const countValues: any[] = [knowledgeBaseId];
-        const queryValues: any[] = [knowledgeBaseId];
+        const countValues: unknown[] = [knowledgeBaseId];
+        const queryValues: unknown[] = [knowledgeBaseId];
 
         if (options.status) {
-            countQuery += ` AND status = $2`;
-            query += ` AND status = $2`;
+            countQuery += " AND status = $2";
+            query += " AND status = $2";
             countValues.push(options.status);
             queryValues.push(options.status);
         }
@@ -74,18 +96,21 @@ export class KnowledgeDocumentRepository {
 
         const [countResult, documentsResult] = await Promise.all([
             db.query<{ count: string }>(countQuery, countValues),
-            db.query<KnowledgeDocumentModel>(query, queryValues)
+            db.query<KnowledgeDocumentRow>(query, queryValues)
         ]);
 
         return {
-            documents: documentsResult.rows.map((row) => this.mapRow(row)),
+            documents: documentsResult.rows.map((row) => this.mapRow(row as KnowledgeDocumentRow)),
             total: parseInt(countResult.rows[0].count)
         };
     }
 
-    async update(id: string, input: UpdateKnowledgeDocumentInput): Promise<KnowledgeDocumentModel | null> {
+    async update(
+        id: string,
+        input: UpdateKnowledgeDocumentInput
+    ): Promise<KnowledgeDocumentModel | null> {
         const updates: string[] = [];
-        const values: any[] = [];
+        const values: unknown[] = [];
         let paramIndex = 1;
 
         if (input.name !== undefined) {
@@ -124,7 +149,7 @@ export class KnowledgeDocumentRepository {
         }
 
         // Always update updated_at
-        updates.push(`updated_at = CURRENT_TIMESTAMP`);
+        updates.push("updated_at = CURRENT_TIMESTAMP");
 
         if (updates.length === 1) {
             // Only updated_at, no actual changes
@@ -139,8 +164,8 @@ export class KnowledgeDocumentRepository {
             RETURNING *
         `;
 
-        const result = await db.query<KnowledgeDocumentModel>(query, values);
-        return result.rows.length > 0 ? this.mapRow(result.rows[0]) : null;
+        const result = await db.query<KnowledgeDocumentRow>(query, values);
+        return result.rows.length > 0 ? this.mapRow(result.rows[0] as KnowledgeDocumentRow) : null;
     }
 
     async delete(id: string): Promise<boolean> {
@@ -159,14 +184,14 @@ export class KnowledgeDocumentRepository {
         status: DocumentStatus,
         errorMessage?: string
     ): Promise<KnowledgeDocumentModel | null> {
-        const updates: string[] = [`status = $1`];
-        const values: any[] = [status];
+        const updates: string[] = ["status = $1"];
+        const values: unknown[] = [status];
         let paramIndex = 2;
 
-        if (status === 'processing') {
-            updates.push(`processing_started_at = CURRENT_TIMESTAMP`);
-        } else if (status === 'ready' || status === 'failed') {
-            updates.push(`processing_completed_at = CURRENT_TIMESTAMP`);
+        if (status === "processing") {
+            updates.push("processing_started_at = CURRENT_TIMESTAMP");
+        } else if (status === "ready" || status === "failed") {
+            updates.push("processing_completed_at = CURRENT_TIMESTAMP");
         }
 
         if (errorMessage !== undefined) {
@@ -174,7 +199,7 @@ export class KnowledgeDocumentRepository {
             values.push(errorMessage);
         }
 
-        updates.push(`updated_at = CURRENT_TIMESTAMP`);
+        updates.push("updated_at = CURRENT_TIMESTAMP");
         values.push(id);
 
         const query = `
@@ -184,8 +209,8 @@ export class KnowledgeDocumentRepository {
             RETURNING *
         `;
 
-        const result = await db.query<KnowledgeDocumentModel>(query, values);
-        return result.rows.length > 0 ? this.mapRow(result.rows[0]) : null;
+        const result = await db.query<KnowledgeDocumentRow>(query, values);
+        return result.rows.length > 0 ? this.mapRow(result.rows[0] as KnowledgeDocumentRow) : null;
     }
 
     async deleteByKnowledgeBaseId(knowledgeBaseId: string): Promise<number> {
@@ -198,16 +223,28 @@ export class KnowledgeDocumentRepository {
         return result.rowCount || 0;
     }
 
-    private mapRow(row: any): KnowledgeDocumentModel {
+    private mapRow(row: KnowledgeDocumentRow): KnowledgeDocumentModel {
         return {
-            ...row,
-            metadata: typeof row.metadata === "string"
-                ? JSON.parse(row.metadata)
-                : row.metadata,
+            id: row.id,
+            knowledge_base_id: row.knowledge_base_id,
+            name: row.name,
+            source_type: row.source_type as DocumentSourceType,
+            source_url: row.source_url,
+            file_path: row.file_path,
+            file_type: row.file_type as DocumentFileType,
+            file_size: row.file_size !== null ? BigInt(row.file_size) : null,
+            content: row.content,
+            metadata: typeof row.metadata === "string" ? JSON.parse(row.metadata) : row.metadata,
+            status: row.status as DocumentStatus,
+            error_message: row.error_message,
+            processing_started_at: row.processing_started_at
+                ? new Date(row.processing_started_at)
+                : null,
+            processing_completed_at: row.processing_completed_at
+                ? new Date(row.processing_completed_at)
+                : null,
             created_at: new Date(row.created_at),
-            updated_at: new Date(row.updated_at),
-            processing_started_at: row.processing_started_at ? new Date(row.processing_started_at) : null,
-            processing_completed_at: row.processing_completed_at ? new Date(row.processing_completed_at) : null
+            updated_at: new Date(row.updated_at)
         };
     }
 }

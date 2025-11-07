@@ -5,7 +5,7 @@ import {
     ConnectionWithData,
     ApiKeyData,
     OAuth2TokenData,
-    MCPConnectionData,
+    MCPConnectionData
 } from "../storage/models/Connection";
 import { getMCPService } from "./mcp/MCPService";
 import { getDefaultModelForProvider } from "@flowmaestro/shared";
@@ -13,7 +13,7 @@ import { getDefaultModelForProvider } from "@flowmaestro/shared";
 export interface ConnectionTestResult {
     success: boolean;
     message: string;
-    details?: any;
+    details?: unknown;
 }
 
 /**
@@ -59,8 +59,8 @@ export class ConnectionTestService {
         } catch (error) {
             return {
                 success: false,
-                message: error instanceof Error ? error.message : "Unknown error",
-                details: error,
+                message: error instanceof Error ? error instanceof Error ? error.message : "Unknown error" : "Unknown error",
+                details: error
             };
         }
     }
@@ -72,7 +72,7 @@ export class ConnectionTestService {
         if (!connection.mcp_server_url) {
             return {
                 success: false,
-                message: "MCP server URL is missing",
+                message: "MCP server URL is missing"
             };
         }
 
@@ -86,19 +86,19 @@ export class ConnectionTestService {
 
             return {
                 success: true,
-                message: `MCP server connected successfully`,
+                message: "MCP server connected successfully",
                 details: {
                     server_name: serverInfo.name,
                     server_version: serverInfo.version,
                     protocol_version: serverInfo.protocol_version,
-                    capabilities: serverInfo.capabilities,
-                },
+                    capabilities: serverInfo.capabilities
+                }
             };
         } catch (error) {
             return {
                 success: false,
-                message: error instanceof Error ? error.message : "MCP connection failed",
-                details: error,
+                message: error instanceof Error ? error instanceof Error ? error.message : "Unknown error" : "MCP connection failed",
+                details: error
             };
         }
     }
@@ -118,14 +118,15 @@ export class ConnectionTestService {
                 success: true,
                 message: "OpenAI API key is valid",
                 details: {
-                    model_count: models.data.length,
-                },
+                    model_count: models.data.length
+                }
             };
-        } catch (error: any) {
+        } catch (error: unknown) {
+            const errorMsg = error instanceof Error ? error.message : "OpenAI API key is invalid";
             return {
                 success: false,
-                message: error.message || "OpenAI API key is invalid",
-                details: error,
+                message: errorMsg,
+                details: error
             };
         }
     }
@@ -143,21 +144,22 @@ export class ConnectionTestService {
             const response = await anthropic.messages.create({
                 model: model || "claude-3-5-haiku-20241022",
                 max_tokens: 10,
-                messages: [{ role: "user", content: "Hi" }],
+                messages: [{ role: "user", content: "Hi" }]
             });
 
             return {
                 success: true,
                 message: "Anthropic API key is valid",
                 details: {
-                    model: response.model,
-                },
+                    model: response.model
+                }
             };
-        } catch (error: any) {
+        } catch (error: unknown) {
+            const errorMsg = error instanceof Error ? error.message : "Anthropic API key is invalid";
             return {
                 success: false,
-                message: error.message || "Anthropic API key is invalid",
-                details: error,
+                message: errorMsg,
+                details: error
             };
         }
     }
@@ -171,28 +173,26 @@ export class ConnectionTestService {
 
             try {
                 // Test with userinfo endpoint
-                const response = await axios.get(
-                    "https://www.googleapis.com/oauth2/v2/userinfo",
-                    {
-                        headers: {
-                            Authorization: `Bearer ${data.access_token}`,
-                        },
+                const response = await axios.get("https://www.googleapis.com/oauth2/v2/userinfo", {
+                    headers: {
+                        Authorization: `Bearer ${data.access_token}`
                     }
-                );
+                });
 
                 return {
                     success: true,
                     message: "Google OAuth token is valid",
                     details: {
                         email: response.data.email,
-                        verified: response.data.verified_email,
-                    },
+                        verified: response.data.verified_email
+                    }
                 };
-            } catch (error: any) {
+            } catch (error: unknown) {
+                const axiosError = error as { response?: { data?: unknown } };
                 return {
                     success: false,
                     message: "Google OAuth token is invalid or expired",
-                    details: error.response?.data,
+                    details: axiosError.response?.data
                 };
             }
         } else {
@@ -208,14 +208,15 @@ export class ConnectionTestService {
                     success: true,
                     message: "Google API key is valid",
                     details: {
-                        models_count: response.data.models?.length || 0,
-                    },
+                        models_count: response.data.models?.length || 0
+                    }
                 };
-            } catch (error: any) {
+            } catch (error: unknown) {
+                const axiosError = error as { response?: { data?: unknown } };
                 return {
                     success: false,
                     message: "Google API key is invalid",
-                    details: error.response?.data,
+                    details: axiosError.response?.data
                 };
             }
         }
@@ -233,8 +234,8 @@ export class ConnectionTestService {
                 {},
                 {
                     headers: {
-                        Authorization: `Bearer ${data.access_token}`,
-                    },
+                        Authorization: `Bearer ${data.access_token}`
+                    }
                 }
             );
 
@@ -244,21 +245,22 @@ export class ConnectionTestService {
                     message: "Slack token is valid",
                     details: {
                         team: response.data.team,
-                        user: response.data.user,
-                    },
+                        user: response.data.user
+                    }
                 };
             } else {
                 return {
                     success: false,
                     message: response.data.error || "Slack token is invalid",
-                    details: response.data,
+                    details: response.data
                 };
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
+            const axiosError = error as { response?: { data?: unknown } };
             return {
                 success: false,
                 message: "Failed to test Slack token",
-                details: error.response?.data,
+                details: axiosError.response?.data
             };
         }
     }
@@ -273,8 +275,8 @@ export class ConnectionTestService {
             const response = await axios.get("https://api.notion.com/v1/users/me", {
                 headers: {
                     Authorization: `Bearer ${data.access_token}`,
-                    "Notion-Version": "2022-06-28",
-                },
+                    "Notion-Version": "2022-06-28"
+                }
             });
 
             return {
@@ -282,14 +284,15 @@ export class ConnectionTestService {
                 message: "Notion token is valid",
                 details: {
                     user_id: response.data.id,
-                    type: response.data.type,
-                },
+                    type: response.data.type
+                }
             };
-        } catch (error: any) {
+        } catch (error: unknown) {
+            const axiosError = error as { response?: { data?: unknown } };
             return {
                 success: false,
                 message: "Notion token is invalid or expired",
-                details: error.response?.data,
+                details: axiosError.response?.data
             };
         }
     }
@@ -305,8 +308,8 @@ export class ConnectionTestService {
                 const response = await axios.get("https://api.github.com/user", {
                     headers: {
                         Authorization: `Bearer ${data.access_token}`,
-                        Accept: "application/vnd.github.v3+json",
-                    },
+                        Accept: "application/vnd.github.v3+json"
+                    }
                 });
 
                 return {
@@ -314,14 +317,15 @@ export class ConnectionTestService {
                     message: "GitHub token is valid",
                     details: {
                         login: response.data.login,
-                        id: response.data.id,
-                    },
+                        id: response.data.id
+                    }
                 };
-            } catch (error: any) {
+            } catch (error: unknown) {
+                const axiosError = error as { response?: { data?: unknown } };
                 return {
                     success: false,
                     message: "GitHub token is invalid or expired",
-                    details: error.response?.data,
+                    details: axiosError.response?.data
                 };
             }
         } else {
@@ -331,8 +335,8 @@ export class ConnectionTestService {
                 const response = await axios.get("https://api.github.com/user", {
                     headers: {
                         Authorization: `token ${data.api_key}`,
-                        Accept: "application/vnd.github.v3+json",
-                    },
+                        Accept: "application/vnd.github.v3+json"
+                    }
                 });
 
                 return {
@@ -340,14 +344,15 @@ export class ConnectionTestService {
                     message: "GitHub token is valid",
                     details: {
                         login: response.data.login,
-                        id: response.data.id,
-                    },
+                        id: response.data.id
+                    }
                 };
-            } catch (error: any) {
+            } catch (error: unknown) {
+                const axiosError = error as { response?: { data?: unknown } };
                 return {
                     success: false,
                     message: "GitHub token is invalid",
-                    details: error.response?.data,
+                    details: axiosError.response?.data
                 };
             }
         }
@@ -363,8 +368,8 @@ export class ConnectionTestService {
             success: true,
             message: `${connection.provider} connection stored successfully`,
             details: {
-                note: "Cannot automatically test this connection type. Please test manually in your workflow.",
-            },
+                note: "Cannot automatically test this connection type. Please test manually in your workflow."
+            }
         };
     }
 }

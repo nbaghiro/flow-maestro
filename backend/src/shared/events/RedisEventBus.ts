@@ -29,7 +29,7 @@ export class RedisEventBus {
                 const delay = Math.min(times * 50, 2000);
                 console.log(`[RedisEventBus] Retrying connection in ${delay}ms (attempt ${times})`);
                 return delay;
-            },
+            }
         });
 
         this.subscriber = new Redis({
@@ -40,7 +40,7 @@ export class RedisEventBus {
                 const delay = Math.min(times * 50, 2000);
                 console.log(`[RedisEventBus] Retrying connection in ${delay}ms (attempt ${times})`);
                 return delay;
-            },
+            }
         });
 
         this.handlers = new Map();
@@ -74,7 +74,10 @@ export class RedisEventBus {
                         try {
                             handler(event);
                         } catch (error) {
-                            console.error(`[RedisEventBus] Error in handler for ${pattern}:`, error);
+                            console.error(
+                                `[RedisEventBus] Error in handler for ${pattern}:`,
+                                error
+                            );
                         }
                     });
                 }
@@ -100,10 +103,7 @@ export class RedisEventBus {
         }
 
         try {
-            await Promise.all([
-                this.publisher.connect(),
-                this.subscriber.connect()
-            ]);
+            await Promise.all([this.publisher.connect(), this.subscriber.connect()]);
             this.isConnected = true;
             console.log("[RedisEventBus] Connected to Redis successfully");
         } catch (error) {
@@ -181,10 +181,7 @@ export class RedisEventBus {
         }
 
         try {
-            await Promise.all([
-                this.publisher.quit(),
-                this.subscriber.quit()
-            ]);
+            await Promise.all([this.publisher.quit(), this.subscriber.quit()]);
             this.isConnected = false;
             this.handlers.clear();
             console.log("[RedisEventBus] Disconnected from Redis");

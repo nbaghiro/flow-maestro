@@ -1,1308 +1,459 @@
-# WebSocket Events Documentation
+# FlowMaestro WebSocket Event System
 
-This document provides a comprehensive reference for all WebSocket events in FlowMaestro, including their purpose, data structures, emission points, and consumption patterns.
+Architectural guide to FlowMaestro's real-time event system for workflow and agent execution updates via WebSocket.
 
 ---
 
-## Architecture Overview
+## Table of Contents
 
-### Event Flow
+1. [Overview](#overview)
+2. [Architecture](#architecture)
+3. [Event Types](#event-types)
+4. [Connection & Authentication](#connection--authentication)
+5. [Subscription Management](#subscription-management)
+6. [Frontend Integration](#frontend-integration)
+7. [Backend Implementation](#backend-implementation)
+8. [Error Handling](#error-handling)
+
+---
+
+## Overview
+
+FlowMaestro uses WebSocket (Socket.IO) for bidirectional real-time communication, enabling:
+
+- Live workflow execution progress updates
+- Node-level execution visibility
+- Agent streaming responses
+- Knowledge base processing status
+- User input prompts during workflow execution
+
+### Key Benefits
+
+- **Real-time Updates**: Zero polling, instant event delivery
+- **Bidirectional**: Server pushes updates, client can send responses
+- **Selective Subscriptions**: Clients receive only relevant events
+- **Automatic Reconnection**: Built-in connection recovery
+- **Type Safety**: Fully typed events in TypeScript
+
+---
+
+## Architecture
+
+### High-Level Flow
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                        BACKEND LAYER                            │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                 │
-│  Event Sources:                                                │
-│  ├─ Temporal Workflows (orchestrator-workflow.ts)              │
-│  ├─ Temporal Activities (node executors)                       │
-│  └─ Background Jobs (document processing)                      │
-│                │                                                │
-│                ▼                                                │
-│  globalEventEmitter (WorkflowEventEmitter)                     │
-│                │                                                │
-│                ▼                                                │
-│  EventBridge (routes to WebSocket)                             │
-│                │                                                │
-│                ▼                                                │
-│  WebSocketManager (manages connections & subscriptions)        │
-│                │                                                │
-└────────────────┼───────────────────────────────────────────────┘
-                 │
-                 │ WebSocket Protocol (JSON messages)
-                 │
-┌────────────────▼───────────────────────────────────────────────┐
-│                       FRONTEND LAYER                           │
-├────────────────────────────────────────────────────────────────┤
-│                                                                │
-│  WebSocketClient (lib/websocket.ts)                           │
-│                │                                               │
-│                ▼                                               │
-│  useWebSocket / useExecutionEvents hooks                      │
-│                │                                               │
-│                ▼                                               │
-│  React Components:                                            │
-│  ├─ ExecutionTab (displays logs)                             │
-│  ├─ TriggerCard (initiates executions)                       │
-│  └─ WorkflowCanvas (visualizes execution state)              │
-│                │                                               │
-│                ▼                                               │
-│  Zustand Store (workflowStore.ts)                            │
-│  └─ currentExecution state                                    │
-│                                                                │
-└────────────────────────────────────────────────────────────────┘
+Backend Service (Workflow/Agent Execution)
+  ↓
+EventEmitter (Internal Events)
+  ↓
+EventBridge (Translation Layer)
+  ↓
+WebSocketManager (Socket.IO Server)
+  ↓
+WebSocket Connection
+  ↓
+Frontend Client (React App)
+  ↓
+UI Updates
 ```
 
-### Key Components
+### Components
 
-#### Backend
+**EventEmitter** (`backend/src/services/events/EventEmitter.ts`):
 
-| Component | Location | Purpose |
-|-----------|----------|---------|
-| **WorkflowEventEmitter** | `backend/src/shared/events/EventEmitter.ts` | Singleton event emitter with convenience methods |
-| **EventBridge** | `backend/src/shared/websocket/EventBridge.ts` | Subscribes to all events and forwards to WebSocket |
-| **WebSocketManager** | `backend/src/shared/websocket/WebSocketManager.ts` | Manages connections, subscriptions, and broadcasting |
-| **WebSocket Route** | `backend/src/api/routes/websocket.ts` | HTTP upgrade endpoint with JWT authentication |
+- Node.js EventEmitter for internal event bus
+- Decouples event producers from consumers
+- In-process pub/sub pattern
 
-#### Frontend
+**EventBridge** (`backend/src/services/events/EventBridge.ts`):
 
-| Component | Location | Purpose |
-|-----------|----------|---------|
-| **WebSocketClient** | `frontend/src/lib/websocket.ts` | Singleton client with auto-reconnect |
-| **useWebSocket** | `frontend/src/hooks/useWebSocket.ts` | React hook for connection management |
-| **useExecutionEvents** | `frontend/src/hooks/useWebSocket.ts` | Hook for subscribing to execution events |
-| **workflowStore** | `frontend/src/stores/workflowStore.ts` | Zustand store for execution state |
+- Translates internal events to WebSocket messages
+- Filters events by user and execution
+- Routes events to appropriate Socket.IO rooms
 
-#### Shared
+**WebSocketManager** (`backend/src/services/websocket/WebSocketManager.ts`):
 
-| Component | Location | Purpose |
-|-----------|----------|---------|
-| **Type Definitions** | `shared/src/types.ts` | WebSocketEventType and WebSocketEvent interfaces |
+- Socket.IO server wrapper
+- Connection lifecycle management
+- Authentication and authorization
+- Room-based event broadcasting
+
+---
+
+## Event Types
+
+FlowMaestro supports 15 event types across 5 categories:
+
+### 1. Execution Events
+
+**execution:started**
+
+- Emitted when workflow execution begins
+- Data: execution ID, workflow ID, status, start time
+
+**execution:updated**
+
+- Emitted on status changes during execution
+- Data: execution ID, status, current node, progress
+
+**execution:completed**
+
+- Emitted when workflow completes successfully
+- Data: execution ID, outputs, duration
+
+**execution:failed**
+
+- Emitted on workflow failure
+- Data: execution ID, error message, failed node
+
+---
+
+### 2. Node Execution Events
+
+**node:started**
+
+- Emitted when individual node begins execution
+- Data: node ID, node type, execution context
+
+**node:completed**
+
+- Emitted when node finishes successfully
+- Data: node ID, outputs, duration
+
+**node:failed**
+
+- Emitted when node execution fails
+- Data: node ID, error message, retry info
+
+**node:progress**
+
+- Emitted for long-running nodes with progress tracking
+- Data: node ID, progress percentage, current step
+
+---
+
+### 3. User Input Events
+
+**user_input:required**
+
+- Emitted when workflow needs user input
+- Data: input prompt, expected type, validation rules
+- Client must respond via `user_input:provide` event
+
+**user_input:timeout**
+
+- Emitted when user input times out
+- Data: timeout duration, workflow state
+
+---
+
+### 4. Knowledge Base Events
+
+**kb:upload_started**
+
+- Emitted when document upload begins
+- Data: knowledge base ID, file name, file size
+
+**kb:processing**
+
+- Emitted during document processing
+- Data: progress percentage, current step (extraction, chunking, embedding)
+
+**kb:upload_completed**
+
+- Emitted when document is fully processed
+- Data: document ID, chunk count, embedding count
+
+**kb:upload_failed**
+
+- Emitted on processing failure
+- Data: error message, failed step
+
+---
+
+### 5. Agent Streaming Events
+
+**agent:streaming_start**
+
+- Emitted when agent begins streaming response
+- Data: agent ID, execution ID
+
+**agent:token**
+
+- Emitted for each token during streaming
+- Data: token text, cumulative response
+
+**agent:streaming_end**
+
+- Emitted when streaming completes
+- Data: full response, token count
+
+**agent:tool_call**
+
+- Emitted when agent invokes a tool
+- Data: tool name, arguments, execution status
 
 ---
 
 ## Connection & Authentication
 
-### WebSocket Endpoint
+### Client Connection
 
-**URL**: `ws://localhost:3001/ws` (or `wss://` for production)
+**Initialization**:
 
-**Authentication**: JWT token via query parameter or header
+- Client connects to WebSocket server (same origin as API)
+- Socket.IO handles transport negotiation (WebSocket preferred, polling fallback)
+- Automatic reconnection with exponential backoff
 
-```typescript
-// Option 1: Query parameter
-ws://localhost:3001/ws?token=<jwt_token>
+**Authentication**:
 
-// Option 2: Authorization header
-const ws = new WebSocket("ws://localhost:3001/ws");
-// Send Authorization header during upgrade
-```
+- JWT token passed in connection query parameters
+- Server validates token on connection
+- Invalid tokens result in connection rejection
 
-### Connection Flow
+**Connection Lifecycle**:
 
-1. Client initiates WebSocket connection with JWT token
-2. Server validates JWT (returns 1008 error if invalid)
-3. Server generates unique `connectionId` (UUID v4)
-4. Server registers connection in `WebSocketManager`
-5. Server sends welcome message
-
-**Welcome Message**:
-```json
-{
-    "type": "connected",
-    "connectionId": "550e8400-e29b-41d4-a716-446655440000",
-    "message": "Connected to FlowMaestro WebSocket"
-}
-```
-
-### Multi-tenancy
-
-All connections are scoped to a `userId` extracted from the JWT token. Events are only broadcast to connections belonging to the relevant user.
+1. Client initiates connection with JWT
+2. Server validates and authenticates
+3. Connection established, socket ID assigned
+4. Client subscribes to relevant event channels
+5. Server emits events to subscribed clients
+6. On disconnect, subscriptions cleaned up
 
 ---
 
 ## Subscription Management
 
-### Client-to-Server Messages
+### Channel Types
 
-#### Subscribe to Execution
+**Execution Channels**:
 
-```json
-{
-    "type": "subscribe",
-    "executionId": "exec_abc123"
-}
-```
+- Format: `execution:{executionId}`
+- Events: All execution and node events for specific execution
+- Auto-subscribed when viewing execution page
 
-**Response**:
-```json
-{
-    "type": "subscribed",
-    "executionId": "exec_abc123"
-}
-```
+**Agent Channels**:
 
-#### Unsubscribe from Execution
+- Format: `agent:{agentId}:{executionId}`
+- Events: Streaming and tool call events
+- Auto-subscribed during agent chat
 
-```json
-{
-    "type": "unsubscribe",
-    "executionId": "exec_abc123"
-}
-```
+**Knowledge Base Channels**:
 
-**Response**:
-```json
-{
-    "type": "unsubscribed",
-    "executionId": "exec_abc123"
-}
-```
+- Format: `kb:{knowledgeBaseId}`
+- Events: Upload and processing events
+- Auto-subscribed on knowledge base page
 
-### Subscription Strategy
+**User Channels**:
 
-- Clients subscribe to specific `executionId` values
-- Events with a matching `executionId` are only sent to subscribed clients
-- Events without `executionId` are broadcast to all connected clients
-- Subscriptions are automatically cleaned up on disconnect
+- Format: `user:{userId}`
+- Events: All events for user's resources
+- Always subscribed after authentication
+
+### Subscription Pattern
+
+**Client subscribes** → **Server adds to room** → **Events broadcast to room** → **Only room members receive**
+
+**Benefits**:
+
+- Prevents unauthorized event access
+- Reduces bandwidth (only relevant events sent)
+- Enables multi-tenancy isolation
 
 ---
 
-## Event Types Reference
+## Frontend Integration
 
-### 1. System Events
+### React Hooks Pattern
 
-#### `connection:established`
+**useWebSocket Hook**:
 
-**Purpose**: Confirms WebSocket connection is established
+- Manages connection lifecycle
+- Automatic connection on mount
+- Cleanup on unmount
+- Reconnection handling
+- Authentication injection
 
-**Emitted By**: WebSocket route handler
-**Location**: `backend/src/api/routes/websocket.ts:40-46`
+**Usage**:
 
-**Payload**:
 ```typescript
-{
-    type: "connected",
-    connectionId: string,
-    message: string
-}
+const { connected, error } = useWebSocket();
 ```
 
-**Example**:
-```json
-{
-    "type": "connected",
-    "connectionId": "550e8400-e29b-41d4-a716-446655440000",
-    "message": "Connected to FlowMaestro WebSocket"
-}
+**useExecutionEvents Hook**:
+
+- Subscribes to specific execution
+- Updates local state on events
+- Provides typed event handlers
+- Auto-unsubscribes on cleanup
+
+**Usage**:
+
+```typescript
+const { events, status } = useExecutionEvents(executionId);
 ```
 
-**Consumed By**: `WebSocketClient` (logs confirmation)
-**Frontend Location**: `frontend/src/lib/websocket.ts:120-123`
+**useAgentStreaming Hook**:
+
+- Handles agent response streaming
+- Token accumulation
+- Tool call display
+- Streaming state management
+
+**Usage**:
+
+```typescript
+const { response, streaming } = useAgentStreaming(agentId);
+```
+
+### State Management Integration
+
+**Zustand Store Pattern**:
+
+- WebSocket events update Zustand stores
+- Reactive UI updates via store subscriptions
+- Optimistic updates with WebSocket confirmation
+
+**Example Flow**:
+
+1. User action triggers API call
+2. API returns initial state
+3. WebSocket events update state incrementally
+4. UI reacts to state changes
+5. Final state confirmed via WebSocket completion event
+
+**Benefits**:
+
+- Single source of truth
+- Automatic UI updates
+- No manual polling required
 
 ---
 
-### 2. Execution Events
+## Backend Implementation
 
-#### `execution:started`
+### Event Emission
 
-**Purpose**: Notifies that a workflow execution has started
+**From Activities**:
 
-**Emitted By**: `globalEventEmitter.emitExecutionStarted()`
-**Backend Location**: `backend/src/temporal/workflows/orchestrator-workflow.ts:53` (after implementation)
+- Temporal activities emit internal events via EventEmitter
+- EventEmitter broadcasts to all registered listeners
+- EventBridge receives events and translates to WebSocket messages
+- WebSocketManager broadcasts to appropriate rooms
 
-**Payload**:
-```typescript
-{
-    type: "execution:started",
-    timestamp: number,
-    executionId: string,
-    workflowName: string,
-    totalNodes: number
-}
+**Event Flow**:
+
+```
+Node Executor Activity
+  → eventEmitter.emit('node:started', data)
+  → EventBridge receives event
+  → Determines target rooms (execution channel, user channel)
+  → WebSocketManager.to(room).emit('node:started', data)
+  → Clients in room receive event
 ```
 
-**Example**:
-```json
-{
-    "type": "execution:started",
-    "timestamp": 1698765432000,
-    "executionId": "exec_abc123",
-    "workflowName": "Customer Onboarding",
-    "totalNodes": 8
-}
-```
+**Room Targeting**:
 
-**Consumed By**: `useExecutionEvents` hook → `onStart` callback
-**Frontend Location**: `frontend/src/hooks/useWebSocket.ts:67-145`
+- Events emitted to multiple rooms simultaneously
+- Execution room: `execution:{executionId}`
+- User room: `user:{userId}`
+- Ensures users receive updates via both channels
+- Event deduplication on client prevents duplicate handling
 
-**Store Action**: `workflowStore.startExecution(executionId)`
+### Scaling Considerations
+
+**Single Server**:
+
+- EventEmitter works in-process
+- All WebSocket connections on single server
+- Suitable for small to medium deployments
+
+**Multi-Server (Future)**:
+
+- Redis adapter for Socket.IO required
+- EventBridge publishes to Redis pub/sub
+- All servers subscribe to Redis
+- Events broadcast across all server instances
+- Sticky sessions not required
 
 ---
 
-#### `execution:progress`
+## Error Handling
 
-**Purpose**: Reports progress of workflow execution
+### Connection Errors
 
-**Emitted By**: `globalEventEmitter.emitExecutionProgress()`
-**Backend Location**: `backend/src/temporal/workflows/orchestrator-workflow.ts` (after implementation)
+**Authentication Failure**:
 
-**Payload**:
-```typescript
-{
-    type: "execution:progress",
-    timestamp: number,
-    executionId: string,
-    completed: number,
-    total: number,
-    percentage: number
-}
-```
+- Connection rejected immediately
+- Client receives `error` event with details
+- UI shows authentication required message
+- User redirected to login
 
-**Example**:
-```json
-{
-    "type": "execution:progress",
-    "timestamp": 1698765435000,
-    "executionId": "exec_abc123",
-    "completed": 3,
-    "total": 8,
-    "percentage": 37.5
-}
-```
+**Network Interruption**:
 
-**Consumed By**: `useExecutionEvents` hook → `onProgress` callback
+- Socket.IO auto-reconnects with exponential backoff
+- Client shows "connecting" state during reconnection
+- Events queued during disconnect
+- Catch-up mechanism on reconnection (fetch missed events via API)
 
-**Typical Usage**:
-```typescript
-onProgress: (event) => {
-    updateProgressBar(event.percentage);
-    setStatusText(`${event.completed} of ${event.total} nodes completed`);
-}
-```
+**Protocol Errors**:
 
----
+- Malformed events logged and ignored
+- Client receives `error` event
+- Connection maintained
+- Error reported to monitoring
 
-#### `execution:completed`
+### Event Processing Errors
 
-**Purpose**: Signals successful completion of workflow execution
+**Missing Data**:
 
-**Emitted By**: `globalEventEmitter.emitExecutionCompleted()`
-**Backend Location**: `backend/src/temporal/workflows/orchestrator-workflow.ts:162` (after implementation)
+- Events validated before emission
+- Invalid events logged but not sent
+- Prevents client-side errors
 
-**Payload**:
-```typescript
-{
-    type: "execution:completed",
-    timestamp: number,
-    executionId: string,
-    status: "completed",
-    outputs: Record<string, any>,
-    duration: number  // milliseconds
-}
-```
+**Subscription Errors**:
 
-**Example**:
-```json
-{
-    "type": "execution:completed",
-    "timestamp": 1698765450000,
-    "executionId": "exec_abc123",
-    "status": "completed",
-    "outputs": {
-        "customerEmail": "john@example.com",
-        "accountId": "acc_xyz789",
-        "welcomeEmailSent": true
-    },
-    "duration": 18000
-}
-```
+- Failed subscriptions return error to client
+- Client can retry subscription
+- Fall back to polling if WebSocket unavailable
+- Logged for debugging
 
-**Consumed By**: `useExecutionEvents` hook → `onComplete` callback
-**Frontend Location**: `frontend/src/hooks/useWebSocket.ts:67-145`
+### Monitoring
 
-**Store Action**: `workflowStore.updateExecutionStatus("completed")`
+**Metrics Tracked**:
+
+- Active connection count
+- Events emitted per second
+- Failed event deliveries
+- Reconnection frequency
+- Average latency
+
+**Alerting**:
+
+- High reconnection rate indicates network issues
+- Failed deliveries indicate client-side problems
+- Zero active connections indicates server issue
 
 ---
 
-#### `execution:failed`
+## Related Documentation
 
-**Purpose**: Reports workflow execution failure
-
-**Emitted By**: `globalEventEmitter.emitExecutionFailed()`
-**Backend Location**: `backend/src/temporal/workflows/orchestrator-workflow.ts:168` (after implementation)
-
-**Payload**:
-```typescript
-{
-    type: "execution:failed",
-    timestamp: number,
-    executionId: string,
-    status: "failed",
-    error: string,
-    failedNodeId?: string
-}
-```
-
-**Example**:
-```json
-{
-    "type": "execution:failed",
-    "timestamp": 1698765445000,
-    "executionId": "exec_abc123",
-    "status": "failed",
-    "error": "API request failed: 429 Rate Limit Exceeded",
-    "failedNodeId": "node_5"
-}
-```
-
-**Consumed By**: `useExecutionEvents` hook → `onFail` callback
-
-**Store Action**: `workflowStore.updateExecutionStatus("failed")`
+- **[workflows.md](./workflows.md)**: Workflow execution emitting events
+- **[agents.md](./agents.md)**: Agent streaming via WebSocket
+- **[temporal.md](./temporal.md)**: Activity-level event emission
 
 ---
 
-### 3. Node Events
-
-#### `node:started`
-
-**Purpose**: Indicates an individual node has started execution
-
-**Emitted By**: `globalEventEmitter.emitNodeStarted()`
-**Backend Location**: `backend/src/temporal/workflows/orchestrator-workflow.ts:112` (after implementation)
-
-**Payload**:
-```typescript
-{
-    type: "node:started",
-    timestamp: number,
-    executionId: string,
-    nodeId: string,
-    nodeName: string,
-    nodeType: string
-}
-```
-
-**Example**:
-```json
-{
-    "type": "node:started",
-    "timestamp": 1698765433000,
-    "executionId": "exec_abc123",
-    "nodeId": "node_3",
-    "nodeName": "Send Welcome Email",
-    "nodeType": "email"
-}
-```
-
-**Consumed By**: `useExecutionEvents` hook → `onNodeStart` callback
-
-**Store Action**: `workflowStore.updateNodeState(nodeId, { status: "running" })`
-
----
-
-#### `node:completed`
-
-**Purpose**: Reports successful completion of a node with its output
-
-**Emitted By**: `globalEventEmitter.emitNodeCompleted()`
-**Backend Location**: `backend/src/temporal/workflows/orchestrator-workflow.ts:131` (after implementation)
-
-**Payload**:
-```typescript
-{
-    type: "node:completed",
-    timestamp: number,
-    executionId: string,
-    nodeId: string,
-    output: any,
-    duration: number,  // milliseconds
-    metadata?: any
-}
-```
-
-**Example**:
-```json
-{
-    "type": "node:completed",
-    "timestamp": 1698765435000,
-    "executionId": "exec_abc123",
-    "nodeId": "node_3",
-    "output": {
-        "emailId": "msg_xyz123",
-        "status": "sent",
-        "recipient": "john@example.com"
-    },
-    "duration": 2500,
-    "metadata": {
-        "provider": "sendgrid",
-        "retryCount": 0
-    }
-}
-```
-
-**Consumed By**: `useExecutionEvents` hook → `onNodeComplete` callback
-
-**Store Actions**:
-```typescript
-workflowStore.updateNodeState(nodeId, {
-    status: "completed",
-    output: event.output
-});
-workflowStore.addExecutionLog({
-    level: "info",
-    message: `Node ${nodeId} completed`,
-    nodeId: nodeId
-});
-```
-
----
-
-#### `node:failed`
-
-**Purpose**: Indicates a node execution has failed
-
-**Emitted By**: `globalEventEmitter.emitNodeFailed()`
-**Backend Location**: `backend/src/temporal/workflows/orchestrator-workflow.ts:142` (after implementation)
-
-**Payload**:
-```typescript
-{
-    type: "node:failed",
-    timestamp: number,
-    executionId: string,
-    nodeId: string,
-    error: string
-}
-```
-
-**Example**:
-```json
-{
-    "type": "node:failed",
-    "timestamp": 1698765437000,
-    "executionId": "exec_abc123",
-    "nodeId": "node_5",
-    "error": "API request failed: 401 Unauthorized"
-}
-```
-
-**Consumed By**: `useExecutionEvents` hook → `onNodeFail` callback
-
-**Store Actions**:
-```typescript
-workflowStore.updateNodeState(nodeId, {
-    status: "failed",
-    error: event.error
-});
-workflowStore.addExecutionLog({
-    level: "error",
-    message: `Node ${nodeId} failed: ${event.error}`,
-    nodeId: nodeId
-});
-```
-
----
-
-#### `node:retry`
-
-**Purpose**: Notifies that a node is being retried after failure
-
-**Emitted By**: `globalEventEmitter.emitNodeRetry()`
-**Backend Location**: Future implementation in activity retry logic
-
-**Payload**:
-```typescript
-{
-    type: "node:retry",
-    timestamp: number,
-    executionId: string,
-    nodeId: string,
-    attempt: number,
-    nextRetryIn: number,  // milliseconds
-    error: string
-}
-```
-
-**Example**:
-```json
-{
-    "type": "node:retry",
-    "timestamp": 1698765438000,
-    "executionId": "exec_abc123",
-    "nodeId": "node_5",
-    "attempt": 2,
-    "nextRetryIn": 4000,
-    "error": "Connection timeout"
-}
-```
-
-**Consumed By**: `useExecutionEvents` hook (optional handler)
-
-**Typical Usage**:
-```typescript
-onNodeRetry: (event) => {
-    showNotification({
-        type: "warning",
-        message: `Retrying ${event.nodeId} (attempt ${event.attempt})`
-    });
-}
-```
-
----
-
-#### `node:stream`
-
-**Purpose**: Streams real-time data from long-running nodes (e.g., LLM token generation)
-
-**Emitted By**: `globalEventEmitter.emitNodeStream()`
-**Backend Location**: Future implementation in LLM node executors
-
-**Payload**:
-```typescript
-{
-    type: "node:stream",
-    timestamp: number,
-    executionId: string,
-    nodeId: string,
-    chunk: string
-}
-```
-
-**Example**:
-```json
-{
-    "type": "node:stream",
-    "timestamp": 1698765440000,
-    "executionId": "exec_abc123",
-    "nodeId": "node_7",
-    "chunk": "The customer's inquiry has been "
-}
-```
-
-**Consumed By**: Custom event handler in components displaying streaming output
-
-**Typical Usage**:
-```typescript
-useExecutionEvents(executionId, {
-    onNodeStream: (event) => {
-        if (event.nodeId === streamingNodeId) {
-            appendToStreamingOutput(event.chunk);
-        }
-    }
-});
-```
-
----
-
-### 4. User Input Events
-
-#### `user:input:required`
-
-**Purpose**: Pauses workflow execution and prompts user for input
-
-**Emitted By**: `globalEventEmitter.emitUserInputRequired()`
-**Backend Location**: Future implementation in user input node executor
-
-**Payload**:
-```typescript
-{
-    type: "user:input:required",
-    timestamp: number,
-    executionId: string,
-    nodeId: string,
-    prompt: string,
-    inputType: string,
-    validation?: any
-}
-```
-
-**Example**:
-```json
-{
-    "type": "user:input:required",
-    "timestamp": 1698765442000,
-    "executionId": "exec_abc123",
-    "nodeId": "node_6",
-    "prompt": "Please review the generated email and approve or reject",
-    "inputType": "approval",
-    "validation": {
-        "options": ["approve", "reject", "edit"]
-    }
-}
-```
-
-**Consumed By**: Modal dialog components that display user input forms
-
-**Typical Usage**:
-```typescript
-useExecutionEvents(executionId, {
-    onUserInputRequired: (event) => {
-        showUserInputDialog({
-            prompt: event.prompt,
-            inputType: event.inputType,
-            onSubmit: (value) => {
-                submitUserInput(event.executionId, event.nodeId, value);
-            }
-        });
-    }
-});
-```
-
----
-
-#### `user:input:response`
-
-**Purpose**: Sends user's input back to resume workflow execution
-
-**Emitted By**: Client-side (sent to server)
-**Frontend Location**: User input submission handlers
-
-**Payload**:
-```typescript
-{
-    type: "user:input:response",
-    timestamp: number,
-    executionId: string,
-    nodeId: string,
-    value: any
-}
-```
-
-**Example**:
-```json
-{
-    "type": "user:input:response",
-    "timestamp": 1698765445000,
-    "executionId": "exec_abc123",
-    "nodeId": "node_6",
-    "value": "approve"
-}
-```
-
-**Note**: This event is sent from client to server (opposite direction from other events)
-
----
-
-### 5. Knowledge Base Events
-
-#### `kb:document:processing`
-
-**Purpose**: Indicates a document is being processed (text extraction, chunking, embedding generation)
-
-**Emitted By**: `globalEventEmitter.emitDocumentProcessing()`
-**Backend Location**: `backend/src/temporal/activities/process-document.ts:53-57`
-
-**Payload**:
-```typescript
-{
-    type: "kb:document:processing",
-    timestamp: number,
-    knowledgeBaseId: string,
-    documentId: string,
-    documentName: string
-}
-```
-
-**Example**:
-```json
-{
-    "type": "kb:document:processing",
-    "timestamp": 1698765430000,
-    "knowledgeBaseId": "kb_123",
-    "documentId": "doc_456",
-    "documentName": "product_manual.pdf"
-}
-```
-
-**Consumed By**: Knowledge base UI components showing document status
-
-**Frontend Location**: Components in `frontend/src/components/knowledge-base/`
-
----
-
-#### `kb:document:completed`
-
-**Purpose**: Document processing completed successfully
-
-**Emitted By**: `globalEventEmitter.emitDocumentCompleted()`
-**Backend Location**: `backend/src/temporal/activities/process-document.ts:257-261`
-
-**Payload**:
-```typescript
-{
-    type: "kb:document:completed",
-    timestamp: number,
-    knowledgeBaseId: string,
-    documentId: string,
-    chunkCount: number
-}
-```
-
-**Example**:
-```json
-{
-    "type": "kb:document:completed",
-    "timestamp": 1698765460000,
-    "knowledgeBaseId": "kb_123",
-    "documentId": "doc_456",
-    "chunkCount": 47
-}
-```
-
-**Store Action**: Update document status in knowledge base store
-
----
-
-#### `kb:document:failed`
-
-**Purpose**: Document processing failed
-
-**Emitted By**: `globalEventEmitter.emitDocumentFailed()`
-**Backend Location**: Multiple catch blocks in `backend/src/temporal/activities/process-document.ts`
-
-**Payload**:
-```typescript
-{
-    type: "kb:document:failed",
-    timestamp: number,
-    knowledgeBaseId: string,
-    documentId: string,
-    error: string
-}
-```
-
-**Example**:
-```json
-{
-    "type": "kb:document:failed",
-    "timestamp": 1698765455000,
-    "knowledgeBaseId": "kb_123",
-    "documentId": "doc_456",
-    "error": "Failed to extract text from PDF: corrupted file"
-}
-```
-
-**Store Action**: Update document status to failed and display error
-
----
-
-## Frontend Implementation Patterns
-
-### Basic Setup (App-Level)
-
-```typescript
-// In your root App component or layout
-import { useWebSocket } from "../hooks/useWebSocket";
-import { useAuth } from "../contexts/AuthContext";
-
-function AppLayout() {
-    const { user } = useAuth();
-    const token = localStorage.getItem("auth_token");
-
-    // Connect WebSocket with authentication
-    const { isConnected } = useWebSocket(token);
-
-    return (
-        <>
-            {isConnected && <ConnectionIndicator />}
-            {children}
-        </>
-    );
-}
-```
-
-### Subscribing to Execution Events
-
-```typescript
-import { useExecutionEvents } from "../hooks/useWebSocket";
-import { useWorkflowStore } from "../stores/workflowStore";
-
-function ExecutionMonitor({ executionId }: { executionId: string }) {
-    const { startExecution, updateNodeState, addExecutionLog } = useWorkflowStore();
-
-    useExecutionEvents(executionId, {
-        onStart: (event) => {
-            startExecution(event.executionId);
-            addExecutionLog({
-                level: "info",
-                message: `Workflow started: ${event.workflowName}`,
-            });
-        },
-
-        onProgress: (event) => {
-            addExecutionLog({
-                level: "info",
-                message: `Progress: ${event.completed}/${event.total} nodes (${event.percentage}%)`,
-            });
-        },
-
-        onNodeStart: (event) => {
-            updateNodeState(event.nodeId, {
-                status: "running",
-                startedAt: new Date(event.timestamp),
-            });
-        },
-
-        onNodeComplete: (event) => {
-            updateNodeState(event.nodeId, {
-                status: "completed",
-                output: event.output,
-                completedAt: new Date(event.timestamp),
-            });
-            addExecutionLog({
-                level: "success",
-                message: `Node ${event.nodeId} completed`,
-                nodeId: event.nodeId,
-            });
-        },
-
-        onNodeFail: (event) => {
-            updateNodeState(event.nodeId, {
-                status: "failed",
-                error: event.error,
-            });
-            addExecutionLog({
-                level: "error",
-                message: `Node ${event.nodeId} failed: ${event.error}`,
-                nodeId: event.nodeId,
-            });
-        },
-
-        onComplete: (event) => {
-            addExecutionLog({
-                level: "success",
-                message: `Workflow completed in ${event.duration}ms`,
-            });
-        },
-
-        onFail: (event) => {
-            addExecutionLog({
-                level: "error",
-                message: `Workflow failed: ${event.error}`,
-            });
-        },
-    });
-
-    return <div>{/* Render execution UI */}</div>;
-}
-```
-
-### Manual Event Subscription
-
-```typescript
-import { websocket } from "../lib/websocket";
-
-// Subscribe to specific event types
-useEffect(() => {
-    const handleNodeComplete = (event: WebSocketEvent) => {
-        console.log("Node completed:", event);
-    };
-
-    websocket.on("node:completed", handleNodeComplete);
-
-    return () => {
-        websocket.off("node:completed", handleNodeComplete);
-    };
-}, []);
-```
-
-### Subscribing/Unsubscribing to Executions
-
-```typescript
-import { websocket } from "../lib/websocket";
-
-function ExecutionViewer({ executionId }: { executionId: string }) {
-    useEffect(() => {
-        // Subscribe when component mounts
-        websocket.subscribeToExecution(executionId);
-
-        return () => {
-            // Unsubscribe when component unmounts
-            websocket.unsubscribeFromExecution(executionId);
-        };
-    }, [executionId]);
-
-    return <div>{/* Render execution details */}</div>;
-}
-```
-
----
-
-## Backend Implementation Patterns
-
-### Emitting Events from Workflows
-
-```typescript
-import { globalEventEmitter } from "../../shared/events/EventEmitter";
-
-export async function orchestratorWorkflow(input: OrchestratorInput) {
-    const executionId = "exec_" + Date.now();
-    const startTime = Date.now();
-
-    // Emit execution started
-    globalEventEmitter.emitExecutionStarted(
-        executionId,
-        workflowDefinition.name,
-        nodeCount
-    );
-
-    try {
-        // Execute nodes...
-        for (const [nodeId, node] of nodeEntries) {
-            // Emit node started
-            globalEventEmitter.emitNodeStarted(
-                executionId,
-                nodeId,
-                node.name,
-                node.type
-            );
-
-            const nodeStartTime = Date.now();
-            const result = await executeNode(nodeId, node);
-            const nodeDuration = Date.now() - nodeStartTime;
-
-            // Emit node completed
-            globalEventEmitter.emitNodeCompleted(
-                executionId,
-                nodeId,
-                result,
-                nodeDuration
-            );
-        }
-
-        // Emit execution completed
-        globalEventEmitter.emitExecutionCompleted(
-            executionId,
-            outputs,
-            Date.now() - startTime
-        );
-
-        return { success: true, outputs };
-    } catch (error) {
-        // Emit execution failed
-        globalEventEmitter.emitExecutionFailed(
-            executionId,
-            error.message,
-            failedNodeId
-        );
-
-        throw error;
-    }
-}
-```
-
-### Emitting Events from Activities
-
-```typescript
-import { globalEventEmitter } from "../../shared/events/EventEmitter";
-
-export async function processDocumentActivity(params: ProcessDocumentParams) {
-    const { knowledgeBaseId, documentId, documentName } = params;
-
-    // Emit processing started
-    globalEventEmitter.emitDocumentProcessing(
-        knowledgeBaseId,
-        documentId,
-        documentName
-    );
-
-    try {
-        const chunks = await extractAndChunk(documentId);
-
-        // Emit processing completed
-        globalEventEmitter.emitDocumentCompleted(
-            knowledgeBaseId,
-            documentId,
-            chunks.length
-        );
-
-        return { success: true, chunkCount: chunks.length };
-    } catch (error) {
-        // Emit processing failed
-        globalEventEmitter.emitDocumentFailed(
-            knowledgeBaseId,
-            documentId,
-            error.message
-        );
-
-        throw error;
-    }
-}
-```
-
-### Streaming Events (LLM Nodes)
-
-```typescript
-import { globalEventEmitter } from "../../shared/events/EventEmitter";
-
-export async function executeLLMNode(
-    executionId: string,
-    nodeId: string,
-    prompt: string
-) {
-    const stream = await openai.chat.completions.create({
-        model: "gpt-4",
-        messages: [{ role: "user", content: prompt }],
-        stream: true,
-    });
-
-    let fullResponse = "";
-
-    for await (const chunk of stream) {
-        const content = chunk.choices[0]?.delta?.content || "";
-
-        if (content) {
-            fullResponse += content;
-
-            // Emit streaming chunk
-            globalEventEmitter.emitNodeStream(
-                executionId,
-                nodeId,
-                content
-            );
-        }
-    }
-
-    return fullResponse;
-}
-```
-
----
-
-## Error Handling & Resilience
-
-### Backend Error Handling
-
-```typescript
-// WebSocketManager handles message parsing errors gracefully
-socket.on("message", (message: Buffer) => {
-    try {
-        const data = JSON.parse(message.toString());
-        this.handleMessage(connectionId, data);
-    } catch (error) {
-        console.error("Failed to parse WebSocket message:", error);
-        // Don't crash - just log and continue
-    }
-});
-```
-
-### Frontend Reconnection
-
-The WebSocketClient implements automatic reconnection with exponential backoff:
-
-```typescript
-// Reconnection parameters
-maxReconnectAttempts: 5
-initialDelay: 1000ms
-backoffMultiplier: 2
-
-// Retry delays:
-// Attempt 1: 1000ms
-// Attempt 2: 2000ms
-// Attempt 3: 4000ms
-// Attempt 4: 8000ms
-// Attempt 5: 16000ms
-```
-
-**Location**: `frontend/src/lib/websocket.ts:143-159`
-
-### Subscription Cleanup
-
-Subscriptions are automatically cleaned up when:
-- Client disconnects (expected or unexpected)
-- Component unmounts (via `useEffect` cleanup)
-- Execution completes
-
----
-
-## Performance Considerations
-
-### Event Filtering
-
-Events with `executionId` are only sent to subscribed clients:
-
-```typescript
-// Only clients subscribed to "exec_123" receive this event
-globalEventEmitter.emitNodeCompleted("exec_123", "node_5", result, 1200);
-```
-
-### Connection Limits
-
-The `WorkflowEventEmitter` supports up to 100 concurrent listeners per event type:
-
-```typescript
-this.emitter.setMaxListeners(100); // Supports many concurrent executions
-```
-
-### Message Size
-
-Consider payload size for streaming events:
-- Chunk size should be reasonable (100-500 chars for LLM tokens)
-- Large outputs should be truncated or summarized
-- Binary data should be base64 encoded or sent via separate endpoint
-
----
-
-## Security
-
-### Authentication
-
-All WebSocket connections require valid JWT tokens. Tokens are verified on connection:
-
-```typescript
-// Reject connection if token is missing or invalid
-if (!token) {
-    socket.close(1008, "Authentication required");
-    return;
-}
-
-const decoded = await request.jwtVerify({ onlyCookie: false });
-```
-
-### Authorization
-
-Events are scoped by `userId`:
-- Users only receive events for their own workflows
-- Multi-tenant isolation via `userId` in connection metadata
-- No cross-user event leakage
-
-### Input Validation
-
-Client messages are validated before processing:
-
-```typescript
-if (data.type === "subscribe" && typeof data.executionId === "string") {
-    // Valid subscription request
-} else {
-    // Ignore invalid messages
-}
-```
-
----
-
-## Debugging & Monitoring
-
-### Server-Side Logging
-
-```typescript
-// Connection events
-fastify.log.info({ userId, connectionId }, "WebSocket connection established");
-
-// Subscription events
-console.log(`Client ${connectionId} subscribed to execution ${executionId}`);
-
-// Broadcast events
-console.log(`Broadcasting event ${event.type} to ${subscriberCount} clients`);
-```
-
-### Client-Side Logging
-
-```typescript
-// Connection status
-console.log("WebSocket connected");
-console.log("WebSocket connection confirmed:", data);
-
-// Event received
-console.log("Received event:", event.type, event);
-
-// Subscription status
-console.log("Subscribed to execution:", executionId);
-```
-
-### Monitoring Metrics
-
-```typescript
-// Get connection statistics
-const totalConnections = wsManager.getConnectionCount();
-const executionSubscribers = wsManager.getExecutionSubscriberCount("exec_123");
-```
-
----
-
-## Common Patterns & Best Practices
-
-### ✅ DO
-
-- Always clean up event listeners in `useEffect` return functions
-- Subscribe to executions when component mounts
-- Use the convenience hooks (`useExecutionEvents`) when possible
-- Handle all event types gracefully (some may be undefined)
-- Log unexpected events for debugging
-
-### ❌ DON'T
-
-- Don't create new WebSocket connections per component (use the singleton)
-- Don't forget to unsubscribe when component unmounts
-- Don't assume events arrive in perfect order (network delays)
-- Don't emit events synchronously in tight loops (batch if needed)
-- Don't send sensitive data in event payloads (use IDs and fetch separately)
-
----
-
-## Future Enhancements
-
-### Planned Features
-
-1. **Event Acknowledgment**: Client confirms receipt of critical events
-2. **Event Replay**: Request recent events for an execution
-3. **Batch Events**: Group multiple events into single message
-4. **Compression**: GZip large payloads
-5. **Presence**: Track active users viewing executions
-6. **Rooms**: Group executions by project/workspace
-
-### API Extensions
-
-```typescript
-// Proposed: Request event history
-{
-    type: "replay",
-    executionId: "exec_123",
-    since: 1698765430000
-}
-
-// Proposed: Acknowledge receipt
-{
-    type: "ack",
-    eventId: "evt_xyz"
-}
-```
-
----
-
-## Quick Reference
-
-### Event Summary Table
-
-| Event Type | Direction | Requires Subscription | Scope |
-|------------|-----------|----------------------|-------|
-| `connection:established` | Server → Client | No | Per connection |
-| `execution:started` | Server → Client | Yes | Per execution |
-| `execution:progress` | Server → Client | Yes | Per execution |
-| `execution:completed` | Server → Client | Yes | Per execution |
-| `execution:failed` | Server → Client | Yes | Per execution |
-| `node:started` | Server → Client | Yes | Per execution |
-| `node:completed` | Server → Client | Yes | Per execution |
-| `node:failed` | Server → Client | Yes | Per execution |
-| `node:retry` | Server → Client | Yes | Per execution |
-| `node:stream` | Server → Client | Yes | Per execution |
-| `user:input:required` | Server → Client | Yes | Per execution |
-| `user:input:response` | Client → Server | N/A | Per execution |
-| `kb:document:processing` | Server → Client | No | Per user |
-| `kb:document:completed` | Server → Client | No | Per user |
-| `kb:document:failed` | Server → Client | No | Per user |
-
-### File Quick Reference
-
-| Task | Backend File | Frontend File |
-|------|-------------|---------------|
-| Emit events | `backend/src/shared/events/EventEmitter.ts` | N/A |
-| Connect to WebSocket | `backend/src/api/routes/websocket.ts` | `frontend/src/lib/websocket.ts` |
-| Subscribe to execution | N/A | `frontend/src/hooks/useWebSocket.ts` |
-| Handle events | `backend/src/shared/websocket/EventBridge.ts` | `frontend/src/components/**/*.tsx` |
-| Store execution state | N/A | `frontend/src/stores/workflowStore.ts` |
-
----
-
-**Last Updated**: 2025-10-29
-**Version**: 1.0.0
+## Summary
+
+FlowMaestro's WebSocket system provides:
+
+1. **Real-time Updates**: Zero-latency execution visibility
+2. **15 Event Types**: Comprehensive coverage of all async operations
+3. **Selective Subscriptions**: Clients receive only relevant events
+4. **Type Safety**: Fully typed events across stack
+5. **Scalable Architecture**: Ready for multi-server deployments
+6. **Robust Error Handling**: Graceful degradation and recovery
+7. **React Integration**: Custom hooks for easy frontend integration
+
+The event-driven architecture decouples event producers (workflows, agents) from consumers (UI clients), enabling flexible real-time features without tight coupling.

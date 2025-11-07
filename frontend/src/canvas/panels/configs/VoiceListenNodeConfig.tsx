@@ -3,8 +3,8 @@ import { FormField, FormSection } from "../../../components/FormField";
 import { Slider } from "../../../components/Slider";
 
 interface VoiceListenNodeConfigProps {
-    data: any;
-    onUpdate: (config: any) => void;
+    data: Record<string, unknown>;
+    onUpdate: (config: unknown) => void;
 }
 
 const sttProviders = [
@@ -30,11 +30,11 @@ const languages = [
 ];
 
 export function VoiceListenNodeConfig({ data, onUpdate }: VoiceListenNodeConfigProps) {
-    const [outputVariable, setOutputVariable] = useState(data.outputVariable || "userSpeech");
-    const [maxDuration, setMaxDuration] = useState(data.maxDuration || 30);
-    const [endSilenceMs, setEndSilenceMs] = useState(data.endSilenceMs || 1500);
-    const [language, setLanguage] = useState(data.language || "en-US");
-    const [sttProvider, setSttProvider] = useState(data.sttProvider || "deepgram");
+    const [outputVariable, setOutputVariable] = useState((data.outputVariable as string) || "userSpeech");
+    const [maxDuration, setMaxDuration] = useState((data.maxDuration as number) || 30);
+    const [endSilenceMs, setEndSilenceMs] = useState((data.endSilenceMs as number) || 1500);
+    const [language, setLanguage] = useState((data.language as string) || "en-US");
+    const [sttProvider, setSttProvider] = useState((data.sttProvider as string) || "deepgram");
 
     useEffect(() => {
         onUpdate({

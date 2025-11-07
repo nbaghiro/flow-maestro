@@ -1,10 +1,11 @@
 import { FastifyError, FastifyReply, FastifyRequest } from "fastify";
+import type { JsonValue } from "@flowmaestro/shared";
 
 export class AppError extends Error {
     constructor(
         public statusCode: number,
         public message: string,
-        public details?: any
+        public details?: JsonValue
     ) {
         super(message);
         this.name = "AppError";
@@ -12,7 +13,7 @@ export class AppError extends Error {
 }
 
 export class ValidationError extends AppError {
-    constructor(message: string, details?: any) {
+    constructor(message: string, details?: JsonValue) {
         super(400, message, details);
         this.name = "ValidationError";
     }
@@ -95,8 +96,6 @@ export async function errorHandler(
     // Default 500 error
     return reply.status(500).send({
         success: false,
-        error: process.env.NODE_ENV === "production"
-            ? "Internal server error"
-            : error.message
+        error: process.env.NODE_ENV === "production" ? "Internal server error" : error.message
     });
 }

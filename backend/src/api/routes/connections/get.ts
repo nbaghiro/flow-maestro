@@ -7,7 +7,7 @@ export async function getConnectionRoute(fastify: FastifyInstance) {
     fastify.get(
         "/:id",
         {
-            preHandler: [authMiddleware, validateParams(connectionIdParamSchema)],
+            preHandler: [authMiddleware, validateParams(connectionIdParamSchema)]
         },
         async (request, reply) => {
             const connectionRepository = new ConnectionRepository();
@@ -18,7 +18,7 @@ export async function getConnectionRoute(fastify: FastifyInstance) {
             if (!connection) {
                 return reply.status(404).send({
                     success: false,
-                    error: "Connection not found",
+                    error: "Connection not found"
                 });
             }
 
@@ -27,13 +27,13 @@ export async function getConnectionRoute(fastify: FastifyInstance) {
             if (ownerId !== request.user!.id) {
                 return reply.status(403).send({
                     success: false,
-                    error: "You do not have permission to access this connection",
+                    error: "You do not have permission to access this connection"
                 });
             }
 
             return reply.send({
                 success: true,
-                data: connection,
+                data: connection
             });
         }
     );

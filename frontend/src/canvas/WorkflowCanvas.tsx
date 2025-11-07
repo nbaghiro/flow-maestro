@@ -77,7 +77,7 @@ export function WorkflowCanvas() {
     );
 
     const onNodeClick = useCallback(
-        (_event: React.MouseEvent, node: any) => {
+        (_event: React.MouseEvent, node: { id: string }) => {
             selectNode(node.id);
         },
         [selectNode]

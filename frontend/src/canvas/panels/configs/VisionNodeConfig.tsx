@@ -9,8 +9,8 @@ import {
 } from "@flowmaestro/shared";
 
 interface VisionNodeConfigProps {
-    data: any;
-    onUpdate: (config: any) => void;
+    data: Record<string, unknown>;
+    onUpdate: (config: unknown) => void;
 }
 
 const operations = [
@@ -19,16 +19,16 @@ const operations = [
 ];
 
 export function VisionNodeConfig({ data, onUpdate }: VisionNodeConfigProps) {
-    const [operation, setOperation] = useState(data.operation || "analyze");
-    const [provider, setProvider] = useState(data.provider || "openai");
+    const [operation, setOperation] = useState((data.operation as string) || "analyze");
+    const [provider, setProvider] = useState((data.provider as string) || "openai");
     const [model, setModel] = useState(
-        data.model || getDefaultModelForProvider(data.provider || "openai")
+        (data.model as string) || getDefaultModelForProvider((data.provider as string) || "openai")
     );
-    const [prompt, setPrompt] = useState(data.prompt || "");
-    const [imageInput, setImageInput] = useState(data.imageInput || "");
-    const [temperature, setTemperature] = useState(data.temperature || 0.7);
-    const [maxTokens, setMaxTokens] = useState(data.maxTokens || 1000);
-    const [outputVariable, setOutputVariable] = useState(data.outputVariable || "");
+    const [prompt, setPrompt] = useState((data.prompt as string) || "");
+    const [imageInput, setImageInput] = useState((data.imageInput as string) || "");
+    const [temperature, setTemperature] = useState((data.temperature as number) || 0.7);
+    const [maxTokens, setMaxTokens] = useState((data.maxTokens as number) || 1000);
+    const [outputVariable, setOutputVariable] = useState((data.outputVariable as string) || "");
 
     useEffect(() => {
         onUpdate({
@@ -91,7 +91,7 @@ export function VisionNodeConfig({ data, onUpdate }: VisionNodeConfigProps) {
                         onChange={(e) => setModel(e.target.value)}
                         className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                     >
-                        {LLM_MODELS_BY_PROVIDER[provider]?.map((m) => (
+                        {LLM_MODELS_BY_PROVIDER[provider as keyof typeof LLM_MODELS_BY_PROVIDER]?.map((m) => (
                             <option key={m.value} value={m.value}>
                                 {m.label}
                             </option>
@@ -175,7 +175,7 @@ export function VisionNodeConfig({ data, onUpdate }: VisionNodeConfigProps) {
 
             <FormSection title="Output Settings">
                 <OutputSettingsSection
-                    nodeName={data.label || "Vision"}
+                    nodeName={(data.label as string) || "Vision"}
                     nodeType="vision"
                     value={outputVariable}
                     onChange={setOutputVariable}

@@ -1,17 +1,18 @@
-export type DocumentSourceType = 'file' | 'url';
+import type { JsonValue } from "@flowmaestro/shared";
 
-export type DocumentFileType = 'pdf' | 'docx' | 'doc' | 'txt' | 'md' | 'html' | 'json' | 'csv';
+export type DocumentSourceType = "file" | "url";
 
-export type DocumentStatus = 'pending' | 'processing' | 'ready' | 'failed';
+export type DocumentFileType = "pdf" | "docx" | "doc" | "txt" | "md" | "html" | "json" | "csv";
 
-export interface DocumentMetadata {
+export type DocumentStatus = "pending" | "processing" | "ready" | "failed";
+
+export interface DocumentMetadata extends Record<string, JsonValue | undefined> {
     author?: string;
     created_date?: string;
     pages?: number;
     language?: string;
     file_size?: number;
     word_count?: number;
-    [key: string]: any; // Allow additional custom metadata
 }
 
 export interface KnowledgeDocumentModel {

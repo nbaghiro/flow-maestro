@@ -4,12 +4,7 @@ import { motion } from "framer-motion";
 export const WorkflowAnimation: React.FC = () => {
     return (
         <div className="relative w-full h-full flex items-center justify-center">
-            <svg
-                width="100%"
-                height="100%"
-                viewBox="0 0 400 300"
-                className="max-w-md mx-auto"
-            >
+            <svg width="100%" height="100%" viewBox="0 0 400 300" className="max-w-md mx-auto">
                 {/* Workflow Boxes */}
                 <motion.g
                     initial={{ opacity: 0 }}
@@ -30,13 +25,7 @@ export const WorkflowAnimation: React.FC = () => {
                         animate={{ scale: 1 }}
                         transition={{ delay: 0.2, type: "spring" }}
                     />
-                    <text
-                        x="70"
-                        y="155"
-                        fill="#e2e8f0"
-                        fontSize="12"
-                        textAnchor="middle"
-                    >
+                    <text x="70" y="155" fill="#e2e8f0" fontSize="12" textAnchor="middle">
                         Start
                     </text>
 
@@ -54,13 +43,7 @@ export const WorkflowAnimation: React.FC = () => {
                         animate={{ scale: 1 }}
                         transition={{ delay: 0.4, type: "spring" }}
                     />
-                    <text
-                        x="200"
-                        y="155"
-                        fill="#e2e8f0"
-                        fontSize="12"
-                        textAnchor="middle"
-                    >
+                    <text x="200" y="155" fill="#e2e8f0" fontSize="12" textAnchor="middle">
                         Process
                     </text>
 
@@ -78,13 +61,7 @@ export const WorkflowAnimation: React.FC = () => {
                         animate={{ scale: 1 }}
                         transition={{ delay: 0.6, type: "spring" }}
                     />
-                    <text
-                        x="330"
-                        y="155"
-                        fill="#e2e8f0"
-                        fontSize="12"
-                        textAnchor="middle"
-                    >
+                    <text x="330" y="155" fill="#e2e8f0" fontSize="12" textAnchor="middle">
                         Output
                     </text>
                 </motion.g>
@@ -125,7 +102,7 @@ export const WorkflowAnimation: React.FC = () => {
                         delay: 1.5,
                         duration: 1.5,
                         repeat: Infinity,
-                        repeatDelay: 1,
+                        repeatDelay: 1
                     }}
                 />
                 <motion.circle
@@ -139,7 +116,7 @@ export const WorkflowAnimation: React.FC = () => {
                         delay: 2.2,
                         duration: 1.5,
                         repeat: Infinity,
-                        repeatDelay: 1,
+                        repeatDelay: 1
                     }}
                 />
             </svg>

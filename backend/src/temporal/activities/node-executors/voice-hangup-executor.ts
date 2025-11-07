@@ -4,9 +4,9 @@ import { getVoiceCommandBus } from "../../../shared/services/VoiceCommandBus";
 import { CallExecutionRepository } from "../../../storage/repositories/CallExecutionRepository";
 
 export interface VoiceHangupNodeConfig {
-    farewellMessage?: string;           // Optional goodbye message before hangup
-    reason?: string;                    // Hangup reason for logging
-    outputVariable?: string;            // Where to store result
+    farewellMessage?: string; // Optional goodbye message before hangup
+    reason?: string; // Hangup reason for logging
+    outputVariable?: string; // Where to store result
 }
 
 export interface VoiceHangupNodeResult {
@@ -46,7 +46,7 @@ export async function executeVoiceHangupNode(
                     "speak",
                     {
                         text: farewell,
-                        interruptible: false,
+                        interruptible: false
                     },
                     30000
                 );
@@ -60,13 +60,14 @@ export async function executeVoiceHangupNode(
                     speaker: "agent",
                     text: farewell,
                     started_at: new Date(),
-                    is_final: true,
+                    is_final: true
                 });
 
                 // Small delay to ensure message completes
                 await new Promise((resolve) => setTimeout(resolve, 500));
-            } catch (error: any) {
-                console.error("[VoiceHangup] Failed to play farewell:", error.message);
+            } catch (error: unknown) {
+                const errorMsg = error instanceof Error ? error.message : String(error);
+                console.error("[VoiceHangup] Failed to play farewell:", errorMsg);
                 // Continue with hangup even if farewell fails
             }
         }
@@ -78,7 +79,7 @@ export async function executeVoiceHangupNode(
             callExecutionId,
             "hangup",
             {
-                reason: config.reason || "normal",
+                reason: config.reason || "normal"
             },
             5000 // Short timeout for hangup
         );
@@ -93,15 +94,15 @@ export async function executeVoiceHangupNode(
             event_type: "call:hangup_initiated",
             event_data: {
                 reason: config.reason || "normal",
-                farewell_played: farewellPlayed,
+                farewell_played: farewellPlayed
             },
-            severity: "info",
+            severity: "info"
         });
 
         const result: VoiceHangupNodeResult = {
             success: true,
             hangupCause: config.reason || "normal",
-            farewellPlayed,
+            farewellPlayed
         };
 
         console.log("[VoiceHangup] Call ended successfully");
@@ -111,8 +112,9 @@ export async function executeVoiceHangupNode(
         }
 
         return result as unknown as JsonObject;
-    } catch (error: any) {
-        console.error("[VoiceHangup] Error:", error.message);
+    } catch (error: unknown) {
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        console.error("[VoiceHangup] Error:", errorMsg);
 
         // Even if hangup command fails, mark call as completed
         // (call might already be disconnected)
@@ -127,7 +129,7 @@ export async function executeVoiceHangupNode(
             success: false,
             hangupCause: config.reason || "error",
             farewellPlayed,
-            error: error.message,
+            error: errorMsg
         };
 
         if (config.outputVariable) {

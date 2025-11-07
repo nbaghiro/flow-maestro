@@ -180,7 +180,7 @@ export interface GeneratedWorkflowNode {
     id: string;
     type: string;
     label: string;
-    config: Record<string, any>;
+    config: Record<string, unknown>;
 }
 
 export interface GeneratedWorkflowEdge {
@@ -196,7 +196,7 @@ export interface ReactFlowNode {
     position: { x: number; y: number };
     data: {
         label: string;
-        config: Record<string, any>;
+        config: Record<string, unknown>;
         status?: string;
     };
 }

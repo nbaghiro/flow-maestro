@@ -37,7 +37,9 @@ export async function longRunningTaskWorkflow(
 ): Promise<LongRunningTaskResult> {
     const { executionId, workflowId, userId, nodeIds } = input;
 
-    console.log(`Starting long-running task for execution: ${executionId} with ${nodeIds.length} nodes`);
+    console.log(
+        `Starting long-running task for execution: ${executionId} with ${nodeIds.length} nodes`
+    );
 
     try {
         const result = await executeNodeBatch({

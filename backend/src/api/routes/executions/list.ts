@@ -1,6 +1,6 @@
 import { FastifyInstance } from "fastify";
 import { ExecutionRepository, WorkflowRepository } from "../../../storage/repositories";
-import { listExecutionsQuerySchema } from "../../schemas/execution-schemas";
+import { listExecutionsQuerySchema, ListExecutionsQuery } from "../../schemas/execution-schemas";
 import { authMiddleware, validateQuery } from "../../middleware";
 
 export async function listExecutionsRoute(fastify: FastifyInstance) {
@@ -12,7 +12,7 @@ export async function listExecutionsRoute(fastify: FastifyInstance) {
         async (request, reply) => {
             const executionRepository = new ExecutionRepository();
             const workflowRepository = new WorkflowRepository();
-            const query = request.query as any;
+            const query = request.query as ListExecutionsQuery;
 
             let executions;
             let total;
@@ -34,13 +34,10 @@ export async function listExecutionsRoute(fastify: FastifyInstance) {
                     });
                 }
 
-                const result = await executionRepository.findByWorkflowId(
-                    query.workflowId,
-                    {
-                        limit: query.limit || 50,
-                        offset: query.offset || 0
-                    }
-                );
+                const result = await executionRepository.findByWorkflowId(query.workflowId, {
+                    limit: query.limit || 50,
+                    offset: query.offset || 0
+                });
                 executions = result.executions;
                 total = result.total;
             } else {
@@ -59,9 +56,7 @@ export async function listExecutionsRoute(fastify: FastifyInstance) {
                     workflowIds.map((id) => workflowRepository.findById(id))
                 );
                 const userWorkflowIds = new Set(
-                    workflows
-                        .filter((w) => w && w.user_id === request.user!.id)
-                        .map((w) => w!.id)
+                    workflows.filter((w) => w && w.user_id === request.user!.id).map((w) => w!.id)
                 );
                 executions = executions.filter((e) => userWorkflowIds.has(e.workflow_id));
             }

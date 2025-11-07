@@ -3,8 +3,8 @@ import { FormField, FormSection } from "../../../components/FormField";
 import { OutputSettingsSection } from "../../../components/OutputSettingsSection";
 
 interface IntegrationNodeConfigProps {
-    data: any;
-    onUpdate: (config: any) => void;
+    data: Record<string, unknown>;
+    onUpdate: (config: unknown) => void;
 }
 
 const services = [
@@ -29,31 +29,31 @@ const emailProviders = [
 ];
 
 export function IntegrationNodeConfig({ data, onUpdate }: IntegrationNodeConfigProps) {
-    const [service, setService] = useState(data.service || "slack");
-    const [action, setAction] = useState(data.action || "sendMessage");
-    const [credentialsId, setCredentialsId] = useState(data.credentialsId || "");
+    const [service, setService] = useState((data.service as string) || "slack");
+    const [action, setAction] = useState((data.action as string) || "sendMessage");
+    const [credentialsId, setCredentialsId] = useState((data.credentialsId as string) || "");
 
     // Slack config
-    const [slackChannel, setSlackChannel] = useState(data.slackChannel || "");
-    const [slackMessage, setSlackMessage] = useState(data.slackMessage || "");
+    const [slackChannel, setSlackChannel] = useState((data.slackChannel as string) || "");
+    const [slackMessage, setSlackMessage] = useState((data.slackMessage as string) || "");
 
     // Discord config
-    const [discordWebhookUrl, setDiscordWebhookUrl] = useState(data.discordWebhookUrl || "");
-    const [discordMessage, setDiscordMessage] = useState(data.discordMessage || "");
+    const [discordWebhookUrl, setDiscordWebhookUrl] = useState((data.discordWebhookUrl as string) || "");
+    const [discordMessage, setDiscordMessage] = useState((data.discordMessage as string) || "");
 
     // Email config
-    const [emailProvider, setEmailProvider] = useState(data.emailProvider || "smtp");
-    const [emailTo, setEmailTo] = useState(data.emailTo || "");
-    const [emailSubject, setEmailSubject] = useState(data.emailSubject || "");
-    const [emailBody, setEmailBody] = useState(data.emailBody || "");
+    const [emailProvider, setEmailProvider] = useState((data.emailProvider as string) || "smtp");
+    const [emailTo, setEmailTo] = useState((data.emailTo as string) || "");
+    const [emailSubject, setEmailSubject] = useState((data.emailSubject as string) || "");
+    const [emailBody, setEmailBody] = useState((data.emailBody as string) || "");
 
     // Webhook config
-    const [webhookUrl, setWebhookUrl] = useState(data.webhookUrl || "");
-    const [webhookPayload, setWebhookPayload] = useState(data.webhookPayload || "");
-    const [outputVariable, setOutputVariable] = useState(data.outputVariable || "");
+    const [webhookUrl, setWebhookUrl] = useState((data.webhookUrl as string) || "");
+    const [webhookPayload, setWebhookPayload] = useState((data.webhookPayload as string) || "");
+    const [outputVariable, setOutputVariable] = useState((data.outputVariable as string) || "");
 
     useEffect(() => {
-        const config: any = { service, action, credentialsId, outputVariable };
+        const config: Record<string, unknown> = { service, action, credentialsId, outputVariable };
 
         if (service === "slack") {
             config.slackChannel = slackChannel;
@@ -266,7 +266,7 @@ export function IntegrationNodeConfig({ data, onUpdate }: IntegrationNodeConfigP
 
             <FormSection title="Output Settings">
                 <OutputSettingsSection
-                    nodeName={data.label || "Integration"}
+                    nodeName={(data.label as string) || "Integration"}
                     nodeType="integration"
                     value={outputVariable}
                     onChange={setOutputVariable}

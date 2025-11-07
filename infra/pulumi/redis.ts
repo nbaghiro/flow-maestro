@@ -16,7 +16,7 @@ export const redis = new gcp.redis.Instance(
         connectMode: "PRIVATE_SERVICE_ACCESS",
 
         redisConfigs: {
-            "maxmemory-policy": "allkeys-lru",
+            "maxmemory-policy": "allkeys-lru"
         },
 
         maintenancePolicy: {
@@ -27,17 +27,17 @@ export const redis = new gcp.redis.Instance(
                         hours: 3,
                         minutes: 0,
                         seconds: 0,
-                        nanos: 0,
-                    },
-                },
-            ],
+                        nanos: 0
+                    }
+                }
+            ]
         },
 
         displayName: `${resourceName("redis")} - ${infrastructureConfig.environment}`,
-        labels: resourceLabels(),
+        labels: resourceLabels()
     },
     {
-        dependsOn: [privateVpcConnection],
+        dependsOn: [privateVpcConnection]
     }
 );
 
@@ -47,5 +47,5 @@ export const redisOutputs = {
     host: redis.host,
     port: redis.port,
     readEndpoint: redis.readEndpoint,
-    currentLocationId: redis.currentLocationId,
+    currentLocationId: redis.currentLocationId
 };

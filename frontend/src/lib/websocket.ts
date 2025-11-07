@@ -123,34 +123,35 @@ export class WebSocketClient {
         });
     }
 
-    private send(data: any): void {
+    private send(data: unknown): void {
         if (this.ws?.readyState === WebSocket.OPEN) {
             this.ws.send(JSON.stringify(data));
         }
     }
 
-    private handleMessage(data: any): void {
+    private handleMessage(data: unknown): void {
+        const d = data as Record<string, unknown>;
         // Handle system messages
-        if (data.type === "connected") {
+        if (d.type === "connected") {
             console.log("WebSocket connection confirmed:", data);
             return;
         }
 
-        if (data.type === "subscribed" || data.type === "unsubscribed") {
-            console.log(`${data.type} to execution:`, data.executionId);
+        if (d.type === "subscribed" || d.type === "unsubscribed") {
+            console.log(`${d.type} to execution:`, d.executionId);
             return;
         }
 
         // Emit to specific event type handlers
-        const handlers = this.eventHandlers.get(data.type);
+        const handlers = this.eventHandlers.get(d.type as string);
         if (handlers) {
-            handlers.forEach((handler) => handler(data));
+            handlers.forEach((handler) => handler(data as WebSocketEvent));
         }
 
         // Emit to "all" handlers
         const allHandlers = this.eventHandlers.get("*");
         if (allHandlers) {
-            allHandlers.forEach((handler) => handler(data));
+            allHandlers.forEach((handler) => handler(data as WebSocketEvent));
         }
     }
 

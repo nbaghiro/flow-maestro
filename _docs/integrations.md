@@ -111,6 +111,7 @@ Direct API key/secret authentication for AI providers and REST APIs.
 ### Creating an API Key Connection
 
 **Frontend**:
+
 ```typescript
 const handleCreateConnection = async () => {
     const connection = await connectionStore.addConnection({
@@ -125,6 +126,7 @@ const handleCreateConnection = async () => {
 ```
 
 **Backend API**:
+
 ```http
 POST /api/connections
 Authorization: Bearer <token>
@@ -170,6 +172,7 @@ if (!isValid) {
 ```
 
 **Backend Test Endpoint**:
+
 ```http
 POST /api/connections/test
 Authorization: Bearer <token>
@@ -219,6 +222,7 @@ Secure delegated access with automatic token refresh for integrated services.
 ### OAuth Flow
 
 **1. Authorization Initiation**:
+
 ```typescript
 // Frontend
 const { initiateOAuth } = useOAuth();
@@ -234,6 +238,7 @@ const handleConnect = async () => {
 ```
 
 **2. Backend Authorization Endpoint**:
+
 ```http
 GET /api/oauth/slack/authorize
 Authorization: Bearer <token>
@@ -248,6 +253,7 @@ Authorization: Bearer <token>
 ```
 
 **3. OAuth Callback**:
+
 ```
 User authorizes on provider's page
 ↓
@@ -269,7 +275,7 @@ export async function getAccessToken(connectionId: string): Promise<string> {
     const connection = await connectionRepo.findByIdWithData(connectionId);
 
     // Check if token expired or expires in < 5 minutes
-    if (connection.data.expires_at && Date.now() + 5*60*1000 > connection.data.expires_at) {
+    if (connection.data.expires_at && Date.now() + 5 * 60 * 1000 > connection.data.expires_at) {
         // Refresh the token
         const newTokens = await refreshOAuthToken(connection);
         await connectionRepo.updateConnectionData(connectionId, newTokens);
@@ -296,6 +302,7 @@ NOTION_CLIENT_SECRET=secret_xxxxxxxxxxxxxxx
 ```
 
 **Provider Configuration** (`backend/src/services/oauth/OAuthService.ts`):
+
 ```typescript
 const OAUTH_PROVIDERS = {
     slack: {
@@ -313,7 +320,7 @@ const OAUTH_PROVIDERS = {
         clientSecret: process.env.GOOGLE_CLIENT_SECRET,
         scopes: ["https://www.googleapis.com/auth/gmail.readonly"],
         refreshable: true
-    },
+    }
     // ... more providers
 };
 ```
@@ -425,21 +432,21 @@ FlowMaestro includes a registry of known MCP servers:
 // backend/src/services/mcp/MCPProviderRegistry.ts
 
 export const MCP_PROVIDERS = {
-    "filesystem": {
+    filesystem: {
         name: "filesystem",
         displayName: "Filesystem MCP",
         defaultServerUrl: process.env.MCP_FILESYSTEM_URL || "http://localhost:3100",
         authType: "none",
         category: "filesystem"
     },
-    "postgres": {
+    postgres: {
         name: "postgres",
         displayName: "PostgreSQL MCP",
         defaultServerUrl: process.env.MCP_POSTGRES_URL || "http://localhost:3101",
         authType: "basic",
         category: "database"
     },
-    "github": {
+    github: {
         name: "github",
         displayName: "GitHub MCP",
         defaultServerUrl: process.env.MCP_GITHUB_URL || "http://localhost:3102",
@@ -451,6 +458,7 @@ export const MCP_PROVIDERS = {
 ```
 
 **Get Provider Registry**:
+
 ```http
 GET /api/connections/mcp/providers
 
@@ -484,6 +492,7 @@ const result = await mcpService.executeTool(
 ```
 
 **MCP Protocol**:
+
 - **RESTful Endpoint**: `POST /tools/{toolName}/execute`
 - **JSON-RPC Fallback**: `POST /rpc` with `{"method": "tools.execute"}`
 
@@ -497,46 +506,48 @@ Connections are referenced by ID in workflow node configurations.
 
 ```json
 {
-  "type": "llm",
-  "label": "Generate Summary",
-  "config": {
-    "provider": "openai",
-    "model": "gpt-4",
-    "connectionId": "550e8400-e29b-41d4-a716-446655440000",
-    "prompt": "Summarize: ${previous_step_output}",
-    "temperature": 0.7
-  }
+    "type": "llm",
+    "label": "Generate Summary",
+    "config": {
+        "provider": "openai",
+        "model": "gpt-4",
+        "connectionId": "550e8400-e29b-41d4-a716-446655440000",
+        "prompt": "Summarize: ${previous_step_output}",
+        "temperature": 0.7
+    }
 }
 ```
 
 **Execution** (`backend/src/temporal/activities/node-executors/llm-executor.ts`):
+
 ```typescript
 export async function executeLLMNode(config: LLMNodeConfig, context: ActivityContext) {
     // Get connection with decrypted API key
     const connection = await connectionRepo.findByIdWithData(config.connectionId);
 
-    if (!connection || connection.status !== 'active') {
-        throw new Error('Invalid or inactive connection');
+    if (!connection || connection.status !== "active") {
+        throw new Error("Invalid or inactive connection");
     }
 
     const apiKey = connection.data.api_key;
 
     // Make LLM API call
-    const response = await openai.chat.completions.create({
-        model: config.model,
-        messages: [
-            { role: "user", content: interpolateVariables(config.prompt, context) }
-        ],
-        temperature: config.temperature
-    }, {
-        headers: { 'Authorization': `Bearer ${apiKey}` }
-    });
+    const response = await openai.chat.completions.create(
+        {
+            model: config.model,
+            messages: [{ role: "user", content: interpolateVariables(config.prompt, context) }],
+            temperature: config.temperature
+        },
+        {
+            headers: { Authorization: `Bearer ${apiKey}` }
+        }
+    );
 
     return {
         ...context,
         variables: {
             ...context.variables,
-            [config.outputVariable || 'llmOutput']: response.choices[0].message.content
+            [config.outputVariable || "llmOutput"]: response.choices[0].message.content
         }
     };
 }
@@ -546,34 +557,42 @@ export async function executeLLMNode(config: LLMNodeConfig, context: ActivityCon
 
 ```json
 {
-  "type": "integration",
-  "label": "Send Slack Notification",
-  "config": {
-    "service": "slack",
-    "operation": "send_message",
-    "connectionId": "660e8400-e29b-41d4-a716-446655440001",
+    "type": "integration",
+    "label": "Send Slack Notification",
     "config": {
-      "channel": "#notifications",
-      "text": "Workflow completed: ${workflow.name}"
+        "service": "slack",
+        "operation": "send_message",
+        "connectionId": "660e8400-e29b-41d4-a716-446655440001",
+        "config": {
+            "channel": "#notifications",
+            "text": "Workflow completed: ${workflow.name}"
+        }
     }
-  }
 }
 ```
 
 **Execution**:
+
 ```typescript
-export async function executeSlackIntegration(config: IntegrationNodeConfig, context: ActivityContext) {
+export async function executeSlackIntegration(
+    config: IntegrationNodeConfig,
+    context: ActivityContext
+) {
     // Get OAuth token (auto-refreshes if expired!)
     const token = await getAccessToken(config.connectionId);
 
     const text = interpolateVariables(config.config.text, context);
 
-    await axios.post('https://slack.com/api/chat.postMessage', {
-        channel: config.config.channel,
-        text: text
-    }, {
-        headers: { 'Authorization': `Bearer ${token}` }
-    });
+    await axios.post(
+        "https://slack.com/api/chat.postMessage",
+        {
+            channel: config.config.channel,
+            text: text
+        },
+        {
+            headers: { Authorization: `Bearer ${token}` }
+        }
+    );
 
     return context;
 }
@@ -583,31 +602,28 @@ export async function executeSlackIntegration(config: IntegrationNodeConfig, con
 
 ```json
 {
-  "type": "mcp_tool",
-  "label": "Read Config File",
-  "config": {
-    "connectionId": "770e8400-e29b-41d4-a716-446655440002",
-    "tool": "read_file",
-    "parameters": {
-      "path": "/app/config/${environment}.json"
-    },
-    "outputVariable": "config"
-  }
+    "type": "mcp_tool",
+    "label": "Read Config File",
+    "config": {
+        "connectionId": "770e8400-e29b-41d4-a716-446655440002",
+        "tool": "read_file",
+        "parameters": {
+            "path": "/app/config/${environment}.json"
+        },
+        "outputVariable": "config"
+    }
 }
 ```
 
 **Execution**:
+
 ```typescript
 export async function executeMCPToolNode(config: MCPToolNodeConfig, context: ActivityContext) {
     const connection = await connectionRepo.findByIdWithData(config.connectionId);
 
     const parameters = interpolateObject(config.parameters, context);
 
-    const result = await mcpService.executeTool(
-        connection,
-        config.tool,
-        parameters
-    );
+    const result = await mcpService.executeTool(connection, config.tool, parameters);
 
     return {
         ...context,
@@ -640,17 +656,21 @@ Agents are configured with a default LLM provider connection:
 ```
 
 **Agent Execution**:
+
 ```typescript
 export async function callLLM(input: CallLLMInput): Promise<LLMResponse> {
     const connection = await connectionRepo.findByIdWithData(input.agent.connectionId);
     const apiKey = connection.data.api_key;
 
-    const response = await openai.chat.completions.create({
-        model: input.agent.model,
-        messages: input.messages
-    }, {
-        headers: { 'Authorization': `Bearer ${apiKey}` }
-    });
+    const response = await openai.chat.completions.create(
+        {
+            model: input.agent.model,
+            messages: input.messages
+        },
+        {
+            headers: { Authorization: `Bearer ${apiKey}` }
+        }
+    );
 
     return {
         content: response.choices[0].message.content,
@@ -664,6 +684,7 @@ export async function callLLM(input: CallLLMInput): Promise<LLMResponse> {
 Agents can use tools that require connections:
 
 **Workflow Tool** (executes FlowMaestro workflow):
+
 ```typescript
 {
     type: "workflow",
@@ -677,6 +698,7 @@ Agents can use tools that require connections:
 ```
 
 **MCP Tool** (calls external MCP server):
+
 ```typescript
 {
     type: "mcp",
@@ -689,18 +711,15 @@ Agents can use tools that require connections:
 ```
 
 **Tool Execution**:
+
 ```typescript
 export async function executeToolCall(input: ExecuteToolCallInput) {
     const { toolCall, availableTools, userId } = input;
-    const tool = availableTools.find(t => t.name === toolCall.name);
+    const tool = availableTools.find((t) => t.name === toolCall.name);
 
     if (tool.type === "mcp") {
         const connection = await connectionRepo.findByIdWithData(tool.config.connectionId);
-        return await mcpService.executeTool(
-            connection,
-            toolCall.name,
-            toolCall.arguments
-        );
+        return await mcpService.executeTool(connection, toolCall.name, toolCall.arguments);
     }
 
     // ... other tool types
@@ -725,7 +744,14 @@ export class ConnectionRepository {
             `INSERT INTO connections (user_id, name, connection_method, provider, data, mcp_server_url)
              VALUES ($1, $2, $3, $4, $5, $6)
              RETURNING *`,
-            [input.userId, input.name, input.connection_method, input.provider, encryptedData, input.mcp_server_url]
+            [
+                input.userId,
+                input.name,
+                input.connection_method,
+                input.provider,
+                encryptedData,
+                input.mcp_server_url
+            ]
         );
 
         return this.toSummary(result.rows[0]);
@@ -785,7 +811,7 @@ export class ConnectionRepository {
         }
 
         const result = await pool.query<Connection>(query, params);
-        return result.rows.map(row => this.toSummary(row));
+        return result.rows.map((row) => this.toSummary(row));
     }
 
     // Soft delete
@@ -833,7 +859,7 @@ export class EncryptionService {
         if (!keyBase64) {
             throw new Error("ENCRYPTION_KEY environment variable required");
         }
-        this.key = Buffer.from(keyBase64, 'base64');
+        this.key = Buffer.from(keyBase64, "base64");
         if (this.key.length !== 32) {
             throw new Error("Encryption key must be 32 bytes");
         }
@@ -841,37 +867,33 @@ export class EncryptionService {
 
     encrypt(data: any): string {
         const iv = crypto.randomBytes(16);
-        const cipher = crypto.createCipheriv('aes-256-gcm', this.key, iv);
+        const cipher = crypto.createCipheriv("aes-256-gcm", this.key, iv);
 
         const encrypted = Buffer.concat([
-            cipher.update(JSON.stringify(data), 'utf8'),
+            cipher.update(JSON.stringify(data), "utf8"),
             cipher.final()
         ]);
 
         const authTag = cipher.getAuthTag();
 
         return JSON.stringify({
-            iv: iv.toString('hex'),
-            data: encrypted.toString('hex'),
-            authTag: authTag.toString('hex')
+            iv: iv.toString("hex"),
+            data: encrypted.toString("hex"),
+            authTag: authTag.toString("hex")
         });
     }
 
     decrypt(encryptedString: string): any {
         const { iv, data, authTag } = JSON.parse(encryptedString);
-        const decipher = crypto.createDecipheriv(
-            'aes-256-gcm',
-            this.key,
-            Buffer.from(iv, 'hex')
-        );
-        decipher.setAuthTag(Buffer.from(authTag, 'hex'));
+        const decipher = crypto.createDecipheriv("aes-256-gcm", this.key, Buffer.from(iv, "hex"));
+        decipher.setAuthTag(Buffer.from(authTag, "hex"));
 
         const decrypted = Buffer.concat([
-            decipher.update(Buffer.from(data, 'hex')),
+            decipher.update(Buffer.from(data, "hex")),
             decipher.final()
         ]);
 
-        return JSON.parse(decrypted.toString('utf8'));
+        return JSON.parse(decrypted.toString("utf8"));
     }
 }
 ```
@@ -901,8 +923,8 @@ export class ConnectionTestService {
 
     private async testOpenAI(connection: ConnectionWithData): Promise<ConnectionTestResult> {
         try {
-            const response = await axios.get('https://api.openai.com/v1/models', {
-                headers: { 'Authorization': `Bearer ${connection.data.api_key}` },
+            const response = await axios.get("https://api.openai.com/v1/models", {
+                headers: { Authorization: `Bearer ${connection.data.api_key}` },
                 timeout: 10000
             });
 
@@ -1039,7 +1061,7 @@ export const useConnectionStore = create<ConnectionStore>((set, get) => ({
 
     addConnection: async (input) => {
         const connection = await api.createConnection(input);
-        set(state => ({
+        set((state) => ({
             connections: [...state.connections, connection]
         }));
         return connection;
@@ -1051,11 +1073,11 @@ export const useConnectionStore = create<ConnectionStore>((set, get) => ({
     },
 
     getByProvider: (provider) => {
-        return get().connections.filter(c => c.provider === provider);
+        return get().connections.filter((c) => c.provider === provider);
     },
 
     getByMethod: (method) => {
-        return get().connections.filter(c => c.connection_method === method);
+        return get().connections.filter((c) => c.connection_method === method);
     }
 }));
 ```
@@ -1111,6 +1133,7 @@ export function ConnectionPicker({
 ```
 
 **Usage in Node Config**:
+
 ```typescript
 <ConnectionPicker
     provider="openai"
@@ -1189,13 +1212,11 @@ const encryptedData = encryptionService.encrypt({
     api_secret: "org-..."
 });
 
-await pool.query(
-    'INSERT INTO connections (data) VALUES ($1)',
-    [encryptedData]
-);
+await pool.query("INSERT INTO connections (data) VALUES ($1)", [encryptedData]);
 ```
 
 **Encryption Key Management**:
+
 - Store in `ENCRYPTION_KEY` environment variable
 - 32-byte base64-encoded string
 - Rotate periodically

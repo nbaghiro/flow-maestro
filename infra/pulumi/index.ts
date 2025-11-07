@@ -152,5 +152,5 @@ Redis Connection:
   Port: ${redisOutputs.port}
 
 Load Balancer IP: ${staticIp.address}
-`,
+`
 };

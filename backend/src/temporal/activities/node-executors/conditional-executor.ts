@@ -1,16 +1,16 @@
-import { interpolateVariables } from './utils';
-import type { JsonObject, JsonValue } from '@flowmaestro/shared';
+import { interpolateVariables } from "./utils";
+import type { JsonObject, JsonValue } from "@flowmaestro/shared";
 
 export type ComparisonOperator =
-    | '=='
-    | '!='
-    | '>'
-    | '<'
-    | '>='
-    | '<='
-    | 'contains'
-    | 'startsWith'
-    | 'endsWith';
+    | "=="
+    | "!="
+    | ">"
+    | "<"
+    | ">="
+    | "<="
+    | "contains"
+    | "startsWith"
+    | "endsWith";
 
 export interface ConditionalNodeConfig {
     leftValue: string;
@@ -20,7 +20,7 @@ export interface ConditionalNodeConfig {
 
 export interface ConditionalNodeResult {
     conditionMet: boolean;
-    branch: 'true' | 'false';
+    branch: "true" | "false";
     leftValue: JsonValue;
     rightValue: JsonValue;
     operator: ComparisonOperator;
@@ -41,11 +41,13 @@ export async function executeConditionalNode(
     const leftValue = parseValue(leftInterpolated);
     const rightValue = parseValue(rightInterpolated);
 
-    console.log(`[Conditional] Evaluating: ${JSON.stringify(leftValue)} ${config.operator} ${JSON.stringify(rightValue)}`);
+    console.log(
+        `[Conditional] Evaluating: ${JSON.stringify(leftValue)} ${config.operator} ${JSON.stringify(rightValue)}`
+    );
 
     // Evaluate the condition
     const conditionMet = evaluateCondition(leftValue, config.operator, rightValue);
-    const branch = conditionMet ? 'true' : 'false';
+    const branch = conditionMet ? "true" : "false";
 
     console.log(`[Conditional] Result: ${conditionMet} → taking '${branch}' branch`);
 
@@ -64,19 +66,21 @@ export async function executeConditionalNode(
 function parseValue(value: string): JsonValue {
     // Try to parse as number
     const num = Number(value);
-    if (!isNaN(num) && value.trim() !== '') {
+    if (!isNaN(num) && value.trim() !== "") {
         return num;
     }
 
     // Parse booleans
     const lower = value.toLowerCase().trim();
-    if (lower === 'true') return true;
-    if (lower === 'false') return false;
-    if (lower === 'null' || lower === 'undefined') return null;
+    if (lower === "true") return true;
+    if (lower === "false") return false;
+    if (lower === "null" || lower === "undefined") return null;
 
     // Try to parse as JSON (for objects/arrays)
-    if ((value.trim().startsWith('{') && value.trim().endsWith('}')) ||
-        (value.trim().startsWith('[') && value.trim().endsWith(']'))) {
+    if (
+        (value.trim().startsWith("{") && value.trim().endsWith("}")) ||
+        (value.trim().startsWith("[") && value.trim().endsWith("]"))
+    ) {
         try {
             return JSON.parse(value);
         } catch {
@@ -90,25 +94,29 @@ function parseValue(value: string): JsonValue {
 /**
  * Evaluate a condition based on operator
  */
-function evaluateCondition(left: JsonValue, operator: ComparisonOperator, right: JsonValue): boolean {
+function evaluateCondition(
+    left: JsonValue,
+    operator: ComparisonOperator,
+    right: JsonValue
+): boolean {
     switch (operator) {
-        case '==':
+        case "==":
             return equals(left, right);
-        case '!=':
+        case "!=":
             return !equals(left, right);
-        case '>':
+        case ">":
             return compare(left, right) > 0;
-        case '<':
+        case "<":
             return compare(left, right) < 0;
-        case '>=':
+        case ">=":
             return compare(left, right) >= 0;
-        case '<=':
+        case "<=":
             return compare(left, right) <= 0;
-        case 'contains':
+        case "contains":
             return contains(left, right);
-        case 'startsWith':
+        case "startsWith":
             return startsWith(left, right);
-        case 'endsWith':
+        case "endsWith":
             return endsWith(left, right);
         default:
             throw new Error(`Unknown operator: ${operator}`);
@@ -125,17 +133,17 @@ function equals(left: JsonValue, right: JsonValue): boolean {
     }
 
     // Type coercion for numbers
-    if (typeof left === 'number' || typeof right === 'number') {
+    if (typeof left === "number" || typeof right === "number") {
         return Number(left) === Number(right);
     }
 
     // String comparison (case-insensitive)
-    if (typeof left === 'string' || typeof right === 'string') {
+    if (typeof left === "string" || typeof right === "string") {
         return String(left).toLowerCase() === String(right).toLowerCase();
     }
 
     // Boolean comparison
-    if (typeof left === 'boolean' || typeof right === 'boolean') {
+    if (typeof left === "boolean" || typeof right === "boolean") {
         return Boolean(left) === Boolean(right);
     }
 
@@ -162,7 +170,7 @@ function compare(left: JsonValue, right: JsonValue): number {
  * Check if value contains searchValue (for strings and arrays)
  */
 function contains(value: JsonValue, searchValue: JsonValue): boolean {
-    if (typeof value === 'string') {
+    if (typeof value === "string") {
         return value.toLowerCase().includes(String(searchValue).toLowerCase());
     }
 

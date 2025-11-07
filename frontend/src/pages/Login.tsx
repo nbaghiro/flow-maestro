@@ -19,8 +19,8 @@ export function Login() {
         try {
             await login(email, password);
             navigate("/app");
-        } catch (err: any) {
-            setError(err.message || "Failed to login. Please check your credentials.");
+        } catch (err: unknown) {
+            setError((err as Error).message || "Failed to login. Please check your credentials.");
         } finally {
             setIsLoading(false);
         }

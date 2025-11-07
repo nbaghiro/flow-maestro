@@ -7,6 +7,7 @@ import {
     updateWorkflow,
     type WorkflowDefinition
 } from "../lib/api";
+import type { WorkflowNode } from "@flowmaestro/shared";
 import { useAuth } from "../contexts/AuthContext";
 import { CreateWorkflowDialog } from "../components/CreateWorkflowDialog";
 import { AIGenerateDialog } from "../components/AIGenerateDialog";
@@ -81,16 +82,22 @@ export function WorkflowLibrary() {
                 const workflowId = createResponse.data.id;
 
                 // Convert React Flow format back to backend format for saving
-                const nodesMap: Record<string, any> = {};
+                const nodesMap: Record<string, Record<string, unknown>> = {};
                 flowNodes.forEach((node) => {
-                    const { label, onError, ...config } = (node.data || {}) as any;
-                    nodesMap[node.id] = {
+                    const { label, onError, ...config } = (node.data || {}) as Record<
+                        string,
+                        unknown
+                    >;
+                    const nodeEntry: Record<string, unknown> = {
                         type: node.type || "default",
                         name: label || node.id,
                         config: config,
-                        position: node.position,
-                        ...(onError && { onError })
+                        position: node.position
                     };
+                    if (onError && typeof onError === "object") {
+                        nodeEntry.onError = onError;
+                    }
+                    nodesMap[node.id] = nodeEntry;
                 });
 
                 // Find entry point
@@ -99,7 +106,7 @@ export function WorkflowLibrary() {
 
                 const workflowDefinition = {
                     name: workflowName,
-                    nodes: nodesMap,
+                    nodes: nodesMap as unknown as Record<string, WorkflowNode>,
                     edges: flowEdges.map((edge) => ({
                         id: edge.id,
                         source: edge.source,

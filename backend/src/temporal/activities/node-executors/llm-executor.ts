@@ -1,11 +1,11 @@
-import OpenAI from 'openai';
-import Anthropic from '@anthropic-ai/sdk';
-import { GoogleGenerativeAI } from '@google/generative-ai';
-import { CohereClient } from 'cohere-ai';
-import type { JsonObject } from '@flowmaestro/shared';
-import { interpolateVariables } from './utils';
-import { ConnectionRepository } from '../../../storage/repositories/ConnectionRepository';
-import type { ApiKeyData } from '../../../storage/models/Connection';
+import OpenAI from "openai";
+import Anthropic from "@anthropic-ai/sdk";
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import { CohereClient } from "cohere-ai";
+import type { JsonObject } from "@flowmaestro/shared";
+import { interpolateVariables } from "./utils";
+import { ConnectionRepository } from "../../../storage/repositories/ConnectionRepository";
+import type { ApiKeyData } from "../../../storage/models/Connection";
 
 const connectionRepository = new ConnectionRepository();
 
@@ -24,7 +24,7 @@ const RETRY_CONFIG = {
  */
 function isRetryableError(error: unknown): boolean {
     // Type guard: check if error is an object
-    if (typeof error !== 'object' || error === null) {
+    if (typeof error !== "object" || error === null) {
         return false;
     }
 
@@ -32,21 +32,26 @@ function isRetryableError(error: unknown): boolean {
     const retryableStatusCodes = [429, 503, 529];
 
     // Check status code
-    if (typeof err.status === 'number' && retryableStatusCodes.includes(err.status)) {
+    if (typeof err.status === "number" && retryableStatusCodes.includes(err.status)) {
         return true;
     }
 
     // Check error type for Anthropic SDK
-    if (typeof err.type === 'string' && ['overloaded_error', 'rate_limit_error'].includes(err.type)) {
+    if (
+        typeof err.type === "string" &&
+        ["overloaded_error", "rate_limit_error"].includes(err.type)
+    ) {
         return true;
     }
 
     // Check for common error messages
-    if (typeof err.message === 'string') {
+    if (typeof err.message === "string") {
         const message = err.message.toLowerCase();
-        if (message.includes('overloaded') ||
-            message.includes('rate limit') ||
-            message.includes('too many requests')) {
+        if (
+            message.includes("overloaded") ||
+            message.includes("rate limit") ||
+            message.includes("too many requests")
+        ) {
             return true;
         }
     }
@@ -57,10 +62,7 @@ function isRetryableError(error: unknown): boolean {
 /**
  * Retry wrapper with exponential backoff
  */
-async function withRetry<T>(
-    fn: () => Promise<T>,
-    context: string
-): Promise<T> {
+async function withRetry<T>(fn: () => Promise<T>, context: string): Promise<T> {
     let lastError: unknown;
 
     for (let attempt = 0; attempt <= RETRY_CONFIG.maxRetries; attempt++) {
@@ -76,7 +78,9 @@ async function withRetry<T>(
 
             // Don't retry if we've exhausted attempts
             if (attempt >= RETRY_CONFIG.maxRetries) {
-                console.error(`[LLM] ${context} - Max retries (${RETRY_CONFIG.maxRetries}) exceeded`);
+                console.error(
+                    `[LLM] ${context} - Max retries (${RETRY_CONFIG.maxRetries}) exceeded`
+                );
                 throw error;
             }
 
@@ -88,16 +92,16 @@ async function withRetry<T>(
 
             // Safely extract error details
             const err = error as Record<string, unknown>;
-            const errorCode = err.status || err.type || 'unknown';
-            const errorMessage = typeof err.message === 'string' ? err.message : 'Unknown error';
+            const errorCode = err.status || err.type || "unknown";
+            const errorMessage = typeof err.message === "string" ? err.message : "Unknown error";
 
             console.warn(
                 `[LLM] ${context} - Retryable error (${errorCode}): ${errorMessage}. ` +
-                `Retrying in ${delay}ms (attempt ${attempt + 1}/${RETRY_CONFIG.maxRetries})`
+                    `Retrying in ${delay}ms (attempt ${attempt + 1}/${RETRY_CONFIG.maxRetries})`
             );
 
             // Wait before retrying
-            await new Promise(resolve => setTimeout(resolve, delay));
+            await new Promise((resolve) => setTimeout(resolve, delay));
         }
     }
 
@@ -105,7 +109,7 @@ async function withRetry<T>(
 }
 
 export interface LLMNodeConfig {
-    provider: 'openai' | 'anthropic' | 'google' | 'cohere';
+    provider: "openai" | "anthropic" | "google" | "cohere";
     model: string;
     connectionId?: string;
     systemPrompt?: string;
@@ -130,7 +134,11 @@ export interface LLMNodeResult {
 /**
  * Get API key from connection or fall back to environment variable
  */
-async function getApiKey(connectionId: string | undefined, provider: string, envVarName: string): Promise<string> {
+async function getApiKey(
+    connectionId: string | undefined,
+    provider: string,
+    envVarName: string
+): Promise<string> {
     // Try to get from connection first
     if (connectionId) {
         const connection = await connectionRepository.findByIdWithData(connectionId);
@@ -138,14 +146,16 @@ async function getApiKey(connectionId: string | undefined, provider: string, env
             throw new Error(`Connection with ID ${connectionId} not found`);
         }
         if (connection.provider !== provider) {
-            throw new Error(`Connection provider mismatch: expected ${provider}, got ${connection.provider}`);
+            throw new Error(
+                `Connection provider mismatch: expected ${provider}, got ${connection.provider}`
+            );
         }
-        if (connection.status !== 'active') {
+        if (connection.status !== "active") {
             throw new Error(`Connection is not active (status: ${connection.status})`);
         }
         const data = connection.data as ApiKeyData;
         if (!data.api_key) {
-            throw new Error('API key not found in connection data');
+            throw new Error("API key not found in connection data");
         }
         console.log(`[LLM] Using connection: ${connection.name} (${connection.id})`);
         return data.api_key;
@@ -156,7 +166,7 @@ async function getApiKey(connectionId: string | undefined, provider: string, env
     if (!apiKey) {
         throw new Error(
             `No connection provided and ${envVarName} environment variable is not set. ` +
-            `Please add a connection in the Connections page or set the ${envVarName} environment variable.`
+                `Please add a connection in the Connections page or set the ${envVarName} environment variable.`
         );
     }
     console.log(`[LLM] Using environment variable: ${envVarName}`);
@@ -182,16 +192,16 @@ export async function executeLLMNode(
     let result: LLMNodeResult;
 
     switch (config.provider) {
-        case 'openai':
+        case "openai":
             result = await executeOpenAI(config, systemPrompt, userPrompt);
             break;
-        case 'anthropic':
+        case "anthropic":
             result = await executeAnthropic(config, systemPrompt, userPrompt);
             break;
-        case 'google':
+        case "google":
             result = await executeGoogle(config, systemPrompt, userPrompt);
             break;
-        case 'cohere':
+        case "cohere":
             result = await executeCohere(config, systemPrompt, userPrompt);
             break;
         default:
@@ -211,14 +221,14 @@ async function executeOpenAI(
     systemPrompt: string | undefined,
     userPrompt: string
 ): Promise<LLMNodeResult> {
-    const apiKey = await getApiKey(config.connectionId, 'openai', 'OPENAI_API_KEY');
+    const apiKey = await getApiKey(config.connectionId, "openai", "OPENAI_API_KEY");
     const openai = new OpenAI({ apiKey });
 
-    const messages: Array<{ role: 'system' | 'user'; content: string }> = [];
+    const messages: Array<{ role: "system" | "user"; content: string }> = [];
     if (systemPrompt) {
-        messages.push({ role: 'system', content: systemPrompt });
+        messages.push({ role: "system", content: systemPrompt });
     }
-    messages.push({ role: 'user', content: userPrompt });
+    messages.push({ role: "user", content: userPrompt });
 
     return withRetry(async () => {
         const response = await openai.chat.completions.create({
@@ -226,23 +236,25 @@ async function executeOpenAI(
             messages,
             temperature: config.temperature ?? 0.7,
             max_tokens: config.maxTokens ?? 1000,
-            top_p: config.topP ?? 1,
+            top_p: config.topP ?? 1
         });
 
-        const text = response.choices[0]?.message?.content || '';
+        const text = response.choices[0]?.message?.content || "";
         const usage = response.usage;
 
         console.log(`[LLM] OpenAI response: ${text.length} chars, ${usage?.total_tokens} tokens`);
 
         return {
             text,
-            usage: usage ? {
-                promptTokens: usage.prompt_tokens,
-                completionTokens: usage.completion_tokens,
-                totalTokens: usage.total_tokens
-            } : undefined,
+            usage: usage
+                ? {
+                      promptTokens: usage.prompt_tokens,
+                      completionTokens: usage.completion_tokens,
+                      totalTokens: usage.total_tokens
+                  }
+                : undefined,
             model: config.model,
-            provider: 'openai'
+            provider: "openai"
         };
     }, `OpenAI ${config.model}`);
 }
@@ -252,24 +264,24 @@ async function executeAnthropic(
     systemPrompt: string | undefined,
     userPrompt: string
 ): Promise<LLMNodeResult> {
-    const apiKey = await getApiKey(config.connectionId, 'anthropic', 'ANTHROPIC_API_KEY');
+    const apiKey = await getApiKey(config.connectionId, "anthropic", "ANTHROPIC_API_KEY");
     const anthropic = new Anthropic({ apiKey });
 
     return withRetry(async () => {
         const response = await anthropic.messages.create({
-            model:  config.model,
+            model: config.model,
             max_tokens: config.maxTokens ?? 1000,
             temperature: config.temperature ?? 0.7,
             system: systemPrompt,
-            messages: [
-                { role: 'user', content: userPrompt }
-            ]
+            messages: [{ role: "user", content: userPrompt }]
         });
 
-        const text = response.content[0].type === 'text' ? response.content[0].text : '';
+        const text = response.content[0].type === "text" ? response.content[0].text : "";
         const usage = response.usage;
 
-        console.log(`[LLM] Anthropic response: ${text.length} chars, ${usage.input_tokens + usage.output_tokens} tokens`);
+        console.log(
+            `[LLM] Anthropic response: ${text.length} chars, ${usage.input_tokens + usage.output_tokens} tokens`
+        );
 
         return {
             text,
@@ -279,7 +291,7 @@ async function executeAnthropic(
                 totalTokens: usage.input_tokens + usage.output_tokens
             },
             model: config.model,
-            provider: 'anthropic'
+            provider: "anthropic"
         };
     }, `Anthropic ${config.model}`);
 }
@@ -289,21 +301,19 @@ async function executeGoogle(
     systemPrompt: string | undefined,
     userPrompt: string
 ): Promise<LLMNodeResult> {
-    const apiKey = await getApiKey(config.connectionId, 'google', 'GOOGLE_API_KEY');
+    const apiKey = await getApiKey(config.connectionId, "google", "GOOGLE_API_KEY");
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({
         model: config.model,
         generationConfig: {
             temperature: config.temperature ?? 0.7,
             maxOutputTokens: config.maxTokens ?? 1000,
-            topP: config.topP ?? 1,
+            topP: config.topP ?? 1
         }
     });
 
     // Combine system prompt and user prompt for Google
-    const fullPrompt = systemPrompt
-        ? `${systemPrompt}\n\n${userPrompt}`
-        : userPrompt;
+    const fullPrompt = systemPrompt ? `${systemPrompt}\n\n${userPrompt}` : userPrompt;
 
     return withRetry(async () => {
         const result = await model.generateContent(fullPrompt);
@@ -315,7 +325,7 @@ async function executeGoogle(
         return {
             text,
             model: config.model,
-            provider: 'google'
+            provider: "google"
         };
     }, `Google ${config.model}`);
 }
@@ -325,13 +335,11 @@ async function executeCohere(
     systemPrompt: string | undefined,
     userPrompt: string
 ): Promise<LLMNodeResult> {
-    const apiKey = await getApiKey(config.connectionId, 'cohere', 'COHERE_API_KEY');
+    const apiKey = await getApiKey(config.connectionId, "cohere", "COHERE_API_KEY");
     const cohere = new CohereClient({ token: apiKey });
 
     // Combine system prompt with user prompt
-    const fullPrompt = systemPrompt
-        ? `${systemPrompt}\n\n${userPrompt}`
-        : userPrompt;
+    const fullPrompt = systemPrompt ? `${systemPrompt}\n\n${userPrompt}` : userPrompt;
 
     return withRetry(async () => {
         const response = await cohere.generate({
@@ -339,17 +347,17 @@ async function executeCohere(
             prompt: fullPrompt,
             temperature: config.temperature ?? 0.7,
             maxTokens: config.maxTokens ?? 1000,
-            p: config.topP ?? 1,
+            p: config.topP ?? 1
         });
 
-        const text = response.generations[0]?.text || '';
+        const text = response.generations[0]?.text || "";
 
         console.log(`[LLM] Cohere response: ${text.length} chars`);
 
         return {
             text,
             model: config.model,
-            provider: 'cohere'
+            provider: "cohere"
         };
     }, `Cohere ${config.model}`);
 }

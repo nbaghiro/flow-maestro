@@ -1,4 +1,5 @@
 import { FastifyInstance } from "fastify";
+import type { JsonValue } from "@flowmaestro/shared";
 import { oauthService } from "../../../services/oauth/OAuthService";
 import { ConnectionRepository } from "../../../storage/repositories/ConnectionRepository";
 
@@ -137,29 +138,32 @@ export async function callbackRoute(fastify: FastifyInstance) {
                 // Exchange authorization code for tokens
                 const result = await oauthService.exchangeCodeForToken(provider, code, state);
 
-                fastify.log.info(`Successfully exchanged code for ${provider}, user: ${result.userId}`);
+                fastify.log.info(
+                    `Successfully exchanged code for ${provider}, user: ${result.userId}`
+                );
 
                 // Store connection in database
                 const connectionRepo = new ConnectionRepository();
+                const accountInfo = result.accountInfo as Record<string, unknown> | undefined;
                 const connection = await connectionRepo.create({
                     user_id: result.userId,
                     name: `${provider} - ${
-                        result.accountInfo.email ||
-                        result.accountInfo.workspace ||
-                        result.accountInfo.user ||
-                        'Account'
+                        (accountInfo?.email as string) ||
+                        (accountInfo?.workspace as string) ||
+                        (accountInfo?.user as string) ||
+                        "Account"
                     }`,
-                    connection_method: 'oauth2',
+                    connection_method: "oauth2",
                     provider,
                     data: result.tokens,
                     metadata: {
-                        scopes: result.tokens.scope?.split(' ') || [],
+                        scopes: result.tokens.scope?.split(" ") || [],
                         expires_at: result.tokens.expires_in
                             ? Date.now() + result.tokens.expires_in * 1000
                             : undefined,
-                        account_info: result.accountInfo
+                        account_info: accountInfo as Record<string, JsonValue>
                     },
-                    status: 'active'
+                    status: "active"
                 });
 
                 fastify.log.info(`Created connection ${connection.id} for ${provider}`);
@@ -240,10 +244,10 @@ export async function callbackRoute(fastify: FastifyInstance) {
                                 <p>You've connected to <span class="provider">${provider}</span></p>
                                 <div class="account">
                                     ${
-                                        result.accountInfo.email ||
-                                        result.accountInfo.workspace ||
-                                        result.accountInfo.user ||
-                                        'Account connected'
+                                        (accountInfo?.email as string) ||
+                                        (accountInfo?.workspace as string) ||
+                                        (accountInfo?.user as string) ||
+                                        "Account connected"
                                     }
                                 </div>
                                 <p style="margin-top: 1.5rem; font-size: 0.85em; color: #95a5a6;">
@@ -261,7 +265,8 @@ export async function callbackRoute(fastify: FastifyInstance) {
                         </body>
                     </html>
                 `);
-            } catch (error: any) {
+            } catch (error: unknown) {
+                const errorMsg = error instanceof Error ? error.message : "Unknown error";
                 fastify.log.error(error, `OAuth callback failed for ${provider}`);
 
                 return reply.type("text/html").send(`
@@ -303,7 +308,7 @@ export async function callbackRoute(fastify: FastifyInstance) {
                             <div class="container">
                                 <h1>❌ Authorization Failed</h1>
                                 <p>Failed to complete authorization for ${provider}</p>
-                                <div class="error">${error.message}</div>
+                                <div class="error">${errorMsg}</div>
                                 <p style="margin-top: 1.5rem; font-size: 0.9em;">
                                     This window will close automatically...
                                 </p>
@@ -312,7 +317,7 @@ export async function callbackRoute(fastify: FastifyInstance) {
                                 window.opener?.postMessage({
                                     type: 'oauth_error',
                                     provider: '${provider}',
-                                    error: ${JSON.stringify(error.message)}
+                                    error: ${JSON.stringify(errorMsg)}
                                 }, '*');
                                 setTimeout(() => window.close(), 3000);
                             </script>

@@ -38,10 +38,9 @@ export async function executeNodeBatch(
             throw new Error(`Execution ${executionId} not found`);
         }
 
-        const workflowResult = await db.query(
-            "SELECT definition FROM workflows WHERE id = $1",
-            [workflowId]
-        );
+        const workflowResult = await db.query("SELECT definition FROM workflows WHERE id = $1", [
+            workflowId
+        ]);
 
         if (workflowResult.rows.length === 0) {
             throw new Error(`Workflow ${workflowId} not found`);
@@ -53,7 +52,10 @@ export async function executeNodeBatch(
         for (const nodeId of nodeIds) {
             try {
                 // Heartbeat to let Temporal know we're still alive
-                Context.current().heartbeat({ currentNode: nodeId, completed: completedNodes.length });
+                Context.current().heartbeat({
+                    currentNode: nodeId,
+                    completed: completedNodes.length
+                });
 
                 console.log(`Executing node ${nodeId} in batch for execution ${executionId}`);
 

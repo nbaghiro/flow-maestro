@@ -10,18 +10,24 @@ import { executeTriggerRoute } from "./execute";
 
 export async function triggerRoutes(fastify: FastifyInstance) {
     // Webhook receiver routes (PUBLIC - no auth)
-    fastify.register(async (instance) => {
-        instance.register(webhookReceiverRoute);
-        instance.register(phoneCallWebhookRoute);
-    }, { prefix: "/webhooks" });
+    fastify.register(
+        async (instance) => {
+            instance.register(webhookReceiverRoute);
+            instance.register(phoneCallWebhookRoute);
+        },
+        { prefix: "/webhooks" }
+    );
 
     // Trigger management routes (requires auth)
-    fastify.register(async (instance) => {
-        instance.register(createTriggerRoute);
-        instance.register(listTriggersRoute);
-        instance.register(getTriggerRoute);
-        instance.register(updateTriggerRoute);
-        instance.register(deleteTriggerRoute);
-        instance.register(executeTriggerRoute);
-    }, { prefix: "/triggers" });
+    fastify.register(
+        async (instance) => {
+            instance.register(createTriggerRoute);
+            instance.register(listTriggersRoute);
+            instance.register(getTriggerRoute);
+            instance.register(updateTriggerRoute);
+            instance.register(deleteTriggerRoute);
+            instance.register(executeTriggerRoute);
+        },
+        { prefix: "/triggers" }
+    );
 }

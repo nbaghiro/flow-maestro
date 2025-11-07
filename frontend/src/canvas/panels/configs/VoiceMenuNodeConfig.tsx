@@ -4,8 +4,8 @@ import { Slider } from "../../../components/Slider";
 import { X, Plus } from "lucide-react";
 
 interface VoiceMenuNodeConfigProps {
-    data: any;
-    onUpdate: (config: any) => void;
+    data: Record<string, unknown>;
+    onUpdate: (config: unknown) => void;
 }
 
 interface MenuOption {
@@ -22,21 +22,21 @@ const inputMethods = [
 ];
 
 export function VoiceMenuNodeConfig({ data, onUpdate }: VoiceMenuNodeConfigProps) {
-    const [prompt, setPrompt] = useState(data.prompt || "Please select an option");
+    const [prompt, setPrompt] = useState((data.prompt as string) || "Please select an option");
     const [options, setOptions] = useState<MenuOption[]>(
-        data.options || [
+        (data.options as MenuOption[]) || [
             { key: "1", label: "Option 1", value: "option1" },
             { key: "2", label: "Option 2", value: "option2" }
         ]
     );
-    const [inputMethod, setInputMethod] = useState(data.inputMethod || "both");
-    const [timeoutSeconds, setTimeoutSeconds] = useState(data.timeoutSeconds || 10);
-    const [maxRetries, setMaxRetries] = useState(data.maxRetries || 2);
+    const [inputMethod, setInputMethod] = useState((data.inputMethod as string) || "both");
+    const [timeoutSeconds, setTimeoutSeconds] = useState((data.timeoutSeconds as number) || 10);
+    const [maxRetries, setMaxRetries] = useState((data.maxRetries as number) || 2);
     const [invalidInputMessage, setInvalidInputMessage] = useState(
-        data.invalidInputMessage || "I didn't understand that. Please try again."
+        (data.invalidInputMessage as string) || "I didn't understand that. Please try again."
     );
     const [retryMessage, setRetryMessage] = useState(
-        data.retryMessage || "Let me repeat the options."
+        (data.retryMessage as string) || "Let me repeat the options."
     );
 
     useEffect(() => {

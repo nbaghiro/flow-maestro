@@ -33,7 +33,7 @@ export const PROVIDER_MCP_REGISTRY_MAP: Record<string, string> = {
 
     // Other
     stripe: "@modelcontextprotocol/server-stripe",
-    puppeteer: "@modelcontextprotocol/server-puppeteer",
+    puppeteer: "@modelcontextprotocol/server-puppeteer"
 };
 
 /**
@@ -46,7 +46,10 @@ export function getProviderMCPServerId(provider: string): string | null {
 /**
  * Check if a provider has an MCP server available in the registry
  */
-export function hasProviderMCPServer(provider: string, registryServers: MCPRegistryServer[]): boolean {
+export function hasProviderMCPServer(
+    provider: string,
+    registryServers: MCPRegistryServer[]
+): boolean {
     const mcpId = getProviderMCPServerId(provider);
 
     if (!mcpId) {
@@ -59,14 +62,20 @@ export function hasProviderMCPServer(provider: string, registryServers: MCPRegis
 /**
  * Get all providers that have MCP servers in the registry
  */
-export function getProvidersWithMCPServers(providers: string[], registryServers: MCPRegistryServer[]): string[] {
+export function getProvidersWithMCPServers(
+    providers: string[],
+    registryServers: MCPRegistryServer[]
+): string[] {
     return providers.filter((provider) => hasProviderMCPServer(provider, registryServers));
 }
 
 /**
  * Find the MCP server for a given provider in the registry
  */
-export function findMCPServerForProvider(provider: string, registryServers: MCPRegistryServer[]): MCPRegistryServer | null {
+export function findMCPServerForProvider(
+    provider: string,
+    registryServers: MCPRegistryServer[]
+): MCPRegistryServer | null {
     const mcpId = getProviderMCPServerId(provider);
 
     if (!mcpId) {

@@ -8,7 +8,7 @@ export async function testConnectionRoute(fastify: FastifyInstance) {
     fastify.post(
         "/:id/test",
         {
-            preHandler: [authMiddleware, validateParams(connectionIdParamSchema)],
+            preHandler: [authMiddleware, validateParams(connectionIdParamSchema)]
         },
         async (request, reply) => {
             const connectionRepository = new ConnectionRepository();
@@ -20,7 +20,7 @@ export async function testConnectionRoute(fastify: FastifyInstance) {
             if (ownerId !== request.user!.id) {
                 return reply.status(403).send({
                     success: false,
-                    error: "You do not have permission to test this connection",
+                    error: "You do not have permission to test this connection"
                 });
             }
 
@@ -30,7 +30,7 @@ export async function testConnectionRoute(fastify: FastifyInstance) {
             if (!connection) {
                 return reply.status(404).send({
                     success: false,
-                    error: "Connection not found",
+                    error: "Connection not found"
                 });
             }
 
@@ -48,8 +48,8 @@ export async function testConnectionRoute(fastify: FastifyInstance) {
                     success: true,
                     data: {
                         connection_id: params.id,
-                        test_result: testResult,
-                    },
+                        test_result: testResult
+                    }
                 });
             } catch (error) {
                 // Mark as invalid if test failed
@@ -57,7 +57,7 @@ export async function testConnectionRoute(fastify: FastifyInstance) {
 
                 return reply.status(400).send({
                     success: false,
-                    error: error instanceof Error ? error.message : "Connection test failed",
+                    error: error instanceof Error ? error.message : "Connection test failed"
                 });
             }
         }

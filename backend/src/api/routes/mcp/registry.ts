@@ -15,13 +15,13 @@ export async function getMCPRegistryServersHandler(
             success: true,
             data: {
                 servers,
-                total: servers.length,
-            },
+                total: servers.length
+            }
         });
     } catch (error) {
         reply.code(500).send({
             success: false,
-            error: error instanceof Error ? error.message : "Failed to fetch MCP registry servers",
+            error: error instanceof Error ? error.message : "Failed to fetch MCP registry servers"
         });
     }
 }
@@ -44,7 +44,7 @@ export async function searchMCPRegistryHandler(
     if (!query) {
         reply.code(400).send({
             success: false,
-            error: "Search query is required",
+            error: "Search query is required"
         });
         return;
     }
@@ -57,13 +57,13 @@ export async function searchMCPRegistryHandler(
             data: {
                 servers,
                 total: servers.length,
-                query,
-            },
+                query
+            }
         });
     } catch (error) {
         reply.code(500).send({
             success: false,
-            error: error instanceof Error ? error.message : "Failed to search MCP registry",
+            error: error instanceof Error ? error.message : "Failed to search MCP registry"
         });
     }
 }
@@ -89,19 +89,19 @@ export async function getMCPServerByIdHandler(
         if (!server) {
             reply.code(404).send({
                 success: false,
-                error: "MCP server not found",
+                error: "MCP server not found"
             });
             return;
         }
 
         reply.code(200).send({
             success: true,
-            data: server,
+            data: server
         });
     } catch (error) {
         reply.code(500).send({
             success: false,
-            error: error instanceof Error ? error.message : "Failed to fetch MCP server details",
+            error: error instanceof Error ? error.message : "Failed to fetch MCP server details"
         });
     }
 }

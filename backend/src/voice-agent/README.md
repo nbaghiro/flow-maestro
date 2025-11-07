@@ -8,20 +8,20 @@ This is the LiveKit voice agent service implemented in TypeScript. It handles re
 ┌─────────────────────────────────────────────┐
 │           Voice Agent Worker                │
 │                                             │
-│  ┌─────────────┐      ┌─────────────┐     │
-│  │   Room 1    │      │   Room 2    │     │
-│  │  VoiceAgent │      │  VoiceAgent │     │
-│  └─────────────┘      └─────────────┘     │
-│         │                     │            │
-│         └──────────┬──────────┘            │
-│                    │                       │
-│              ┌─────▼──────┐                │
-│              │  Services  │                │
-│              ├────────────┤                │
-│              │    STT     │ Deepgram      │
-│              │    TTS     │ ElevenLabs    │
-│              │    VAD     │ Energy-based  │
-│              └────────────┘                │
+│  ┌─────────────┐      ┌─────────────┐       │
+│  │   Room 1    │      │   Room 2    │       │
+│  │  VoiceAgent │      │  VoiceAgent │       │
+│  └─────────────┘      └─────────────┘       │
+│         │                     │             │
+│         └──────────┬──────────┘             │
+│                    │                        │
+│              ┌─────▼──────┐                 │
+│              │  Services  │                 │
+│              ├────────────┤                 │
+│              │    STT     │ Deepgram        │
+│              │    TTS     │ ElevenLabs      │
+│              │    VAD     │ Energy-based    │
+│              └────────────┘                 │
 └─────────────────────────────────────────────┘
           │                    │
           ▼                    ▼
@@ -31,6 +31,7 @@ This is the LiveKit voice agent service implemented in TypeScript. It handles re
 ## Components
 
 ### 1. VoiceAgent (`VoiceAgent.ts`)
+
 - Manages a single phone call session
 - Connects to LiveKit room as a participant
 - Handles voice pipeline: audio input → VAD → STT → processing → TTS → audio output
@@ -38,6 +39,7 @@ This is the LiveKit voice agent service implemented in TypeScript. It handles re
 - Sends responses back via Redis
 
 ### 2. Worker (`worker.ts`)
+
 - Main process that runs continuously
 - Listens for new room creation events via Redis
 - Spawns a VoiceAgent for each new call
@@ -46,16 +48,19 @@ This is the LiveKit voice agent service implemented in TypeScript. It handles re
 ### 3. Services
 
 #### DeepgramSTT (`services/DeepgramSTT.ts`)
+
 - Streaming speech-to-text using Deepgram API
 - Real-time transcription with interim and final results
 - Configurable language, model, and options
 
 #### ElevenLabsTTS (`services/ElevenLabsTTS.ts`)
+
 - High-quality text-to-speech synthesis
 - Supports ElevenLabs and OpenAI TTS
 - Streaming audio generation
 
 #### VoiceActivityDetector (`services/VoiceActivityDetector.ts`)
+
 - Detects when user starts/stops speaking
 - Energy-based VAD with configurable thresholds
 - Emits speech-start and speech-end events
@@ -86,6 +91,7 @@ npm install livekit-server-sdk
 ### 3. MediaStream Support
 
 Node.js doesn't have native MediaStream. Options:
+
 - Use `node-webrtc` for WebRTC in Node.js
 - Use `wrtc` package
 - Consider Python implementation for better WebRTC support
@@ -93,6 +99,7 @@ Node.js doesn't have native MediaStream. Options:
 ### 4. Audio Encoding/Decoding
 
 For proper audio handling:
+
 ```bash
 npm install @discordjs/voice
 npm install sodium-native  # For encryption
@@ -143,11 +150,11 @@ Add to `package.json`:
 
 ```json
 {
-  "scripts": {
-    "worker:voice": "node dist/voice-agent/worker.js",
-    "worker:voice:dev": "tsx src/voice-agent/worker.ts",
-    "worker:voice:watch": "tsx watch src/voice-agent/worker.ts"
-  }
+    "scripts": {
+        "worker:voice": "node dist/voice-agent/worker.js",
+        "worker:voice:dev": "tsx src/voice-agent/worker.ts",
+        "worker:voice:watch": "tsx watch src/voice-agent/worker.ts"
+    }
 }
 ```
 
@@ -156,17 +163,20 @@ Add to `package.json`:
 If you encounter too many limitations with TypeScript/Node.js audio handling, consider a hybrid approach:
 
 **Option 1: Pure Python Agent**
+
 - Use `livekit-agents` (official framework)
 - Built-in STT/TTS/VAD plugins
 - Better WebRTC support
 - Example: https://github.com/livekit/agents
 
 **Option 2: Hybrid Approach**
+
 - TypeScript for business logic (commands, state management)
 - Python microservice for audio processing
 - Communicate via Redis or HTTP
 
 **Option 3: Containerized Python Service**
+
 - Docker container with Python agent
 - Managed by your Node.js backend
 - Isolated audio processing
@@ -174,30 +184,35 @@ If you encounter too many limitations with TypeScript/Node.js audio handling, co
 ## Production Considerations
 
 ### 1. Audio Quality
+
 - Implement proper audio buffering
 - Handle network jitter
 - Echo cancellation
 - Noise reduction
 
 ### 2. Scaling
+
 - Multiple worker processes
 - Load balancing across workers
 - Health checks and auto-restart
 - Graceful shutdown
 
 ### 3. Error Handling
+
 - Retry logic for API calls
 - Fallback TTS/STT providers
 - Network failure recovery
 - Call state persistence
 
 ### 4. Monitoring
+
 - Call quality metrics
 - STT/TTS latency
 - Error rates
 - Active call count
 
 ### 5. Security
+
 - Secure token generation
 - API key rotation
 - Rate limiting
@@ -233,18 +248,21 @@ DEBUG=voice-agent:* npm run worker:voice:dev
 ## Recommended Path Forward
 
 ### Short-term (Get it working)
+
 1. Install required Node.js audio libraries
 2. Test with simple audio files
 3. Implement mock STT/TTS for testing
 4. Verify Redis command bus works
 
 ### Medium-term (Production-ready)
+
 1. Add proper audio handling
 2. Implement full WebRTC support
 3. Add comprehensive error handling
 4. Performance optimization
 
 ### Long-term (Scale)
+
 1. Consider Python for production
 2. Or use hybrid TypeScript/Python approach
 3. Add monitoring and alerting
@@ -253,6 +271,7 @@ DEBUG=voice-agent:* npm run worker:voice:dev
 ## Support
 
 For questions or issues:
+
 1. Check LiveKit docs: https://docs.livekit.io/
 2. Deepgram docs: https://developers.deepgram.com/
 3. ElevenLabs docs: https://docs.elevenlabs.io/

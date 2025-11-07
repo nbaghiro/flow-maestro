@@ -2,8 +2,8 @@ import { useState, useEffect } from "react";
 import { FormField, FormSection } from "../../../components/FormField";
 
 interface VoiceHangupNodeConfigProps {
-    data: any;
-    onUpdate: (config: any) => void;
+    data: Record<string, unknown>;
+    onUpdate: (config: unknown) => void;
 }
 
 const hangupReasons = [
@@ -16,8 +16,8 @@ const hangupReasons = [
 ];
 
 export function VoiceHangupNodeConfig({ data, onUpdate }: VoiceHangupNodeConfigProps) {
-    const [farewellMessage, setFarewellMessage] = useState(data.farewellMessage || "");
-    const [reason, setReason] = useState(data.reason || "normal");
+    const [farewellMessage, setFarewellMessage] = useState((data.farewellMessage as string) || "");
+    const [reason, setReason] = useState((data.reason as string) || "normal");
     const [enableFarewell, setEnableFarewell] = useState(!!data.farewellMessage);
 
     useEffect(() => {

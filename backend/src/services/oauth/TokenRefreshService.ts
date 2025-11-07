@@ -1,6 +1,6 @@
-import { ConnectionRepository } from '../../storage/repositories/ConnectionRepository';
-import { oauthService } from './OAuthService';
-import { OAuth2TokenData } from '../../storage/models/Connection';
+import { ConnectionRepository } from "../../storage/repositories/ConnectionRepository";
+import { oauthService } from "./OAuthService";
+import { OAuth2TokenData } from "../../storage/models/Connection";
 
 const connectionRepo = new ConnectionRepository();
 
@@ -25,8 +25,10 @@ export async function getAccessToken(connectionId: string): Promise<string> {
         throw new Error(`Connection not found: ${connectionId}`);
     }
 
-    if (connection.connection_method !== 'oauth2') {
-        throw new Error(`Connection ${connectionId} is not an OAuth token (method: ${connection.connection_method})`);
+    if (connection.connection_method !== "oauth2") {
+        throw new Error(
+            `Connection ${connectionId} is not an OAuth token (method: ${connection.connection_method})`
+        );
     }
 
     const tokenData = connection.data as OAuth2TokenData;
@@ -39,7 +41,9 @@ export async function getAccessToken(connectionId: string): Promise<string> {
     const needsRefresh = connectionRepo.isExpired(connection);
 
     if (needsRefresh && tokenData.refresh_token) {
-        console.log(`[TokenRefresh] Token expiring soon for connection ${connectionId}, refreshing...`);
+        console.log(
+            `[TokenRefresh] Token expiring soon for connection ${connectionId}, refreshing...`
+        );
 
         try {
             // Refresh the token
@@ -48,7 +52,9 @@ export async function getAccessToken(connectionId: string): Promise<string> {
                 tokenData.refresh_token
             );
 
-            console.log(`[TokenRefresh] Successfully refreshed token for connection ${connectionId}`);
+            console.log(
+                `[TokenRefresh] Successfully refreshed token for connection ${connectionId}`
+            );
 
             // Update in database
             await connectionRepo.updateTokens(connectionId, newTokens);
@@ -58,14 +64,17 @@ export async function getAccessToken(connectionId: string): Promise<string> {
 
             return newTokens.access_token;
         } catch (error) {
-            console.error(`[TokenRefresh] Failed to refresh token for connection ${connectionId}:`, error);
+            console.error(
+                `[TokenRefresh] Failed to refresh token for connection ${connectionId}:`,
+                error
+            );
 
             // Mark connection as expired
-            await connectionRepo.markAsTested(connectionId, 'expired');
+            await connectionRepo.markAsTested(connectionId, "expired");
 
             throw new Error(
-                `Failed to refresh OAuth token: ${error instanceof Error ? error.message : 'Unknown error'}. ` +
-                `Please reconnect your ${connection.provider} account.`
+                `Failed to refresh OAuth token: ${error instanceof Error ? error.message : "Unknown error"}. ` +
+                    `Please reconnect your ${connection.provider} account.`
             );
         }
     }
@@ -98,7 +107,7 @@ export async function getTokenData(connectionId: string) {
 export async function checkIfNeedsRefresh(connectionId: string): Promise<boolean> {
     const connection = await connectionRepo.findById(connectionId);
 
-    if (!connection || connection.connection_method !== 'oauth2') {
+    if (!connection || connection.connection_method !== "oauth2") {
         return false;
     }
 
@@ -118,7 +127,7 @@ export async function refreshExpiringTokens(userId?: string): Promise<{
     failed: number;
     errors: Array<{ connectionId: string; error: string }>;
 }> {
-    console.log('[TokenRefresh] Starting background token refresh job...');
+    console.log("[TokenRefresh] Starting background token refresh job...");
 
     const results = {
         refreshed: 0,
@@ -130,14 +139,16 @@ export async function refreshExpiringTokens(userId?: string): Promise<{
         // If userId provided, only refresh that user's tokens
         // Otherwise would need to iterate all users (not implemented here)
         if (!userId) {
-            console.log('[TokenRefresh] No userId provided, skipping');
+            console.log("[TokenRefresh] No userId provided, skipping");
             return results;
         }
 
         // Get expiring connections for user
         const expiringConnections = await connectionRepo.findExpiringSoon(userId);
 
-        console.log(`[TokenRefresh] Found ${expiringConnections.length} expiring connections for user ${userId}`);
+        console.log(
+            `[TokenRefresh] Found ${expiringConnections.length} expiring connections for user ${userId}`
+        );
 
         for (const connection of expiringConnections) {
             try {
@@ -147,12 +158,15 @@ export async function refreshExpiringTokens(userId?: string): Promise<{
                 console.log(`[TokenRefresh] Successfully refreshed connection ${connection.id}`);
             } catch (error) {
                 results.failed++;
-                const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+                const errorMessage = error instanceof Error ? error.message : "Unknown error";
                 results.errors.push({
                     connectionId: connection.id,
                     error: errorMessage
                 });
-                console.error(`[TokenRefresh] Failed to refresh connection ${connection.id}:`, error);
+                console.error(
+                    `[TokenRefresh] Failed to refresh connection ${connection.id}:`,
+                    error
+                );
             }
         }
 
@@ -162,7 +176,7 @@ export async function refreshExpiringTokens(userId?: string): Promise<{
 
         return results;
     } catch (error) {
-        console.error('[TokenRefresh] Background job failed:', error);
+        console.error("[TokenRefresh] Background job failed:", error);
         throw error;
     }
 }
@@ -178,7 +192,7 @@ export async function forceRefreshToken(connectionId: string): Promise<void> {
         throw new Error(`Connection not found: ${connectionId}`);
     }
 
-    if (connection.connection_method !== 'oauth2') {
+    if (connection.connection_method !== "oauth2") {
         throw new Error(`Connection ${connectionId} is not an OAuth token`);
     }
 

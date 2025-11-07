@@ -15,6 +15,16 @@ const DEFAULT_CONFIG: KnowledgeBaseConfig = {
     embeddingDimensions: 1536
 };
 
+interface KnowledgeBaseRow {
+    id: string;
+    user_id: string;
+    name: string;
+    description: string | null;
+    config: string | KnowledgeBaseConfig;
+    created_at: string | Date;
+    updated_at: string | Date;
+}
+
 export class KnowledgeBaseRepository {
     async create(input: CreateKnowledgeBaseInput): Promise<KnowledgeBaseModel> {
         const config = { ...DEFAULT_CONFIG, ...input.config };
@@ -32,8 +42,8 @@ export class KnowledgeBaseRepository {
             JSON.stringify(config)
         ];
 
-        const result = await db.query<KnowledgeBaseModel>(query, values);
-        return this.mapRow(result.rows[0]);
+        const result = await db.query<KnowledgeBaseRow>(query, values);
+        return this.mapRow(result.rows[0] as KnowledgeBaseRow);
     }
 
     async findById(id: string): Promise<KnowledgeBaseModel | null> {
@@ -42,8 +52,8 @@ export class KnowledgeBaseRepository {
             WHERE id = $1
         `;
 
-        const result = await db.query<KnowledgeBaseModel>(query, [id]);
-        return result.rows.length > 0 ? this.mapRow(result.rows[0]) : null;
+        const result = await db.query<KnowledgeBaseRow>(query, [id]);
+        return result.rows.length > 0 ? this.mapRow(result.rows[0] as KnowledgeBaseRow) : null;
     }
 
     async findByUserId(
@@ -68,18 +78,18 @@ export class KnowledgeBaseRepository {
 
         const [countResult, kbResult] = await Promise.all([
             db.query<{ count: string }>(countQuery, [userId]),
-            db.query<KnowledgeBaseModel>(query, [userId, limit, offset])
+            db.query<KnowledgeBaseRow>(query, [userId, limit, offset])
         ]);
 
         return {
-            knowledgeBases: kbResult.rows.map((row) => this.mapRow(row)),
+            knowledgeBases: kbResult.rows.map((row) => this.mapRow(row as KnowledgeBaseRow)),
             total: parseInt(countResult.rows[0].count)
         };
     }
 
     async update(id: string, input: UpdateKnowledgeBaseInput): Promise<KnowledgeBaseModel | null> {
         const updates: string[] = [];
-        const values: any[] = [];
+        const values: unknown[] = [];
         let paramIndex = 1;
 
         if (input.name !== undefined) {
@@ -103,7 +113,7 @@ export class KnowledgeBaseRepository {
         }
 
         // Always update updated_at
-        updates.push(`updated_at = CURRENT_TIMESTAMP`);
+        updates.push("updated_at = CURRENT_TIMESTAMP");
 
         if (updates.length === 1) {
             // Only updated_at, no actual changes
@@ -118,8 +128,8 @@ export class KnowledgeBaseRepository {
             RETURNING *
         `;
 
-        const result = await db.query<KnowledgeBaseModel>(query, values);
-        return result.rows.length > 0 ? this.mapRow(result.rows[0]) : null;
+        const result = await db.query<KnowledgeBaseRow>(query, values);
+        return result.rows.length > 0 ? this.mapRow(result.rows[0] as KnowledgeBaseRow) : null;
     }
 
     async delete(id: string): Promise<boolean> {
@@ -159,19 +169,17 @@ export class KnowledgeBaseRepository {
         return {
             id: row.id,
             name: row.name,
-            document_count: parseInt(row.document_count || '0'),
-            chunk_count: parseInt(row.chunk_count || '0'),
-            total_size_bytes: parseInt(row.total_size_bytes || '0'),
+            document_count: parseInt(row.document_count || "0"),
+            chunk_count: parseInt(row.chunk_count || "0"),
+            total_size_bytes: parseInt(row.total_size_bytes || "0"),
             last_updated: new Date(row.last_updated)
         };
     }
 
-    private mapRow(row: any): KnowledgeBaseModel {
+    private mapRow(row: KnowledgeBaseRow): KnowledgeBaseModel {
         return {
             ...row,
-            config: typeof row.config === "string"
-                ? JSON.parse(row.config)
-                : row.config,
+            config: typeof row.config === "string" ? JSON.parse(row.config) : row.config,
             created_at: new Date(row.created_at),
             updated_at: new Date(row.updated_at)
         };
