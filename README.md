@@ -4,6 +4,8 @@
 
 FlowMaestro is a TypeScript-based platform for orchestrating AI agent workflows and building autonomous agents. Design multi-step AI processes through a visual canvas, create conversational agents with tools and memory, and deploy production-ready AI systems with built-in durability and monitoring.
 
+![FlowMaestro Workflow Builder](preview.png)
+
 ## Why FlowMaestro?
 
 Built for TypeScript developers who need both visual workflow orchestration and programmatic AI agents, FlowMaestro provides everything you need to build production AI applications.
