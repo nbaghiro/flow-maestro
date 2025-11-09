@@ -4,7 +4,7 @@ import jwt from "@fastify/jwt";
 import websocket from "@fastify/websocket";
 import multipart from "@fastify/multipart";
 import { config } from "../shared/config";
-import { errorHandler } from "./middleware";
+import { errorHandler, requestContextMiddleware } from "./middleware";
 import { workflowRoutes } from "./routes/workflows";
 import { authRoutes } from "./routes/auth";
 import { executionRoutes } from "./routes/executions";
@@ -20,6 +20,7 @@ import { db } from "../storage/database";
 import { eventBridge } from "../shared/websocket/EventBridge";
 import { redisEventBus } from "../shared/events/RedisEventBus";
 import { registerAllNodes } from "../shared/registry/register-nodes";
+import { initializeSpanService, getSpanService } from "../shared/observability";
 
 export async function buildServer() {
     // Register all node types in the registry
@@ -67,6 +68,18 @@ export async function buildServer() {
 
     // Initialize event bridge (connect orchestrator events to WebSocket via Redis)
     await eventBridge.initialize();
+
+    // Initialize observability (distributed tracing with spans)
+    initializeSpanService({
+        pool: db.getPool(),
+        batchSize: 10,
+        flushIntervalMs: 5000
+    });
+
+    fastify.log.info("SpanService initialized for distributed tracing");
+
+    // Register RequestContext middleware (runs on every request)
+    fastify.addHook("onRequest", requestContextMiddleware);
 
     // Health check route
     fastify.get("/health", async (_request, reply) => {
@@ -128,6 +141,11 @@ export async function startServer() {
         process.on(signal, async () => {
             fastify.log.info(`Received ${signal}, closing server...`);
             await fastify.close();
+
+            // Flush spans before shutdown
+            const spanService = getSpanService();
+            await spanService.shutdown();
+
             await db.close();
             await redisEventBus.disconnect();
             process.exit(0);

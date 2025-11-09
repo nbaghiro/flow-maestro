@@ -103,6 +103,10 @@ class Database {
             return false;
         }
     }
+
+    public getPool(): Pool {
+        return this.pool;
+    }
 }
 
 export const db = Database.getInstance();

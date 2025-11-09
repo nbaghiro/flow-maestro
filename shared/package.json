@@ -14,6 +14,10 @@
         "typecheck": "tsc --noEmit"
     },
     "devDependencies": {
+        "@types/uuid": "^10.0.0",
         "typescript": "^5.3.3"
+    },
+    "dependencies": {
+        "uuid": "^13.0.0"
     }
 }

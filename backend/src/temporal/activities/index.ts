@@ -55,3 +55,31 @@ export {
     type EmitAgentExecutionCompletedInput,
     type EmitAgentExecutionFailedInput
 } from "./agent";
+export {
+    createSpan,
+    endSpan,
+    endSpanWithError,
+    setSpanAttributes
+} from "./observability/span-activities";
+export {
+    loadConversationHistory,
+    saveConversationIncremental,
+    convertToOpenAI,
+    convertToAnthropic,
+    type LoadConversationHistoryInput,
+    type SaveConversationIncrementalInput,
+    type ConvertToOpenAIInput,
+    type ConvertToAnthropicInput
+} from "./agent/conversation-activities";
+export {
+    storeConversationEmbeddings,
+    searchConversationMemory,
+    getConversationMemoryStats,
+    clearExecutionMemory,
+    type StoreConversationEmbeddingsInput,
+    type SearchConversationMemoryInput,
+    type SearchConversationMemoryResult,
+    type GetMemoryStatsInput,
+    type MemoryStatsResult,
+    type ClearExecutionMemoryInput
+} from "./agent/conversation-memory-activities";

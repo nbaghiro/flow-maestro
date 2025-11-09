@@ -6,6 +6,13 @@ import { AgentExecutionRepository } from "../../../storage/repositories/AgentExe
 import { WorkflowRepository } from "../../../storage/repositories/WorkflowRepository";
 import { ConnectionRepository } from "../../../storage/repositories/ConnectionRepository";
 import type { AgentConfig, LLMResponse } from "../../workflows/agent-orchestrator-workflow";
+import {
+    validateToolInput,
+    coerceToolArguments,
+    createValidationErrorResponse
+} from "../../../shared/validation/tool-validation";
+import { injectConversationMemoryTool } from "./conversation-memory-tool";
+import { searchConversationMemory as searchConversationMemoryActivity } from "./conversation-memory-activities";
 
 const agentRepo = new AgentRepository();
 const executionRepo = new AgentExecutionRepository();
@@ -28,6 +35,9 @@ export async function getAgentConfig(input: GetAgentConfigInput): Promise<AgentC
         throw new Error(`Agent ${agentId} not found or access denied`);
     }
 
+    // Inject conversation memory tool for semantic search
+    const toolsWithMemory = injectConversationMemoryTool(agent.available_tools);
+
     return {
         id: agent.id,
         name: agent.name,
@@ -38,7 +48,7 @@ export async function getAgentConfig(input: GetAgentConfigInput): Promise<AgentC
         temperature: agent.temperature,
         max_tokens: agent.max_tokens,
         max_iterations: agent.max_iterations,
-        available_tools: agent.available_tools,
+        available_tools: toolsWithMemory,
         memory_config: agent.memory_config
     };
 }
@@ -326,10 +336,11 @@ export interface ExecuteToolCallInput {
     toolCall: ToolCall;
     availableTools: Tool[];
     userId: string;
+    agentId?: string; // Optional for built-in tools
 }
 
 export async function executeToolCall(input: ExecuteToolCallInput): Promise<JsonObject> {
-    const { toolCall, availableTools, userId } = input;
+    const { toolCall, availableTools, userId, agentId, executionId } = input;
 
     // Find tool definition
     const tool = availableTools.find((t) => t.name === toolCall.name);
@@ -337,13 +348,38 @@ export async function executeToolCall(input: ExecuteToolCallInput): Promise<Json
         throw new Error(`Tool "${toolCall.name}" not found in available tools`);
     }
 
+    // Coerce argument types (e.g., string "123" to number 123)
+    const coercedArgs = coerceToolArguments(tool, toolCall.arguments);
+
+    // Validate tool input arguments
+    const validation = validateToolInput(tool, coercedArgs);
+
+    if (!validation.success) {
+        // Return validation error to LLM (don't throw, let LLM retry)
+        console.warn(
+            `Tool "${toolCall.name}" validation failed:`,
+            validation.error?.message
+        );
+
+        return createValidationErrorResponse(toolCall.name, validation);
+    }
+
+    // Use validated and coerced data
+    const validatedArgs = validation.data as JsonObject;
+
     switch (tool.type) {
         case "workflow":
-            return await executeWorkflowTool({ tool, arguments: toolCall.arguments, userId });
+            return await executeWorkflowTool({ tool, arguments: validatedArgs, userId });
         case "function":
-            return await executeFunctionTool({ tool, arguments: toolCall.arguments });
+            return await executeFunctionTool({
+                tool,
+                arguments: validatedArgs,
+                userId,
+                agentId,
+                executionId
+            });
         case "knowledge_base":
-            return await executeKnowledgeBaseTool({ tool, arguments: toolCall.arguments, userId });
+            return await executeKnowledgeBaseTool({ tool, arguments: validatedArgs, userId });
         default:
             throw new Error(`Unknown tool type: ${tool.type}`);
     }
@@ -447,13 +483,27 @@ async function executeWorkflowTool(input: ExecuteWorkflowToolInput): Promise<Jso
 interface ExecuteFunctionToolInput {
     tool: Tool;
     arguments: JsonObject;
+    userId?: string;
+    agentId?: string;
+    executionId?: string;
 }
 
 async function executeFunctionTool(input: ExecuteFunctionToolInput): Promise<JsonObject> {
-    const { tool, arguments: args } = input;
+    const { tool, arguments: args, userId, agentId, executionId } = input;
 
     // Built-in functions
     switch (tool.config.functionName) {
+        case "search_conversation_memory":
+            if (!agentId || !userId) {
+                throw new Error("search_conversation_memory requires agentId and userId");
+            }
+            return await executeSearchConversationMemory({
+                agentId,
+                userId,
+                executionId,
+                arguments: args
+            });
+
         case "get_current_time":
             return await getCurrentTime(args);
 
@@ -492,6 +542,73 @@ async function executeFunctionTool(input: ExecuteFunctionToolInput): Promise<Jso
 /**
  * Built-in function implementations
  */
+
+/**
+ * Execute search conversation memory tool
+ */
+interface ExecuteSearchConversationMemoryInput {
+    agentId: string;
+    userId: string;
+    executionId?: string;
+    arguments: JsonObject;
+}
+
+async function executeSearchConversationMemory(
+    input: ExecuteSearchConversationMemoryInput
+): Promise<JsonObject> {
+    const { agentId, userId, executionId, arguments: args } = input;
+
+    if (typeof args.query !== "string") {
+        throw new Error("search_conversation_memory requires 'query' string argument");
+    }
+
+    const query = args.query;
+    const topK = typeof args.topK === "number" ? args.topK : 5;
+    const similarityThreshold =
+        typeof args.similarityThreshold === "number" ? args.similarityThreshold : 0.7;
+    const contextWindow = typeof args.contextWindow === "number" ? args.contextWindow : 2;
+    const searchPastExecutions = args.searchPastExecutions === true;
+    const messageRoles = Array.isArray(args.messageRoles) ? args.messageRoles : undefined;
+
+    try {
+        const result = await searchConversationMemoryActivity({
+            agentId,
+            userId,
+            query,
+            topK,
+            similarityThreshold,
+            contextWindow,
+            executionId: searchPastExecutions ? undefined : executionId,
+            excludeCurrentExecution: !searchPastExecutions && executionId ? true : false,
+            messageRoles: messageRoles as ("user" | "assistant" | "system" | "tool")[] | undefined
+        });
+
+        return {
+            success: true,
+            query: result.query,
+            resultCount: result.totalResults,
+            contextWindow: result.contextWindowSize,
+            // Return formatted text for easy inclusion in LLM context
+            formattedResults: result.formattedForLLM,
+            // Also return structured data
+            results: result.results.map((r) => ({
+                content: r.content,
+                role: r.message_role,
+                similarity: r.similarity,
+                executionId: r.execution_id,
+                contextBefore: r.context_before?.map((c) => `${c.role}: ${c.content}`).join("\n") || null,
+                contextAfter: r.context_after?.map((c) => `${c.role}: ${c.content}`).join("\n") || null
+            }))
+        };
+    } catch (error) {
+        console.error("Error searching conversation memory:", error);
+        return {
+            success: false,
+            error: true,
+            message: error instanceof Error ? error.message : "Failed to search conversation memory"
+        };
+    }
+}
 
 async function getCurrentTime(args: JsonObject): Promise<JsonObject> {
     const timezone = typeof args.timezone === "string" ? args.timezone : "UTC";

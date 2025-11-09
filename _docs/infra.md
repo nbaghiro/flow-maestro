@@ -134,39 +134,51 @@ gcloud services enable \
 
 ```
 flowmaestro/
-├── infrastructure/              # Pulumi infrastructure code
-│   ├── index.ts                # Main entry point
-│   ├── gke-cluster.ts          # GKE cluster configuration
-│   ├── database.ts             # Cloud SQL setup
-│   ├── redis.ts                # Memorystore Redis
-│   ├── secrets.ts              # Secret Manager
-│   ├── networking.ts           # VPC, Load Balancer, DNS
-│   ├── storage.ts              # Cloud Storage for frontend
-│   ├── monitoring.ts           # Cloud Monitoring & Logging
-│   ├── Pulumi.yaml             # Pulumi project config
-│   ├── Pulumi.production.yaml  # Production stack config
-│   ├── Pulumi.staging.yaml     # Staging stack config
-│   └── package.json
-├── k8s/                        # Kubernetes manifests
-│   ├── base/                   # Base configurations
-│   │   ├── api-deployment.yaml
-│   │   ├── worker-deployment.yaml
-│   │   ├── frontend-deployment.yaml
-│   │   ├── services.yaml
-│   │   └── ingress.yaml
-│   ├── overlays/               # Environment-specific overlays
-│   │   ├── production/
-│   │   │   └── kustomization.yaml
-│   │   └── staging/
-│   │       └── kustomization.yaml
-│   └── jobs/
-│       └── db-migration.yaml
-├── backend/
-│   └── Dockerfile              # Backend container image
-├── frontend/
-│   └── Dockerfile              # Frontend nginx image
-├── marketing/
-│   └── Dockerfile              # Marketing nginx image
+├── infra/                      # All infrastructure code
+│   ├── pulumi/                 # Pulumi infrastructure code
+│   │   ├── index.ts            # Main entry point
+│   │   ├── gke-cluster.ts      # GKE cluster configuration
+│   │   ├── database.ts         # Cloud SQL setup
+│   │   ├── redis.ts            # Memorystore Redis
+│   │   ├── secrets.ts          # Secret Manager
+│   │   ├── networking.ts       # VPC, Load Balancer, DNS
+│   │   ├── storage.ts          # Cloud Storage for frontend
+│   │   ├── monitoring.ts       # Cloud Monitoring & Logging
+│   │   ├── Pulumi.yaml         # Pulumi project config
+│   │   ├── Pulumi.production.yaml  # Production stack config
+│   │   ├── Pulumi.staging.yaml     # Staging stack config
+│   │   └── package.json
+│   ├── k8s/                    # Kubernetes manifests
+│   │   ├── base/               # Base configurations
+│   │   │   ├── api-deployment.yaml
+│   │   │   ├── worker-deployment.yaml
+│   │   │   ├── frontend-deployment.yaml
+│   │   │   ├── services.yaml
+│   │   │   └── ingress.yaml
+│   │   ├── overlays/           # Environment-specific overlays
+│   │   │   ├── production/
+│   │   │   │   └── kustomization.yaml
+│   │   │   └── staging/
+│   │   │       └── kustomization.yaml
+│   │   └── jobs/
+│   │       └── db-migration.yaml
+│   ├── docker/                 # Docker configurations
+│   │   ├── backend/
+│   │   │   ├── Dockerfile      # Backend container image
+│   │   │   └── .dockerignore
+│   │   ├── frontend/
+│   │   │   ├── Dockerfile      # Frontend nginx image
+│   │   │   ├── nginx.conf
+│   │   │   └── .dockerignore
+│   │   └── marketing/
+│   │       ├── Dockerfile      # Marketing nginx image
+│   │       ├── nginx.conf
+│   │       └── .dockerignore
+│   ├── deploy.sh               # Automated deployment script
+│   └── README.md               # Comprehensive deployment guide
+├── backend/                    # Backend application code
+├── frontend/                   # Frontend application code
+├── marketing/                  # Marketing site code
 └── cloudbuild.yaml             # CI/CD pipeline
 ```
 
@@ -178,8 +190,8 @@ flowmaestro/
 
 ```bash
 # Create infrastructure directory
-mkdir infrastructure
-cd infrastructure
+mkdir -p infra/pulumi
+cd infra/pulumi
 
 # Initialize Pulumi project
 pulumi new gcp-typescript --name flowmaestro-infra
@@ -219,7 +231,7 @@ pulumi config set --secret temporalClientKey "$(cat temporal-client-key.pem)"
 
 ### Step 3: Infrastructure Components
 
-The Pulumi infrastructure will provision the following components (see `infrastructure/` directory for implementation):
+The Pulumi infrastructure will provision the following components (see `infra/pulumi/` directory for implementation):
 
 #### GKE Cluster (`gke-cluster.ts`)
 
@@ -299,7 +311,7 @@ pulumi up
 
 ### Backend Dockerfile
 
-Located at `backend/Dockerfile`:
+Located at `infra/docker/backend/Dockerfile`:
 
 ```dockerfile
 # Multi-stage build for backend
@@ -355,7 +367,7 @@ CMD ["node", "backend/dist/backend/src/index.js"]
 
 ### Frontend Dockerfile
 
-Located at `frontend/Dockerfile`:
+Located at `infra/docker/frontend/Dockerfile`:
 
 ```dockerfile
 # Build stage
@@ -444,7 +456,7 @@ server {
 
 ### Marketing Dockerfile
 
-Located at `marketing/Dockerfile`:
+Located at `infra/docker/marketing/Dockerfile`:
 
 ```dockerfile
 # Build stage
@@ -503,18 +515,18 @@ export IMAGE_TAG="$(git rev-parse --short HEAD)"
 export IMAGE_BASE="${REGISTRY_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/${REGISTRY_NAME}"
 
 # Backend
-docker build -f backend/Dockerfile -t ${IMAGE_BASE}/backend:${IMAGE_TAG} .
+docker build -f infra/docker/backend/Dockerfile -t ${IMAGE_BASE}/backend:${IMAGE_TAG} .
 docker push ${IMAGE_BASE}/backend:${IMAGE_TAG}
 
 # Frontend
-docker build -f frontend/Dockerfile \
+docker build -f infra/docker/frontend/Dockerfile \
     --build-arg VITE_API_URL=https://api.yourdomain.com \
     --build-arg VITE_WS_URL=wss://api.yourdomain.com \
     -t ${IMAGE_BASE}/frontend:${IMAGE_TAG} .
 docker push ${IMAGE_BASE}/frontend:${IMAGE_TAG}
 
 # Marketing
-docker build -f marketing/Dockerfile -t ${IMAGE_BASE}/marketing:${IMAGE_TAG} .
+docker build -f infra/docker/marketing/Dockerfile -t ${IMAGE_BASE}/marketing:${IMAGE_TAG} .
 docker push ${IMAGE_BASE}/marketing:${IMAGE_TAG}
 
 # Tag as latest
@@ -580,7 +592,7 @@ kubectl create secret generic temporal-credentials \
 
 ```bash
 # Apply migration job
-kubectl apply -f k8s/jobs/db-migration.yaml
+kubectl apply -f infra/k8s/jobs/db-migration.yaml
 
 # Watch migration job
 kubectl logs -f job/db-migration -n flowmaestro
@@ -593,7 +605,7 @@ kubectl get jobs -n flowmaestro
 
 ```bash
 # Apply base manifests
-kubectl apply -k k8s/overlays/production
+kubectl apply -k infra/k8s/overlays/production
 
 # Watch rollout
 kubectl rollout status deployment/api-server -n flowmaestro
@@ -619,7 +631,7 @@ gcloud compute addresses describe flowmaestro-ip --global --format="get(address)
 # A record: www.yourdomain.com -> <IP address>
 
 # Apply ingress with managed certificate
-kubectl apply -f k8s/base/ingress.yaml
+kubectl apply -f infra/k8s/base/ingress.yaml
 
 # Wait for certificate provisioning (can take 15-60 minutes)
 kubectl describe managedcertificate flowmaestro-cert -n flowmaestro
@@ -738,7 +750,7 @@ steps:
       args:
           - "build"
           - "-f"
-          - "backend/Dockerfile"
+          - "infra/docker/backend/Dockerfile"
           - "-t"
           - "${_REGISTRY}/${_BACKEND_IMAGE}:$SHORT_SHA"
           - "-t"
@@ -750,7 +762,7 @@ steps:
       args:
           - "build"
           - "-f"
-          - "frontend/Dockerfile"
+          - "infra/docker/frontend/Dockerfile"
           - "--build-arg"
           - "VITE_API_URL=${_API_URL}"
           - "--build-arg"
@@ -772,7 +784,7 @@ steps:
     - name: "gcr.io/cloud-builders/gke-deploy"
       args:
           - "run"
-          - "--filename=k8s/overlays/production"
+          - "--filename=infra/k8s/overlays/production"
           - "--image=${_REGISTRY}/${_BACKEND_IMAGE}:$SHORT_SHA"
           - "--location=${_GKE_REGION}"
           - "--cluster=${_GKE_CLUSTER}"
@@ -828,7 +840,7 @@ gcloud logging read "resource.type=k8s_container AND resource.labels.pod_name=~'
 
 ### Cloud Monitoring
 
-**Dashboards** (see `infrastructure/monitoring.ts`):
+**Dashboards** (see `infra/pulumi/monitoring.ts`):
 
 - API server metrics (request rate, latency, errors)
 - Worker metrics (activity execution, failures)
@@ -1054,7 +1066,7 @@ kubectl describe managedcertificate flowmaestro-cert -n flowmaestro
 
 # Force certificate renewal
 kubectl delete managedcertificate flowmaestro-cert -n flowmaestro
-kubectl apply -f k8s/base/ingress.yaml
+kubectl apply -f infra/k8s/base/ingress.yaml
 ```
 
 #### 5. WebSocket Connection Failures
@@ -1095,7 +1107,7 @@ pulumi config set redisMemorySizeGb "1"
 pulumi up
 
 # Deploy staging Kubernetes resources
-kubectl apply -k k8s/overlays/staging
+kubectl apply -k infra/k8s/overlays/staging
 ```
 
 ---
@@ -1161,8 +1173,8 @@ kubectl apply -k k8s/overlays/staging
 
 ## Next Steps
 
-1. **Review infrastructure code** in `infrastructure/` directory
-2. **Review Kubernetes manifests** in `k8s/` directory
+1. **Review infrastructure code** in `infra/pulumi/` directory
+2. **Review Kubernetes manifests** in `infra/k8s/` directory
 3. **Customize configuration** for your domain and requirements
 4. **Set up Temporal Cloud** account and certificates
 5. **Deploy infrastructure** with Pulumi
