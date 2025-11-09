@@ -778,10 +778,10 @@ This automated script will:
 
 ## Additional Resources
 
-- **Main Docs**: `/_docs/` directory in project root
-- **Architecture**: `/_docs/architecture.md`
-- **Temporal**: `/_docs/temporal-orchestration.md`
-- **Testing**: `/_docs/testing-strategy.md`
+- **Main Docs**: `/.docs/` directory in project root
+- **Architecture**: `/.docs/architecture.md`
+- **Temporal**: `/.docs/temporal-orchestration.md`
+- **Testing**: `/.docs/testing-strategy.md`
 - **Local Testing**: [LOCAL_TESTING.md](LOCAL_TESTING.md)
 - **Pulumi Docs**: https://www.pulumi.com/docs/
 - **GKE Docs**: https://cloud.google.com/kubernetes-engine/docs

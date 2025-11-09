@@ -719,8 +719,8 @@ npm run format         # Format all packages
 
 For more detailed architectural documentation, see:
 
-- `_docs/architecture.md` - Comprehensive architecture guide with code examples
-- `_docs/architecture_summary.md` - Quick reference guide
+- `.docs/architecture.md` - Comprehensive architecture guide with code examples
+- `.docs/architecture_summary.md` - Quick reference guide
 
 ---
 

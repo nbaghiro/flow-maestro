@@ -67,5 +67,5 @@ Dockerfile
 .gitlab-ci.yml
 
 # Documentation
-_docs/
+.docs/
 README.md

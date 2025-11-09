@@ -195,26 +195,26 @@ External service connections (API keys, OAuth tokens) are stored securely and ca
 
 ## Documentation
 
-Comprehensive technical documentation is available in the `_docs/` folder:
+Comprehensive technical documentation is available in the `.docs/` folder:
 
 ### Architecture & Technical
 
-- **[Architecture Overview](./_docs/architecture.md)** - System architecture, components, and design decisions
-- **[Architecture Summary](./_docs/architecture-summary.md)** - Quick reference guide
-- **[Temporal Orchestration](./_docs/temporal-orchestration.md)** - Workflow engine internals
+- **[Architecture Overview](./.docs/architecture.md)** - System architecture, components, and design decisions
+- **[Architecture Summary](./.docs/architecture-summary.md)** - Quick reference guide
+- **[Temporal Orchestration](./.docs/temporal-orchestration.md)** - Workflow engine internals
 
 ### Features & Implementation
 
-- **[Workflow Triggers](./_docs/workflow-triggers.md)** - Schedules, webhooks, and event-based triggers
-- **[External Connections](./_docs/external_connections.md)** - Connection management and encryption
-- **[WebSocket Events](./_docs/websocket_events.md)** - Real-time communication protocol
-- **[AI Workflow Generation](./_docs/ai-workflow-generation.md)** - Generate workflows from natural language
-- **[Voice Calls (LiveKit + Telnyx)](./_docs/voicecalls-livekit-telnyx.md)** - Voice call integration
+- **[Workflow Triggers](./.docs/workflow-triggers.md)** - Schedules, webhooks, and event-based triggers
+- **[External Connections](./.docs/external_connections.md)** - Connection management and encryption
+- **[WebSocket Events](./.docs/websocket_events.md)** - Real-time communication protocol
+- **[AI Workflow Generation](./.docs/ai-workflow-generation.md)** - Generate workflows from natural language
+- **[Voice Calls (LiveKit + Telnyx)](./.docs/voicecalls-livekit-telnyx.md)** - Voice call integration
 
 ### Development & Operations
 
-- **[Testing Strategy](./_docs/testing-strategy.md)** - Integration test suite and philosophy
-- **[Database Migrations](./_docs/database-migrations.md)** - How to create and run migrations
+- **[Testing Strategy](./.docs/testing-strategy.md)** - Integration test suite and philosophy
+- **[Database Migrations](./.docs/database-migrations.md)** - How to create and run migrations
 - **[Development Guidelines](./CLAUDE.md)** - Coding standards and best practices (for developers)
 
 ---
@@ -308,7 +308,7 @@ We welcome contributions! Here's how to get started:
 
 ## Support
 
-- **Documentation**: [\_docs/](./_docs/)
+- **Documentation**: [.docs/](./.docs/)
 - **Issues**: [GitHub Issues](https://github.com/yourusername/flowmaestro/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/yourusername/flowmaestro/discussions)
 - **Email**: support@flowmaestro.com

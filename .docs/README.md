@@ -171,7 +171,7 @@ These documents cover the main features of FlowMaestro:
 
 ## Experimental Features
 
-Located in `_docs/experimental/`:
+Located in `.docs/experimental/`:
 
 ### [experimental/mastra-agents-system.md](./experimental/mastra-agents-system.md)
 
@@ -379,7 +379,7 @@ When contributing to FlowMaestro:
 - **Architecture Questions**: Check overview sections in each doc
 - **Implementation Details**: See specific feature sections
 - **Debugging**: Check management/troubleshooting sections
-- **Experimental Features**: See `_docs/experimental/`
+- **Experimental Features**: See `.docs/experimental/`
 
 ---
 
