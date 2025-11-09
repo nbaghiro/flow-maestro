@@ -1,6 +1,6 @@
 import { proxyActivities } from "@temporalio/workflow";
-import type * as activities from "../activities";
 import type { WorkflowDefinition, WorkflowNode, JsonObject } from "@flowmaestro/shared";
+import type * as activities from "../activities";
 
 // Re-export WorkflowDefinition for use by other workflow files
 export type { WorkflowDefinition, WorkflowNode };
@@ -10,6 +10,14 @@ const { executeNode } = proxyActivities<typeof activities>({
     retry: {
         maximumAttempts: 3,
         backoffCoefficient: 2
+    }
+});
+
+// Validation activities (fast, retryable)
+const { validateInputsActivity, validateOutputsActivity } = proxyActivities<typeof activities>({
+    startToCloseTimeout: "30 seconds",
+    retry: {
+        maximumAttempts: 1 // No retry - validation is deterministic
     }
 });
 
@@ -57,6 +65,28 @@ export async function orchestratorWorkflow(input: OrchestratorInput): Promise<Or
     console.log(
         `[Orchestrator] Starting workflow with ${nodeEntries.length} nodes, ${edges.length} edges`
     );
+
+    // Validate inputs if stateSchema is defined
+    const inputValidation = await validateInputsActivity({
+        workflowDefinition,
+        inputs
+    });
+
+    if (!inputValidation.success) {
+        const errorMessage = inputValidation.error?.message || "Input validation failed";
+        console.error(`[Orchestrator] Input validation failed: ${errorMessage}`);
+
+        await emitExecutionFailed({
+            executionId,
+            error: errorMessage
+        });
+
+        return {
+            success: false,
+            outputs: {},
+            error: errorMessage
+        };
+    }
 
     // Emit execution started event
     await emitExecutionStarted({
@@ -345,6 +375,28 @@ export async function orchestratorWorkflow(input: OrchestratorInput): Promise<Or
 
         console.log("[Orchestrator] Workflow completed successfully");
         const workflowDuration = Date.now() - workflowStartTime;
+
+        // Validate outputs if stateSchema is defined
+        const outputValidation = await validateOutputsActivity({
+            workflowDefinition,
+            outputs: context
+        });
+
+        if (!outputValidation.success) {
+            const errorMessage = outputValidation.error?.message || "Output validation failed";
+            console.error(`[Orchestrator] Output validation failed: ${errorMessage}`);
+
+            await emitExecutionFailed({
+                executionId,
+                error: errorMessage
+            });
+
+            return {
+                success: false,
+                outputs: context,
+                error: errorMessage
+            };
+        }
 
         // Emit execution completed event
         await emitExecutionCompleted({

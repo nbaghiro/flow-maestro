@@ -37,7 +37,11 @@ export function convertFrontendToBackend(
     for (const node of frontendWorkflow.nodes) {
         const { id, type, data, position } = node;
 
-        const nodeName = (data.label as string) || (data.inputName as string) || (data.outputName as string) || type;
+        const nodeName =
+            (data.label as string) ||
+            (data.inputName as string) ||
+            (data.outputName as string) ||
+            type;
 
         nodesRecord[id] = {
             type,

@@ -6,8 +6,8 @@
 
 import * as Popover from "@radix-ui/react-popover";
 import { X, CheckCircle2, XCircle, Clock, AlertCircle } from "lucide-react";
-import { NodeExecutionState } from "../../stores/workflowStore";
 import { cn } from "../../lib/utils";
+import { NodeExecutionState } from "../../stores/workflowStore";
 
 interface NodeExecutionPopoverProps {
     nodeId: string;

@@ -3,9 +3,9 @@
  * Modal for viewing and editing workflow metadata
  */
 
-import { useState, useEffect } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { X, Settings, Sparkles, Loader2 } from "lucide-react";
+import { useState, useEffect } from "react";
 
 interface WorkflowSettingsDialogProps {
     open: boolean;

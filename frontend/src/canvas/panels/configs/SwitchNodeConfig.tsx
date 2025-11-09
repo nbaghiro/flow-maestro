@@ -1,7 +1,7 @@
+import { Plus, Trash2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { FormField, FormSection } from "../../../components/FormField";
 import { OutputSettingsSection } from "../../../components/OutputSettingsSection";
-import { Plus, Trash2 } from "lucide-react";
 
 interface SwitchNodeConfigProps {
     data: Record<string, unknown>;

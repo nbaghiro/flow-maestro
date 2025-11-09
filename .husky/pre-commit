@@ -1,0 +1,8 @@
+#!/bin/sh
+
+# Run lint-staged to check and fix only staged files
+npx lint-staged
+
+# Run type checking on all TypeScript files
+echo "Running TypeScript type checks..."
+npm run typecheck

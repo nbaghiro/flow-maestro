@@ -1,8 +1,8 @@
 import * as fs from "fs/promises";
-import { PDFParse } from "pdf-parse";
-import mammoth from "mammoth";
-import * as cheerio from "cheerio";
 import axios from "axios";
+import * as cheerio from "cheerio";
+import mammoth from "mammoth";
+import { PDFParse } from "pdf-parse";
 import { DocumentFileType } from "../../storage/models/KnowledgeDocument";
 
 export interface ExtractedText {
@@ -29,9 +29,10 @@ export class TextExtractor {
             case "txt":
             case "md":
                 return this.extractFromText(filePath);
-            case "html":
+            case "html": {
                 const htmlContent = await fs.readFile(filePath, "utf-8");
                 return this.extractFromHTML(htmlContent);
+            }
             case "json":
                 return this.extractFromJSON(filePath);
             case "csv":
@@ -75,7 +76,9 @@ export class TextExtractor {
                 throw new Error(`Unsupported content type: ${contentType}`);
             }
         } catch (error: unknown) {
-            throw new Error(`Failed to fetch URL: ${error instanceof Error ? error.message : "Unknown error"}`);
+            throw new Error(
+                `Failed to fetch URL: ${error instanceof Error ? error.message : "Unknown error"}`
+            );
         }
     }
 
@@ -97,7 +100,9 @@ export class TextExtractor {
                 }
             };
         } catch (error: unknown) {
-            throw new Error(`Failed to extract text from PDF: ${error instanceof Error ? error.message : "Unknown error"}`);
+            throw new Error(
+                `Failed to extract text from PDF: ${error instanceof Error ? error.message : "Unknown error"}`
+            );
         }
     }
 
@@ -117,7 +122,9 @@ export class TextExtractor {
                 }
             };
         } catch (error: unknown) {
-            throw new Error(`Failed to extract text from DOCX: ${error instanceof Error ? error.message : "Unknown error"}`);
+            throw new Error(
+                `Failed to extract text from DOCX: ${error instanceof Error ? error.message : "Unknown error"}`
+            );
         }
     }
 
@@ -135,7 +142,9 @@ export class TextExtractor {
                 }
             };
         } catch (error: unknown) {
-            throw new Error(`Failed to read text file: ${error instanceof Error ? error.message : "Unknown error"}`);
+            throw new Error(
+                `Failed to read text file: ${error instanceof Error ? error.message : "Unknown error"}`
+            );
         }
     }
 
@@ -199,7 +208,9 @@ export class TextExtractor {
                 }
             };
         } catch (error: unknown) {
-            throw new Error(`Failed to extract text from HTML: ${error instanceof Error ? error.message : "Unknown error"}`);
+            throw new Error(
+                `Failed to extract text from HTML: ${error instanceof Error ? error.message : "Unknown error"}`
+            );
         }
     }
 
@@ -223,7 +234,9 @@ export class TextExtractor {
                 }
             };
         } catch (error: unknown) {
-            throw new Error(`Failed to extract text from JSON: ${error instanceof Error ? error.message : "Unknown error"}`);
+            throw new Error(
+                `Failed to extract text from JSON: ${error instanceof Error ? error.message : "Unknown error"}`
+            );
         }
     }
 
@@ -275,7 +288,9 @@ export class TextExtractor {
                 }
             };
         } catch (error: unknown) {
-            throw new Error(`Failed to extract text from CSV: ${error instanceof Error ? error.message : "Unknown error"}`);
+            throw new Error(
+                `Failed to extract text from CSV: ${error instanceof Error ? error.message : "Unknown error"}`
+            );
         }
     }
 
@@ -298,10 +313,15 @@ export class TextExtractor {
             }
         } else if (typeof obj === "object" && obj !== null) {
             for (const key in obj) {
-                if (obj.hasOwnProperty(key)) {
+                if (Object.prototype.hasOwnProperty.call(obj, key)) {
                     // Include the key as context
                     textParts.push(`${key}:`);
-                    textParts.push(...this.extractTextFromObject(obj[key as keyof typeof obj] as unknown, depth + 1));
+                    textParts.push(
+                        ...this.extractTextFromObject(
+                            obj[key as keyof typeof obj] as unknown,
+                            depth + 1
+                        )
+                    );
                 }
             }
         } else if (typeof obj === "number" || typeof obj === "boolean") {

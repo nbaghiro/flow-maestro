@@ -155,15 +155,21 @@ export class DeepgramSTT extends EventEmitter {
         const AudioContextClass = (
             globalThis as typeof globalThis & {
                 AudioContext?: new (options: { sampleRate: number }) => {
-                    createMediaStreamSource: (stream: unknown) => { connect: (node: unknown) => void };
+                    createMediaStreamSource: (stream: unknown) => {
+                        connect: (node: unknown) => void;
+                    };
                     createScriptProcessor: (
                         bufferSize: number,
                         numberOfInputChannels: number,
                         numberOfOutputChannels: number
                     ) => {
-                        onaudioprocess: ((
-                            e: { inputBuffer: { getChannelData: (channel: number) => Float32Array } }
-                        ) => void) | null;
+                        onaudioprocess:
+                            | ((e: {
+                                  inputBuffer: {
+                                      getChannelData: (channel: number) => Float32Array;
+                                  };
+                              }) => void)
+                            | null;
                         connect: (node: unknown) => void;
                     };
                     destination: unknown;
@@ -182,7 +188,9 @@ export class DeepgramSTT extends EventEmitter {
         source.connect(processor);
         processor.connect(audioContext.destination);
 
-        processor.onaudioprocess = (e: { inputBuffer: { getChannelData: (channel: number) => Float32Array } }) => {
+        processor.onaudioprocess = (e: {
+            inputBuffer: { getChannelData: (channel: number) => Float32Array };
+        }) => {
             if (!this.isActive || !this.connection) return;
 
             const inputData = e.inputBuffer.getChannelData(0);

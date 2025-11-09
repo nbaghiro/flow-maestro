@@ -1,6 +1,7 @@
+import Anthropic from "@anthropic-ai/sdk";
 import axios from "axios";
 import OpenAI from "openai";
-import Anthropic from "@anthropic-ai/sdk";
+import { getDefaultModelForProvider } from "@flowmaestro/shared";
 import {
     ConnectionWithData,
     ApiKeyData,
@@ -8,7 +9,6 @@ import {
     MCPConnectionData
 } from "../storage/models/Connection";
 import { getMCPService } from "./mcp/MCPService";
-import { getDefaultModelForProvider } from "@flowmaestro/shared";
 
 export interface ConnectionTestResult {
     success: boolean;
@@ -59,7 +59,12 @@ export class ConnectionTestService {
         } catch (error) {
             return {
                 success: false,
-                message: error instanceof Error ? error instanceof Error ? error.message : "Unknown error" : "Unknown error",
+                message:
+                    error instanceof Error
+                        ? error instanceof Error
+                            ? error.message
+                            : "Unknown error"
+                        : "Unknown error",
                 details: error
             };
         }
@@ -97,7 +102,12 @@ export class ConnectionTestService {
         } catch (error) {
             return {
                 success: false,
-                message: error instanceof Error ? error instanceof Error ? error.message : "Unknown error" : "MCP connection failed",
+                message:
+                    error instanceof Error
+                        ? error instanceof Error
+                            ? error.message
+                            : "Unknown error"
+                        : "MCP connection failed",
                 details: error
             };
         }
@@ -155,7 +165,8 @@ export class ConnectionTestService {
                 }
             };
         } catch (error: unknown) {
-            const errorMsg = error instanceof Error ? error.message : "Anthropic API key is invalid";
+            const errorMsg =
+                error instanceof Error ? error.message : "Anthropic API key is invalid";
             return {
                 success: false,
                 message: errorMsg,

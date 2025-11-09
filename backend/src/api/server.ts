@@ -1,26 +1,26 @@
-import Fastify from "fastify";
 import cors from "@fastify/cors";
 import jwt from "@fastify/jwt";
-import websocket from "@fastify/websocket";
 import multipart from "@fastify/multipart";
+import websocket from "@fastify/websocket";
+import Fastify from "fastify";
 import { config } from "../shared/config";
-import { errorHandler, requestContextMiddleware } from "./middleware";
-import { workflowRoutes } from "./routes/workflows";
-import { authRoutes } from "./routes/auth";
-import { executionRoutes } from "./routes/executions";
-import { connectionRoutes } from "./routes/connections";
-import { nodeRoutes } from "./routes/nodes";
-import { websocketRoutes } from "./routes/websocket";
-import { triggerRoutes } from "./routes/triggers";
-import { oauthRoutes } from "./routes/oauth";
-import { knowledgeBaseRoutes } from "./routes/knowledge-bases";
-import { agentRoutes } from "./routes/agents";
-import { mcpRoutes } from "./routes/mcp";
-import { db } from "../storage/database";
-import { eventBridge } from "../shared/websocket/EventBridge";
 import { redisEventBus } from "../shared/events/RedisEventBus";
-import { registerAllNodes } from "../shared/registry/register-nodes";
 import { initializeSpanService, getSpanService } from "../shared/observability";
+import { registerAllNodes } from "../shared/registry/register-nodes";
+import { eventBridge } from "../shared/websocket/EventBridge";
+import { db } from "../storage/database";
+import { errorHandler, requestContextMiddleware } from "./middleware";
+import { agentRoutes } from "./routes/agents";
+import { authRoutes } from "./routes/auth";
+import { connectionRoutes } from "./routes/connections";
+import { executionRoutes } from "./routes/executions";
+import { knowledgeBaseRoutes } from "./routes/knowledge-bases";
+import { mcpRoutes } from "./routes/mcp";
+import { nodeRoutes } from "./routes/nodes";
+import { oauthRoutes } from "./routes/oauth";
+import { triggerRoutes } from "./routes/triggers";
+import { websocketRoutes } from "./routes/websocket";
+import { workflowRoutes } from "./routes/workflows";
 
 export async function buildServer() {
     // Register all node types in the registry

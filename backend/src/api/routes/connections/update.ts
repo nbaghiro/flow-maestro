@@ -1,12 +1,12 @@
 import { FastifyInstance } from "fastify";
 import { ConnectionRepository } from "../../../storage/repositories/ConnectionRepository";
+import { authMiddleware, validateParams, validateBody } from "../../middleware";
 import {
     connectionIdParamSchema,
     ConnectionIdParam,
     updateConnectionSchema,
     UpdateConnectionRequest
 } from "../../schemas/connection-schemas";
-import { authMiddleware, validateParams, validateBody } from "../../middleware";
 
 export async function updateConnectionRoute(fastify: FastifyInstance) {
     fastify.put(

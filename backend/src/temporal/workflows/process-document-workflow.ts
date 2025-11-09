@@ -1,6 +1,6 @@
 import { proxyActivities } from "@temporalio/workflow";
-import type * as activities from "../activities/process-document";
 import type { DocumentFileType } from "../../storage/models/KnowledgeDocument";
+import type * as activities from "../activities/process-document";
 
 // Proxy the activities with retry policies
 const {
@@ -120,7 +120,8 @@ export async function processDocumentWorkflow(
             documentId: input.documentId,
             success: false,
             chunkCount: 0,
-            error: error instanceof Error ? error.message : "Unknown error while processing document"
+            error:
+                error instanceof Error ? error.message : "Unknown error while processing document"
         };
     }
 }

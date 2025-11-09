@@ -189,10 +189,7 @@ export function validateToolInput(tool: Tool, input: unknown): ValidationResult 
 /**
  * Validate tool output
  */
-export function validateToolOutput(
-    tool: ValidatedTool,
-    output: unknown
-): ValidationResult {
+export function validateToolOutput(tool: ValidatedTool, output: unknown): ValidationResult {
     if (!tool.outputSchema) {
         // No output schema defined, skip validation
         return {

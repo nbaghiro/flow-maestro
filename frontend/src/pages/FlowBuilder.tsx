@@ -1,16 +1,16 @@
+import { Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { ReactFlowProvider } from "reactflow";
-import { WorkflowCanvas } from "../canvas/WorkflowCanvas";
-import { NodeLibrary } from "../canvas/panels/NodeLibrary";
 import { NodeInspector } from "../canvas/panels/NodeInspector";
-import { BuilderHeader } from "../components/BuilderHeader";
-import { useWorkflowStore } from "../stores/workflowStore";
-import { getWorkflow, updateWorkflow } from "../lib/api";
-import { Loader2 } from "lucide-react";
-import { ExecutionPanel } from "../components/ExecutionPanel";
+import { NodeLibrary } from "../canvas/panels/NodeLibrary";
+import { WorkflowCanvas } from "../canvas/WorkflowCanvas";
 import { AIGenerateButton } from "../components/AIGenerateButton";
+import { BuilderHeader } from "../components/BuilderHeader";
+import { ExecutionPanel } from "../components/ExecutionPanel";
 import { WorkflowSettingsDialog } from "../components/WorkflowSettingsDialog";
+import { getWorkflow, updateWorkflow } from "../lib/api";
+import { useWorkflowStore } from "../stores/workflowStore";
 
 type SaveStatus = "idle" | "saving" | "saved" | "error";
 
@@ -149,8 +149,7 @@ export function FlowBuilder() {
 
     // Expose debug method to window for browser console access
     useEffect(() => {
-        (window as Window & { debugWorkflow?: () => void }).debugWorkflow =
-            logWorkflowStructure;
+        (window as Window & { debugWorkflow?: () => void }).debugWorkflow = logWorkflowStructure;
 
         return () => {
             delete (window as Window & { debugWorkflow?: () => void }).debugWorkflow;
@@ -252,10 +251,7 @@ export function FlowBuilder() {
                 };
 
                 // Only add onError if it exists and has a strategy
-                if (
-                    onError &&
-                    (onError as { strategy?: string }).strategy
-                ) {
+                if (onError && (onError as { strategy?: string }).strategy) {
                     nodeData.onError = onError;
                 }
 

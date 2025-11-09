@@ -3,8 +3,8 @@ import {
     KnowledgeBaseRepository,
     KnowledgeDocumentRepository
 } from "../../../storage/repositories";
-import { authMiddleware } from "../../middleware";
 import { getTemporalClient } from "../../../temporal/client";
+import { authMiddleware } from "../../middleware";
 
 export async function addUrlRoute(fastify: FastifyInstance) {
     fastify.post(

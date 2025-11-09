@@ -65,6 +65,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 throw new Error(response.error || "Login failed");
             }
         } catch (error) {
+            console.error("Login failed:", error);
             throw error;
         }
     };
@@ -79,6 +80,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 throw new Error(response.error || "Registration failed");
             }
         } catch (error) {
+            console.error("Registration failed:", error);
             throw error;
         }
     };

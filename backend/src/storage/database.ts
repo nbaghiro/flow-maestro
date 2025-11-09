@@ -1,6 +1,6 @@
-import { Pool, PoolClient, QueryResult, QueryResultRow } from "pg";
-import dotenv from "dotenv";
 import path from "path";
+import dotenv from "dotenv";
+import { Pool, PoolClient, QueryResult, QueryResultRow } from "pg";
 
 // Load .env from project root
 // When compiled, this will be in dist/storage/, so we go up to backend/, then to project root
@@ -99,7 +99,7 @@ class Database {
         try {
             await this.query("SELECT 1");
             return true;
-        } catch (error) {
+        } catch (_error) {
             return false;
         }
     }

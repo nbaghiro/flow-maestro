@@ -1,7 +1,7 @@
 import type { JsonObject } from "@flowmaestro/shared";
-import { interpolateVariables } from "./utils";
 import { getVoiceCommandBus } from "../../../shared/services/VoiceCommandBus";
 import { CallExecutionRepository } from "../../../storage/repositories/CallExecutionRepository";
+import { interpolateVariables } from "./utils";
 
 export interface VoiceHangupNodeConfig {
     farewellMessage?: string; // Optional goodbye message before hangup

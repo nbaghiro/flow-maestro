@@ -1,7 +1,7 @@
+import { GitBranch, CheckCircle2, XCircle } from "lucide-react";
 import { memo } from "react";
 import { NodeProps, Handle, Position } from "reactflow";
 import { BaseNode } from "./BaseNode";
-import { GitBranch, CheckCircle2, XCircle } from "lucide-react";
 
 interface ConditionalNodeData {
     label: string;

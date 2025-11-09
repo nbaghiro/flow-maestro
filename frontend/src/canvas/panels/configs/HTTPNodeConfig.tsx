@@ -1,12 +1,10 @@
+import { Plus, Trash2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { FormField, FormSection } from "../../../components/FormField";
 import { OutputSettingsSection } from "../../../components/OutputSettingsSection";
-import { Plus, Trash2 } from "lucide-react";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 interface HTTPNodeConfigProps {
     data: Record<string, unknown>;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     onUpdate: (config: unknown) => void;
 }
 

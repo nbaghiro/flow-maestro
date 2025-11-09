@@ -4,8 +4,8 @@
  * Uses @uiw/react-textarea-code-editor for lightweight highlighting
  */
 
-import { FC } from "react";
 import CodeEditor from "@uiw/react-textarea-code-editor";
+import { FC } from "react";
 
 export type CodeLanguage = "js" | "javascript" | "python" | "json" | "sql" | "jsonata";
 

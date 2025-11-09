@@ -1,3 +1,5 @@
+import * as crypto from "crypto";
+import type { JsonValue } from "@flowmaestro/shared";
 import { db } from "../database";
 import {
     WorkflowTrigger,
@@ -10,8 +12,6 @@ import {
     TriggerType,
     TriggerConfig
 } from "../models/Trigger";
-import type { JsonValue } from "@flowmaestro/shared";
-import * as crypto from "crypto";
 
 // Database row interfaces
 interface TriggerRow {
@@ -298,7 +298,9 @@ export class TriggerRepository {
         ]);
 
         return {
-            executions: executionsResult.rows.map((row) => this.mapTriggerExecutionRow(row as TriggerExecutionRow)),
+            executions: executionsResult.rows.map((row) =>
+                this.mapTriggerExecutionRow(row as TriggerExecutionRow)
+            ),
             total: parseInt(countResult.rows[0].count)
         };
     }
@@ -395,7 +397,10 @@ export class TriggerRepository {
             enabled: row.enabled,
             last_triggered_at: row.last_triggered_at ? new Date(row.last_triggered_at) : null,
             next_scheduled_at: row.next_scheduled_at ? new Date(row.next_scheduled_at) : null,
-            trigger_count: typeof row.trigger_count === "string" ? parseInt(row.trigger_count) : row.trigger_count || 0,
+            trigger_count:
+                typeof row.trigger_count === "string"
+                    ? parseInt(row.trigger_count)
+                    : row.trigger_count || 0,
             temporal_schedule_id: row.temporal_schedule_id,
             webhook_secret: row.webhook_secret,
             created_at: new Date(row.created_at),
@@ -408,9 +413,10 @@ export class TriggerRepository {
      * Map database row to TriggerExecution model
      */
     private mapTriggerExecutionRow(row: TriggerExecutionRow): TriggerExecution {
-        const payload = typeof row.trigger_payload === "string"
-            ? JSON.parse(row.trigger_payload) as Record<string, JsonValue>
-            : row.trigger_payload;
+        const payload =
+            typeof row.trigger_payload === "string"
+                ? (JSON.parse(row.trigger_payload) as Record<string, JsonValue>)
+                : row.trigger_payload;
 
         return {
             id: row.id,
@@ -433,20 +439,20 @@ export class TriggerRepository {
             request_path: row.request_path,
             request_headers:
                 typeof row.request_headers === "string"
-                    ? JSON.parse(row.request_headers) as Record<string, JsonValue>
+                    ? (JSON.parse(row.request_headers) as Record<string, JsonValue>)
                     : row.request_headers,
             request_body:
                 typeof row.request_body === "string"
-                    ? JSON.parse(row.request_body) as Record<string, JsonValue>
+                    ? (JSON.parse(row.request_body) as Record<string, JsonValue>)
                     : row.request_body,
             request_query:
                 typeof row.request_query === "string"
-                    ? JSON.parse(row.request_query) as Record<string, JsonValue>
+                    ? (JSON.parse(row.request_query) as Record<string, JsonValue>)
                     : row.request_query,
             response_status: row.response_status,
             response_body:
                 typeof row.response_body === "string"
-                    ? JSON.parse(row.response_body) as Record<string, JsonValue>
+                    ? (JSON.parse(row.response_body) as Record<string, JsonValue>)
                     : row.response_body,
             error: row.error,
             execution_id: row.execution_id,

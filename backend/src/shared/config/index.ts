@@ -1,5 +1,5 @@
-import dotenv from "dotenv";
 import path from "path";
+import dotenv from "dotenv";
 
 // Load .env from project root
 // When compiled, this will be in dist/, so we go up to backend/, then to project root

@@ -1,6 +1,6 @@
 import type { JsonObject, WebSocketEvent } from "@flowmaestro/shared";
-import type { ConversationMessage } from "../../../storage/models/AgentExecution";
 import { redisEventBus } from "../../../shared/events/RedisEventBus";
+import type { ConversationMessage } from "../../../storage/models/AgentExecution";
 
 /**
  * Activities for emitting agent events to WebSocket clients

@@ -1666,9 +1666,7 @@ export async function deleteKnowledgeBase(id: string): Promise<ApiResponse> {
 /**
  * Get knowledge base stats
  */
-export async function getKnowledgeBaseStats(
-    id: string
-): Promise<ApiResponse<KnowledgeBaseStats>> {
+export async function getKnowledgeBaseStats(id: string): Promise<ApiResponse<KnowledgeBaseStats>> {
     const token = getAuthToken();
 
     const response = await fetch(`${API_BASE_URL}/api/knowledge-bases/${id}/stats`, {
@@ -1690,9 +1688,7 @@ export async function getKnowledgeBaseStats(
 /**
  * Get documents in a knowledge base
  */
-export async function getKnowledgeDocuments(
-    id: string
-): Promise<ApiResponse<KnowledgeDocument[]>> {
+export async function getKnowledgeDocuments(id: string): Promise<ApiResponse<KnowledgeDocument[]>> {
     const token = getAuthToken();
 
     const response = await fetch(`${API_BASE_URL}/api/knowledge-bases/${id}/documents`, {

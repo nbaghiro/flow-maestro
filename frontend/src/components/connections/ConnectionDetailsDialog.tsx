@@ -1,7 +1,7 @@
-import React, { useState } from "react";
 import { X, Shield, Key, AlertTriangle } from "lucide-react";
-import type { Connection } from "../../lib/api";
+import React, { useState } from "react";
 import { ConfirmDialog } from "../common/ConfirmDialog";
+import type { Connection } from "../../lib/api";
 
 interface ConnectionDetailsDialogProps {
     isOpen: boolean;

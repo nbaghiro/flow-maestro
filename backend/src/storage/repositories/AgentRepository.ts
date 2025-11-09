@@ -1,6 +1,12 @@
-import { db } from "../database";
-import { AgentModel, CreateAgentInput, UpdateAgentInput, Tool, MemoryConfig } from "../models/Agent";
 import type { JsonObject } from "@flowmaestro/shared";
+import { db } from "../database";
+import {
+    AgentModel,
+    CreateAgentInput,
+    UpdateAgentInput,
+    Tool,
+    MemoryConfig
+} from "../models/Agent";
 
 // Database row interface
 interface AgentRow {
@@ -218,9 +224,14 @@ export class AgentRepository {
             provider: row.provider as "openai" | "anthropic" | "google" | "cohere",
             connection_id: row.connection_id,
             system_prompt: row.system_prompt,
-            temperature: typeof row.temperature === "string" ? parseFloat(row.temperature) : row.temperature,
-            max_tokens: typeof row.max_tokens === "string" ? parseInt(row.max_tokens) : row.max_tokens,
-            max_iterations: typeof row.max_iterations === "string" ? parseInt(row.max_iterations) : row.max_iterations,
+            temperature:
+                typeof row.temperature === "string" ? parseFloat(row.temperature) : row.temperature,
+            max_tokens:
+                typeof row.max_tokens === "string" ? parseInt(row.max_tokens) : row.max_tokens,
+            max_iterations:
+                typeof row.max_iterations === "string"
+                    ? parseInt(row.max_iterations)
+                    : row.max_iterations,
             available_tools:
                 typeof row.available_tools === "string"
                     ? JSON.parse(row.available_tools)

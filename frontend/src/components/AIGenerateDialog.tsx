@@ -3,15 +3,15 @@
  * Modal for generating workflows from natural language prompts
  */
 
-import { useState, useEffect } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { X, Sparkles, Loader2, RefreshCw } from "lucide-react";
-import { useConnectionStore } from "../stores/connectionStore";
+import { useState, useEffect } from "react";
 import {
     getRandomExamplePrompts,
     getModelsForProvider,
     getDefaultModelForProvider
 } from "@flowmaestro/shared";
+import { useConnectionStore } from "../stores/connectionStore";
 
 interface AIGenerateDialogProps {
     open: boolean;

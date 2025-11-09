@@ -1,5 +1,5 @@
-import { create } from "zustand";
 import { Node, Edge, NodeChange, EdgeChange, applyNodeChanges, applyEdgeChanges } from "reactflow";
+import { create } from "zustand";
 import type { JsonValue, JsonObject } from "@flowmaestro/shared";
 import { getErrorMessage } from "@flowmaestro/shared";
 import { executeWorkflow as executeWorkflowAPI, generateWorkflow } from "../lib/api";

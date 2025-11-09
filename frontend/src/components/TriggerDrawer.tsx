@@ -3,11 +3,11 @@
  * Resizable right side panel for workflow trigger management
  */
 
+import { ChevronLeft, ChevronRight, X, Zap } from "lucide-react";
 import { useRef, useEffect, useState } from "react";
+import { cn } from "../lib/utils";
 import { useTriggerStore } from "../stores/triggerStore";
 import { useWorkflowStore } from "../stores/workflowStore";
-import { ChevronLeft, ChevronRight, X, Zap } from "lucide-react";
-import { cn } from "../lib/utils";
 
 interface TriggerDrawerProps {
     children?: React.ReactNode;

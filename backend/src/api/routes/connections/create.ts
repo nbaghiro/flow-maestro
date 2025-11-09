@@ -1,7 +1,7 @@
 import { FastifyInstance } from "fastify";
 import { ConnectionRepository } from "../../../storage/repositories/ConnectionRepository";
-import { createConnectionSchema, CreateConnectionRequest } from "../../schemas/connection-schemas";
 import { authMiddleware, validateBody } from "../../middleware";
+import { createConnectionSchema, CreateConnectionRequest } from "../../schemas/connection-schemas";
 
 export async function createConnectionRoute(fastify: FastifyInstance) {
     fastify.post(

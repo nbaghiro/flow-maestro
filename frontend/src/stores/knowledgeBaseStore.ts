@@ -1,13 +1,4 @@
 import { create } from "zustand";
-import type {
-    KnowledgeBase,
-    KnowledgeDocument,
-    KnowledgeBaseStats,
-    CreateKnowledgeBaseInput,
-    UpdateKnowledgeBaseInput,
-    QueryKnowledgeBaseInput,
-    ChunkSearchResult
-} from "../lib/api";
 import {
     getKnowledgeBases,
     getKnowledgeBase,
@@ -21,6 +12,15 @@ import {
     queryKnowledgeBase,
     deleteDocument,
     reprocessDocument
+} from "../lib/api";
+import type {
+    KnowledgeBase,
+    KnowledgeDocument,
+    KnowledgeBaseStats,
+    CreateKnowledgeBaseInput,
+    UpdateKnowledgeBaseInput,
+    QueryKnowledgeBaseInput,
+    ChunkSearchResult
 } from "../lib/api";
 
 interface KnowledgeBaseStore {

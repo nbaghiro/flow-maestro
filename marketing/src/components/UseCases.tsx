@@ -1,12 +1,11 @@
-import React from "react";
-import { motion } from "framer-motion";
-import { useInView } from "framer-motion";
 import * as Tabs from "@radix-ui/react-tabs";
+import { useInView, motion } from "framer-motion";
 import { BarChart, Users, Cog, GitBranch, CheckCircle2, ArrowRight } from "lucide-react";
-import { WorkflowAnimation } from "./animations/WorkflowAnimation";
+import React from "react";
 import { AgentAnimation } from "./animations/AgentAnimation";
-import { HybridAnimation } from "./animations/HybridAnimation";
 import { EnterpriseAnimation } from "./animations/EnterpriseAnimation";
+import { HybridAnimation } from "./animations/HybridAnimation";
+import { WorkflowAnimation } from "./animations/WorkflowAnimation";
 
 interface UseCase {
     id: string;

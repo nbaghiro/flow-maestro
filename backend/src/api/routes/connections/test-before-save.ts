@@ -1,7 +1,7 @@
 import { FastifyInstance } from "fastify";
-import { createConnectionSchema, CreateConnectionRequest } from "../../schemas/connection-schemas";
-import { authMiddleware, validateBody } from "../../middleware";
 import { getConnectionTestService } from "../../../services/ConnectionTestService";
+import { authMiddleware, validateBody } from "../../middleware";
+import { createConnectionSchema, CreateConnectionRequest } from "../../schemas/connection-schemas";
 
 /**
  * Test connection before saving

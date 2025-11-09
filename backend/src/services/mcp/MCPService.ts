@@ -1,10 +1,10 @@
-import axios, { AxiosInstance, AxiosRequestConfig } from "axios";
+import axios, { type AxiosInstance, type AxiosRequestConfig, isAxiosError } from "axios";
+import { validateServerUrl } from "./MCPProviderRegistry";
 import type {
     MCPConnectionData,
     MCPTool,
     ConnectionWithData
 } from "../../storage/models/Connection";
-import { validateServerUrl } from "./MCPProviderRegistry";
 
 /**
  * MCP Server Information Response
@@ -110,7 +110,7 @@ export class MCPService {
             try {
                 const response = await client.get<MCPServerInfo>("/info");
                 return response.data;
-            } catch (infoError) {
+            } catch (_infoError) {
                 // If /info fails, try JSON-RPC method
                 const response = await client.post<{ result: MCPServerInfo }>("/rpc", {
                     jsonrpc: "2.0",
@@ -126,7 +126,7 @@ export class MCPService {
                 throw new Error("Server did not return info");
             }
         } catch (error) {
-            if (axios.isAxiosError(error)) {
+            if (isAxiosError(error)) {
                 if (error.code === "ECONNREFUSED" || error.code === "ENOTFOUND") {
                     throw new Error(`Cannot connect to MCP server at ${serverUrl}`);
                 } else if (error.response?.status === 401 || error.response?.status === 403) {
@@ -154,7 +154,7 @@ export class MCPService {
             try {
                 const response = await client.get<MCPToolsResponse>("/tools");
                 return response.data;
-            } catch (restError) {
+            } catch (_restError) {
                 // If REST fails, try JSON-RPC
                 const response = await client.post<{ result: MCPToolsResponse }>("/rpc", {
                     jsonrpc: "2.0",
@@ -170,7 +170,7 @@ export class MCPService {
                 throw new Error("Server did not return tools list");
             }
         } catch (error) {
-            if (axios.isAxiosError(error)) {
+            if (isAxiosError(error)) {
                 if (error.code === "ECONNREFUSED") {
                     throw new Error(`Cannot connect to MCP server at ${serverUrl}`);
                 } else if (error.response?.status === 401 || error.response?.status === 403) {
@@ -198,7 +198,7 @@ export class MCPService {
             try {
                 const response = await client.get<MCPTool>(`/tools/${toolName}`);
                 return response.data;
-            } catch (restError) {
+            } catch (_restError) {
                 // Try JSON-RPC
                 const response = await client.post<{ result: MCPTool }>("/rpc", {
                     jsonrpc: "2.0",
@@ -243,7 +243,7 @@ export class MCPService {
                     { parameters }
                 );
                 return response.data;
-            } catch (restError) {
+            } catch (_restError) {
                 // Try JSON-RPC
                 const response = await client.post<{
                     result: unknown;
@@ -271,7 +271,7 @@ export class MCPService {
                 };
             }
         } catch (error) {
-            if (axios.isAxiosError(error)) {
+            if (isAxiosError(error)) {
                 if (error.response?.status === 401 || error.response?.status === 403) {
                     throw new Error("Authentication failed during tool execution.");
                 } else if (error.response?.data?.error) {

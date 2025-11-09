@@ -1,8 +1,8 @@
 import { FastifyInstance } from "fastify";
+import { TriggerType, ScheduleTriggerConfig } from "../../../storage/models/Trigger";
 import { TriggerRepository } from "../../../storage/repositories/TriggerRepository";
 import { SchedulerService } from "../../../temporal/services/SchedulerService";
 import { authMiddleware } from "../../middleware";
-import { TriggerType, ScheduleTriggerConfig } from "../../../storage/models/Trigger";
 
 export async function createTriggerRoute(fastify: FastifyInstance) {
     fastify.post(

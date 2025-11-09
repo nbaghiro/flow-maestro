@@ -1,10 +1,10 @@
-import { useState, useEffect } from "react";
 import { X } from "lucide-react";
+import { useState, useEffect } from "react";
+import { ALL_PROVIDERS } from "../../lib/providers";
+import { useConnectionStore } from "../../stores/connectionStore";
+import { ConnectionDetailsDialog } from "../connections/ConnectionDetailsDialog";
 import { ConnectionsGrid, type Provider } from "../connections/ConnectionsGrid";
 import { NewConnectionDialog } from "../connections/NewConnectionDialog";
-import { ConnectionDetailsDialog } from "../connections/ConnectionDetailsDialog";
-import { useConnectionStore } from "../../stores/connectionStore";
-import { ALL_PROVIDERS } from "../../lib/providers";
 import type { Connection } from "../../lib/api";
 
 interface AddMCPIntegrationDialogProps {

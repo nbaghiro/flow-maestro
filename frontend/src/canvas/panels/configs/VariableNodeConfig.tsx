@@ -1,10 +1,8 @@
 import { useState, useEffect } from "react";
 import { FormField, FormSection } from "../../../components/FormField";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 interface VariableNodeConfigProps {
     data: Record<string, unknown>;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     onUpdate: (config: unknown) => void;
 }
 

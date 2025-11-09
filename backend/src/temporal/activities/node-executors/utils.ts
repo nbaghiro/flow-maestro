@@ -56,7 +56,10 @@ export function interpolateVariables(
  * Advanced interpolation that supports object merging and complex expressions
  * Primarily used by output nodes that need to construct complex JSON
  */
-export function interpolateWithObjectSupport(str: string, context: Record<string, unknown>): unknown {
+export function interpolateWithObjectSupport(
+    str: string,
+    context: Record<string, unknown>
+): unknown {
     // First, always interpolate variables in the string
     const interpolated = interpolateVariables(str, context, { stringifyObjects: true });
 
@@ -69,7 +72,7 @@ export function interpolateWithObjectSupport(str: string, context: Record<string
         ) {
             try {
                 return JSON.parse(interpolated);
-            } catch (e) {
+            } catch (_e) {
                 // If JSON parsing fails, return the interpolated string
                 return interpolated;
             }

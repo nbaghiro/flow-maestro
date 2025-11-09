@@ -1,6 +1,6 @@
 import { FastifyInstance } from "fastify";
-import { TriggerRepository } from "../../../storage/repositories/TriggerRepository";
 import { TriggerType } from "../../../storage/models/Trigger";
+import { TriggerRepository } from "../../../storage/repositories/TriggerRepository";
 import { authMiddleware } from "../../middleware";
 
 export async function listTriggersRoute(fastify: FastifyInstance) {

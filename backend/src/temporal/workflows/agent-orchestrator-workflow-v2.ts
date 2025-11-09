@@ -10,19 +10,16 @@ import {
     setHandler,
     continueAsNew
 } from "@temporalio/workflow";
-import type * as activities from "../activities";
-import type { ConversationMessage, ToolCall } from "../../storage/models/AgentExecution";
-import type { Tool } from "../../storage/models/Agent";
-import type { SerializedConversation } from "../../shared/conversation/conversation-manager";
 import type { JsonObject } from "@flowmaestro/shared";
+import type { SerializedConversation } from "../../shared/conversation/conversation-manager";
+import type { Tool } from "../../storage/models/Agent";
+import type { ConversationMessage, ToolCall } from "../../storage/models/AgentExecution";
+import type * as activities from "../activities";
 
 // Proxy activities
-const {
-    getAgentConfig,
-    callLLM,
-    executeToolCall,
-    saveConversationIncremental
-} = proxyActivities<typeof activities>({
+const { getAgentConfig, callLLM, executeToolCall, saveConversationIncremental } = proxyActivities<
+    typeof activities
+>({
     startToCloseTimeout: "10 minutes",
     retry: {
         maximumAttempts: 3,

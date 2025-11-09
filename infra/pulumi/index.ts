@@ -1,17 +1,16 @@
 import * as pulumi from "@pulumi/pulumi";
 import { infrastructureConfig } from "./config";
-import { networkOutputs, staticIp } from "./networking";
 import {
     databaseOutputs,
     appDatabaseConnectionString,
     temporalDatabaseConnectionString,
     temporalVisibilityDatabaseConnectionString
 } from "./database";
-import { redisOutputs } from "./redis";
 import { clusterOutputs } from "./gke-cluster";
-import { secretOutputs } from "./secrets";
-import { storageOutputs } from "./storage";
 import { monitoringOutputs } from "./monitoring";
+import { networkOutputs, staticIp } from "./networking";
+import { redisOutputs } from "./redis";
+import { storageOutputs } from "./storage";
 
 // Export all infrastructure outputs
 export const outputs = {

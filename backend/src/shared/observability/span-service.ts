@@ -4,7 +4,6 @@
  */
 
 import { randomUUID } from "crypto";
-import type { Pool } from "pg";
 import {
     CreateSpanInput,
     EndSpanInput,
@@ -18,6 +17,7 @@ import {
     PaginatedSpans,
     PaginationOptions
 } from "./types";
+import type { Pool } from "pg";
 
 /**
  * Configuration for SpanService
@@ -299,8 +299,7 @@ export class SpanService {
             params.push(filters.dateRange.end);
         }
 
-        const whereClause =
-            conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+        const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
 
         // Get total count
         const countResult = await this.pool.query<{ count: string }>(
@@ -334,7 +333,10 @@ export class SpanService {
     /**
      * Get token usage by entity (agent/workflow)
      */
-    async getTokenUsage(entityId: string, dateRange?: { start: Date; end: Date }): Promise<{
+    async getTokenUsage(
+        entityId: string,
+        dateRange?: { start: Date; end: Date }
+    ): Promise<{
         promptTokens: number;
         completionTokens: number;
         totalTokens: number;

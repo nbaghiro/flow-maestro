@@ -1,16 +1,16 @@
+import { ArrowLeft, Save, Loader2, Settings, MessageSquare, Slack, Wrench } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useAgentStore } from "../stores/agentStore";
-import { useConnectionStore } from "../stores/connectionStore";
-import { ArrowLeft, Save, Loader2, Settings, MessageSquare, Slack, Wrench } from "lucide-react";
-import { cn } from "../lib/utils";
+import { getModelsForProvider, getDefaultModelForProvider } from "@flowmaestro/shared";
+import { AddCustomMCPDialog } from "../components/agents/AddCustomMCPDialog";
+import { AddMCPIntegrationDialog } from "../components/agents/AddMCPIntegrationDialog";
+import { AddWorkflowDialog } from "../components/agents/AddWorkflowDialog";
 import { AgentChat } from "../components/agents/AgentChat";
 import { ToolsList } from "../components/agents/ToolsList";
-import { AddWorkflowDialog } from "../components/agents/AddWorkflowDialog";
-import { AddMCPIntegrationDialog } from "../components/agents/AddMCPIntegrationDialog";
-import { AddCustomMCPDialog } from "../components/agents/AddCustomMCPDialog";
+import { cn } from "../lib/utils";
+import { useAgentStore } from "../stores/agentStore";
+import { useConnectionStore } from "../stores/connectionStore";
 import type { CreateAgentRequest, UpdateAgentRequest, Tool } from "../lib/api";
-import { getModelsForProvider, getDefaultModelForProvider } from "@flowmaestro/shared";
 
 type AgentTab = "build" | "conversations" | "slack" | "settings";
 

@@ -1,5 +1,5 @@
-import axios from "axios";
 import { randomBytes } from "crypto";
+import axios from "axios";
 import { getOAuthProvider, OAuthProvider } from "./OAuthProviderRegistry";
 
 /**
@@ -131,7 +131,10 @@ export class OAuthService {
                 accountInfo
             };
         } catch (error: unknown) {
-            const axiosError = error as { response?: { data?: { error_description?: string; error?: string } }; message?: string };
+            const axiosError = error as {
+                response?: { data?: { error_description?: string; error?: string } };
+                message?: string;
+            };
             const errorMsg =
                 axiosError.response?.data?.error_description ||
                 axiosError.response?.data?.error ||
@@ -196,7 +199,10 @@ export class OAuthService {
                 expires_in: tokenData.expires_in
             };
         } catch (error: unknown) {
-            const axiosError = error as { response?: { data?: { error_description?: string; error?: string } }; message?: string };
+            const axiosError = error as {
+                response?: { data?: { error_description?: string; error?: string } };
+                message?: string;
+            };
             const errorMsg =
                 axiosError.response?.data?.error_description ||
                 axiosError.response?.data?.error ||

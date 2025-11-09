@@ -1,7 +1,7 @@
+import { Clock } from "lucide-react";
 import { memo } from "react";
 import { NodeProps } from "reactflow";
 import { BaseNode } from "./BaseNode";
-import { Clock } from "lucide-react";
 
 interface WaitNodeData {
     label: string;

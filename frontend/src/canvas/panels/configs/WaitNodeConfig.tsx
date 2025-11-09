@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
+import { CodeInput } from "../../../components/CodeInput";
 import { FormField, FormSection } from "../../../components/FormField";
 import { OutputSettingsSection } from "../../../components/OutputSettingsSection";
-import { CodeInput } from "../../../components/CodeInput";
 
 interface WaitNodeConfigProps {
     data: Record<string, unknown>;

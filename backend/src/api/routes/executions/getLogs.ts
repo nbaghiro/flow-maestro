@@ -1,10 +1,21 @@
 import { FastifyInstance } from "fastify";
 import { ExecutionRepository, WorkflowRepository } from "../../../storage/repositories";
-import { executionIdParamSchema, getLogsQuerySchema } from "../../schemas/execution-schemas";
 import { authMiddleware, validateParams, validateQuery, NotFoundError } from "../../middleware";
+import { executionIdParamSchema, getLogsQuerySchema } from "../../schemas/execution-schemas";
+
+interface GetLogsParams {
+    id: string;
+}
+
+interface GetLogsQuery {
+    limit?: number;
+    offset?: number;
+    level?: string;
+    nodeId?: string;
+}
 
 export async function getExecutionLogsRoute(fastify: FastifyInstance) {
-    fastify.get(
+    fastify.get<{ Params: GetLogsParams; Querystring: GetLogsQuery }>(
         "/:id/logs",
         {
             preHandler: [
@@ -16,8 +27,8 @@ export async function getExecutionLogsRoute(fastify: FastifyInstance) {
         async (request, reply) => {
             const executionRepository = new ExecutionRepository();
             const workflowRepository = new WorkflowRepository();
-            const { id } = (request.params as { id: string });
-            const query = (request.query as { limit?: number; offset?: number; level?: string; nodeId?: string });
+            const { id } = request.params;
+            const query = request.query;
 
             const execution = await executionRepository.findById(id);
 

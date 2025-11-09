@@ -3,8 +3,8 @@
  * Provides utilities for test database setup, seeding, and cleanup
  */
 
-import { Pool, QueryResultRow } from "pg";
 import { randomUUID } from "crypto";
+import { Pool, QueryResultRow } from "pg";
 
 export class DatabaseHelper {
     private pool: Pool;

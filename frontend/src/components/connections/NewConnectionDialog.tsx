@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
 import { ArrowLeft, X, Eye, EyeOff, Shield, Key, Blocks } from "lucide-react";
+import React, { useState, useEffect, useCallback } from "react";
 import type { JsonObject } from "@flowmaestro/shared";
 import { useOAuth } from "../../hooks/useOAuth";
 import { useConnectionStore } from "../../stores/connectionStore";
@@ -53,6 +53,37 @@ export function NewConnectionDialog({
     const { initiateOAuth, loading: oauthLoading } = useOAuth();
     const { addConnection } = useConnectionStore();
 
+    const handleReset = () => {
+        setStep("method-selection");
+        setConnectionName(`${providerDisplayName} Connection`);
+        setApiKey("");
+        setMcpAuthKey("");
+        setShowApiKey(false);
+        setShowMcpAuthKey(false);
+        setError(null);
+        setIsSubmitting(false);
+    };
+
+    const handleClose = () => {
+        handleReset();
+        onClose();
+    };
+
+    const handleOAuthSelect = useCallback(async () => {
+        setError(null);
+        try {
+            await initiateOAuth(provider);
+            if (onSuccess) onSuccess();
+            handleClose();
+        } catch (err) {
+            // Only show error if it's not "Not authenticated" (which happens when no existing connection)
+            const errorMessage = err instanceof Error ? err.message : "OAuth authentication failed";
+            if (errorMessage !== "Not authenticated") {
+                setError(errorMessage);
+            }
+        }
+    }, [initiateOAuth, provider, onSuccess]);
+
     // Auto-select authentication method if only one is supported
     useEffect(() => {
         if (!isOpen) return;
@@ -76,39 +107,7 @@ export function NewConnectionDialog({
             // Multiple methods supported, show selection
             setStep("method-selection");
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isOpen, supportsOAuth, supportsApiKey, supportsMCP]);
-
-    const handleReset = () => {
-        setStep("method-selection");
-        setConnectionName(`${providerDisplayName} Connection`);
-        setApiKey("");
-        setMcpAuthKey("");
-        setShowApiKey(false);
-        setShowMcpAuthKey(false);
-        setError(null);
-        setIsSubmitting(false);
-    };
-
-    const handleClose = () => {
-        handleReset();
-        onClose();
-    };
-
-    const handleOAuthSelect = async () => {
-        setError(null);
-        try {
-            await initiateOAuth(provider);
-            if (onSuccess) onSuccess();
-            handleClose();
-        } catch (err) {
-            // Only show error if it's not "Not authenticated" (which happens when no existing connection)
-            const errorMessage = err instanceof Error ? err.message : "OAuth authentication failed";
-            if (errorMessage !== "Not authenticated") {
-                setError(errorMessage);
-            }
-        }
-    };
+    }, [isOpen, supportsOAuth, supportsApiKey, supportsMCP, handleOAuthSelect]);
 
     const handleApiKeySelect = () => {
         setStep("api-key-form");

@@ -1,7 +1,6 @@
-import React from "react";
-import { motion } from "framer-motion";
-import { useInView } from "framer-motion";
+import { motion, useInView } from "framer-motion";
 import { Star, Quote } from "lucide-react";
+import React from "react";
 
 interface Testimonial {
     quote: string;

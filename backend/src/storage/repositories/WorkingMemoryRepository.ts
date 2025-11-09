@@ -2,8 +2,8 @@
  * WorkingMemoryRepository - Database access for agent working memory
  */
 
-import { db } from "../database";
 import type { JsonObject } from "@flowmaestro/shared";
+import { db } from "../database";
 
 export interface WorkingMemory {
     agentId: string;

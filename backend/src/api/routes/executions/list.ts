@@ -1,7 +1,7 @@
 import { FastifyInstance } from "fastify";
 import { ExecutionRepository, WorkflowRepository } from "../../../storage/repositories";
-import { listExecutionsQuerySchema, ListExecutionsQuery } from "../../schemas/execution-schemas";
 import { authMiddleware, validateQuery } from "../../middleware";
+import { listExecutionsQuerySchema, ListExecutionsQuery } from "../../schemas/execution-schemas";
 
 export async function listExecutionsRoute(fastify: FastifyInstance) {
     fastify.get(

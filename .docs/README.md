@@ -16,7 +16,7 @@ FlowMaestro is a visual workflow and AI agent builder that enables users to crea
 
 These documents cover the main features of FlowMaestro:
 
-#### [workflows.md](./workflows.md)
+#### [workflow-system.md](./workflow-system.md)
 
 **Workflow System** - Complete guide to the workflow builder
 
@@ -34,7 +34,7 @@ These documents cover the main features of FlowMaestro:
 
 ---
 
-#### [agents.md](./agents.md)
+#### [agent-architecture.md](./agent-architecture.md)
 
 **AI Agent System** - Complete agent feature set
 
@@ -54,7 +54,7 @@ These documents cover the main features of FlowMaestro:
 
 ---
 
-#### [integrations.md](./integrations.md)
+#### [external-connections.md](./external-connections.md)
 
 **Connections & Integrations** - External service authentication
 
@@ -74,7 +74,7 @@ These documents cover the main features of FlowMaestro:
 
 ---
 
-#### [temporal.md](./temporal.md)
+#### [temporal-workflows.md](./temporal-workflows.md)
 
 **Temporal Orchestration** - Durable workflow execution
 
@@ -93,7 +93,7 @@ These documents cover the main features of FlowMaestro:
 
 ### Infrastructure & Operations
 
-#### [infra.md](./infra.md)
+#### [deployment-guide.md](./deployment-guide.md)
 
 **Infrastructure Setup** - Deployment and cloud architecture
 
@@ -113,7 +113,7 @@ These documents cover the main features of FlowMaestro:
 
 ---
 
-#### [testing.md](./testing.md)
+#### [testing-guide.md](./testing-guide.md)
 
 **Testing Strategy** - Integration testing approach
 
@@ -133,7 +133,7 @@ These documents cover the main features of FlowMaestro:
 
 ### Real-Time & Communication
 
-#### [voicecalls.md](./voicecalls.md)
+#### [voice-calls.md](./voice-calls.md)
 
 **Voice Input/Output** - Telnyx & LiveKit integration
 
@@ -150,7 +150,7 @@ These documents cover the main features of FlowMaestro:
 
 ---
 
-#### [websocket.md](./websocket.md)
+#### [websocket-events.md](./websocket-events.md)
 
 **Real-time Updates** - WebSocket event system
 

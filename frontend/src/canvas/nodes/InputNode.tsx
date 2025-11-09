@@ -1,7 +1,7 @@
+import { Hand } from "lucide-react";
 import { memo } from "react";
 import { NodeProps } from "reactflow";
 import { BaseNode } from "./BaseNode";
-import { Hand } from "lucide-react";
 
 interface InputNodeData {
     label: string;

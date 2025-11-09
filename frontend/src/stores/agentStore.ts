@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import * as api from "../lib/api";
 import type {
     Agent,
     CreateAgentRequest,
@@ -7,7 +8,6 @@ import type {
     ConversationMessage,
     AddToolRequest
 } from "../lib/api";
-import * as api from "../lib/api";
 
 interface AgentStore {
     // State

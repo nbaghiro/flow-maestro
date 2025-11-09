@@ -3,9 +3,6 @@
  * Resizable right side panel for workflow triggers and execution management
  */
 
-import { useRef, useEffect, useState } from "react";
-import { useTriggerStore } from "../stores/triggerStore";
-import { useWorkflowStore } from "../stores/workflowStore";
 import {
     ChevronLeft,
     ChevronRight,
@@ -15,7 +12,10 @@ import {
     History as HistoryIcon,
     Plus
 } from "lucide-react";
+import { useRef, useEffect, useState } from "react";
 import { cn } from "../lib/utils";
+import { useTriggerStore } from "../stores/triggerStore";
+import { useWorkflowStore } from "../stores/workflowStore";
 import { ExecutionPanelContent } from "./execution/ExecutionPanelContent";
 
 interface ExecutionPanelProps {

@@ -1,8 +1,8 @@
-import OpenAI from "openai";
-import type { JsonObject } from "@flowmaestro/shared";
 import Anthropic from "@anthropic-ai/sdk";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import axios from "axios";
+import OpenAI from "openai";
+import type { JsonObject } from "@flowmaestro/shared";
 import { interpolateVariables } from "./utils";
 
 export interface VisionNodeConfig {
@@ -225,7 +225,7 @@ async function executeAnthropic(
         type: "image";
         source: {
             type: "base64";
-            media_type: string;
+            media_type: "image/jpeg" | "image/png" | "image/gif" | "image/webp";
             data: string;
         };
     }
@@ -237,6 +237,23 @@ async function executeAnthropic(
 
     let imageContent: AnthropicImageContent;
 
+    const validMediaTypes: Array<"image/jpeg" | "image/png" | "image/gif" | "image/webp"> = [
+        "image/jpeg",
+        "image/png",
+        "image/gif",
+        "image/webp"
+    ];
+
+    const normalizeMediaType = (
+        type: string
+    ): "image/jpeg" | "image/png" | "image/gif" | "image/webp" => {
+        const normalized = type.toLowerCase();
+        if (validMediaTypes.includes(normalized as (typeof validMediaTypes)[number])) {
+            return normalized as (typeof validMediaTypes)[number];
+        }
+        return "image/jpeg"; // Default fallback
+    };
+
     if (imageInput.startsWith("http://") || imageInput.startsWith("https://")) {
         // Download image and convert to base64
         const response = await axios.get(imageInput, { responseType: "arraybuffer" });
@@ -247,7 +264,7 @@ async function executeAnthropic(
             type: "image" as const,
             source: {
                 type: "base64" as const,
-                media_type: contentType,
+                media_type: normalizeMediaType(contentType),
                 data: base64
             }
         };
@@ -262,7 +279,7 @@ async function executeAnthropic(
             type: "image" as const,
             source: {
                 type: "base64" as const,
-                media_type: matches[1],
+                media_type: normalizeMediaType(matches[1]),
                 data: matches[2]
             }
         };
@@ -283,14 +300,15 @@ async function executeAnthropic(
         text: prompt
     };
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const response = await anthropic.messages.create({
         model: config.model || "claude-3-opus-20240229",
         max_tokens: config.maxTokens || 1000,
         messages: [
             {
                 role: "user",
-                content: [imageContent, textContent] as any
+                content: [imageContent, textContent] as Array<
+                    AnthropicImageContent | AnthropicTextContent
+                >
             }
         ]
     });

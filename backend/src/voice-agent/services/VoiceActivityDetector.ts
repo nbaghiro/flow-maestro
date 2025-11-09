@@ -50,14 +50,18 @@ export class VoiceActivityDetector extends EventEmitter {
 
         try {
             // Create audio context
-            const AudioContextClass = (
-                globalThis as typeof globalThis & {
-                    AudioContext?: new (options: { sampleRate: number }) => unknown;
-                    webkitAudioContext?: new (options: { sampleRate: number }) => unknown;
-                }
-            ).AudioContext || (globalThis as typeof globalThis & {
-                webkitAudioContext?: new (options: { sampleRate: number }) => unknown;
-            }).webkitAudioContext;
+            const AudioContextClass =
+                (
+                    globalThis as typeof globalThis & {
+                        AudioContext?: new (options: { sampleRate: number }) => unknown;
+                        webkitAudioContext?: new (options: { sampleRate: number }) => unknown;
+                    }
+                ).AudioContext ||
+                (
+                    globalThis as typeof globalThis & {
+                        webkitAudioContext?: new (options: { sampleRate: number }) => unknown;
+                    }
+                ).webkitAudioContext;
 
             if (!AudioContextClass) {
                 throw new Error("AudioContext not available");
@@ -68,43 +72,53 @@ export class VoiceActivityDetector extends EventEmitter {
             });
 
             // Create analyser
-            this.analyser = (this.audioContext as {
-                createAnalyser: () => {
-                    fftSize: number;
-                    smoothingTimeConstant: number;
-                    connect: (node: unknown) => void;
-                    disconnect: () => void;
-                };
-            }).createAnalyser();
+            this.analyser = (
+                this.audioContext as {
+                    createAnalyser: () => {
+                        fftSize: number;
+                        smoothingTimeConstant: number;
+                        connect: (node: unknown) => void;
+                        disconnect: () => void;
+                    };
+                }
+            ).createAnalyser();
             (this.analyser as { fftSize: number }).fftSize = 2048;
             (this.analyser as { smoothingTimeConstant: number }).smoothingTimeConstant = 0.8;
 
             // Connect media stream to analyser
-            const source = (this.audioContext as {
-                createMediaStreamSource: (stream: unknown) => { connect: (node: unknown) => void };
-            }).createMediaStreamSource(mediaStream);
+            const source = (
+                this.audioContext as {
+                    createMediaStreamSource: (stream: unknown) => {
+                        connect: (node: unknown) => void;
+                    };
+                }
+            ).createMediaStreamSource(mediaStream);
             source.connect(this.analyser);
 
             // Create script processor for analysis
-            this.processor = (this.audioContext as {
-                createScriptProcessor: (
-                    bufferSize: number,
-                    numberOfInputChannels: number,
-                    numberOfOutputChannels: number
-                ) => {
-                    onaudioprocess: ((e: AudioProcessingEvent) => void) | null;
-                    connect: (node: unknown) => void;
-                    disconnect: () => void;
-                };
-                destination: unknown;
-            }).createScriptProcessor(2048, 1, 1);
+            this.processor = (
+                this.audioContext as {
+                    createScriptProcessor: (
+                        bufferSize: number,
+                        numberOfInputChannels: number,
+                        numberOfOutputChannels: number
+                    ) => {
+                        onaudioprocess: ((e: AudioProcessingEvent) => void) | null;
+                        connect: (node: unknown) => void;
+                        disconnect: () => void;
+                    };
+                    destination: unknown;
+                }
+            ).createScriptProcessor(2048, 1, 1);
             (this.analyser as { connect: (node: unknown) => void }).connect(this.processor);
             (this.processor as { connect: (node: unknown) => void }).connect(
                 (this.audioContext as { destination: unknown }).destination
             );
 
             // Process audio frames
-            (this.processor as { onaudioprocess: ((e: AudioProcessingEvent) => void) | null }).onaudioprocess = (e: AudioProcessingEvent) => {
+            (
+                this.processor as { onaudioprocess: ((e: AudioProcessingEvent) => void) | null }
+            ).onaudioprocess = (e: AudioProcessingEvent) => {
                 if (!this.isActive) return;
 
                 const inputData = e.inputBuffer.getChannelData(0);

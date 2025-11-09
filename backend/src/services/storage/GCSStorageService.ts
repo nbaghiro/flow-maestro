@@ -1,7 +1,7 @@
-import { Storage, Bucket } from "@google-cloud/storage";
+import * as path from "path";
 import { Readable } from "stream";
 import { pipeline } from "stream/promises";
-import * as path from "path";
+import { Storage, Bucket } from "@google-cloud/storage";
 
 export interface UploadOptions {
     userId: string;
@@ -104,10 +104,7 @@ export class GCSStorageService {
      * @param expiresIn - Expiration time in seconds (default: 3600 = 1 hour)
      * @returns Signed URL that can be used to download the file
      */
-    public async getSignedDownloadUrl(
-        gcsUri: string,
-        expiresIn: number = 3600
-    ): Promise<string> {
+    public async getSignedDownloadUrl(gcsUri: string, expiresIn: number = 3600): Promise<string> {
         const gcsPath = this.extractPathFromUri(gcsUri);
         const file = this.bucket.file(gcsPath);
 

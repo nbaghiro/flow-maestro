@@ -16,7 +16,7 @@ RUN npm ci --workspace=backend --workspace=shared
 # Copy source code
 COPY shared/ ./shared/
 COPY backend/ ./backend/
-COPY tsconfig.json ./
+COPY tsconfig.base.json ./
 
 # Build shared package first
 RUN npm run build --workspace=shared

@@ -87,9 +87,7 @@ export function injectConversationMemoryTool(existingTools: Tool[]): Tool[] {
     const conversationMemoryTool = createConversationMemoryTool();
 
     // Check if tool already exists
-    const toolExists = existingTools.some(
-        (tool) => tool.name === conversationMemoryTool.name
-    );
+    const toolExists = existingTools.some((tool) => tool.name === conversationMemoryTool.name);
 
     if (toolExists) {
         return existingTools;

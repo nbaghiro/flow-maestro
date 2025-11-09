@@ -1,8 +1,8 @@
 import type { JsonObject } from "@flowmaestro/shared";
-import { interpolateVariables } from "./utils";
+import { globalEventEmitter } from "../../../shared/events/EventEmitter";
 import { getVoiceCommandBus } from "../../../shared/services/VoiceCommandBus";
 import { CallExecutionRepository } from "../../../storage/repositories/CallExecutionRepository";
-import { globalEventEmitter } from "../../../shared/events/EventEmitter";
+import { interpolateVariables } from "./utils";
 
 export interface VoiceListenNodeConfig {
     prompt?: string; // Optional prompt to play before listening
@@ -85,8 +85,10 @@ export async function executeVoiceListenNode(
         }
 
         const commandResult = (response.result || {}) as ListenCommandResult;
-        const transcript = typeof commandResult.transcript === "string" ? commandResult.transcript : "";
-        const confidence = typeof commandResult.confidence === "number" ? commandResult.confidence : 0;
+        const transcript =
+            typeof commandResult.transcript === "string" ? commandResult.transcript : "";
+        const confidence =
+            typeof commandResult.confidence === "number" ? commandResult.confidence : 0;
 
         console.log(`[VoiceListen] Transcript: "${transcript}" (confidence: ${confidence})`);
 

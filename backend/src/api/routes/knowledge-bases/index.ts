@@ -1,17 +1,17 @@
 import { FastifyInstance } from "fastify";
-import { createKnowledgeBaseRoute } from "./create";
-import { listKnowledgeBasesRoute } from "./list";
-import { getKnowledgeBaseRoute } from "./get";
-import { updateKnowledgeBaseRoute } from "./update";
-import { deleteKnowledgeBaseRoute } from "./delete";
-import { getStatsRoute } from "./stats";
-import { uploadDocumentRoute } from "./upload-document";
-import { downloadDocumentRoute } from "./download-document";
 import { addUrlRoute } from "./add-url";
-import { listDocumentsRoute } from "./list-documents";
+import { createKnowledgeBaseRoute } from "./create";
+import { deleteKnowledgeBaseRoute } from "./delete";
 import { deleteDocumentRoute } from "./delete-document";
-import { reprocessDocumentRoute } from "./reprocess-document";
+import { downloadDocumentRoute } from "./download-document";
+import { getKnowledgeBaseRoute } from "./get";
+import { listKnowledgeBasesRoute } from "./list";
+import { listDocumentsRoute } from "./list-documents";
 import { queryKnowledgeBaseRoute } from "./query";
+import { reprocessDocumentRoute } from "./reprocess-document";
+import { getStatsRoute } from "./stats";
+import { updateKnowledgeBaseRoute } from "./update";
+import { uploadDocumentRoute } from "./upload-document";
 
 export async function knowledgeBaseRoutes(fastify: FastifyInstance) {
     // Knowledge Base CRUD

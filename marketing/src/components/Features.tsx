@@ -1,7 +1,6 @@
-import React from "react";
-import { motion } from "framer-motion";
-import { useInView } from "framer-motion";
+import { motion, useInView } from "framer-motion";
 import { Workflow, Zap, Shield, Clock, GitBranch, Database } from "lucide-react";
+import React from "react";
 
 interface Feature {
     icon: React.ReactNode;

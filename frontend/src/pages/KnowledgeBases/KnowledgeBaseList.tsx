@@ -1,7 +1,7 @@
+import { BookOpen, Plus, Trash2, FileText, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useKnowledgeBaseStore } from "../../stores/knowledgeBaseStore";
-import { BookOpen, Plus, Trash2, FileText, Loader2 } from "lucide-react";
 
 export function KnowledgeBaseList() {
     const navigate = useNavigate();

@@ -4,18 +4,18 @@
 
 import { Pool } from "pg";
 import { getGlobalTestPool, getGlobalDbHelper } from "../../../jest.setup";
+import workflowDefinition from "../../fixtures/workflows/00-simple-http-transform.json";
 import { DatabaseHelper } from "../../helpers/DatabaseHelper";
 import { WorkflowTestHarness } from "../../helpers/WorkflowTestHarness";
-import workflowDefinition from "../../fixtures/workflows/00-simple-http-transform.json";
 
 describe("Debug: Simple HTTP + Transform", () => {
     let pool: Pool;
-    let dbHelper: DatabaseHelper;
+    let _dbHelper: DatabaseHelper;
     let testHarness: WorkflowTestHarness;
 
     beforeAll(async () => {
         pool = getGlobalTestPool();
-        dbHelper = getGlobalDbHelper();
+        _dbHelper = getGlobalDbHelper();
         testHarness = new WorkflowTestHarness(pool);
 
         await testHarness.initialize();

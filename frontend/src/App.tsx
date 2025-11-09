@@ -1,18 +1,18 @@
 import { Routes, Route, Navigate } from "react-router-dom";
-import { Login } from "./pages/Login";
-import { Register } from "./pages/Register";
-import { Workflows } from "./pages/Workflows";
-import { Connections } from "./pages/Connections";
-import { Templates } from "./pages/Templates";
-import { Settings } from "./pages/Settings";
+import { AppLayout } from "./components/layout/AppLayout";
+import { ProtectedRoute } from "./components/ProtectedRoute";
 import { Account } from "./pages/Account";
-import { Workspace } from "./pages/Workspace";
+import { AgentBuilder } from "./pages/AgentBuilder";
+import { Agents } from "./pages/Agents";
+import { Connections } from "./pages/Connections";
 import { FlowBuilder } from "./pages/FlowBuilder";
 import { KnowledgeBaseList, KnowledgeBaseDetail } from "./pages/KnowledgeBases";
-import { Agents } from "./pages/Agents";
-import { AgentBuilder } from "./pages/AgentBuilder";
-import { ProtectedRoute } from "./components/ProtectedRoute";
-import { AppLayout } from "./components/layout/AppLayout";
+import { Login } from "./pages/Login";
+import { Register } from "./pages/Register";
+import { Settings } from "./pages/Settings";
+import { Templates } from "./pages/Templates";
+import { Workflows } from "./pages/Workflows";
+import { Workspace } from "./pages/Workspace";
 
 function App() {
     return (

@@ -1,10 +1,10 @@
 import { FastifyInstance } from "fastify";
 import { z } from "zod";
-import { authMiddleware, validateBody } from "../../middleware";
 import {
     executeLLMNode,
     type LLMNodeConfig
 } from "../../../temporal/activities/node-executors/llm-executor";
+import { authMiddleware, validateBody } from "../../middleware";
 
 const generatePromptsSchema = z.object({
     connectionId: z.string().uuid()
@@ -102,7 +102,8 @@ Example format:
                     data: result
                 });
             } catch (error: unknown) {
-                const errorMsg = error instanceof Error ? error.message : "Failed to generate example prompts";
+                const errorMsg =
+                    error instanceof Error ? error.message : "Failed to generate example prompts";
                 console.error("[Generate Prompts] Error:", error);
                 return reply.status(500).send({
                     success: false,

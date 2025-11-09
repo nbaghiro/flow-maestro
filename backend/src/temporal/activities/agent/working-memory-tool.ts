@@ -4,8 +4,8 @@
  */
 
 import type { JsonObject } from "@flowmaestro/shared";
-import type { Tool } from "../../../storage/models/Agent";
 import { getWorkingMemoryService } from "../../../services/WorkingMemoryService";
+import type { Tool } from "../../../storage/models/Agent";
 
 /**
  * Create the updateWorkingMemory tool definition
@@ -29,11 +29,13 @@ The memory is append-only by default. Use searchString to find and replace exist
             properties: {
                 newMemory: {
                     type: "string",
-                    description: "The new information to add to working memory. Be concise and factual."
+                    description:
+                        "The new information to add to working memory. Be concise and factual."
                 },
                 searchString: {
                     type: "string",
-                    description: "Optional: A string to find in existing memory and replace with newMemory. Use this to update incorrect or outdated information."
+                    description:
+                        "Optional: A string to find in existing memory and replace with newMemory. Use this to update incorrect or outdated information."
                 }
             },
             required: ["newMemory"]

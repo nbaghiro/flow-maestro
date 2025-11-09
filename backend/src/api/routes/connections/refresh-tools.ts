@@ -1,8 +1,8 @@
 import { FastifyInstance } from "fastify";
-import { ConnectionRepository } from "../../../storage/repositories/ConnectionRepository";
-import { connectionIdParamSchema, ConnectionIdParam } from "../../schemas/connection-schemas";
-import { authMiddleware, validateParams } from "../../middleware";
 import { getMCPService } from "../../../services/mcp/MCPService";
+import { ConnectionRepository } from "../../../storage/repositories/ConnectionRepository";
+import { authMiddleware, validateParams } from "../../middleware";
+import { connectionIdParamSchema, ConnectionIdParam } from "../../schemas/connection-schemas";
 
 /**
  * Refresh MCP tools for an existing connection

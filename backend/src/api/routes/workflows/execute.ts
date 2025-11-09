@@ -1,10 +1,10 @@
 import { FastifyInstance } from "fastify";
-import { getTemporalClient } from "../../../temporal/client";
-import { authMiddleware } from "../../middleware";
 import {
     convertFrontendToBackend,
     FrontendWorkflowDefinition
 } from "../../../shared/utils/workflow-converter";
+import { getTemporalClient } from "../../../temporal/client";
+import { authMiddleware } from "../../middleware";
 
 interface ExecuteWorkflowBody {
     workflowDefinition: FrontendWorkflowDefinition;
@@ -64,7 +64,8 @@ export async function executeWorkflowRoute(fastify: FastifyInstance) {
                     }
                 });
             } catch (error: unknown) {
-                const errorMsg = error instanceof Error ? error.message : "Workflow execution failed";
+                const errorMsg =
+                    error instanceof Error ? error.message : "Workflow execution failed";
                 fastify.log.error(`Workflow execution failed: ${errorMsg}`);
                 return reply.status(500).send({
                     success: false,

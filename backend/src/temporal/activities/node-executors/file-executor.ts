@@ -1,11 +1,9 @@
-import axios from "axios";
-import type { JsonObject } from "@flowmaestro/shared";
 import * as fs from "fs/promises";
 import * as path from "path";
+import axios from "axios";
+import * as pdf from "pdf-parse";
+import type { JsonObject } from "@flowmaestro/shared";
 import { interpolateVariables } from "./utils";
-
-// pdf-parse - require directly, will be mocked in tests
-const pdf = require("pdf-parse");
 
 export interface FileOperationsNodeConfig {
     operation: "read" | "write" | "parsePDF" | "parseCSV" | "parseJSON";
@@ -160,7 +158,9 @@ async function parsePDF(
     console.log(`[FileOps] Parsing PDF (${buffer.length} bytes)...`);
 
     // Parse PDF
-    const data = await pdf(buffer);
+    const data = await (
+        pdf as unknown as (dataBuffer: Buffer) => Promise<{ numpages: number; text: string }>
+    )(buffer);
 
     console.log(`[FileOps] Extracted ${data.numpages} pages, ${data.text.length} characters`);
 

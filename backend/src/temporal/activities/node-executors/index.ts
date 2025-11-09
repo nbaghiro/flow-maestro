@@ -1,47 +1,51 @@
 import type { JsonObject, JsonValue } from "@flowmaestro/shared";
-import { executeHTTPNode, HTTPNodeConfig, HTTPNodeResult } from "./http-executor";
-import { executeLLMNode, LLMNodeConfig, LLMNodeResult } from "./llm-executor";
-import {
-    executeTransformNode,
-    TransformNodeConfig,
-    TransformNodeResult
-} from "./transform-executor";
-import {
-    executeFileOperationsNode,
-    FileOperationsNodeConfig,
-    FileOperationsNodeResult
-} from "./file-executor";
-import { executeVariableNode, VariableNodeConfig, VariableNodeResult } from "./variable-executor";
-import { executeOutputNode, OutputNodeConfig } from "./output-executor";
+import { executeAudioNode, AudioNodeConfig, AudioNodeResult } from "./audio-executor";
+import { executeCodeNode, CodeNodeConfig, CodeNodeResult } from "./code-executor";
 import {
     executeConditionalNode,
     ConditionalNodeConfig,
     ConditionalNodeResult
 } from "./conditional-executor";
-import { executeSwitchNode, SwitchNodeConfig, SwitchNodeResult } from "./switch-executor";
-import { executeLoopNode, LoopNodeConfig, LoopNodeResult } from "./loop-executor";
+import { executeDatabaseNode, DatabaseNodeConfig, DatabaseNodeResult } from "./database-executor";
 import { executeEchoNode, EchoNodeConfig, EchoNodeResult } from "./echo-executor";
-import { executeWaitNode, WaitNodeConfig, WaitNodeResult } from "./wait-executor";
-import { executeCodeNode, CodeNodeConfig, CodeNodeResult } from "./code-executor";
-import { executeVisionNode, VisionNodeConfig, VisionNodeResult } from "./vision-executor";
-import { executeAudioNode, AudioNodeConfig, AudioNodeResult } from "./audio-executor";
 import {
     executeEmbeddingsNode,
     EmbeddingsNodeConfig,
     EmbeddingsNodeResult
 } from "./embeddings-executor";
-import { executeDatabaseNode, DatabaseNodeConfig, DatabaseNodeResult } from "./database-executor";
+import {
+    executeFileOperationsNode,
+    FileOperationsNodeConfig,
+    FileOperationsNodeResult
+} from "./file-executor";
+import { executeHTTPNode, HTTPNodeConfig, HTTPNodeResult } from "./http-executor";
 import {
     executeIntegrationNode,
     IntegrationNodeConfig,
     IntegrationNodeResult
 } from "./integration-executor";
 import { executeKnowledgeBaseQueryNode, KnowledgeBaseQueryNodeConfig } from "./kb-query-executor";
+import { executeLLMNode, LLMNodeConfig, LLMNodeResult } from "./llm-executor";
+import { executeLoopNode, LoopNodeConfig, LoopNodeResult } from "./loop-executor";
+import { executeOutputNode, OutputNodeConfig } from "./output-executor";
+import { executeSwitchNode, SwitchNodeConfig, SwitchNodeResult } from "./switch-executor";
+import {
+    executeTransformNode,
+    TransformNodeConfig,
+    TransformNodeResult
+} from "./transform-executor";
+import { executeVariableNode, VariableNodeConfig, VariableNodeResult } from "./variable-executor";
+import { executeVisionNode, VisionNodeConfig, VisionNodeResult } from "./vision-executor";
 import {
     executeVoiceGreetNode,
     VoiceGreetNodeConfig,
     VoiceGreetNodeResult
 } from "./voice-greet-executor";
+import {
+    executeVoiceHangupNode,
+    VoiceHangupNodeConfig,
+    VoiceHangupNodeResult
+} from "./voice-hangup-executor";
 import {
     executeVoiceListenNode,
     VoiceListenNodeConfig,
@@ -52,11 +56,7 @@ import {
     VoiceMenuNodeConfig,
     VoiceMenuNodeResult
 } from "./voice-menu-executor";
-import {
-    executeVoiceHangupNode,
-    VoiceHangupNodeConfig,
-    VoiceHangupNodeResult
-} from "./voice-hangup-executor";
+import { executeWaitNode, WaitNodeConfig, WaitNodeResult } from "./wait-executor";
 
 export type NodeConfig =
     | { type: "http"; config: HTTPNodeConfig }
@@ -120,12 +120,13 @@ export async function executeNode(input: ExecuteNodeInput): Promise<JsonObject> 
         case "output":
             return await executeOutputNode(nodeConfig as unknown as OutputNodeConfig, context);
 
-        case "input":
+        case "input": {
             // Input nodes are handled at workflow start
             console.log("[NodeExecutor] Input node - returning stored input value");
             const inputName =
                 typeof nodeConfig.inputName === "string" ? nodeConfig.inputName : "input";
             return { [inputName]: context[inputName] } as unknown as JsonObject;
+        }
 
         case "conditional":
         case "switch":

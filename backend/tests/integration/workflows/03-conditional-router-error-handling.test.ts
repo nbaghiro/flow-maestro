@@ -9,10 +9,10 @@
 
 import { Pool } from "pg";
 import { getGlobalTestPool, getGlobalDbHelper } from "../../../jest.setup";
-import { DatabaseHelper } from "../../helpers/DatabaseHelper";
-import { WorkflowTestHarness } from "../../helpers/WorkflowTestHarness";
-import { TestConnectionFactory } from "../../helpers/TestConnectionFactory";
 import workflowDefinition from "../../fixtures/workflows/03-conditional-router-error-handling.json";
+import { DatabaseHelper } from "../../helpers/DatabaseHelper";
+import { TestConnectionFactory } from "../../helpers/TestConnectionFactory";
+import { WorkflowTestHarness } from "../../helpers/WorkflowTestHarness";
 
 describe("Workflow 3: Conditional Router with Error Handling", () => {
     let pool: Pool;
@@ -20,7 +20,7 @@ describe("Workflow 3: Conditional Router with Error Handling", () => {
     let testHarness: WorkflowTestHarness;
     let connectionFactory: TestConnectionFactory;
     let testUserId: string;
-    let dbConnectionId: string;
+    let _dbConnectionId: string;
 
     beforeAll(async () => {
         // Get test infrastructure
@@ -61,7 +61,7 @@ describe("Workflow 3: Conditional Router with Error Handling", () => {
 
         // Create database connection for workflow
         const connectionString = `postgresql://${process.env.POSTGRES_USER}:${process.env.POSTGRES_PASSWORD}@${process.env.POSTGRES_HOST}:${process.env.POSTGRES_PORT}/${process.env.POSTGRES_DB}`;
-        dbConnectionId = await connectionFactory.createDatabaseConnection(
+        _dbConnectionId = await connectionFactory.createDatabaseConnection(
             "postgresql",
             connectionString
         );

@@ -1,12 +1,12 @@
-import { db } from "../database";
+import { toSql } from "pgvector";
 import type { JsonValue } from "@flowmaestro/shared";
+import { db } from "../database";
 import {
     KnowledgeChunkModel,
     CreateKnowledgeChunkInput,
     ChunkSearchResult,
     SearchChunksInput
 } from "../models/KnowledgeChunk";
-import { toSql } from "pgvector";
 
 interface KnowledgeChunkRow {
     id: string;
@@ -198,7 +198,7 @@ export class KnowledgeChunkRepository {
         // pgvector returns vectors as "[1,2,3]" strings
         try {
             // Remove brackets and split by comma
-            const cleaned = vectorString.replace(/[\[\]]/g, "");
+            const cleaned = vectorString.replace(/[[\]]/g, "");
             return cleaned.split(",").map((v) => parseFloat(v.trim()));
         } catch (error: unknown) {
             const msg = error instanceof Error ? error.message : "Unknown error";

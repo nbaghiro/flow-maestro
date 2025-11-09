@@ -1,5 +1,5 @@
-import { db } from "../database";
 import type { JsonValue } from "@flowmaestro/shared";
+import { db } from "../database";
 import { WorkflowModel, CreateWorkflowInput, UpdateWorkflowInput } from "../models/Workflow";
 
 interface WorkflowRow {

@@ -4,9 +4,9 @@
  */
 
 import type { JsonValue } from "@flowmaestro/shared";
-import { WorkflowRepository } from "../../storage/repositories/WorkflowRepository";
-import { TriggerRepository } from "../../storage/repositories/TriggerRepository";
 import { ExecutionRepository } from "../../storage/repositories/ExecutionRepository";
+import { TriggerRepository } from "../../storage/repositories/TriggerRepository";
+import { WorkflowRepository } from "../../storage/repositories/WorkflowRepository";
 
 export interface TriggerExecutionInput {
     triggerId: string;

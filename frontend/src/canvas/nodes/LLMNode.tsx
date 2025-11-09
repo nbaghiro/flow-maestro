@@ -1,7 +1,7 @@
+import { Bot } from "lucide-react";
 import { memo } from "react";
 import { NodeProps } from "reactflow";
 import { BaseNode } from "./BaseNode";
-import { Bot } from "lucide-react";
 
 interface LLMNodeData {
     label: string;

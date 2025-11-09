@@ -3,10 +3,10 @@
  * Displays real-time execution monitoring with logs, variables, and status
  */
 
-import { useState, useEffect, useRef } from "react";
-import { useWorkflowStore } from "../../stores/workflowStore";
 import { Play, CheckCircle2, XCircle, Clock, StopCircle, Filter, ChevronDown } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
 import { cn } from "../../lib/utils";
+import { useWorkflowStore } from "../../stores/workflowStore";
 
 interface ExecutionTabProps {
     workflowId: string;

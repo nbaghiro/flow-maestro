@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
 import { X, Search, Loader2, FileText } from "lucide-react";
-import { cn } from "../../lib/utils";
+import { useState, useEffect } from "react";
 import { getWorkflows } from "../../lib/api";
+import { cn } from "../../lib/utils";
 
 interface Workflow {
     id: string;

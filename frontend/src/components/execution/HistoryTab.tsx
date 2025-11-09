@@ -3,9 +3,9 @@
  * Displays past executions for the current workflow
  */
 
+import { CheckCircle2, XCircle, Clock, AlertCircle, RotateCcw, ChevronRight } from "lucide-react";
 import { useState, useEffect } from "react";
 import { getExecutions, Execution } from "../../lib/api";
-import { CheckCircle2, XCircle, Clock, AlertCircle, RotateCcw, ChevronRight } from "lucide-react";
 import { cn } from "../../lib/utils";
 
 interface HistoryTabProps {

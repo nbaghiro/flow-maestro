@@ -1,13 +1,13 @@
+import * as path from "path";
 import { FastifyInstance } from "fastify";
+import { getGCSStorageService } from "../../../services/storage/GCSStorageService";
+import { DocumentFileType } from "../../../storage/models/KnowledgeDocument";
 import {
     KnowledgeBaseRepository,
     KnowledgeDocumentRepository
 } from "../../../storage/repositories";
-import { authMiddleware } from "../../middleware";
-import * as path from "path";
-import { DocumentFileType } from "../../../storage/models/KnowledgeDocument";
 import { getTemporalClient } from "../../../temporal/client";
-import { getGCSStorageService } from "../../../services/storage/GCSStorageService";
+import { authMiddleware } from "../../middleware";
 
 export async function uploadDocumentRoute(fastify: FastifyInstance) {
     fastify.post(

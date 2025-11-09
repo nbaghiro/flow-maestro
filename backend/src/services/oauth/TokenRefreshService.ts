@@ -1,6 +1,6 @@
+import { OAuth2TokenData } from "../../storage/models/Connection";
 import { ConnectionRepository } from "../../storage/repositories/ConnectionRepository";
 import { oauthService } from "./OAuthService";
-import { OAuth2TokenData } from "../../storage/models/Connection";
 
 const connectionRepo = new ConnectionRepository();
 

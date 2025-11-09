@@ -11,8 +11,8 @@ import {
     User
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useWorkflowStore } from "../stores/workflowStore";
 import { useAuth } from "../contexts/AuthContext";
+import { useWorkflowStore } from "../stores/workflowStore";
 
 export function HeaderBar() {
     const { executeWorkflow, isExecuting, executionResult, executionError } = useWorkflowStore();

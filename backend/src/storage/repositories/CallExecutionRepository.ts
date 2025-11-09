@@ -115,7 +115,9 @@ export class CallExecutionRepository {
         `;
 
         const result = await db.query(query, [id]);
-        return result.rows.length > 0 ? this.mapCallExecutionRow(result.rows[0] as CallExecutionRow) : null;
+        return result.rows.length > 0
+            ? this.mapCallExecutionRow(result.rows[0] as CallExecutionRow)
+            : null;
     }
 
     /**
@@ -128,7 +130,9 @@ export class CallExecutionRepository {
         `;
 
         const result = await db.query(query, [callSid]);
-        return result.rows.length > 0 ? this.mapCallExecutionRow(result.rows[0] as CallExecutionRow) : null;
+        return result.rows.length > 0
+            ? this.mapCallExecutionRow(result.rows[0] as CallExecutionRow)
+            : null;
     }
 
     /**
@@ -160,7 +164,9 @@ export class CallExecutionRepository {
         ]);
 
         return {
-            executions: executionsResult.rows.map((row) => this.mapCallExecutionRow(row as CallExecutionRow)),
+            executions: executionsResult.rows.map((row) =>
+                this.mapCallExecutionRow(row as CallExecutionRow)
+            ),
             total: parseInt(countResult.rows[0].count)
         };
     }
@@ -272,7 +278,9 @@ export class CallExecutionRepository {
         `;
 
         const result = await db.query(query, values);
-        return result.rows.length > 0 ? this.mapCallExecutionRow(result.rows[0] as CallExecutionRow) : null;
+        return result.rows.length > 0
+            ? this.mapCallExecutionRow(result.rows[0] as CallExecutionRow)
+            : null;
     }
 
     /**
@@ -464,9 +472,10 @@ export class CallExecutionRepository {
      * Map database row to CallEvent model
      */
     private mapCallEventRow(row: CallEventRow): CallEvent {
-        const eventData = typeof row.event_data === "string"
-            ? JSON.parse(row.event_data) as Record<string, unknown>
-            : row.event_data;
+        const eventData =
+            typeof row.event_data === "string"
+                ? (JSON.parse(row.event_data) as Record<string, unknown>)
+                : row.event_data;
 
         return {
             id: row.id.toString(),

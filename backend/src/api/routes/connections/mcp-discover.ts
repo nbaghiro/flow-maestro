@@ -1,7 +1,7 @@
 import { FastifyInstance } from "fastify";
-import { mcpDiscoverySchema, MCPDiscoveryRequest } from "../../schemas/connection-schemas";
-import { authMiddleware, validateBody } from "../../middleware";
 import { getMCPService } from "../../../services/mcp/MCPService";
+import { authMiddleware, validateBody } from "../../middleware";
+import { mcpDiscoverySchema, MCPDiscoveryRequest } from "../../schemas/connection-schemas";
 import type { MCPConnectionData } from "../../../storage/models/Connection";
 
 /**

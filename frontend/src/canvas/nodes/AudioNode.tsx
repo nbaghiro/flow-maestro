@@ -1,7 +1,7 @@
+import { Mic } from "lucide-react";
 import { memo } from "react";
 import { NodeProps } from "reactflow";
 import { BaseNode } from "./BaseNode";
-import { Mic } from "lucide-react";
 
 interface AudioNodeData {
     label: string;

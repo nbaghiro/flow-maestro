@@ -1,7 +1,6 @@
-import React from "react";
-import { motion } from "framer-motion";
-import { useInView } from "framer-motion";
+import { motion, useInView } from "framer-motion";
 import { Database, Cloud, MessageSquare, Zap } from "lucide-react";
+import React from "react";
 
 interface Integration {
     name: string;

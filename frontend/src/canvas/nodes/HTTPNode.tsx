@@ -1,7 +1,7 @@
+import { Globe } from "lucide-react";
 import { memo } from "react";
 import { NodeProps } from "reactflow";
 import { BaseNode } from "./BaseNode";
-import { Globe } from "lucide-react";
 
 interface HTTPNodeData {
     label: string;

@@ -1,4 +1,3 @@
-import { Link, useLocation } from "react-router-dom";
 import {
     LayoutGrid,
     Plug,
@@ -11,8 +10,9 @@ import {
     ChevronLeft,
     ChevronRight
 } from "lucide-react";
-import { cn } from "../../lib/utils";
 import { useState } from "react";
+import { Link, useLocation } from "react-router-dom";
+import { cn } from "../../lib/utils";
 import { Tooltip } from "../Tooltip";
 import type { LucideIcon } from "lucide-react";
 

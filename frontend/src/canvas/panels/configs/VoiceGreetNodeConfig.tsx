@@ -31,8 +31,12 @@ const voicesByProvider: Record<string, Array<{ value: string; label: string }>> 
 };
 
 export function VoiceGreetNodeConfig({ data, onUpdate }: VoiceGreetNodeConfigProps) {
-    const [message, setMessage] = useState((data.message as string) || "Hello! How can I help you today?");
-    const [voiceProvider, setVoiceProvider] = useState((data.voiceProvider as string) || "elevenlabs");
+    const [message, setMessage] = useState(
+        (data.message as string) || "Hello! How can I help you today?"
+    );
+    const [voiceProvider, setVoiceProvider] = useState(
+        (data.voiceProvider as string) || "elevenlabs"
+    );
     const [voice, setVoice] = useState((data.voice as string) || "rachel");
     const [speed, setSpeed] = useState((data.speed as number) || 1.0);
     const [interruptible, setInterruptible] = useState((data.interruptible as boolean) !== false);
@@ -93,7 +97,9 @@ export function VoiceGreetNodeConfig({ data, onUpdate }: VoiceGreetNodeConfigPro
                         onChange={(e) => setVoice(e.target.value)}
                         className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                     >
-                        {(voicesByProvider[voiceProvider as keyof typeof voicesByProvider] || []).map((v) => (
+                        {(
+                            voicesByProvider[voiceProvider as keyof typeof voicesByProvider] || []
+                        ).map((v) => (
                             <option key={v.value} value={v.value}>
                                 {v.label}
                             </option>

@@ -3,9 +3,9 @@
  * A proper modal dialog for adding variables (replaces ugly browser prompts)
  */
 
-import { useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
+import { useState } from "react";
 
 interface VariableDialogProps {
     open: boolean;
@@ -127,9 +127,7 @@ export function VariableDialog({
                             <select
                                 value={valueType}
                                 onChange={(e) => {
-                                    setValueType(
-                                        e.target.value as "string" | "number" | "boolean"
-                                    );
+                                    setValueType(e.target.value as "string" | "number" | "boolean");
                                     setInitialValue("");
                                 }}
                                 className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"

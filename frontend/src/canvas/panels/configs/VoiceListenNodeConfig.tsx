@@ -30,7 +30,9 @@ const languages = [
 ];
 
 export function VoiceListenNodeConfig({ data, onUpdate }: VoiceListenNodeConfigProps) {
-    const [outputVariable, setOutputVariable] = useState((data.outputVariable as string) || "userSpeech");
+    const [outputVariable, setOutputVariable] = useState(
+        (data.outputVariable as string) || "userSpeech"
+    );
     const [maxDuration, setMaxDuration] = useState((data.maxDuration as number) || 30);
     const [endSilenceMs, setEndSilenceMs] = useState((data.endSilenceMs as number) || 1500);
     const [language, setLanguage] = useState((data.language as string) || "en-US");

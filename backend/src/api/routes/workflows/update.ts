@@ -1,8 +1,8 @@
 import { FastifyInstance } from "fastify";
-import { WorkflowRepository } from "../../../storage/repositories";
-import { updateWorkflowSchema, workflowIdParamSchema } from "../../schemas/workflow-schemas";
-import { authMiddleware, validateRequest, validateParams, NotFoundError } from "../../middleware";
 import { WorkflowDefinition } from "@flowmaestro/shared";
+import { WorkflowRepository } from "../../../storage/repositories";
+import { authMiddleware, validateRequest, validateParams, NotFoundError } from "../../middleware";
+import { updateWorkflowSchema, workflowIdParamSchema } from "../../schemas/workflow-schemas";
 
 export async function updateWorkflowRoute(fastify: FastifyInstance) {
     fastify.put(

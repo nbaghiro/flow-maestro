@@ -8,10 +8,12 @@
             "jsx": true
         }
     },
-    "plugins": ["@typescript-eslint", "prettier"],
+    "plugins": ["@typescript-eslint", "prettier", "import"],
     "extends": [
         "eslint:recommended",
         "plugin:@typescript-eslint/recommended",
+        "plugin:import/recommended",
+        "plugin:import/typescript",
         "plugin:prettier/recommended"
     ],
     "rules": {
@@ -19,12 +21,44 @@
         "semi": ["error", "always"],
         "@typescript-eslint/no-unused-vars": [
             "error",
-            { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }
+            {
+                "argsIgnorePattern": "^_",
+                "varsIgnorePattern": "^_",
+                "caughtErrorsIgnorePattern": "^_"
+            }
         ],
         "@typescript-eslint/explicit-function-return-type": "off",
         "@typescript-eslint/explicit-module-boundary-types": "off",
         "@typescript-eslint/no-explicit-any": "error",
-        "prettier/prettier": "error"
+        "prettier/prettier": "error",
+        "import/order": [
+            "error",
+            {
+                "groups": [
+                    "builtin",
+                    "external",
+                    "internal",
+                    "parent",
+                    "sibling",
+                    "index",
+                    "object",
+                    "type"
+                ],
+                "pathGroups": [
+                    {
+                        "pattern": "@flowmaestro/**",
+                        "group": "internal"
+                    }
+                ],
+                "pathGroupsExcludedImportTypes": ["builtin"],
+                "alphabetize": {
+                    "order": "asc",
+                    "caseInsensitive": true
+                },
+                "newlines-between": "never"
+            }
+        ],
+        "import/no-unresolved": "off"
     },
     "env": {
         "node": true,

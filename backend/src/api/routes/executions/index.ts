@@ -1,8 +1,8 @@
 import { FastifyInstance } from "fastify";
-import { listExecutionsRoute } from "./list";
-import { getExecutionRoute } from "./get";
 import { cancelExecutionRoute } from "./cancel";
+import { getExecutionRoute } from "./get";
 import { getExecutionLogsRoute } from "./getLogs";
+import { listExecutionsRoute } from "./list";
 import { submitInputRoute } from "./submit-input";
 
 export async function executionRoutes(fastify: FastifyInstance) {

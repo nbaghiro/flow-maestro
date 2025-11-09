@@ -1,7 +1,7 @@
 import { FastifyInstance } from "fastify";
 import { WorkflowRepository } from "../../../storage/repositories";
-import { workflowIdParamSchema } from "../../schemas/workflow-schemas";
 import { authMiddleware, validateParams, NotFoundError } from "../../middleware";
+import { workflowIdParamSchema } from "../../schemas/workflow-schemas";
 
 export async function deleteWorkflowRoute(fastify: FastifyInstance) {
     fastify.delete(

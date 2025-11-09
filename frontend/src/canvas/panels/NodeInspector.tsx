@@ -1,32 +1,32 @@
-import { useState, useEffect } from "react";
 import { X } from "lucide-react";
+import { useState, useEffect } from "react";
 import { useWorkflowStore } from "../../stores/workflowStore";
 // AI & ML
-import { LLMNodeConfig } from "./configs/LLMNodeConfig";
-import { VisionNodeConfig } from "./configs/VisionNodeConfig";
 import { AudioNodeConfig } from "./configs/AudioNodeConfig";
-import { EmbeddingsNodeConfig } from "./configs/EmbeddingsNodeConfig";
 // Logic & Code
-import { ConditionalNodeConfig } from "./configs/ConditionalNodeConfig";
-import { SwitchNodeConfig } from "./configs/SwitchNodeConfig";
-import { LoopNodeConfig } from "./configs/LoopNodeConfig";
 import { CodeNodeConfig } from "./configs/CodeNodeConfig";
-import { WaitNodeConfig } from "./configs/WaitNodeConfig";
+import { ConditionalNodeConfig } from "./configs/ConditionalNodeConfig";
 // Data Operations
-import { InputNodeConfig } from "./configs/InputNodeConfig";
-import { TransformNodeConfig } from "./configs/TransformNodeConfig";
-import { VariableNodeConfig } from "./configs/VariableNodeConfig";
-import { OutputNodeConfig } from "./configs/OutputNodeConfig";
 // Connect
-import { HTTPNodeConfig } from "./configs/HTTPNodeConfig";
 import { DatabaseNodeConfig } from "./configs/DatabaseNodeConfig";
+import { EmbeddingsNodeConfig } from "./configs/EmbeddingsNodeConfig";
+import { HTTPNodeConfig } from "./configs/HTTPNodeConfig";
+import { InputNodeConfig } from "./configs/InputNodeConfig";
 import { IntegrationNodeConfig } from "./configs/IntegrationNodeConfig";
 import { KnowledgeBaseQueryNodeConfig } from "./configs/KnowledgeBaseQueryNodeConfig";
+import { LLMNodeConfig } from "./configs/LLMNodeConfig";
+import { LoopNodeConfig } from "./configs/LoopNodeConfig";
+import { OutputNodeConfig } from "./configs/OutputNodeConfig";
+import { SwitchNodeConfig } from "./configs/SwitchNodeConfig";
+import { TransformNodeConfig } from "./configs/TransformNodeConfig";
+import { VariableNodeConfig } from "./configs/VariableNodeConfig";
+import { VisionNodeConfig } from "./configs/VisionNodeConfig";
 // Voice & Calls
 import { VoiceGreetNodeConfig } from "./configs/VoiceGreetNodeConfig";
+import { VoiceHangupNodeConfig } from "./configs/VoiceHangupNodeConfig";
 import { VoiceListenNodeConfig } from "./configs/VoiceListenNodeConfig";
 import { VoiceMenuNodeConfig } from "./configs/VoiceMenuNodeConfig";
-import { VoiceHangupNodeConfig } from "./configs/VoiceHangupNodeConfig";
+import { WaitNodeConfig } from "./configs/WaitNodeConfig";
 
 export function NodeInspector() {
     const { nodes, selectedNode, selectNode, updateNode } = useWorkflowStore();

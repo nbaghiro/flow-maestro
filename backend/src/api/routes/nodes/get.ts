@@ -1,7 +1,7 @@
 import { FastifyInstance } from "fastify";
 import { nodeRegistry } from "../../../shared/registry/NodeRegistry";
-import { nodeTypeParamSchema } from "../../schemas/node-schemas";
 import { authMiddleware, validateParams, NotFoundError } from "../../middleware";
+import { nodeTypeParamSchema } from "../../schemas/node-schemas";
 
 export async function getNodeMetadataRoute(fastify: FastifyInstance) {
     fastify.get(

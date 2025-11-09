@@ -1,7 +1,7 @@
+import { GitMerge } from "lucide-react";
 import { memo } from "react";
 import { NodeProps, Handle, Position } from "reactflow";
 import { BaseNode } from "./BaseNode";
-import { GitMerge } from "lucide-react";
 
 interface SwitchNodeData {
     label: string;

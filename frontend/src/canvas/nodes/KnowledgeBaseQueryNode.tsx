@@ -1,7 +1,7 @@
+import { BookOpen } from "lucide-react";
 import { memo } from "react";
 import { NodeProps } from "reactflow";
 import { BaseNode } from "./BaseNode";
-import { BookOpen } from "lucide-react";
 
 interface KnowledgeBaseQueryNodeData {
     label: string;

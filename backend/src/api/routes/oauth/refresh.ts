@@ -1,7 +1,7 @@
 import { FastifyInstance } from "fastify";
-import { authMiddleware } from "../../middleware";
-import { ConnectionRepository } from "../../../storage/repositories/ConnectionRepository";
 import { forceRefreshToken } from "../../../services/oauth/TokenRefreshService";
+import { ConnectionRepository } from "../../../storage/repositories/ConnectionRepository";
+import { authMiddleware } from "../../middleware";
 
 interface RefreshParams {
     provider: string;
@@ -83,7 +83,10 @@ export async function refreshRoute(fastify: FastifyInstance) {
 
                 return reply.status(400).send({
                     success: false,
-                    error: error instanceof Error ? error.message : "Unknown error while refreshing token"
+                    error:
+                        error instanceof Error
+                            ? error.message
+                            : "Unknown error while refreshing token"
                 });
             }
         }

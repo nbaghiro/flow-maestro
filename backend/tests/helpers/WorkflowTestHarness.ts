@@ -195,7 +195,10 @@ export class WorkflowTestHarness {
     /**
      * Assert output contains expected values
      */
-    assertOutputContains(result: WorkflowTestResult, expectedOutputs: Record<string, unknown>): void {
+    assertOutputContains(
+        result: WorkflowTestResult,
+        expectedOutputs: Record<string, unknown>
+    ): void {
         this.assertSuccess(result);
 
         for (const [key, expectedValue] of Object.entries(expectedOutputs)) {

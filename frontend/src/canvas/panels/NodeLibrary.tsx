@@ -1,4 +1,3 @@
-import { useCallback, useState } from "react";
 import {
     Bot,
     Eye,
@@ -27,6 +26,7 @@ import {
     ListOrdered,
     PhoneOff
 } from "lucide-react";
+import { useCallback, useState } from "react";
 
 interface NodeDefinition {
     type: string;

@@ -1,10 +1,10 @@
 import { FastifyInstance } from "fastify";
+import { getGCSStorageService } from "../../../services/storage/GCSStorageService";
 import {
     KnowledgeBaseRepository,
     KnowledgeDocumentRepository
 } from "../../../storage/repositories";
 import { authMiddleware } from "../../middleware";
-import { getGCSStorageService } from "../../../services/storage/GCSStorageService";
 
 export async function downloadDocumentRoute(fastify: FastifyInstance) {
     fastify.get(

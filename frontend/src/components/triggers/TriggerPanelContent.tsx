@@ -3,12 +3,12 @@
  * Main content for the trigger drawer - list of triggers and create functionality
  */
 
-import { useState, useEffect } from "react";
 import { RefreshCw, Zap } from "lucide-react";
-import { useTriggerStore } from "../../stores/triggerStore";
+import { useState, useEffect, useCallback } from "react";
 import { getTriggers } from "../../lib/api";
-import { TriggerCard } from "./TriggerCard";
+import { useTriggerStore } from "../../stores/triggerStore";
 import { CreateTriggerDialog } from "./CreateTriggerDialog";
+import { TriggerCard } from "./TriggerCard";
 
 interface TriggerPanelContentProps {
     workflowId: string;
@@ -20,23 +20,7 @@ export function TriggerPanelContent({ workflowId }: TriggerPanelContentProps) {
     const [showCreateDialog, setShowCreateDialog] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    // Load triggers on mount and when workflowId changes
-    useEffect(() => {
-        loadTriggerList();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [workflowId]);
-
-    // Listen for create trigger event
-    useEffect(() => {
-        const handleCreateTrigger = () => {
-            setShowCreateDialog(true);
-        };
-
-        window.addEventListener("trigger:create", handleCreateTrigger);
-        return () => window.removeEventListener("trigger:create", handleCreateTrigger);
-    }, []);
-
-    const loadTriggerList = async () => {
+    const loadTriggerList = useCallback(async () => {
         if (!workflowId) return;
 
         setLoadingTriggers(true);
@@ -53,7 +37,22 @@ export function TriggerPanelContent({ workflowId }: TriggerPanelContentProps) {
         } finally {
             setLoadingTriggers(false);
         }
-    };
+    }, [workflowId, setLoadingTriggers, setTriggers]);
+
+    // Load triggers on mount and when workflowId changes
+    useEffect(() => {
+        loadTriggerList();
+    }, [loadTriggerList]);
+
+    // Listen for create trigger event
+    useEffect(() => {
+        const handleCreateTrigger = () => {
+            setShowCreateDialog(true);
+        };
+
+        window.addEventListener("trigger:create", handleCreateTrigger);
+        return () => window.removeEventListener("trigger:create", handleCreateTrigger);
+    }, []);
 
     const handleTriggerCreated = () => {
         setShowCreateDialog(false);

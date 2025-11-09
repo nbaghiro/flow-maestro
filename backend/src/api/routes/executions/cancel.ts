@@ -1,11 +1,15 @@
 import { FastifyInstance } from "fastify";
 import { ExecutionRepository, WorkflowRepository } from "../../../storage/repositories";
-import { executionIdParamSchema } from "../../schemas/execution-schemas";
-import { authMiddleware, validateParams, NotFoundError, BadRequestError } from "../../middleware";
 import { getTemporalClient } from "../../../temporal/client";
+import { authMiddleware, validateParams, NotFoundError, BadRequestError } from "../../middleware";
+import { executionIdParamSchema } from "../../schemas/execution-schemas";
+
+interface CancelExecutionParams {
+    id: string;
+}
 
 export async function cancelExecutionRoute(fastify: FastifyInstance) {
-    fastify.post(
+    fastify.post<{ Params: CancelExecutionParams }>(
         "/:id/cancel",
         {
             preHandler: [authMiddleware, validateParams(executionIdParamSchema)]
@@ -13,7 +17,7 @@ export async function cancelExecutionRoute(fastify: FastifyInstance) {
         async (request, reply) => {
             const executionRepository = new ExecutionRepository();
             const workflowRepository = new WorkflowRepository();
-            const { id } = (request.params as { id: string });
+            const { id } = request.params;
 
             const execution = await executionRepository.findById(id);
 
@@ -53,7 +57,7 @@ export async function cancelExecutionRoute(fastify: FastifyInstance) {
                     data: updatedExecution,
                     message: "Execution cancelled successfully"
                 });
-            } catch (error: unknown) {
+            } catch (error) {
                 fastify.log.error({ error, executionId: id }, "Failed to cancel execution");
                 throw new BadRequestError("Failed to cancel execution");
             }

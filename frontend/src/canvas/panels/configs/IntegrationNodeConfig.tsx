@@ -38,7 +38,9 @@ export function IntegrationNodeConfig({ data, onUpdate }: IntegrationNodeConfigP
     const [slackMessage, setSlackMessage] = useState((data.slackMessage as string) || "");
 
     // Discord config
-    const [discordWebhookUrl, setDiscordWebhookUrl] = useState((data.discordWebhookUrl as string) || "");
+    const [discordWebhookUrl, setDiscordWebhookUrl] = useState(
+        (data.discordWebhookUrl as string) || ""
+    );
     const [discordMessage, setDiscordMessage] = useState((data.discordMessage as string) || "");
 
     // Email config

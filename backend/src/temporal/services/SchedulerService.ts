@@ -4,9 +4,9 @@
  */
 
 import { ScheduleOverlapPolicy } from "@temporalio/client";
-import { getTemporalClient } from "../client";
-import { TriggerRepository } from "../../storage/repositories/TriggerRepository";
 import { ScheduleTriggerConfig } from "../../storage/models/Trigger";
+import { TriggerRepository } from "../../storage/repositories/TriggerRepository";
+import { getTemporalClient } from "../client";
 
 export class SchedulerService {
     private triggerRepo: TriggerRepository;
@@ -262,7 +262,7 @@ export class SchedulerService {
                         await handle.describe();
                         console.log(`Schedule already exists: ${trigger.temporal_schedule_id}`);
                         continue;
-                    } catch (error) {
+                    } catch (_error) {
                         // Schedule doesn't exist, will recreate
                         console.log(
                             `Schedule not found in Temporal, recreating: ${trigger.temporal_schedule_id}`

@@ -87,12 +87,15 @@ export const temporalDatabaseName = new gcp.sql.Database(resourceName("temporal-
 });
 
 // Create Temporal visibility database (required by Temporal)
-export const temporalVisibilityDatabaseName = new gcp.sql.Database(resourceName("temporal-visibility-database"), {
-    name: "temporal_visibility",
-    instance: database.name,
-    charset: "UTF8",
-    collation: "en_US.UTF8"
-});
+export const temporalVisibilityDatabaseName = new gcp.sql.Database(
+    resourceName("temporal-visibility-database"),
+    {
+        name: "temporal_visibility",
+        instance: database.name,
+        charset: "UTF8",
+        collation: "en_US.UTF8"
+    }
+);
 
 // Create application database user
 export const appDatabaseUser = new gcp.sql.User(resourceName("app-db-user"), {

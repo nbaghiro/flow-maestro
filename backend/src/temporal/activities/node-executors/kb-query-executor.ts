@@ -1,7 +1,7 @@
-import { ExecuteNodeInput } from "./index";
 import type { JsonObject } from "@flowmaestro/shared";
-import { KnowledgeBaseRepository, KnowledgeChunkRepository } from "../../../storage/repositories";
 import { EmbeddingService } from "../../../services/embeddings";
+import { KnowledgeBaseRepository, KnowledgeChunkRepository } from "../../../storage/repositories";
+import { ExecuteNodeInput } from "./index";
 
 export interface KnowledgeBaseQueryNodeConfig {
     knowledgeBaseId: string;

@@ -1,8 +1,8 @@
 import { FastifyInstance } from "fastify";
-import { UserRepository } from "../../../storage/repositories";
-import { loginSchema, LoginRequest } from "../../schemas/auth-schemas";
-import { validateRequest, UnauthorizedError } from "../../middleware";
 import { PasswordUtils } from "../../../shared/utils/password";
+import { UserRepository } from "../../../storage/repositories";
+import { validateRequest, UnauthorizedError } from "../../middleware";
+import { loginSchema, LoginRequest } from "../../schemas/auth-schemas";
 
 export async function loginRoute(fastify: FastifyInstance) {
     fastify.post(

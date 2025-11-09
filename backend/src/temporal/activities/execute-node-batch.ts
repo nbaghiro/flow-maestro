@@ -1,7 +1,7 @@
 import { Context } from "@temporalio/activity";
+import { WorkflowDefinition } from "@flowmaestro/shared";
 import { Database } from "../../storage/database";
 import { ExecutionRepository } from "../../storage/repositories/ExecutionRepository";
-import { WorkflowDefinition } from "@flowmaestro/shared";
 
 export interface ExecuteNodeBatchInput {
     executionId: string;

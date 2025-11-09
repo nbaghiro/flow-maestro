@@ -1,13 +1,13 @@
 import { useState, useEffect } from "react";
-import { FormField, FormSection } from "../../../components/FormField";
-import { Slider } from "../../../components/Slider";
-import { OutputSettingsSection } from "../../../components/OutputSettingsSection";
-import { ConnectionPicker } from "../../../components/connections/ConnectionPicker";
 import {
     LLM_PROVIDERS,
     LLM_MODELS_BY_PROVIDER,
     getDefaultModelForProvider
 } from "@flowmaestro/shared";
+import { ConnectionPicker } from "../../../components/connections/ConnectionPicker";
+import { FormField, FormSection } from "../../../components/FormField";
+import { OutputSettingsSection } from "../../../components/OutputSettingsSection";
+import { Slider } from "../../../components/Slider";
 
 interface LLMNodeConfigProps {
     data: Record<string, unknown>;
@@ -19,7 +19,9 @@ export function LLMNodeConfig({ data, onUpdate }: LLMNodeConfigProps) {
     const [model, setModel] = useState(
         (data.model as string) || getDefaultModelForProvider((data.provider as string) || "openai")
     );
-    const [connectionId, setConnectionId] = useState<string | null>((data.connectionId as string) || null);
+    const [connectionId, setConnectionId] = useState<string | null>(
+        (data.connectionId as string) || null
+    );
     const [systemPrompt, setSystemPrompt] = useState((data.systemPrompt as string) || "");
     const [prompt, setPrompt] = useState((data.prompt as string) || "");
     const [temperature, setTemperature] = useState((data.temperature as number) || 0.7);
@@ -85,7 +87,9 @@ export function LLMNodeConfig({ data, onUpdate }: LLMNodeConfigProps) {
                         onChange={(e) => setModel(e.target.value)}
                         className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                     >
-                        {LLM_MODELS_BY_PROVIDER[provider as keyof typeof LLM_MODELS_BY_PROVIDER]?.map((m) => (
+                        {LLM_MODELS_BY_PROVIDER[
+                            provider as keyof typeof LLM_MODELS_BY_PROVIDER
+                        ]?.map((m) => (
                             <option key={m.value} value={m.value}>
                                 {m.label}
                             </option>

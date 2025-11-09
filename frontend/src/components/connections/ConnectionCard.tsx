@@ -1,7 +1,7 @@
-import { Connection, ConnectionMethod, ConnectionStatus } from "../../lib/api";
-import { StatusBadge } from "../common/StatusBadge";
-import { cn } from "../../lib/utils";
 import { formatDistanceToNow } from "date-fns";
+import { Connection, ConnectionMethod, ConnectionStatus } from "../../lib/api";
+import { cn } from "../../lib/utils";
+import { StatusBadge } from "../common/StatusBadge";
 
 interface ConnectionCardProps {
     connection: Connection;

@@ -3,13 +3,13 @@
  * Integrates EmbeddingService with ConversationEmbeddingRepository for semantic search
  */
 
-import { EmbeddingService } from "./embeddings";
 import {
     ConversationEmbeddingRepository,
     type CreateConversationEmbeddingInput,
     type SearchSimilarMessagesInput,
     type SimilarMessageResult
 } from "../storage/repositories/ConversationEmbeddingRepository";
+import { EmbeddingService } from "./embeddings";
 import type { ConversationMessage } from "../storage/models/AgentExecution";
 
 export interface StoreConversationEmbeddingsInput {
@@ -46,10 +46,7 @@ export class ConversationMemoryService {
     private embeddingService: EmbeddingService;
     private repository: ConversationEmbeddingRepository;
 
-    constructor(
-        embeddingService?: EmbeddingService,
-        repository?: ConversationEmbeddingRepository
-    ) {
+    constructor(embeddingService?: EmbeddingService, repository?: ConversationEmbeddingRepository) {
         this.embeddingService = embeddingService || new EmbeddingService();
         this.repository = repository || new ConversationEmbeddingRepository();
     }
@@ -231,7 +228,7 @@ export class ConversationMemoryService {
             }
 
             // Add the matched message
-            parts.push(`\n[Matched message]:`);
+            parts.push("\n[Matched message]:");
             parts.push(`${result.message_role}: ${result.content}`);
 
             // Add context after (if available)
@@ -251,7 +248,10 @@ export class ConversationMemoryService {
     /**
      * Get conversation memory statistics
      */
-    async getMemoryStats(agentId: string, userId: string): Promise<{
+    async getMemoryStats(
+        agentId: string,
+        userId: string
+    ): Promise<{
         totalMessages: number;
         latestMessages: number;
     }> {

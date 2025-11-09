@@ -1,7 +1,7 @@
+import { useQuery } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { FormField, FormSection } from "../../../components/FormField";
 import { OutputSettingsSection } from "../../../components/OutputSettingsSection";
-import { useQuery } from "@tanstack/react-query";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 

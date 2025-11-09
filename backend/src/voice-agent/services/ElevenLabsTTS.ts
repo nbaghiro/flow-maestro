@@ -83,10 +83,7 @@ export class ElevenLabsTTS extends EventEmitter {
             return audioBuffer;
         } catch (error: unknown) {
             const err = error as { response?: { data?: unknown }; message?: string };
-            console.error(
-                "[ElevenLabsTTS] Synthesis error:",
-                err.response?.data || err.message
-            );
+            console.error("[ElevenLabsTTS] Synthesis error:", err.response?.data || err.message);
             throw new Error(`ElevenLabs TTS failed: ${err.message}`);
         }
     }
@@ -126,15 +123,14 @@ export class ElevenLabsTTS extends EventEmitter {
             const audioBufferTyped = audioBuffer as {
                 duration: number;
             };
-            console.log(`[ElevenLabsTTS] OpenAI synthesis complete (${audioBufferTyped.duration}s)`);
+            console.log(
+                `[ElevenLabsTTS] OpenAI synthesis complete (${audioBufferTyped.duration}s)`
+            );
 
             return audioBuffer;
         } catch (error: unknown) {
             const err = error as { response?: { data?: unknown }; message?: string };
-            console.error(
-                "[ElevenLabsTTS] OpenAI TTS error:",
-                err.response?.data || err.message
-            );
+            console.error("[ElevenLabsTTS] OpenAI TTS error:", err.response?.data || err.message);
             throw new Error(`OpenAI TTS failed: ${err.message}`);
         }
     }

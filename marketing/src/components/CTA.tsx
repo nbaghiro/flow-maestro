@@ -1,7 +1,6 @@
-import React from "react";
-import { motion } from "framer-motion";
-import { useInView } from "framer-motion";
+import { motion, useInView } from "framer-motion";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
+import React from "react";
 
 export const CTA: React.FC = () => {
     const ref = React.useRef<HTMLDivElement>(null);

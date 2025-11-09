@@ -2,9 +2,9 @@
  * Trigger Types and Configurations for Test Scenarios
  */
 
+import { MessageSquare, Webhook, Code, FileText, Clock, Upload, Zap, Play } from "lucide-react";
 import type { JsonObject, JsonValue } from "@flowmaestro/shared";
 import type { LucideIcon } from "lucide-react";
-import { MessageSquare, Webhook, Code, FileText, Clock, Upload, Zap, Play } from "lucide-react";
 
 /**
  * Available trigger types

@@ -24,7 +24,10 @@ export const uploadsBucket = new gcp.storage.Bucket(resourceName("uploads"), {
     ],
     corsRules: [
         {
-            origins: [`https://api.${infrastructureConfig.domain}`, `https://app.${infrastructureConfig.domain}`],
+            origins: [
+                `https://api.${infrastructureConfig.domain}`,
+                `https://app.${infrastructureConfig.domain}`
+            ],
             methods: ["GET", "POST", "PUT", "DELETE"],
             responseHeaders: ["Content-Type"],
             maxAgeSeconds: 3600
@@ -44,7 +47,7 @@ export const artifactsBucket = new gcp.storage.Bucket(resourceName("artifacts"),
                 type: "Delete"
             },
             condition: {
-                age: 90  // Delete artifacts older than 90 days
+                age: 90 // Delete artifacts older than 90 days
             }
         }
     ],

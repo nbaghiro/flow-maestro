@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
-import { FormField, FormSection } from "../../../components/FormField";
-import { Slider } from "../../../components/Slider";
-import { OutputSettingsSection } from "../../../components/OutputSettingsSection";
 import {
     LLM_PROVIDERS,
     LLM_MODELS_BY_PROVIDER,
     getDefaultModelForProvider
 } from "@flowmaestro/shared";
+import { FormField, FormSection } from "../../../components/FormField";
+import { OutputSettingsSection } from "../../../components/OutputSettingsSection";
+import { Slider } from "../../../components/Slider";
 
 interface VisionNodeConfigProps {
     data: Record<string, unknown>;
@@ -91,7 +91,9 @@ export function VisionNodeConfig({ data, onUpdate }: VisionNodeConfigProps) {
                         onChange={(e) => setModel(e.target.value)}
                         className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                     >
-                        {LLM_MODELS_BY_PROVIDER[provider as keyof typeof LLM_MODELS_BY_PROVIDER]?.map((m) => (
+                        {LLM_MODELS_BY_PROVIDER[
+                            provider as keyof typeof LLM_MODELS_BY_PROVIDER
+                        ]?.map((m) => (
                             <option key={m.value} value={m.value}>
                                 {m.label}
                             </option>

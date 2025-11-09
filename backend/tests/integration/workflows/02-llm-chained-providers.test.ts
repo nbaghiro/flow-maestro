@@ -5,10 +5,10 @@
 
 import { Pool } from "pg";
 import { getGlobalTestPool, getGlobalDbHelper } from "../../../jest.setup";
-import { DatabaseHelper } from "../../helpers/DatabaseHelper";
-import { WorkflowTestHarness } from "../../helpers/WorkflowTestHarness";
-import { TestConnectionFactory } from "../../helpers/TestConnectionFactory";
 import workflowDefinition from "../../fixtures/workflows/02-llm-chained-providers.json";
+import { DatabaseHelper } from "../../helpers/DatabaseHelper";
+import { TestConnectionFactory } from "../../helpers/TestConnectionFactory";
+import { WorkflowTestHarness } from "../../helpers/WorkflowTestHarness";
 
 describe("LLM Integration: Chained Providers", () => {
     let pool: Pool;

@@ -1,7 +1,7 @@
 import { Loader2 } from "lucide-react";
+import type { MCPProvider as Provider } from "@flowmaestro/shared";
 import { useConnectionStore } from "../../stores/connectionStore";
 import type { Connection } from "../../lib/api";
-import type { MCPProvider as Provider } from "@flowmaestro/shared";
 
 export type { Provider };
 

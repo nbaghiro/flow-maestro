@@ -1,7 +1,7 @@
 import React, { useState } from "react";
-import { Dialog } from "../common/Dialog";
 import { ConnectionMethod, CreateConnectionInput } from "../../lib/api";
 import { useConnectionStore } from "../../stores/connectionStore";
+import { Dialog } from "../common/Dialog";
 
 interface AddConnectionDialogProps {
     isOpen: boolean;

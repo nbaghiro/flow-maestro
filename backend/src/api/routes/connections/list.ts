@@ -1,7 +1,7 @@
 import { FastifyInstance } from "fastify";
 import { ConnectionRepository } from "../../../storage/repositories/ConnectionRepository";
-import { listConnectionsQuerySchema, ListConnectionsQuery } from "../../schemas/connection-schemas";
 import { authMiddleware, validateQuery } from "../../middleware";
+import { listConnectionsQuerySchema, ListConnectionsQuery } from "../../schemas/connection-schemas";
 
 export async function listConnectionsRoute(fastify: FastifyInstance) {
     fastify.get(

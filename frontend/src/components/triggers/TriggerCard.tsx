@@ -3,13 +3,6 @@
  * Displays individual trigger with details and actions
  */
 
-import { useState } from "react";
-import {
-    WorkflowTrigger,
-    ScheduleTriggerConfig,
-    WebhookTriggerConfig,
-    ManualTriggerConfig
-} from "../../types/trigger";
 import {
     Calendar,
     Webhook,
@@ -22,12 +15,19 @@ import {
     Play,
     Pencil
 } from "lucide-react";
+import { useState } from "react";
 import { getWebhookUrl, deleteTrigger, updateTrigger, executeTrigger } from "../../lib/api";
-import { useWorkflowStore } from "../../stores/workflowStore";
-import { wsClient } from "../../lib/websocket";
 import { cn } from "../../lib/utils";
-import { Dialog } from "../common/Dialog";
+import { wsClient } from "../../lib/websocket";
+import { useWorkflowStore } from "../../stores/workflowStore";
+import {
+    WorkflowTrigger,
+    ScheduleTriggerConfig,
+    WebhookTriggerConfig,
+    ManualTriggerConfig
+} from "../../types/trigger";
 import { ConfirmDialog } from "../common/ConfirmDialog";
+import { Dialog } from "../common/Dialog";
 
 interface TriggerCardProps {
     trigger: WorkflowTrigger;
@@ -219,7 +219,10 @@ export function TriggerCard({ trigger, onUpdate }: TriggerCardProps) {
                 inputs = config.inputs;
             }
 
-            const response = await executeTrigger(trigger.id, inputs as unknown as import("@flowmaestro/shared").JsonObject | undefined);
+            const response = await executeTrigger(
+                trigger.id,
+                inputs as unknown as import("@flowmaestro/shared").JsonObject | undefined
+            );
 
             if (response.success && response.data) {
                 // Start execution monitoring in the workflow store

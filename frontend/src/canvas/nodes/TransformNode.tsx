@@ -1,7 +1,7 @@
+import { Shuffle } from "lucide-react";
 import { memo } from "react";
 import { NodeProps } from "reactflow";
 import { BaseNode } from "./BaseNode";
-import { Shuffle } from "lucide-react";
 
 interface TransformNodeData {
     label: string;

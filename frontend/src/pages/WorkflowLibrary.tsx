@@ -1,5 +1,10 @@
+import { Plus, FileText, Calendar, Loader2, LogOut, User, Sparkles } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import type { WorkflowNode } from "@flowmaestro/shared";
+import { AIGenerateDialog } from "../components/AIGenerateDialog";
+import { CreateWorkflowDialog } from "../components/CreateWorkflowDialog";
+import { useAuth } from "../contexts/AuthContext";
 import {
     getWorkflows,
     createWorkflow,
@@ -7,12 +12,7 @@ import {
     updateWorkflow,
     type WorkflowDefinition
 } from "../lib/api";
-import type { WorkflowNode } from "@flowmaestro/shared";
-import { useAuth } from "../contexts/AuthContext";
-import { CreateWorkflowDialog } from "../components/CreateWorkflowDialog";
-import { AIGenerateDialog } from "../components/AIGenerateDialog";
 import { convertToReactFlowFormat } from "../lib/workflow-layout";
-import { Plus, FileText, Calendar, Loader2, LogOut, User, Sparkles } from "lucide-react";
 
 interface Workflow {
     id: string;

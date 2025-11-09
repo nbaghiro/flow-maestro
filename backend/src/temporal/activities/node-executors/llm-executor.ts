@@ -1,10 +1,10 @@
-import OpenAI from "openai";
 import Anthropic from "@anthropic-ai/sdk";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { CohereClient } from "cohere-ai";
+import OpenAI from "openai";
 import type { JsonObject } from "@flowmaestro/shared";
-import { interpolateVariables } from "./utils";
 import { ConnectionRepository } from "../../../storage/repositories/ConnectionRepository";
+import { interpolateVariables } from "./utils";
 import type { ApiKeyData } from "../../../storage/models/Connection";
 
 const connectionRepository = new ConnectionRepository();

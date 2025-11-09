@@ -1,18 +1,18 @@
 import type { JsonObject, JsonValue } from "@flowmaestro/shared";
-import type { ConversationMessage, ToolCall } from "../../../storage/models/AgentExecution";
-import type { Tool } from "../../../storage/models/Agent";
-import { AgentRepository } from "../../../storage/repositories/AgentRepository";
-import { AgentExecutionRepository } from "../../../storage/repositories/AgentExecutionRepository";
-import { WorkflowRepository } from "../../../storage/repositories/WorkflowRepository";
-import { ConnectionRepository } from "../../../storage/repositories/ConnectionRepository";
-import type { AgentConfig, LLMResponse } from "../../workflows/agent-orchestrator-workflow";
 import {
     validateToolInput,
     coerceToolArguments,
     createValidationErrorResponse
 } from "../../../shared/validation/tool-validation";
-import { injectConversationMemoryTool } from "./conversation-memory-tool";
+import { AgentExecutionRepository } from "../../../storage/repositories/AgentExecutionRepository";
+import { AgentRepository } from "../../../storage/repositories/AgentRepository";
+import { ConnectionRepository } from "../../../storage/repositories/ConnectionRepository";
+import { WorkflowRepository } from "../../../storage/repositories/WorkflowRepository";
 import { searchConversationMemory as searchConversationMemoryActivity } from "./conversation-memory-activities";
+import { injectConversationMemoryTool } from "./conversation-memory-tool";
+import type { Tool } from "../../../storage/models/Agent";
+import type { ConversationMessage, ToolCall } from "../../../storage/models/AgentExecution";
+import type { AgentConfig, LLMResponse } from "../../workflows/agent-orchestrator-workflow";
 
 const agentRepo = new AgentRepository();
 const executionRepo = new AgentExecutionRepository();
@@ -356,10 +356,7 @@ export async function executeToolCall(input: ExecuteToolCallInput): Promise<Json
 
     if (!validation.success) {
         // Return validation error to LLM (don't throw, let LLM retry)
-        console.warn(
-            `Tool "${toolCall.name}" validation failed:`,
-            validation.error?.message
-        );
+        console.warn(`Tool "${toolCall.name}" validation failed:`, validation.error?.message);
 
         return createValidationErrorResponse(toolCall.name, validation);
     }
@@ -380,6 +377,8 @@ export async function executeToolCall(input: ExecuteToolCallInput): Promise<Json
             });
         case "knowledge_base":
             return await executeKnowledgeBaseTool({ tool, arguments: validatedArgs, userId });
+        case "agent":
+            return await executeAgentTool({ tool, arguments: validatedArgs, userId });
         default:
             throw new Error(`Unknown tool type: ${tool.type}`);
     }
@@ -596,8 +595,10 @@ async function executeSearchConversationMemory(
                 role: r.message_role,
                 similarity: r.similarity,
                 executionId: r.execution_id,
-                contextBefore: r.context_before?.map((c) => `${c.role}: ${c.content}`).join("\n") || null,
-                contextAfter: r.context_after?.map((c) => `${c.role}: ${c.content}`).join("\n") || null
+                contextBefore:
+                    r.context_before?.map((c) => `${c.role}: ${c.content}`).join("\n") || null,
+                contextAfter:
+                    r.context_after?.map((c) => `${c.role}: ${c.content}`).join("\n") || null
             }))
         };
     } catch (error) {
@@ -760,7 +761,7 @@ async function decodeBase64(args: JsonObject): Promise<JsonObject> {
             encoded: args.encoded,
             decoded
         };
-    } catch (error) {
+    } catch (_error) {
         throw new Error("Invalid base64 string");
     }
 }
@@ -881,6 +882,102 @@ async function executeKnowledgeBaseTool(input: ExecuteKnowledgeBaseToolInput): P
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : "Unknown error";
         throw new Error(`Knowledge base query failed: ${errorMessage}`);
+    }
+}
+
+/**
+ * Execute agent as tool (multi-agent orchestration)
+ */
+interface ExecuteAgentToolInput {
+    tool: Tool;
+    arguments: JsonObject;
+    userId: string;
+}
+
+async function executeAgentTool(input: ExecuteAgentToolInput): Promise<JsonObject> {
+    const { tool, arguments: args, userId } = input;
+
+    if (!tool.config.agentId) {
+        throw new Error("Agent tool missing agentId in config");
+    }
+
+    // Extract input from arguments
+    const agentInput = (args.input as string) || "";
+    const agentContext = (args.context as JsonObject) || {};
+
+    // Import Temporal client for agent execution
+    const { Connection, Client } = await import("@temporalio/client");
+    const connection = await Connection.connect({
+        address: process.env.TEMPORAL_ADDRESS || "localhost:7233"
+    });
+    const client = new Client({
+        connection,
+        namespace: process.env.TEMPORAL_NAMESPACE || "default"
+    });
+
+    // Generate execution ID for the agent
+    const agentExecutionId = `agent-tool-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+
+    try {
+        // Create execution record
+        const execution = await executionRepo.create({
+            agent_id: tool.config.agentId,
+            user_id: userId,
+            status: "running",
+            conversation_history: [
+                {
+                    id: `user-${Date.now()}`,
+                    role: "user",
+                    content: agentInput,
+                    timestamp: new Date()
+                }
+            ],
+            metadata: {
+                message: agentInput,
+                context: agentContext
+            }
+        });
+
+        // Start agent execution workflow
+        const handle = await client.workflow.start("agentOrchestratorWorkflowV2", {
+            taskQueue: process.env.TEMPORAL_TASK_QUEUE || "flowmaestro",
+            workflowId: agentExecutionId,
+            args: [
+                {
+                    executionId: execution.id,
+                    agentId: tool.config.agentId,
+                    userId,
+                    initialMessage: agentInput
+                }
+            ]
+        });
+
+        // Wait for agent to complete (with timeout)
+        const result = await handle.result();
+
+        if (!result.success) {
+            throw new Error(result.error || "Agent execution failed");
+        }
+
+        // Return agent's final response
+        return {
+            success: true,
+            agentId: tool.config.agentId,
+            agentName: tool.config.agentName || "Unknown Agent",
+            executionId: execution.id,
+            response: result.finalMessage || "",
+            iterations: result.iterations,
+            // Include the full conversation if needed
+            conversationHistory: result.serializedConversation?.messages.map(
+                (msg: ConversationMessage) => ({
+                    role: msg.role,
+                    content: msg.content
+                })
+            )
+        };
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : "Unknown error";
+        throw new Error(`Agent execution failed: ${errorMessage}`);
     }
 }
 

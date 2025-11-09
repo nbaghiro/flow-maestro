@@ -3,11 +3,11 @@
  * Floating button to trigger AI workflow generation
  */
 
-import { useState } from "react";
 import { Sparkles } from "lucide-react";
+import { useState } from "react";
 import { cn } from "../lib/utils";
-import { AIGenerateDialog } from "./AIGenerateDialog";
 import { useWorkflowStore } from "../stores/workflowStore";
+import { AIGenerateDialog } from "./AIGenerateDialog";
 
 export function AIGenerateButton() {
     const [dialogOpen, setDialogOpen] = useState(false);

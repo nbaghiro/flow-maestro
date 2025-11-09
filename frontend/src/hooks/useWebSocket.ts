@@ -3,8 +3,8 @@
  */
 
 import { useEffect, useCallback, useState } from "react";
-import { wsClient } from "../lib/websocket";
 import { WebSocketEvent } from "@flowmaestro/shared";
+import { wsClient } from "../lib/websocket";
 
 export function useWebSocket(token: string | null) {
     const [isConnected, setIsConnected] = useState(false);

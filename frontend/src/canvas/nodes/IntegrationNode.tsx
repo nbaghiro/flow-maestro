@@ -1,7 +1,7 @@
+import { Plug } from "lucide-react";
 import { memo } from "react";
 import { NodeProps } from "reactflow";
 import { BaseNode } from "./BaseNode";
-import { Plug } from "lucide-react";
 
 interface IntegrationNodeData {
     label: string;

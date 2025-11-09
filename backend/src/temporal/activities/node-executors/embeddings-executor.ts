@@ -1,7 +1,7 @@
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import { CohereClient } from "cohere-ai";
 import OpenAI from "openai";
 import type { JsonObject, JsonValue } from "@flowmaestro/shared";
-import { CohereClient } from "cohere-ai";
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import { interpolateVariables } from "./utils";
 
 export interface EmbeddingsNodeConfig {

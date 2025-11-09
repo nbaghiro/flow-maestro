@@ -45,7 +45,14 @@ export interface JsonSchema {
     oneOf?: JsonSchema[];
     allOf?: JsonSchema[];
     not?: JsonSchema;
-    [key: string]: JsonValue | JsonSchema | JsonSchema[] | Record<string, JsonSchema> | boolean | string[] | undefined;
+    [key: string]:
+        | JsonValue
+        | JsonSchema
+        | JsonSchema[]
+        | Record<string, JsonSchema>
+        | boolean
+        | string[]
+        | undefined;
 }
 
 /**

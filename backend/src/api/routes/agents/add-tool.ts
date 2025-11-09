@@ -1,7 +1,7 @@
 import { FastifyRequest, FastifyReply } from "fastify";
 import { z } from "zod";
-import { AgentRepository } from "../../../storage/repositories/AgentRepository";
 import { Tool } from "../../../storage/models/Agent";
+import { AgentRepository } from "../../../storage/repositories/AgentRepository";
 
 const addToolSchema = z.object({
     type: z.enum(["workflow", "function", "knowledge_base"]),

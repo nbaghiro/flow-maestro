@@ -50,11 +50,12 @@ export async function executeHTTPNode(
     if (config.authType && config.authType !== "none") {
         const credentials = interpolateVariables(config.authCredentials || "", context);
         switch (config.authType) {
-            case "basic":
+            case "basic": {
                 const [username, password] = credentials.split(":");
                 const basicAuth = Buffer.from(`${username}:${password}`).toString("base64");
                 headers["Authorization"] = `Basic ${basicAuth}`;
                 break;
+            }
             case "bearer":
                 headers["Authorization"] = `Bearer ${credentials}`;
                 break;

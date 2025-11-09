@@ -1,9 +1,9 @@
-import { Navigate } from "react-router-dom";
-import { useEffect } from "react";
-import { useAuth } from "../contexts/AuthContext";
-import { wsClient } from "../lib/websocket";
-import { useExecutionEventHandlers } from "../hooks/useExecutionEventHandlers";
 import { Loader2 } from "lucide-react";
+import { useEffect } from "react";
+import { Navigate } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
+import { useExecutionEventHandlers } from "../hooks/useExecutionEventHandlers";
+import { wsClient } from "../lib/websocket";
 
 interface ProtectedRouteProps {
     children: React.ReactNode;

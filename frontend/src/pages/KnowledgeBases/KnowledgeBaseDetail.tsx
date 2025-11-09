@@ -1,7 +1,3 @@
-import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { useKnowledgeBaseStore } from "../../stores/knowledgeBaseStore";
-import { ChunkSearchResult } from "../../lib/api";
 import {
     BookOpen,
     Upload,
@@ -16,6 +12,10 @@ import {
     RefreshCw,
     Search
 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { ChunkSearchResult } from "../../lib/api";
+import { useKnowledgeBaseStore } from "../../stores/knowledgeBaseStore";
 
 export function KnowledgeBaseDetail() {
     const { id } = useParams<{ id: string }>();
@@ -381,7 +381,10 @@ export function KnowledgeBaseDetail() {
                                                 Object.keys(result.metadata).length > 0 && (
                                                     <div className="mt-2 flex flex-wrap gap-2">
                                                         {(() => {
-                                                            const meta = result.metadata as Record<string, unknown>;
+                                                            const meta = result.metadata as Record<
+                                                                string,
+                                                                unknown
+                                                            >;
                                                             return (
                                                                 <>
                                                                     {meta.page && (

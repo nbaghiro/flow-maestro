@@ -3,9 +3,9 @@
  * Attaches RequestContext to every request for distributed tracing
  */
 
-import type { FastifyRequest, FastifyReply } from "fastify";
-import { createRequestContext, type RequestContext } from "@flowmaestro/shared";
 import { randomUUID } from "crypto";
+import { createRequestContext, type RequestContext } from "@flowmaestro/shared";
+import type { FastifyRequest, FastifyReply } from "fastify";
 
 // Extend Fastify request to include requestContext
 declare module "fastify" {

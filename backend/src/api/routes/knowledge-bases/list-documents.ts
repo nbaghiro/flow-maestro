@@ -1,10 +1,10 @@
 import { FastifyInstance } from "fastify";
-import type { DocumentStatus } from "../../../storage/models/KnowledgeDocument";
 import {
     KnowledgeBaseRepository,
     KnowledgeDocumentRepository
 } from "../../../storage/repositories";
 import { authMiddleware } from "../../middleware";
+import type { DocumentStatus } from "../../../storage/models/KnowledgeDocument";
 
 export async function listDocumentsRoute(fastify: FastifyInstance) {
     fastify.get(
@@ -16,7 +16,11 @@ export async function listDocumentsRoute(fastify: FastifyInstance) {
             const kbRepository = new KnowledgeBaseRepository();
             const docRepository = new KnowledgeDocumentRepository();
             const params = request.params as { id: string };
-            const query = request.query as { limit?: string; offset?: string; status?: DocumentStatus };
+            const query = request.query as {
+                limit?: string;
+                offset?: string;
+                status?: DocumentStatus;
+            };
 
             // Verify ownership
             const kb = await kbRepository.findById(params.id);

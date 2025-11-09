@@ -1,7 +1,8 @@
 import { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { ExecutionRepository, WorkflowRepository } from "../../../storage/repositories";
-import { executionIdParamSchema } from "../../schemas/execution-schemas";
+import { getTemporalClient } from "../../../temporal/client";
+import { userInputSignal } from "../../../temporal/workflows/user-input-workflow";
 import {
     authMiddleware,
     validateParams,
@@ -9,16 +10,24 @@ import {
     NotFoundError,
     BadRequestError
 } from "../../middleware";
-import { getTemporalClient } from "../../../temporal/client";
-import { userInputSignal } from "../../../temporal/workflows/user-input-workflow";
+import { executionIdParamSchema } from "../../schemas/execution-schemas";
 
 const submitInputBodySchema = z.object({
     userResponse: z.string().min(1, "User response cannot be empty"),
     nodeId: z.string().optional()
 });
 
+interface SubmitInputParams {
+    id: string;
+}
+
+interface SubmitInputBody {
+    userResponse: string;
+    nodeId?: string;
+}
+
 export async function submitInputRoute(fastify: FastifyInstance) {
-    fastify.post(
+    fastify.post<{ Params: SubmitInputParams; Body: SubmitInputBody }>(
         "/:id/submit-input",
         {
             preHandler: [
@@ -30,8 +39,8 @@ export async function submitInputRoute(fastify: FastifyInstance) {
         async (request, reply) => {
             const executionRepository = new ExecutionRepository();
             const workflowRepository = new WorkflowRepository();
-            const { id } = (request.params as { id: string });
-            const { userResponse, nodeId } = request.body as z.infer<typeof submitInputBodySchema>;
+            const { id } = request.params;
+            const { userResponse, nodeId } = request.body;
 
             const execution = await executionRepository.findById(id);
 
@@ -73,7 +82,7 @@ export async function submitInputRoute(fastify: FastifyInstance) {
                     success: true,
                     message: "User input submitted successfully"
                 });
-            } catch (error: unknown) {
+            } catch (error) {
                 fastify.log.error(
                     {
                         error,
@@ -83,7 +92,10 @@ export async function submitInputRoute(fastify: FastifyInstance) {
                     "Failed to submit user input to workflow"
                 );
 
-                const msg = error instanceof Error ? error.message : "Failed to submit user input to workflow";
+                const msg =
+                    error instanceof Error
+                        ? error.message
+                        : "Failed to submit user input to workflow";
                 throw new BadRequestError(msg);
             }
         }

@@ -1,3 +1,4 @@
+import { getEncryptionService } from "../../services/EncryptionService";
 import { db } from "../database";
 import {
     ConnectionWithData,
@@ -11,7 +12,6 @@ import {
     ConnectionMetadata,
     ConnectionCapabilities
 } from "../models/Connection";
-import { getEncryptionService } from "../../services/EncryptionService";
 
 // Database row interface matching PostgreSQL table structure
 interface ConnectionRow {
@@ -168,7 +168,9 @@ export class ConnectionRepository {
         ]);
 
         return {
-            connections: connectionsResult.rows.map((row) => this.mapToSummary(row as ConnectionRow)),
+            connections: connectionsResult.rows.map((row) =>
+                this.mapToSummary(row as ConnectionRow)
+            ),
             total: parseInt(countResult.rows[0].count)
         };
     }

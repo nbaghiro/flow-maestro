@@ -50,15 +50,17 @@ export interface OpenAIMessage {
  */
 export interface AnthropicMessage {
     role: "user" | "assistant";
-    content: string | Array<{
-        type: "text" | "tool_use" | "tool_result";
-        text?: string;
-        id?: string;
-        name?: string;
-        input?: JsonObject;
-        tool_use_id?: string;
-        content?: string;
-    }>;
+    content:
+        | string
+        | Array<{
+              type: "text" | "tool_use" | "tool_result";
+              text?: string;
+              id?: string;
+              name?: string;
+              input?: JsonObject;
+              tool_use_id?: string;
+              content?: string;
+          }>;
 }
 
 /**
@@ -138,11 +140,7 @@ export class ConversationManager {
     /**
      * Add assistant message with optional tool calls
      */
-    addAssistantMessage(
-        content: string,
-        toolCalls?: ToolCall[],
-        id?: string
-    ): ConversationMessage {
+    addAssistantMessage(content: string, toolCalls?: ToolCall[], id?: string): ConversationMessage {
         const message: ConversationMessage = {
             id: id || `asst-${Date.now()}-${uuidv4()}`,
             role: "assistant",
@@ -190,7 +188,7 @@ export class ConversationManager {
      */
     getAll(): ConversationMessage[] {
         return this.messages.map((msg) => {
-            const { source, ...message } = msg;
+            const { source: _source, ...message } = msg;
             return message;
         });
     }
@@ -202,7 +200,7 @@ export class ConversationManager {
         return this.messages
             .filter((msg) => !this.savedMessageIds.has(msg.id))
             .map((msg) => {
-                const { source, ...message } = msg;
+                const { source: _source, ...message } = msg;
                 return message;
             });
     }
@@ -312,9 +310,10 @@ export class ConversationManager {
 
                 anthropicMessages.push({
                     role: "assistant",
-                    content: content.length === 1 && content[0].type === "text"
-                        ? content[0].text!
-                        : content
+                    content:
+                        content.length === 1 && content[0].type === "text"
+                            ? content[0].text!
+                            : content
                 });
             } else if (msg.role === "tool") {
                 // Tool results go as user messages in Anthropic
@@ -390,7 +389,7 @@ export class ConversationManager {
         this.messages = this.messages.slice(-count);
 
         return removed.map((msg) => {
-            const { source, ...message } = msg;
+            const { source: _source, ...message } = msg;
             return message;
         });
     }
@@ -423,7 +422,7 @@ export class ConversationManager {
         let summaryContent: string;
         if (summarizer) {
             const messagesToSummarize = toSummarize.map((msg) => {
-                const { source, ...message } = msg;
+                const { source: _source, ...message } = msg;
                 return message;
             });
             summaryContent = await summarizer(messagesToSummarize);

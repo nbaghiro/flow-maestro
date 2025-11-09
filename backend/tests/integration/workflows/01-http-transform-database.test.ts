@@ -9,10 +9,10 @@
 
 import { Pool } from "pg";
 import { getGlobalTestPool, getGlobalDbHelper } from "../../../jest.setup";
-import { DatabaseHelper } from "../../helpers/DatabaseHelper";
-import { WorkflowTestHarness } from "../../helpers/WorkflowTestHarness";
-import { TestConnectionFactory } from "../../helpers/TestConnectionFactory";
 import workflowDefinition from "../../fixtures/workflows/01-http-transform-database.json";
+import { DatabaseHelper } from "../../helpers/DatabaseHelper";
+import { TestConnectionFactory } from "../../helpers/TestConnectionFactory";
+import { WorkflowTestHarness } from "../../helpers/WorkflowTestHarness";
 
 describe("Workflow 1: HTTP + Transform + Database", () => {
     let pool: Pool;
@@ -20,7 +20,7 @@ describe("Workflow 1: HTTP + Transform + Database", () => {
     let testHarness: WorkflowTestHarness;
     let connectionFactory: TestConnectionFactory;
     let testUserId: string;
-    let dbConnectionId: string;
+    let _dbConnectionId: string;
 
     beforeAll(async () => {
         // Get test infrastructure
@@ -52,7 +52,7 @@ describe("Workflow 1: HTTP + Transform + Database", () => {
 
         // Create database connection for workflow
         const connectionString = `postgresql://${process.env.POSTGRES_USER}:${process.env.POSTGRES_PASSWORD}@${process.env.POSTGRES_HOST}:${process.env.POSTGRES_PORT}/${process.env.POSTGRES_DB}`;
-        dbConnectionId = await connectionFactory.createDatabaseConnection(
+        _dbConnectionId = await connectionFactory.createDatabaseConnection(
             "postgresql",
             connectionString
         );
@@ -74,7 +74,7 @@ describe("Workflow 1: HTTP + Transform + Database", () => {
         // Clean up test_users table after each test (if it exists)
         try {
             await pool.query("DELETE FROM test_users");
-        } catch (error) {
+        } catch (_error) {
             // Ignore if table doesn't exist yet
         }
     });

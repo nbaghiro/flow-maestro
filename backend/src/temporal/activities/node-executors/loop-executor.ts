@@ -1,5 +1,5 @@
-import { interpolateVariables } from "./utils";
 import type { JsonObject, JsonValue } from "@flowmaestro/shared";
+import { interpolateVariables } from "./utils";
 
 export interface LoopNodeConfig {
     loopType: "forEach" | "while" | "count";

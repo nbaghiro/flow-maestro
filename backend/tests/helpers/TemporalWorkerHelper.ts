@@ -3,9 +3,9 @@
  * Starts and stops a Temporal worker for integration tests
  */
 
+import path from "path";
 import { Worker, NativeConnection } from "@temporalio/worker";
 import * as activities from "../../src/temporal/activities";
-import path from "path";
 
 export class TemporalWorkerHelper {
     private worker?: Worker;

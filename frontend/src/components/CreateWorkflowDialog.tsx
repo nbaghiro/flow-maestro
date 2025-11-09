@@ -1,5 +1,5 @@
-import { useState, FormEvent } from "react";
 import { X, Loader2, Upload, FileJson, ChevronRight } from "lucide-react";
+import { useState, FormEvent } from "react";
 import type { WorkflowDefinition } from "../lib/api";
 
 interface CreateWorkflowDialogProps {
@@ -92,7 +92,10 @@ export function CreateWorkflowDialog({ isOpen, onClose, onCreate }: CreateWorkfl
             return { valid: true, data: parsed };
         } catch (err: unknown) {
             const errorObj = err as { message?: string };
-            return { valid: false, error: `JSON parse error: ${errorObj.message || "Unknown error"}` };
+            return {
+                valid: false,
+                error: `JSON parse error: ${errorObj.message || "Unknown error"}`
+            };
         }
     };
 

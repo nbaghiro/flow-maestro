@@ -1,12 +1,12 @@
 import React from "react";
-import { Hero } from "./components/Hero";
+import { CTA } from "./components/CTA";
 import { Features } from "./components/Features";
-import { UseCases } from "./components/UseCases";
-import { WorkflowDemo } from "./components/WorkflowDemo";
+import { Footer } from "./components/Footer";
+import { Hero } from "./components/Hero";
 import { Integrations } from "./components/Integrations";
 import { SocialProof } from "./components/SocialProof";
-import { CTA } from "./components/CTA";
-import { Footer } from "./components/Footer";
+import { UseCases } from "./components/UseCases";
+import { WorkflowDemo } from "./components/WorkflowDemo";
 
 const App: React.FC = () => {
     return (

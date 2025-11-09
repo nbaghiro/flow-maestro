@@ -1,8 +1,8 @@
 import type { JsonObject } from "@flowmaestro/shared";
-import { interpolateVariables } from "./utils";
+import { globalEventEmitter } from "../../../shared/events/EventEmitter";
 import { getVoiceCommandBus } from "../../../shared/services/VoiceCommandBus";
 import { CallExecutionRepository } from "../../../storage/repositories/CallExecutionRepository";
-import { globalEventEmitter } from "../../../shared/events/EventEmitter";
+import { interpolateVariables } from "./utils";
 
 export interface VoiceGreetNodeConfig {
     message: string; // Text to speak (supports variable interpolation)

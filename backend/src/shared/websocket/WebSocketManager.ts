@@ -1,5 +1,5 @@
-import type { WebSocket } from "@fastify/websocket";
 import { WebSocketEvent } from "@flowmaestro/shared";
+import type { WebSocket } from "@fastify/websocket";
 
 interface Connection {
     socket: WebSocket;

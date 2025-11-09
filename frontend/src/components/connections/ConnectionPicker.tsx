@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react";
 import { Plus, Key, AlertCircle } from "lucide-react";
-import { useConnectionStore } from "../../stores/connectionStore";
-import { AddConnectionDialog } from "./AddConnectionDialog";
+import { useEffect, useState } from "react";
 import { ConnectionMethod } from "../../lib/api";
 import { cn } from "../../lib/utils";
+import { useConnectionStore } from "../../stores/connectionStore";
+import { AddConnectionDialog } from "./AddConnectionDialog";
 
 interface ConnectionPickerProps {
     provider: string;

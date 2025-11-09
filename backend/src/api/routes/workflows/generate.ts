@@ -1,7 +1,7 @@
 import { FastifyInstance } from "fastify";
-import { generateWorkflowSchema } from "../../schemas/workflow-schemas";
-import { authMiddleware, validateRequest } from "../../middleware";
 import { generateWorkflow } from "../../../services/WorkflowGenerator";
+import { authMiddleware, validateRequest } from "../../middleware";
+import { generateWorkflowSchema } from "../../schemas/workflow-schemas";
 
 export async function generateWorkflowRoute(fastify: FastifyInstance) {
     fastify.post(

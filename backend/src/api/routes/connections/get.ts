@@ -1,7 +1,7 @@
 import { FastifyInstance } from "fastify";
 import { ConnectionRepository } from "../../../storage/repositories/ConnectionRepository";
-import { connectionIdParamSchema, ConnectionIdParam } from "../../schemas/connection-schemas";
 import { authMiddleware, validateParams } from "../../middleware";
+import { connectionIdParamSchema, ConnectionIdParam } from "../../schemas/connection-schemas";
 
 export async function getConnectionRoute(fastify: FastifyInstance) {
     fastify.get(

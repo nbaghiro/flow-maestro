@@ -1,7 +1,7 @@
 import { FastifyRequest, FastifyReply } from "fastify";
 import { z } from "zod";
-import { AgentRepository } from "../../../storage/repositories/AgentRepository";
 import { Tool, MemoryConfig } from "../../../storage/models/Agent";
+import { AgentRepository } from "../../../storage/repositories/AgentRepository";
 import { NotFoundError, BadRequestError } from "../../middleware";
 
 const updateAgentParamsSchema = z.object({

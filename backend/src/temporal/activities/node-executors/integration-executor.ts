@@ -1,8 +1,8 @@
 import axios from "axios";
-import type { JsonObject } from "@flowmaestro/shared";
 import * as nodemailer from "nodemailer";
-import { interpolateVariables } from "./utils";
+import type { JsonObject } from "@flowmaestro/shared";
 import { getAccessToken } from "../../../services/oauth/TokenRefreshService";
+import { interpolateVariables } from "./utils";
 
 export interface IntegrationNodeConfig {
     service: "slack" | "email" | "webhook";
@@ -105,8 +105,8 @@ async function executeSlack(
 
     if (config.operation === "send_message") {
         // Send message to Slack channel
-        const channel = interpolateVariables(slackConfig.channel as string || "", context);
-        const text = interpolateVariables(slackConfig.text as string || "", context);
+        const channel = interpolateVariables((slackConfig.channel as string) || "", context);
+        const text = interpolateVariables((slackConfig.text as string) || "", context);
         const blocks = slackConfig.blocks as unknown[];
         const threadTs = slackConfig.threadTs;
 
@@ -141,8 +141,11 @@ async function executeSlack(
     } else if (config.operation === "upload_file") {
         // Upload file to Slack
         const channels = (slackConfig.channels as string[])?.join(",") || "";
-        const content = interpolateVariables(slackConfig.content as string || "", context);
-        const filename = interpolateVariables(slackConfig.filename as string || "file.txt", context);
+        const content = interpolateVariables((slackConfig.content as string) || "", context);
+        const filename = interpolateVariables(
+            (slackConfig.filename as string) || "file.txt",
+            context
+        );
 
         console.log(`[Integration/Slack] Uploading file to channels: ${channels}`);
 
@@ -192,11 +195,11 @@ async function executeEmail(
 
     if (emailConfig.provider === "smtp") {
         // SMTP configuration
-        const host = interpolateVariables(emailConfig.host as string || "", context);
+        const host = interpolateVariables((emailConfig.host as string) || "", context);
         const port = emailConfig.port || 587;
         const secure = emailConfig.secure || false;
-        const username = interpolateVariables(emailConfig.username as string || "", context);
-        const password = interpolateVariables(emailConfig.password as string || "", context);
+        const username = interpolateVariables((emailConfig.username as string) || "", context);
+        const password = interpolateVariables((emailConfig.password as string) || "", context);
 
         transportConfig = {
             host,
@@ -231,12 +234,12 @@ async function executeEmail(
     const transporter = nodemailer.createTransport(transportConfig);
 
     // Prepare email
-    const from = interpolateVariables(emailConfig.from as string || "", context);
+    const from = interpolateVariables((emailConfig.from as string) || "", context);
     const to = Array.isArray(emailConfig.to)
         ? emailConfig.to.map((t: string) => interpolateVariables(t, context))
-        : interpolateVariables(emailConfig.to as string || "", context);
-    const subject = interpolateVariables(emailConfig.subject as string || "", context);
-    const body = interpolateVariables(emailConfig.body as string || "", context);
+        : interpolateVariables((emailConfig.to as string) || "", context);
+    const subject = interpolateVariables((emailConfig.subject as string) || "", context);
+    const body = interpolateVariables((emailConfig.body as string) || "", context);
     const bodyType = emailConfig.bodyType || "text";
 
     console.log(`[Integration/Email] Sending email to: ${to}`);
@@ -261,13 +264,13 @@ async function executeEmail(
     if (emailConfig.cc) {
         mailOptions.cc = Array.isArray(emailConfig.cc)
             ? emailConfig.cc.map((c: string) => interpolateVariables(c, context))
-            : interpolateVariables(emailConfig.cc as string || "", context);
+            : interpolateVariables((emailConfig.cc as string) || "", context);
     }
 
     if (emailConfig.bcc) {
         mailOptions.bcc = Array.isArray(emailConfig.bcc)
             ? emailConfig.bcc.map((b: string) => interpolateVariables(b, context))
-            : interpolateVariables(emailConfig.bcc as string || "", context);
+            : interpolateVariables((emailConfig.bcc as string) || "", context);
     }
 
     // Add attachments if specified
@@ -307,7 +310,7 @@ async function executeWebhook(
 
     if (config.operation === "send") {
         // Send HTTP request to webhook URL
-        const url = interpolateVariables(webhookConfig.url as string || "", context);
+        const url = interpolateVariables((webhookConfig.url as string) || "", context);
         const method = webhookConfig.method || "POST";
         const headers = webhookConfig.headers || {};
         const body = interpolateObject(webhookConfig.body || {}, context);
@@ -361,10 +364,7 @@ function interpolateObject(obj: unknown, context: JsonObject): unknown {
         const result: Record<string, unknown> = {};
         for (const key in obj) {
             if (Object.prototype.hasOwnProperty.call(obj, key)) {
-                result[key] = interpolateObject(
-                    (obj as Record<string, unknown>)[key],
-                    context
-                );
+                result[key] = interpolateObject((obj as Record<string, unknown>)[key], context);
             }
         }
         return result;

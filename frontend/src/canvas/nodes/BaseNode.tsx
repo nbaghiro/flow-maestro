@@ -1,9 +1,9 @@
+import { LucideIcon } from "lucide-react";
 import { ReactNode, useState, useEffect } from "react";
 import { Handle, Position, useNodeId, useStore } from "reactflow";
-import { cn } from "../../lib/utils";
-import { LucideIcon } from "lucide-react";
-import { useWorkflowStore } from "../../stores/workflowStore";
 import { NodeExecutionPopover } from "../../components/execution/NodeExecutionPopover";
+import { cn } from "../../lib/utils";
+import { useWorkflowStore } from "../../stores/workflowStore";
 
 export type NodeStatus = "idle" | "pending" | "running" | "success" | "error";
 
@@ -99,8 +99,7 @@ export function BaseNode({
         if (showPopover) {
             setShowPopover(false);
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [viewport]);
+    }, [viewport, showPopover]);
 
     // Use execution status if available, otherwise use provided status
     const status: NodeStatus = executionState

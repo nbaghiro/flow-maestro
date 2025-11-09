@@ -1,6 +1,6 @@
 import { FastifyInstance, FastifyRequest } from "fastify";
-import { wsManager } from "../../shared/websocket/WebSocketManager";
 import { v4 as uuidv4 } from "uuid";
+import { wsManager } from "../../shared/websocket/WebSocketManager";
 
 export async function websocketRoutes(fastify: FastifyInstance) {
     fastify.get("/ws", { websocket: true }, async (socket, request: FastifyRequest) => {

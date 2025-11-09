@@ -1,8 +1,8 @@
-import { useState, useEffect, useRef } from "react";
-import { useAgentStore } from "../../stores/agentStore";
-import { wsClient } from "../../lib/websocket";
 import { Send, X, Loader2, Bot, User } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
 import { cn } from "../../lib/utils";
+import { wsClient } from "../../lib/websocket";
+import { useAgentStore } from "../../stores/agentStore";
 import type { Agent, ConversationMessage } from "../../lib/api";
 
 interface AgentChatProps {

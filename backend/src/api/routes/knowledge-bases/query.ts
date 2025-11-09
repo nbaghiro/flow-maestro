@@ -1,6 +1,6 @@
 import { FastifyInstance } from "fastify";
-import { KnowledgeBaseRepository, KnowledgeChunkRepository } from "../../../storage/repositories";
 import { EmbeddingService } from "../../../services/embeddings";
+import { KnowledgeBaseRepository, KnowledgeChunkRepository } from "../../../storage/repositories";
 import { authMiddleware } from "../../middleware";
 
 export async function queryKnowledgeBaseRoute(fastify: FastifyInstance) {

@@ -1,6 +1,6 @@
+import { Info } from "lucide-react";
 import { useState, useEffect } from "react";
 import { FormField, FormSection } from "../../../components/FormField";
-import { Info } from "lucide-react";
 
 interface InputNodeConfigProps {
     data: Record<string, unknown>;

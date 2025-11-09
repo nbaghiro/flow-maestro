@@ -1,9 +1,9 @@
+import * as fs from "fs/promises";
+import * as os from "os";
+import * as path from "path";
+import axios from "axios";
 import OpenAI from "openai";
 import type { JsonObject } from "@flowmaestro/shared";
-import axios from "axios";
-import * as fs from "fs/promises";
-import * as path from "path";
-import * as os from "os";
 import { interpolateVariables } from "./utils";
 
 export interface AudioNodeConfig {
@@ -154,7 +154,8 @@ async function executeOpenAI(config: AudioNodeConfig, context: JsonObject): Prom
 
         const response = await openai.audio.speech.create({
             model: config.model || "tts-1",
-            voice: (config.voice as "alloy" | "echo" | "fable" | "onyx" | "nova" | "shimmer") ||
+            voice:
+                (config.voice as "alloy" | "echo" | "fable" | "onyx" | "nova" | "shimmer") ||
                 "alloy",
             input: text,
             speed: config.speed || 1.0

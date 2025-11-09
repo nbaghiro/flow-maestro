@@ -1,8 +1,8 @@
-import { VM } from "vm2";
 import { spawn } from "child_process";
 import { writeFile, unlink } from "fs/promises";
-import * as path from "path";
 import * as os from "os";
+import * as path from "path";
+import { VM } from "vm2";
 import type { JsonObject, JsonValue } from "@flowmaestro/shared";
 
 export interface CodeNodeConfig {
@@ -242,7 +242,7 @@ if 'result' in globals():
 
                         try {
                             output = JSON.parse(outputJson);
-                        } catch (e) {
+                        } catch (_e) {
                             // If JSON parsing fails, return the raw output
                             output = outputJson;
                         }

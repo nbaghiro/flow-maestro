@@ -19,7 +19,7 @@ export async function authMiddleware(request: FastifyRequest) {
         if (!request.user) {
             throw new UnauthorizedError("Invalid token");
         }
-    } catch (error) {
+    } catch (_error) {
         throw new UnauthorizedError("Authentication required");
     }
 }

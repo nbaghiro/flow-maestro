@@ -1,16 +1,16 @@
+import * as fs from "fs/promises";
 import type { JsonValue } from "@flowmaestro/shared";
+import { TextExtractor, TextChunker } from "../../services/document-processing";
+import { EmbeddingService } from "../../services/embeddings";
+import { getGCSStorageService } from "../../services/storage/GCSStorageService";
+import { globalEventEmitter } from "../../shared/events/EventEmitter";
+import { CreateKnowledgeChunkInput } from "../../storage/models/KnowledgeChunk";
+import { DocumentFileType } from "../../storage/models/KnowledgeDocument";
 import {
     KnowledgeDocumentRepository,
     KnowledgeChunkRepository,
     KnowledgeBaseRepository
 } from "../../storage/repositories";
-import { TextExtractor, TextChunker } from "../../services/document-processing";
-import { EmbeddingService } from "../../services/embeddings";
-import { DocumentFileType } from "../../storage/models/KnowledgeDocument";
-import { CreateKnowledgeChunkInput } from "../../storage/models/KnowledgeChunk";
-import { globalEventEmitter } from "../../shared/events/EventEmitter";
-import { getGCSStorageService } from "../../services/storage/GCSStorageService";
-import * as fs from "fs/promises";
 
 export interface ProcessDocumentInput {
     documentId: string;
@@ -33,10 +33,12 @@ const embeddingService = new EmbeddingService();
  */
 function sanitizeText(text: string): string {
     // Remove null bytes and other control characters except newlines/tabs
+    /* eslint-disable no-control-regex */
     return text
         .replace(/\x00/g, "") // Remove null bytes
         .replace(/[\x01-\x08\x0B-\x0C\x0E-\x1F\x7F]/g, "") // Remove other control chars
         .trim();
+    /* eslint-enable no-control-regex */
 }
 
 /**
@@ -114,11 +116,7 @@ export async function extractTextActivity(input: ProcessDocumentInput): Promise<
         await documentRepository.updateStatus(input.documentId, "failed", errorMsg);
 
         // Emit document failed event
-        globalEventEmitter.emitDocumentFailed(
-            input.knowledgeBaseId,
-            input.documentId,
-            errorMsg
-        );
+        globalEventEmitter.emitDocumentFailed(input.knowledgeBaseId, input.documentId, errorMsg);
 
         throw error;
     } finally {
@@ -128,7 +126,10 @@ export async function extractTextActivity(input: ProcessDocumentInput): Promise<
                 await fs.unlink(tempFilePath);
                 console.log(`[extractTextActivity] Cleaned up temp file: ${tempFilePath}`);
             } catch (error: unknown) {
-                console.warn(`[extractTextActivity] Failed to delete temp file: ${tempFilePath}`, error);
+                console.warn(
+                    `[extractTextActivity] Failed to delete temp file: ${tempFilePath}`,
+                    error
+                );
             }
         }
     }
@@ -183,11 +184,7 @@ export async function chunkTextActivity(input: ProcessDocumentInput & { content:
         await documentRepository.updateStatus(input.documentId, "failed", errorMsg);
 
         // Emit document failed event
-        globalEventEmitter.emitDocumentFailed(
-            input.knowledgeBaseId,
-            input.documentId,
-            errorMsg
-        );
+        globalEventEmitter.emitDocumentFailed(input.knowledgeBaseId, input.documentId, errorMsg);
 
         throw error;
     }
@@ -263,11 +260,7 @@ export async function generateAndStoreEmbeddingsActivity(
         await documentRepository.updateStatus(input.documentId, "failed", errorMsg);
 
         // Emit document failed event
-        globalEventEmitter.emitDocumentFailed(
-            input.knowledgeBaseId,
-            input.documentId,
-            errorMsg
-        );
+        globalEventEmitter.emitDocumentFailed(input.knowledgeBaseId, input.documentId, errorMsg);
 
         throw error;
     }

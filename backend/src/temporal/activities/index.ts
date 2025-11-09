@@ -83,3 +83,8 @@ export {
     type MemoryStatsResult,
     type ClearExecutionMemoryInput
 } from "./agent/conversation-memory-activities";
+export {
+    validateInputsActivity,
+    validateOutputsActivity,
+    validateContextActivity
+} from "./workflow-validation-activities";

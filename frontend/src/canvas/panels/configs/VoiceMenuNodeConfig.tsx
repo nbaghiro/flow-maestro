@@ -1,7 +1,7 @@
+import { X, Plus } from "lucide-react";
 import { useState, useEffect } from "react";
 import { FormField, FormSection } from "../../../components/FormField";
 import { Slider } from "../../../components/Slider";
-import { X, Plus } from "lucide-react";
 
 interface VoiceMenuNodeConfigProps {
     data: Record<string, unknown>;

@@ -1,8 +1,8 @@
+import { Plus, Bot, Trash2, MoreVertical, Calendar, Loader2, Edit2 } from "lucide-react";
 import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAgentStore } from "../stores/agentStore";
-import { Plus, Bot, Trash2, MoreVertical, Calendar, Loader2, Edit2 } from "lucide-react";
 import { PageHeader } from "../components/common/PageHeader";
+import { useAgentStore } from "../stores/agentStore";
 
 export function Agents() {
     const navigate = useNavigate();

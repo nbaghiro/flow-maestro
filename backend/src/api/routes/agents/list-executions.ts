@@ -1,7 +1,7 @@
 import { FastifyRequest, FastifyReply } from "fastify";
 import { z } from "zod";
-import { AgentRepository } from "../../../storage/repositories/AgentRepository";
 import { AgentExecutionRepository } from "../../../storage/repositories/AgentExecutionRepository";
+import { AgentRepository } from "../../../storage/repositories/AgentRepository";
 import { NotFoundError } from "../../middleware";
 
 const listExecutionsParamsSchema = z.object({

@@ -1,7 +1,7 @@
 import { FastifyInstance } from "fastify";
 import { WorkflowRepository } from "../../../storage/repositories";
-import { listWorkflowsQuerySchema } from "../../schemas/workflow-schemas";
 import { authMiddleware, validateQuery } from "../../middleware";
+import { listWorkflowsQuerySchema } from "../../schemas/workflow-schemas";
 
 export async function listWorkflowsRoute(fastify: FastifyInstance) {
     fastify.get(

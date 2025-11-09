@@ -1,11 +1,11 @@
-import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
 import { PageHeader } from "../components/common/PageHeader";
-import { NewConnectionDialog } from "../components/connections/NewConnectionDialog";
 import { ConnectionDetailsDialog } from "../components/connections/ConnectionDetailsDialog";
+import { NewConnectionDialog } from "../components/connections/NewConnectionDialog";
+import { ALL_PROVIDERS, type Provider } from "../lib/providers";
 import { useConnectionStore } from "../stores/connectionStore";
 import type { Connection } from "../lib/api";
-import { ALL_PROVIDERS, type Provider } from "../lib/providers";
 
 /**
  * Provider Card Component
@@ -95,8 +95,7 @@ export function Connections() {
 
     useEffect(() => {
         fetchConnections();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [fetchConnections]);
 
     // Get connections for a specific provider
     const getConnectionsForProvider = (provider: string) => {

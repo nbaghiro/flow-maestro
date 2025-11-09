@@ -1,7 +1,7 @@
 import type { JsonObject } from "@flowmaestro/shared";
 
 export type LLMProvider = "openai" | "anthropic" | "google" | "cohere";
-export type ToolType = "workflow" | "function" | "knowledge_base";
+export type ToolType = "workflow" | "function" | "knowledge_base" | "agent";
 export type MemoryType = "buffer" | "summary" | "vector";
 
 export interface Tool {
@@ -22,6 +22,10 @@ export interface ToolConfig {
 
     // For knowledge_base type
     knowledgeBaseId?: string;
+
+    // For agent type
+    agentId?: string;
+    agentName?: string;
 }
 
 export interface MemoryConfig {

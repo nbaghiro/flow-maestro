@@ -3,8 +3,8 @@
  * Reusable component for configuring node output variable storage
  */
 
-import { useState, useEffect } from "react";
 import { AlertCircle, Info } from "lucide-react";
+import { useState, useEffect } from "react";
 
 interface OutputSettingsSectionProps {
     nodeName: string;

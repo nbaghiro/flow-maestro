@@ -4,8 +4,8 @@
  */
 
 import { ListOrdered } from "lucide-react";
-import { BaseNode } from "./BaseNode";
 import { Handle, Position } from "reactflow";
+import { BaseNode } from "./BaseNode";
 import type { NodeProps } from "reactflow";
 
 export function VoiceMenuNode(props: NodeProps) {

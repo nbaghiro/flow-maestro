@@ -1,8 +1,8 @@
 import type { JsonObject } from "@flowmaestro/shared";
-import { interpolateVariables } from "./utils";
+import { globalEventEmitter } from "../../../shared/events/EventEmitter";
 import { getVoiceCommandBus } from "../../../shared/services/VoiceCommandBus";
 import { CallExecutionRepository } from "../../../storage/repositories/CallExecutionRepository";
-import { globalEventEmitter } from "../../../shared/events/EventEmitter";
+import { interpolateVariables } from "./utils";
 
 export interface MenuOption {
     key: string; // "1", "2", "support", etc.
@@ -100,11 +100,16 @@ export async function executeVoiceMenuNode(
             }
 
             const commandResult = (response.result || {}) as MenuCommandResult;
-            const selectedKey = typeof commandResult.selectedOption === "string" ? commandResult.selectedOption : null;
+            const selectedKey =
+                typeof commandResult.selectedOption === "string"
+                    ? commandResult.selectedOption
+                    : null;
             const inputMethod = commandResult.inputMethod;
 
             // Check if valid option was selected
-            const selectedOption = selectedKey ? config.options.find((opt) => opt.key === selectedKey) : null;
+            const selectedOption = selectedKey
+                ? config.options.find((opt) => opt.key === selectedKey)
+                : null;
 
             if (selectedOption) {
                 console.log(`[VoiceMenu] User selected: ${selectedKey} (${selectedOption.label})`);

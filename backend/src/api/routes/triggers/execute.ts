@@ -1,12 +1,12 @@
 import { FastifyInstance } from "fastify";
 import type { JsonValue } from "@flowmaestro/shared";
-import { getTemporalClient } from "../../../temporal/client";
-import { authMiddleware } from "../../middleware";
-import { TriggerRepository } from "../../../storage/repositories/TriggerRepository";
-import { WorkflowRepository } from "../../../storage/repositories/WorkflowRepository";
-import { ExecutionRepository } from "../../../storage/repositories/ExecutionRepository";
 import { convertFrontendToBackend } from "../../../shared/utils/workflow-converter";
 import { ManualTriggerConfig } from "../../../storage/models/Trigger";
+import { ExecutionRepository } from "../../../storage/repositories/ExecutionRepository";
+import { TriggerRepository } from "../../../storage/repositories/TriggerRepository";
+import { WorkflowRepository } from "../../../storage/repositories/WorkflowRepository";
+import { getTemporalClient } from "../../../temporal/client";
+import { authMiddleware } from "../../middleware";
 
 interface ExecuteTriggerBody {
     inputs?: Record<string, unknown>; // Optional inputs override
@@ -106,7 +106,20 @@ export async function executeTriggerRoute(fastify: FastifyInstance) {
                 } else if (workflowDef.nodes && Array.isArray(workflowDef.nodes)) {
                     // Frontend format, needs conversion
                     backendWorkflowDefinition = convertFrontendToBackend(
-                        workflow.definition as unknown as { nodes: Array<{ id: string; type: string; data: Record<string, unknown>; position?: { x: number; y: number } }>; edges: Array<{ id: string; source: string; target: string; sourceHandle?: string }> },
+                        workflow.definition as unknown as {
+                            nodes: Array<{
+                                id: string;
+                                type: string;
+                                data: Record<string, unknown>;
+                                position?: { x: number; y: number };
+                            }>;
+                            edges: Array<{
+                                id: string;
+                                source: string;
+                                target: string;
+                                sourceHandle?: string;
+                            }>;
+                        },
                         workflow.name
                     );
                 } else {
@@ -143,7 +156,8 @@ export async function executeTriggerRoute(fastify: FastifyInstance) {
                     }
                 });
             } catch (error: unknown) {
-                const errorMsg = error instanceof Error ? error.message : "Trigger execution failed";
+                const errorMsg =
+                    error instanceof Error ? error.message : "Trigger execution failed";
                 fastify.log.error(`Trigger execution failed: ${errorMsg}`);
                 return reply.status(500).send({
                     success: false,

@@ -5,9 +5,9 @@ import {
     setHandler,
     continueAsNew
 } from "@temporalio/workflow";
-import type * as activities from "../activities";
-import type { ConversationMessage, ToolCall } from "../../storage/models/AgentExecution";
 import type { Tool } from "../../storage/models/Agent";
+import type { ConversationMessage, ToolCall } from "../../storage/models/AgentExecution";
+import type * as activities from "../activities";
 
 // Proxy activities
 const { getAgentConfig, callLLM, executeToolCall, saveAgentCheckpoint } = proxyActivities<

@@ -1,7 +1,7 @@
+import { Send, FileText } from "lucide-react";
 import { memo } from "react";
 import { NodeProps } from "reactflow";
 import { BaseNode } from "./BaseNode";
-import { Send, FileText } from "lucide-react";
 
 interface OutputNodeData {
     label: string;

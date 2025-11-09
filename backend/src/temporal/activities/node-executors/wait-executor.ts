@@ -53,7 +53,7 @@ export async function executeWaitNode(
             }
             break;
 
-        case "until":
+        case "until": {
             if (!config.timestamp) {
                 throw new Error('Timestamp is required for "until" wait type');
             }
@@ -79,6 +79,7 @@ export async function executeWaitNode(
                 waitMs = 0;
             }
             break;
+        }
 
         default:
             throw new Error(`Unsupported wait type: ${config.waitType}`);

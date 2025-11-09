@@ -1,8 +1,8 @@
 import { FastifyInstance } from "fastify";
-import { authMiddleware } from "../../middleware";
-import { ConnectionRepository } from "../../../storage/repositories/ConnectionRepository";
 import { oauthService } from "../../../services/oauth/OAuthService";
 import { OAuth2TokenData } from "../../../storage/models/Connection";
+import { ConnectionRepository } from "../../../storage/repositories/ConnectionRepository";
+import { authMiddleware } from "../../middleware";
 
 interface RevokeParams {
     provider: string;
@@ -93,7 +93,10 @@ export async function revokeRoute(fastify: FastifyInstance) {
 
                 return reply.status(500).send({
                     success: false,
-                    error: error instanceof Error ? error.message : "Unknown error while revoking connection"
+                    error:
+                        error instanceof Error
+                            ? error.message
+                            : "Unknown error while revoking connection"
                 });
             }
         }

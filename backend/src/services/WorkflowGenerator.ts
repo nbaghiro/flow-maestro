@@ -1,9 +1,9 @@
+import { getDefaultModelForProvider } from "@flowmaestro/shared";
+import { ConnectionRepository } from "../storage/repositories/ConnectionRepository";
 import {
     executeLLMNode,
     type LLMNodeConfig
 } from "../temporal/activities/node-executors/llm-executor";
-import { ConnectionRepository } from "../storage/repositories/ConnectionRepository";
-import { getDefaultModelForProvider } from "@flowmaestro/shared";
 
 export interface WorkflowGenerationRequest {
     userPrompt: string;
@@ -406,7 +406,7 @@ export async function generateWorkflow(
         }
 
         workflow = JSON.parse(jsonText);
-    } catch (error) {
+    } catch (_error) {
         console.error("[Workflow Generator] Failed to parse LLM response:", text);
         throw new Error("Failed to parse workflow JSON from LLM response. Please try again.");
     }

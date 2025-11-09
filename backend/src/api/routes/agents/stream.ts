@@ -1,8 +1,8 @@
 import { FastifyRequest, FastifyReply } from "fastify";
 import { z } from "zod";
+import { redisEventBus } from "../../../shared/events/RedisEventBus";
 import { AgentExecutionRepository } from "../../../storage/repositories/AgentExecutionRepository";
 import { NotFoundError } from "../../middleware";
-import { redisEventBus } from "../../../shared/events/RedisEventBus";
 
 const streamParamsSchema = z.object({
     id: z.string().uuid(),

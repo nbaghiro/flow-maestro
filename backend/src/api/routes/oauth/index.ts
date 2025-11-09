@@ -1,7 +1,7 @@
 import { FastifyInstance } from "fastify";
-import { listProvidersRoute } from "./list-providers";
 import { authorizeRoute } from "./authorize";
 import { callbackRoute } from "./callback";
+import { listProvidersRoute } from "./list-providers";
 import { refreshRoute } from "./refresh";
 import { revokeRoute } from "./revoke";
 

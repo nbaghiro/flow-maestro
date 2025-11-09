@@ -3,9 +3,9 @@
  * Initializes test database and services before all tests
  */
 
-import { Pool } from "pg";
-import dotenv from "dotenv";
 import path from "path";
+import dotenv from "dotenv";
+import { Pool } from "pg";
 
 // Load test environment variables
 dotenv.config({ path: path.join(__dirname, "../../.env.test") });

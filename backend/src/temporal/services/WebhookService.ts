@@ -3,11 +3,11 @@
  * Handles incoming webhook requests and triggers workflow executions
  */
 
-import type { JsonValue } from "@flowmaestro/shared";
 import * as crypto from "crypto";
-import { getTemporalClient } from "../client";
-import { TriggerRepository } from "../../storage/repositories/TriggerRepository";
+import type { JsonValue } from "@flowmaestro/shared";
 import { WebhookTriggerConfig } from "../../storage/models/Trigger";
+import { TriggerRepository } from "../../storage/repositories/TriggerRepository";
+import { getTemporalClient } from "../client";
 
 export interface WebhookRequestData {
     method: string;

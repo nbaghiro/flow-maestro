@@ -4,8 +4,8 @@ import {
     KnowledgeDocumentRepository,
     KnowledgeChunkRepository
 } from "../../../storage/repositories";
-import { authMiddleware } from "../../middleware";
 import { getTemporalClient } from "../../../temporal/client";
+import { authMiddleware } from "../../middleware";
 
 export async function reprocessDocumentRoute(fastify: FastifyInstance) {
     fastify.post(

@@ -174,11 +174,13 @@ export class WorkingMemoryService {
     /**
      * List all working memory for an agent
      */
-    async listByAgent(agentId: string): Promise<Array<{
-        userId: string;
-        workingMemory: string;
-        updatedAt: Date;
-    }>> {
+    async listByAgent(agentId: string): Promise<
+        Array<{
+            userId: string;
+            workingMemory: string;
+            updatedAt: Date;
+        }>
+    > {
         const memories = await this.repository.listByAgent(agentId);
 
         return memories.map((m) => ({
@@ -191,11 +193,13 @@ export class WorkingMemoryService {
     /**
      * List all working memory for a user (across agents)
      */
-    async listByUser(userId: string): Promise<Array<{
-        agentId: string;
-        workingMemory: string;
-        updatedAt: Date;
-    }>> {
+    async listByUser(userId: string): Promise<
+        Array<{
+            agentId: string;
+            workingMemory: string;
+            updatedAt: Date;
+        }>
+    > {
         const memories = await this.repository.listByUser(userId);
 
         return memories.map((m) => ({

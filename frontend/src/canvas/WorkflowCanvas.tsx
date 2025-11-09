@@ -1,5 +1,5 @@
 import { useCallback, useRef } from "react";
-import ReactFlow, {
+import Flow, {
     Background,
     Controls,
     MiniMap,
@@ -10,31 +10,30 @@ import ReactFlow, {
     ReactFlowInstance
 } from "reactflow";
 import "reactflow/dist/style.css";
-import { useWorkflowStore } from "../stores/workflowStore";
 import { generateId } from "../lib/utils";
-
+import { useWorkflowStore } from "../stores/workflowStore";
 // Import all node components
-import LLMNode from "./nodes/LLMNode";
-import VisionNode from "./nodes/VisionNode";
 import AudioNode from "./nodes/AudioNode";
-import EmbeddingsNode from "./nodes/EmbeddingsNode";
-import ConditionalNode from "./nodes/ConditionalNode";
-import SwitchNode from "./nodes/SwitchNode";
-import LoopNode from "./nodes/LoopNode";
 import CodeNode from "./nodes/CodeNode";
-import WaitNode from "./nodes/WaitNode";
-import InputNode from "./nodes/InputNode";
-import TransformNode from "./nodes/TransformNode";
-import VariableNode from "./nodes/VariableNode";
-import OutputNode from "./nodes/OutputNode";
-import HTTPNode from "./nodes/HTTPNode";
+import ConditionalNode from "./nodes/ConditionalNode";
 import DatabaseNode from "./nodes/DatabaseNode";
+import EmbeddingsNode from "./nodes/EmbeddingsNode";
+import HTTPNode from "./nodes/HTTPNode";
+import InputNode from "./nodes/InputNode";
 import IntegrationNode from "./nodes/IntegrationNode";
 import KnowledgeBaseQueryNode from "./nodes/KnowledgeBaseQueryNode";
+import LLMNode from "./nodes/LLMNode";
+import LoopNode from "./nodes/LoopNode";
+import OutputNode from "./nodes/OutputNode";
+import SwitchNode from "./nodes/SwitchNode";
+import TransformNode from "./nodes/TransformNode";
+import VariableNode from "./nodes/VariableNode";
+import VisionNode from "./nodes/VisionNode";
 import { VoiceGreetNode } from "./nodes/VoiceGreetNode";
+import { VoiceHangupNode } from "./nodes/VoiceHangupNode";
 import { VoiceListenNode } from "./nodes/VoiceListenNode";
 import { VoiceMenuNode } from "./nodes/VoiceMenuNode";
-import { VoiceHangupNode } from "./nodes/VoiceHangupNode";
+import WaitNode from "./nodes/WaitNode";
 
 // Register node types
 const nodeTypes = {
@@ -129,7 +128,7 @@ export function WorkflowCanvas() {
 
     return (
         <div ref={reactFlowWrapper} style={{ width: "100%", height: "100%" }}>
-            <ReactFlow
+            <Flow
                 nodes={nodes}
                 edges={edges}
                 onNodesChange={onNodesChange}
@@ -156,7 +155,7 @@ export function WorkflowCanvas() {
                     nodeColor="#9ca3af"
                     maskColor="rgba(0, 0, 0, 0.1)"
                 />
-            </ReactFlow>
+            </Flow>
         </div>
     );
 }

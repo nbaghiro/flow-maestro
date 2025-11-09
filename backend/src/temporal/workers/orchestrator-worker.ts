@@ -1,8 +1,8 @@
-import { Worker, NativeConnection } from "@temporalio/worker";
 import path from "path";
-import * as activities from "../activities";
-import { registerAllNodes } from "../../shared/registry/register-nodes";
+import { Worker, NativeConnection } from "@temporalio/worker";
 import { redisEventBus } from "../../shared/events/RedisEventBus";
+import { registerAllNodes } from "../../shared/registry/register-nodes";
+import * as activities from "../activities";
 
 /**
  * Orchestrator Worker

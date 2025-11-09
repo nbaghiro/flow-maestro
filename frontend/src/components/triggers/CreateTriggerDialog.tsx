@@ -3,8 +3,8 @@
  * Modal for creating new workflow triggers
  */
 
-import { useState } from "react";
 import { X, Calendar, Webhook, Play, Phone } from "lucide-react";
+import { useState } from "react";
 import { createTrigger } from "../../lib/api";
 import type { TriggerType, CreateTriggerInput } from "../../types/trigger";
 

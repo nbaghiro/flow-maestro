@@ -1,6 +1,6 @@
+import { ExecutionStatus, JsonValue } from "@flowmaestro/shared";
 import { db } from "../database";
 import { ExecutionModel, CreateExecutionInput, UpdateExecutionInput } from "../models/Execution";
-import { ExecutionStatus, JsonValue } from "@flowmaestro/shared";
 
 // Database row interface
 interface ExecutionRow {

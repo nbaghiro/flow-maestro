@@ -204,9 +204,10 @@ export class VoiceAgent {
 
         const text = typeof payload.text === "string" ? payload.text : "";
         const voice = typeof payload.voice === "string" ? payload.voice : "default";
-        const voiceProvider = (payload.voiceProvider === "openai" || payload.voiceProvider === "elevenlabs")
-            ? payload.voiceProvider
-            : "elevenlabs";
+        const voiceProvider =
+            payload.voiceProvider === "openai" || payload.voiceProvider === "elevenlabs"
+                ? payload.voiceProvider
+                : "elevenlabs";
         const speed = typeof payload.speed === "number" ? payload.speed : 1.0;
         // Note: interruptible handling would be implemented when this method is activated
 
@@ -310,10 +311,11 @@ export class VoiceAgent {
         };
 
         const options = Array.isArray(payload.options)
-            ? payload.options as Array<{ key: string; label: string }>
+            ? (payload.options as Array<{ key: string; label: string }>)
             : [];
         const inputMethod = payload.inputMethod;
-        const timeoutSeconds = typeof payload.timeoutSeconds === "number" ? payload.timeoutSeconds : 10;
+        const timeoutSeconds =
+            typeof payload.timeoutSeconds === "number" ? payload.timeoutSeconds : 10;
 
         console.log(`[VoiceAgent] Presenting menu with ${options.length} options`);
 

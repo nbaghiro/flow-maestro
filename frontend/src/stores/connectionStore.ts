@@ -1,5 +1,4 @@
 import { create } from "zustand";
-import type { Connection, ConnectionMethod, ConnectionStatus } from "../lib/api";
 import {
     getConnections,
     createConnection,
@@ -12,6 +11,7 @@ import {
     CreateConnectionInput,
     MCPDiscoveryRequest
 } from "../lib/api";
+import type { Connection, ConnectionMethod, ConnectionStatus } from "../lib/api";
 
 interface ConnectionStore {
     connections: Connection[];
@@ -34,7 +34,9 @@ interface ConnectionStore {
     clearError: () => void;
 
     // MCP-specific actions
-    discoverMCPTools: (request: MCPDiscoveryRequest) => Promise<{ tools: unknown[]; server_info: unknown }>;
+    discoverMCPTools: (
+        request: MCPDiscoveryRequest
+    ) => Promise<{ tools: unknown[]; server_info: unknown }>;
     refreshMCPToolsById: (id: string) => Promise<void>;
 }
 

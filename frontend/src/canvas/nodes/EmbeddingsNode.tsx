@@ -1,7 +1,7 @@
+import { Sparkles } from "lucide-react";
 import { memo } from "react";
 import { NodeProps } from "reactflow";
 import { BaseNode } from "./BaseNode";
-import { Sparkles } from "lucide-react";
 
 interface EmbeddingsNodeData {
     label: string;

@@ -1,7 +1,7 @@
+import { Eye } from "lucide-react";
 import { memo } from "react";
 import { NodeProps } from "reactflow";
 import { BaseNode } from "./BaseNode";
-import { Eye } from "lucide-react";
 
 interface VisionNodeData {
     label: string;

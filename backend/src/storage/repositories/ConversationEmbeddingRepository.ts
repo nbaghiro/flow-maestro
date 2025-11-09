@@ -102,18 +102,18 @@ export class ConversationEmbeddingRepository {
     /**
      * Batch create embeddings for multiple messages
      */
-    async createBatch(inputs: CreateConversationEmbeddingInput[]): Promise<ConversationEmbedding[]> {
+    async createBatch(
+        inputs: CreateConversationEmbeddingInput[]
+    ): Promise<ConversationEmbedding[]> {
         if (inputs.length === 0) {
             return [];
         }
 
         // Build VALUES clause with proper parameterization
-        const valuesPlaceholders = inputs.map(
-            (_, index) => {
-                const base = index * 10;
-                return `($${base + 1}, $${base + 2}, $${base + 3}, $${base + 4}, $${base + 5}, $${base + 6}, $${base + 7}, $${base + 8}, $${base + 9}, $${base + 10})`;
-            }
-        );
+        const valuesPlaceholders = inputs.map((_, index) => {
+            const base = index * 10;
+            return `($${base + 1}, $${base + 2}, $${base + 3}, $${base + 4}, $${base + 5}, $${base + 6}, $${base + 7}, $${base + 8}, $${base + 9}, $${base + 10})`;
+        });
 
         const values = inputs.flatMap((input) => [
             input.agent_id,
@@ -277,9 +277,7 @@ export class ConversationEmbeddingRepository {
 
             const context_before = currentIndex > 0 ? allContext.slice(0, currentIndex) : [];
             const context_after =
-                currentIndex < allContext.length - 1
-                    ? allContext.slice(currentIndex + 1)
-                    : [];
+                currentIndex < allContext.length - 1 ? allContext.slice(currentIndex + 1) : [];
 
             results.push({
                 id: row.id,

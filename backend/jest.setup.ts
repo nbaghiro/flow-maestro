@@ -3,8 +3,8 @@
  * Runs before all tests
  */
 
-import dotenv from "dotenv";
 import path from "path";
+import dotenv from "dotenv";
 import { Pool } from "pg";
 import { DatabaseHelper } from "./tests/helpers/DatabaseHelper";
 

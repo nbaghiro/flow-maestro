@@ -1,7 +1,7 @@
+import { Variable } from "lucide-react";
 import { memo } from "react";
 import { NodeProps } from "reactflow";
 import { BaseNode } from "./BaseNode";
-import { Variable } from "lucide-react";
 
 interface VariableNodeData {
     label: string;

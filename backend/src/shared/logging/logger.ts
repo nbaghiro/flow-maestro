@@ -3,8 +3,8 @@
  * Integrates Pino logger with RequestContext for distributed tracing
  */
 
-import type { Logger } from "pino";
 import type { RequestContext } from "@flowmaestro/shared";
+import type { Logger } from "pino";
 
 /**
  * Enhanced log methods with automatic correlation ID injection

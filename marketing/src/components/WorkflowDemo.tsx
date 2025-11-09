@@ -1,9 +1,8 @@
-import React from "react";
-import { motion } from "framer-motion";
-import { useInView } from "framer-motion";
-import ReactFlow, { Node, Edge, Controls, Background, BackgroundVariant } from "reactflow";
-import "reactflow/dist/style.css";
+import { motion, useInView } from "framer-motion";
 import { Play, Sparkles } from "lucide-react";
+import React from "react";
+import Flow, { Node, Edge, Controls, Background, BackgroundVariant } from "reactflow";
+import "reactflow/dist/style.css";
 
 const initialNodes: Node[] = [
     {
@@ -182,7 +181,7 @@ export const WorkflowDemo: React.FC = () => {
 
                         {/* React Flow Canvas */}
                         <div className="h-[500px] bg-gray-950">
-                            <ReactFlow
+                            <Flow
                                 nodes={initialNodes}
                                 edges={initialEdges}
                                 fitView
@@ -196,7 +195,7 @@ export const WorkflowDemo: React.FC = () => {
                                     color="#374151"
                                 />
                                 <Controls className="bg-gray-800 border-gray-700" />
-                            </ReactFlow>
+                            </Flow>
                         </div>
 
                         {/* Running Overlay */}

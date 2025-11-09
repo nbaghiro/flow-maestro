@@ -1,12 +1,12 @@
 import { FastifyInstance } from "fastify";
 import { createTriggerRoute } from "./create";
-import { listTriggersRoute } from "./list";
-import { getTriggerRoute } from "./get";
-import { updateTriggerRoute } from "./update";
 import { deleteTriggerRoute } from "./delete";
-import { webhookReceiverRoute } from "./webhook";
-import { phoneCallWebhookRoute } from "./phone-call-webhook";
 import { executeTriggerRoute } from "./execute";
+import { getTriggerRoute } from "./get";
+import { listTriggersRoute } from "./list";
+import { phoneCallWebhookRoute } from "./phone-call-webhook";
+import { updateTriggerRoute } from "./update";
+import { webhookReceiverRoute } from "./webhook";
 
 export async function triggerRoutes(fastify: FastifyInstance) {
     // Webhook receiver routes (PUBLIC - no auth)

@@ -55,7 +55,7 @@ export async function executeEchoNode(
             };
             break;
 
-        case "transform":
+        case "transform": {
             const inputValue = config.inputVariable
                 ? context[config.inputVariable]
                 : JSON.stringify(context);
@@ -83,8 +83,9 @@ export async function executeEchoNode(
                     output = inputValue;
             }
             break;
+        }
 
-        case "delay":
+        case "delay": {
             const delay = config.delayMs || 1000;
             console.log(`[Echo] Delaying for ${delay}ms`);
             await new Promise((resolve) => setTimeout(resolve, delay));
@@ -93,8 +94,9 @@ export async function executeEchoNode(
                 delayMs: delay
             };
             break;
+        }
 
-        case "error":
+        case "error": {
             const errorMsg = config.errorMessage || "Test error from Echo node";
             if (config.errorType === "throw") {
                 throw new Error(errorMsg);
@@ -105,6 +107,7 @@ export async function executeEchoNode(
                 };
             }
             break;
+        }
 
         default:
             throw new Error(`Unsupported echo mode: ${config.mode}`);

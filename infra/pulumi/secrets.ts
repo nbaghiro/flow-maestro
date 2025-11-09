@@ -26,7 +26,10 @@ function createSecret(name: string, secretData: pulumi.Output<string> | string) 
 // Create secrets for core application credentials
 export const dbPasswordSecret = createSecret("db-password", infrastructureConfig.dbPassword);
 export const jwtSecretSecret = createSecret("jwt-secret", infrastructureConfig.jwtSecret);
-export const encryptionKeySecret = createSecret("encryption-key", infrastructureConfig.encryptionKey);
+export const encryptionKeySecret = createSecret(
+    "encryption-key",
+    infrastructureConfig.encryptionKey
+);
 
 // Create flexible application secrets for all integrations
 // These can be any key-value pairs (LLM keys, API tokens, OAuth secrets, etc.)

@@ -21,10 +21,10 @@
  * - Use dedicated audio processing libraries for Node.js
  */
 
-import { Room, VideoPresets } from "livekit-client";
-import { VoiceAgent } from "./VoiceAgent";
-import { getVoiceCommandBus } from "../shared/services/VoiceCommandBus";
 import Redis from "ioredis";
+import { Room, VideoPresets } from "livekit-client";
+import { getVoiceCommandBus } from "../shared/services/VoiceCommandBus";
+import { VoiceAgent } from "./VoiceAgent";
 
 interface WorkerConfig {
     livekitUrl: string;
@@ -174,7 +174,8 @@ export class VoiceAgentWorker {
         // For now, this is a placeholder
         // You'd use livekit-server-sdk to generate tokens properly
 
-        const { AccessToken } = require("livekit-server-sdk");
+        const livekitSdk = await import("livekit-server-sdk");
+        const { AccessToken } = livekitSdk;
 
         const at = new AccessToken(this.config.livekitApiKey, this.config.livekitApiSecret, {
             identity: `agent-${Date.now()}`,

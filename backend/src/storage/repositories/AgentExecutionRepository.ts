@@ -1,5 +1,5 @@
-import { db } from "../database";
 import type { JsonValue } from "@flowmaestro/shared";
+import { db } from "../database";
 import {
     AgentExecutionModel,
     AgentMessageModel,
@@ -69,7 +69,9 @@ export class AgentExecutionRepository {
         `;
 
         const result = await db.query<AgentExecutionRow>(query, [id]);
-        return result.rows.length > 0 ? this.mapExecutionRow(result.rows[0] as AgentExecutionRow) : null;
+        return result.rows.length > 0
+            ? this.mapExecutionRow(result.rows[0] as AgentExecutionRow)
+            : null;
     }
 
     async findByIdAndUserId(id: string, userId: string): Promise<AgentExecutionModel | null> {
@@ -79,7 +81,9 @@ export class AgentExecutionRepository {
         `;
 
         const result = await db.query<AgentExecutionRow>(query, [id, userId]);
-        return result.rows.length > 0 ? this.mapExecutionRow(result.rows[0] as AgentExecutionRow) : null;
+        return result.rows.length > 0
+            ? this.mapExecutionRow(result.rows[0] as AgentExecutionRow)
+            : null;
     }
 
     async findByAgentId(
@@ -121,7 +125,9 @@ export class AgentExecutionRepository {
         ]);
 
         return {
-            executions: executionsResult.rows.map((row) => this.mapExecutionRow(row as AgentExecutionRow)),
+            executions: executionsResult.rows.map((row) =>
+                this.mapExecutionRow(row as AgentExecutionRow)
+            ),
             total: parseInt(countResult.rows[0].count)
         };
     }
@@ -152,7 +158,9 @@ export class AgentExecutionRepository {
         ]);
 
         return {
-            executions: executionsResult.rows.map((row) => this.mapExecutionRow(row as AgentExecutionRow)),
+            executions: executionsResult.rows.map((row) =>
+                this.mapExecutionRow(row as AgentExecutionRow)
+            ),
             total: parseInt(countResult.rows[0].count)
         };
     }
@@ -213,7 +221,9 @@ export class AgentExecutionRepository {
         `;
 
         const result = await db.query<AgentExecutionRow>(query, values);
-        return result.rows.length > 0 ? this.mapExecutionRow(result.rows[0] as AgentExecutionRow) : null;
+        return result.rows.length > 0
+            ? this.mapExecutionRow(result.rows[0] as AgentExecutionRow)
+            : null;
     }
 
     async addMessage(input: CreateAgentMessageInput): Promise<AgentMessageModel> {

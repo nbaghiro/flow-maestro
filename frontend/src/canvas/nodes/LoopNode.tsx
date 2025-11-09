@@ -1,7 +1,7 @@
+import { Repeat } from "lucide-react";
 import { memo } from "react";
 import { NodeProps } from "reactflow";
 import { BaseNode } from "./BaseNode";
-import { Repeat } from "lucide-react";
 
 interface LoopNodeData {
     label: string;

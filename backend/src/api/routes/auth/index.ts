@@ -1,7 +1,7 @@
 import { FastifyInstance } from "fastify";
-import { registerRoute } from "./register";
 import { loginRoute } from "./login";
 import { meRoute } from "./me";
+import { registerRoute } from "./register";
 
 export async function authRoutes(fastify: FastifyInstance) {
     await registerRoute(fastify);

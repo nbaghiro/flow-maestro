@@ -1,6 +1,6 @@
 import { FastifyInstance } from "fastify";
-import { authMiddleware } from "../../middleware";
 import { oauthService } from "../../../services/oauth/OAuthService";
+import { authMiddleware } from "../../middleware";
 
 interface AuthorizeParams {
     provider: string;

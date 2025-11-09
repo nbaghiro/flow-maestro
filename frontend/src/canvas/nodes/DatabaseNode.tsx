@@ -1,7 +1,7 @@
+import { Database } from "lucide-react";
 import { memo } from "react";
 import { NodeProps } from "reactflow";
 import { BaseNode } from "./BaseNode";
-import { Database } from "lucide-react";
 
 interface DatabaseNodeData {
     label: string;

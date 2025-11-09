@@ -1,20 +1,3 @@
-import { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
-import {
-    getWorkflows,
-    createWorkflow,
-    generateWorkflow,
-    updateWorkflow,
-    deleteWorkflow,
-    getWorkflow,
-    type WorkflowDefinition
-} from "../lib/api";
-import type { WorkflowNode } from "@flowmaestro/shared";
-import { CreateWorkflowDialog } from "../components/CreateWorkflowDialog";
-import { AIGenerateDialog } from "../components/AIGenerateDialog";
-import { ErrorDialog } from "../components/ErrorDialog";
-import { convertToReactFlowFormat } from "../lib/workflow-layout";
-import { PageHeader } from "../components/common/PageHeader";
 import {
     Plus,
     FileText,
@@ -25,6 +8,23 @@ import {
     MoreVertical,
     Copy
 } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+import type { WorkflowNode } from "@flowmaestro/shared";
+import { AIGenerateDialog } from "../components/AIGenerateDialog";
+import { PageHeader } from "../components/common/PageHeader";
+import { CreateWorkflowDialog } from "../components/CreateWorkflowDialog";
+import { ErrorDialog } from "../components/ErrorDialog";
+import {
+    getWorkflows,
+    createWorkflow,
+    generateWorkflow,
+    updateWorkflow,
+    deleteWorkflow,
+    getWorkflow,
+    type WorkflowDefinition
+} from "../lib/api";
+import { convertToReactFlowFormat } from "../lib/workflow-layout";
 
 interface Workflow {
     id: string;

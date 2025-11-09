@@ -1,10 +1,14 @@
 import { FastifyInstance } from "fastify";
 import { ExecutionRepository, WorkflowRepository } from "../../../storage/repositories";
-import { executionIdParamSchema } from "../../schemas/execution-schemas";
 import { authMiddleware, validateParams, NotFoundError } from "../../middleware";
+import { executionIdParamSchema } from "../../schemas/execution-schemas";
+
+interface GetExecutionParams {
+    id: string;
+}
 
 export async function getExecutionRoute(fastify: FastifyInstance) {
-    fastify.get(
+    fastify.get<{ Params: GetExecutionParams }>(
         "/:id",
         {
             preHandler: [authMiddleware, validateParams(executionIdParamSchema)]
@@ -12,7 +16,7 @@ export async function getExecutionRoute(fastify: FastifyInstance) {
         async (request, reply) => {
             const executionRepository = new ExecutionRepository();
             const workflowRepository = new WorkflowRepository();
-            const { id } = (request.params as { id: string });
+            const { id } = request.params;
 
             const execution = await executionRepository.findById(id);
 
