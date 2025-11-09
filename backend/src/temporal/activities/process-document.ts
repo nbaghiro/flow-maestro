@@ -9,6 +9,8 @@ import { EmbeddingService } from "../../services/embeddings";
 import { DocumentFileType } from "../../storage/models/KnowledgeDocument";
 import { CreateKnowledgeChunkInput } from "../../storage/models/KnowledgeChunk";
 import { globalEventEmitter } from "../../shared/events/EventEmitter";
+import { getGCSStorageService } from "../../services/storage/GCSStorageService";
+import * as fs from "fs/promises";
 
 export interface ProcessDocumentInput {
     documentId: string;
@@ -43,6 +45,8 @@ function sanitizeText(text: string): string {
 export async function extractTextActivity(input: ProcessDocumentInput): Promise<string> {
     console.log(`[extractTextActivity] Starting text extraction for document ${input.documentId}`);
 
+    let tempFilePath: string | null = null;
+
     try {
         // Update status to processing
         await documentRepository.updateStatus(input.documentId, "processing");
@@ -63,8 +67,22 @@ export async function extractTextActivity(input: ProcessDocumentInput): Promise<
             // Extract from URL
             extractedText = await textExtractor.extractFromURL(input.sourceUrl);
         } else if (input.filePath) {
-            // Extract from file
-            extractedText = await textExtractor.extractFromFile(input.filePath, input.fileType);
+            // Check if file path is a GCS URI
+            const isGCSUri = input.filePath.startsWith("gs://");
+
+            if (isGCSUri) {
+                // Download from GCS to temporary location
+                console.log(`[extractTextActivity] Downloading file from GCS: ${input.filePath}`);
+                const gcsService = getGCSStorageService();
+                tempFilePath = await gcsService.downloadToTemp({ gcsUri: input.filePath });
+                console.log(`[extractTextActivity] Downloaded to temp: ${tempFilePath}`);
+
+                // Extract from temporary file
+                extractedText = await textExtractor.extractFromFile(tempFilePath, input.fileType);
+            } else {
+                // Extract from local file (for backwards compatibility during migration)
+                extractedText = await textExtractor.extractFromFile(input.filePath, input.fileType);
+            }
         } else {
             throw new Error("Either filePath or sourceUrl must be provided");
         }
@@ -103,6 +121,16 @@ export async function extractTextActivity(input: ProcessDocumentInput): Promise<
         );
 
         throw error;
+    } finally {
+        // Clean up temporary file if it was created
+        if (tempFilePath) {
+            try {
+                await fs.unlink(tempFilePath);
+                console.log(`[extractTextActivity] Cleaned up temp file: ${tempFilePath}`);
+            } catch (error: unknown) {
+                console.warn(`[extractTextActivity] Failed to delete temp file: ${tempFilePath}`, error);
+            }
+        }
     }
 }
 

@@ -6,6 +6,7 @@ import { updateKnowledgeBaseRoute } from "./update";
 import { deleteKnowledgeBaseRoute } from "./delete";
 import { getStatsRoute } from "./stats";
 import { uploadDocumentRoute } from "./upload-document";
+import { downloadDocumentRoute } from "./download-document";
 import { addUrlRoute } from "./add-url";
 import { listDocumentsRoute } from "./list-documents";
 import { deleteDocumentRoute } from "./delete-document";
@@ -24,6 +25,7 @@ export async function knowledgeBaseRoutes(fastify: FastifyInstance) {
     // Document Management
     await listDocumentsRoute(fastify);
     await uploadDocumentRoute(fastify);
+    await downloadDocumentRoute(fastify);
     await addUrlRoute(fastify);
     await deleteDocumentRoute(fastify);
     await reprocessDocumentRoute(fastify);

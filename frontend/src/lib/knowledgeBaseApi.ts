@@ -312,6 +312,55 @@ export async function queryKnowledgeBase(
 }
 
 /**
+ * Download a document from a knowledge base
+ * Returns a signed URL that can be used to download the file
+ */
+export async function downloadDocument(
+    kbId: string,
+    docId: string
+): Promise<
+    ApiResponse<{
+        url: string;
+        expiresAt: string;
+        expiresIn: number;
+        filename: string;
+    }>
+> {
+    const token = getAuthToken();
+
+    const response = await fetch(
+        `${API_BASE_URL}/api/knowledge-bases/${kbId}/documents/${docId}/download`,
+        {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                ...(token && { Authorization: `Bearer ${token}` })
+            }
+        }
+    );
+
+    if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return response.json();
+}
+
+/**
+ * Helper function to trigger browser download using signed URL
+ */
+export async function triggerDocumentDownload(kbId: string, docId: string): Promise<void> {
+    const result = await downloadDocument(kbId, docId);
+
+    if (!result.success || !result.data) {
+        throw new Error(result.error || "Failed to get download URL");
+    }
+
+    // Open the signed URL in a new window/tab to trigger download
+    window.open(result.data.url, "_blank");
+}
+
+/**
  * Delete a document from a knowledge base
  */
 export async function deleteDocument(kbId: string, docId: string): Promise<ApiResponse> {

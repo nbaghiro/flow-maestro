@@ -36,6 +36,7 @@
         "@fastify/static": "^8.3.0",
         "@fastify/websocket": "^11.2.0",
         "@flowmaestro/shared": "*",
+        "@google-cloud/storage": "^7.7.0",
         "@google/generative-ai": "^0.24.1",
         "@opentelemetry/api": "^1.9.0",
         "@opentelemetry/instrumentation": "^0.208.0",

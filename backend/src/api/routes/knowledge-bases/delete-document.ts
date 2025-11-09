@@ -4,7 +4,7 @@ import {
     KnowledgeDocumentRepository
 } from "../../../storage/repositories";
 import { authMiddleware } from "../../middleware";
-import * as fs from "fs/promises";
+import { getGCSStorageService } from "../../../services/storage/GCSStorageService";
 
 export async function deleteDocumentRoute(fastify: FastifyInstance) {
     fastify.delete(
@@ -50,13 +50,17 @@ export async function deleteDocumentRoute(fastify: FastifyInstance) {
                 });
             }
 
-            // Delete the file if it exists
+            // Delete the file from GCS if it exists
             if (document.file_path && document.source_type === "file") {
                 try {
-                    await fs.unlink(document.file_path);
-                } catch (error) {
+                    const gcsService = getGCSStorageService();
+                    await gcsService.delete(document.file_path);
+                } catch (error: unknown) {
                     // Log but don't fail if file doesn't exist
-                    console.warn(`Could not delete file: ${document.file_path}`, error);
+                    const errorMsg = error instanceof Error ? error.message : String(error);
+                    fastify.log.warn(
+                        `Could not delete file from GCS: ${document.file_path}. Error: ${errorMsg}`
+                    );
                 }
             }
 

@@ -4,12 +4,10 @@ import {
     KnowledgeDocumentRepository
 } from "../../../storage/repositories";
 import { authMiddleware } from "../../middleware";
-import * as fs from "fs/promises";
 import * as path from "path";
-import { pipeline } from "stream/promises";
-import { createWriteStream } from "fs";
 import { DocumentFileType } from "../../../storage/models/KnowledgeDocument";
 import { getTemporalClient } from "../../../temporal/client";
+import { getGCSStorageService } from "../../../services/storage/GCSStorageService";
 
 export async function uploadDocumentRoute(fastify: FastifyInstance) {
     fastify.post(
@@ -59,37 +57,25 @@ export async function uploadDocumentRoute(fastify: FastifyInstance) {
                 });
             }
 
-            // Create storage directory for this KB
-            const storageDir = path.join(
-                process.cwd(),
-                "backend",
-                "storage",
-                "knowledge-bases",
-                request.user!.id,
-                params.id
-            );
-            await fs.mkdir(storageDir, { recursive: true });
+            // Upload file to GCS
+            const gcsService = getGCSStorageService();
+            const gcsUri = await gcsService.upload(data.file, {
+                userId: request.user!.id,
+                knowledgeBaseId: params.id,
+                filename: data.filename
+            });
 
-            // Generate unique filename
-            const timestamp = Date.now();
-            const safeName = data.filename.replace(/[^a-zA-Z0-9.-]/g, "_");
-            const fileName = `${timestamp}_${safeName}`;
-            const filePath = path.join(storageDir, fileName);
+            // Get file metadata from GCS
+            const metadata = await gcsService.getMetadata(gcsUri);
 
-            // Save file
-            await pipeline(data.file, createWriteStream(filePath));
-
-            // Get file size
-            const stats = await fs.stat(filePath);
-
-            // Create document record
+            // Create document record with GCS URI
             const document = await docRepository.create({
                 knowledge_base_id: params.id,
                 name: data.filename,
                 source_type: "file",
-                file_path: filePath,
+                file_path: gcsUri,
                 file_type: fileExtension as DocumentFileType,
-                file_size: BigInt(stats.size)
+                file_size: BigInt(metadata.size)
             });
 
             // Start Temporal workflow to process the document
@@ -103,7 +89,7 @@ export async function uploadDocumentRoute(fastify: FastifyInstance) {
                     {
                         documentId: document.id,
                         knowledgeBaseId: params.id,
-                        filePath,
+                        filePath: gcsUri,
                         fileType: fileExtension,
                         userId: request.user!.id
                     }
