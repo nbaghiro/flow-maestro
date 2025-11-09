@@ -7,7 +7,7 @@ import type {
     UpdateKnowledgeBaseInput,
     QueryKnowledgeBaseInput,
     ChunkSearchResult
-} from "../lib/knowledgeBaseApi";
+} from "../lib/api";
 import {
     getKnowledgeBases,
     getKnowledgeBase,
@@ -21,7 +21,7 @@ import {
     queryKnowledgeBase,
     deleteDocument,
     reprocessDocument
-} from "../lib/knowledgeBaseApi";
+} from "../lib/api";
 
 interface KnowledgeBaseStore {
     // State

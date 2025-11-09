@@ -1,4 +1,5 @@
 import * as gcp from "@pulumi/gcp";
+import * as pulumi from "@pulumi/pulumi";
 import { infrastructureConfig, resourceName } from "./config";
 
 // Helper function to create a secret
@@ -22,56 +23,31 @@ function createSecret(name: string, secretData: pulumi.Output<string> | string) 
     return secret;
 }
 
-// Create secrets for sensitive credentials
+// Create secrets for core application credentials
 export const dbPasswordSecret = createSecret("db-password", infrastructureConfig.dbPassword);
-
 export const jwtSecretSecret = createSecret("jwt-secret", infrastructureConfig.jwtSecret);
+export const encryptionKeySecret = createSecret("encryption-key", infrastructureConfig.encryptionKey);
 
-export const encryptionKeySecret = createSecret(
-    "encryption-key",
-    infrastructureConfig.encryptionKey
-);
+// Create flexible application secrets for all integrations
+// These can be any key-value pairs (LLM keys, API tokens, OAuth secrets, etc.)
+export const appSecrets: { [key: string]: gcp.secretmanager.Secret } = {};
+export const appSecretIds: { [key: string]: pulumi.Output<string> } = {};
 
-// Temporal Cloud certificates (if provided)
-export const temporalCaCertSecret = infrastructureConfig.temporalCaCert
-    ? createSecret("temporal-ca-cert", infrastructureConfig.temporalCaCert)
-    : undefined;
-
-export const temporalClientCertSecret = infrastructureConfig.temporalClientCert
-    ? createSecret("temporal-client-cert", infrastructureConfig.temporalClientCert)
-    : undefined;
-
-export const temporalClientKeySecret = infrastructureConfig.temporalClientKey
-    ? createSecret("temporal-client-key", infrastructureConfig.temporalClientKey)
-    : undefined;
-
-// Optional: LLM API keys
-export const openaiApiKeySecret = infrastructureConfig.openaiApiKey
-    ? createSecret("openai-api-key", infrastructureConfig.openaiApiKey)
-    : undefined;
-
-export const anthropicApiKeySecret = infrastructureConfig.anthropicApiKey
-    ? createSecret("anthropic-api-key", infrastructureConfig.anthropicApiKey)
-    : undefined;
-
-export const googleApiKeySecret = infrastructureConfig.googleApiKey
-    ? createSecret("google-api-key", infrastructureConfig.googleApiKey)
-    : undefined;
-
-export const cohereApiKeySecret = infrastructureConfig.cohereApiKey
-    ? createSecret("cohere-api-key", infrastructureConfig.cohereApiKey)
-    : undefined;
+for (const [key, value] of Object.entries(infrastructureConfig.appSecrets)) {
+    // Convert keys to lowercase-hyphen format for secret names
+    const secretName = key.toLowerCase().replace(/_/g, "-");
+    const secret = createSecret(`app-${secretName}`, value);
+    appSecrets[key] = secret;
+    appSecretIds[key] = secret.id;
+}
 
 // Export secret outputs
 export const secretOutputs = {
+    // Core secrets
     dbPasswordSecretId: dbPasswordSecret.id,
     jwtSecretSecretId: jwtSecretSecret.id,
     encryptionKeySecretId: encryptionKeySecret.id,
-    temporalCaCertSecretId: temporalCaCertSecret?.id,
-    temporalClientCertSecretId: temporalClientCertSecret?.id,
-    temporalClientKeySecretId: temporalClientKeySecret?.id,
-    openaiApiKeySecretId: openaiApiKeySecret?.id,
-    anthropicApiKeySecretId: anthropicApiKeySecret?.id,
-    googleApiKeySecretId: googleApiKeySecret?.id,
-    cohereApiKeySecretId: cohereApiKeySecret?.id
+
+    // Application secrets (dynamic)
+    appSecretIds: appSecretIds
 };

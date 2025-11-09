@@ -168,8 +168,16 @@ export class GCSStorageService {
 
         const [metadata] = await file.getMetadata();
 
+        // Handle size which can be string or number
+        let size = 0;
+        if (typeof metadata.size === "number") {
+            size = metadata.size;
+        } else if (typeof metadata.size === "string") {
+            size = parseInt(metadata.size, 10);
+        }
+
         return {
-            size: parseInt(metadata.size || "0", 10),
+            size,
             contentType: metadata.contentType || "application/octet-stream",
             updated: new Date(metadata.updated || Date.now())
         };

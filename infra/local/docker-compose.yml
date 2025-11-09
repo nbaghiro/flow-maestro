@@ -1,9 +1,7 @@
-version: "3.8"
-
 services:
-    # PostgreSQL Database
+    # PostgreSQL Database with pgvector extension
     postgres:
-        image: postgres:15-alpine
+        image: pgvector/pgvector:pg15
         container_name: flowmaestro-postgres
         environment:
             POSTGRES_DB: flowmaestro
@@ -13,7 +11,7 @@ services:
             - "5432:5432"
         volumes:
             - postgres_data:/var/lib/postgresql/data
-            - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+            - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
         healthcheck:
             test: ["CMD-SHELL", "pg_isready -U flowmaestro"]
             interval: 10s
@@ -55,7 +53,7 @@ services:
         ports:
             - "7233:7233"
         volumes:
-            - ./docker/temporal/dynamicconfig:/etc/temporal/config/dynamicconfig
+            - ./temporal/dynamicconfig:/etc/temporal/config/dynamicconfig
         networks:
             - flowmaestro
 
@@ -106,4 +104,8 @@ networks:
 
 volumes:
     postgres_data:
+        external: true
+        name: flowmaestro_postgres_data
     redis_data:
+        external: true
+        name: flowmaestro_redis_data

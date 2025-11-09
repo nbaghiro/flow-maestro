@@ -7,6 +7,8 @@ spec:
   domains:
     - api.DOMAIN
     - app.DOMAIN
+    - www.DOMAIN
+    - DOMAIN
 
 ---
 apiVersion: networking.k8s.io/v1
@@ -31,7 +33,7 @@ metadata:
     ingress.gcp.kubernetes.io/pre-shared-cert: "flowmaestro-cert"
 spec:
   rules:
-    # API server rule
+    # API server
     - host: api.DOMAIN
       http:
         paths:
@@ -43,7 +45,7 @@ spec:
                 port:
                   number: 3001
 
-    # Frontend app rule (served from Cloud Storage/CDN)
+    # Frontend app (served from Kubernetes)
     - host: app.DOMAIN
       http:
         paths:
@@ -51,9 +53,33 @@ spec:
             pathType: ImplementationSpecific
             backend:
               service:
-                name: api-service
+                name: frontend-service
                 port:
-                  number: 3001
+                  number: 80
+
+    # Marketing site (www subdomain)
+    - host: www.DOMAIN
+      http:
+        paths:
+          - path: /*
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: marketing-service
+                port:
+                  number: 80
+
+    # Marketing site (root domain)
+    - host: DOMAIN
+      http:
+        paths:
+          - path: /*
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: marketing-service
+                port:
+                  number: 80
 
 ---
 apiVersion: networking.k8s.io/v1

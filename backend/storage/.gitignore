@@ -1,6 +1,0 @@
-# Ignore all uploaded files and documents
-knowledge-bases/*/
-!knowledge-bases/.gitkeep
-
-# Keep the directory structure
-!.gitkeep

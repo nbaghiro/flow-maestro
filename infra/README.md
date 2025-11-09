@@ -1,90 +1,96 @@
-# FlowMaestro Infrastructure
+# FlowMaestro Infrastructure & Deployment Guide
 
-Complete infrastructure setup for deploying FlowMaestro to Google Kubernetes Engine (GKE).
-
-## 📁 Directory Structure
-
-```
-infra/
-├── pulumi/                 # Infrastructure as Code (Pulumi + TypeScript)
-│   ├── config.ts           # Configuration management
-│   ├── networking.ts       # VPC, Load Balancer, NAT, Static IP
-│   ├── database.ts         # Cloud SQL PostgreSQL 15 (HA)
-│   ├── redis.ts            # Memorystore Redis 7 (HA)
-│   ├── gke-cluster.ts      # GKE Autopilot cluster
-│   ├── secrets.ts          # Secret Manager integration
-│   ├── storage.ts          # Cloud Storage + CDN
-│   ├── monitoring.ts       # Dashboards, alerts, uptime checks
-│   ├── index.ts            # Main entry point & outputs
-│   ├── package.json        # Dependencies
-│   ├── tsconfig.json       # TypeScript config
-│   └── Pulumi.yaml         # Pulumi project config
-│
-├── k8s/                    # Kubernetes manifests
-│   ├── base/               # Base configurations
-│   │   ├── namespace.yaml          # Namespace + ServiceAccount
-│   │   ├── configmap.yaml          # Environment variables
-│   │   ├── api-deployment.yaml     # API server + HPA
-│   │   ├── worker-deployment.yaml  # Temporal worker + HPA
-│   │   ├── services.yaml           # Services + BackendConfig
-│   │   ├── ingress.yaml            # Ingress + SSL + NetworkPolicies
-│   │   └── kustomization.yaml      # Kustomize base
-│   ├── overlays/
-│   │   ├── production/     # Production config (3 API, 2 workers)
-│   │   └── staging/        # Staging config (1 API, 1 worker)
-│   └── jobs/
-│       └── db-migration.yaml       # Database migration job
-│
-├── docker/                 # Docker configurations
-│   ├── backend/
-│   │   ├── Dockerfile      # Multi-stage Node.js 20 Alpine
-│   │   └── .dockerignore
-│   ├── frontend/
-│   │   ├── Dockerfile      # Nginx Alpine with React SPA
-│   │   ├── nginx.conf      # Nginx config with caching
-│   │   └── .dockerignore
-│   └── marketing/
-│       ├── Dockerfile      # Nginx Alpine with static site
-│       ├── nginx.conf
-│       └── .dockerignore
-│
-├── deploy.sh               # Automated deployment script
-└── README.md               # This file
-```
-
-## 🚀 Quick Start
-
-### Automated Deployment
-
-```bash
-cd infra
-./deploy.sh
-```
-
-The script will:
-
-1. Verify prerequisites
-2. Gather configuration
-3. Create Artifact Registry
-4. Build and push Docker images
-5. Update Kubernetes manifests
-6. Deploy to GKE
-
-### Manual Deployment
-
-Follow the sections below for step-by-step deployment.
+Complete guide for deploying FlowMaestro to Google Kubernetes Engine (GKE) with self-hosted Temporal.
 
 ---
 
-## 📋 Prerequisites
+## 🚀 Quick Start
+
+**Want to test locally first?** → See [LOCAL_QUICKSTART.md](LOCAL_QUICKSTART.md) or run:
+```bash
+cd infra
+./local-test.sh
+```
+
+**Ready for production?** → Continue with this guide below.
+
+---
+
+## Table of Contents
+
+1. [Architecture Overview](#architecture-overview)
+2. [Prerequisites](#prerequisites)
+3. [Infrastructure Setup (Pulumi)](#infrastructure-setup-pulumi)
+4. [Docker Image Build](#docker-image-build)
+5. [Kubernetes Deployment](#kubernetes-deployment)
+6. [DNS & SSL Configuration](#dns--ssl-configuration)
+7. [Automated Deployment](#automated-deployment)
+8. [Troubleshooting](#troubleshooting)
+9. [Cost Estimation](#cost-estimation)
+10. [Local Testing](#local-testing)
+
+---
+
+## Architecture Overview
+
+### Services Deployed
+
+All services run in Kubernetes (GKE):
+
+- **API Server** (3 replicas) - Fastify REST API + WebSocket server
+- **Frontend App** (3 replicas) - React SPA served by Nginx
+- **Marketing Site** (2 replicas) - Static marketing website served by Nginx
+- **Temporal Server** (3 replicas) - Self-hosted workflow orchestration
+- **Temporal UI** (1 replica) - Temporal web interface
+- **Temporal Worker** (2 replicas) - Workflow execution workers
+
+### Managed Services (GCP)
+
+- **Cloud SQL PostgreSQL 15** (HA) - 3 databases:
+  - `flowmaestro` - Application data
+  - `temporal` - Temporal workflow state
+  - `temporal_visibility` - Temporal visibility data
+- **Memorystore Redis 7** (HA) - Caching and pub/sub
+- **Cloud Storage** - User uploads and workflow artifacts
+- **GKE Autopilot** - Managed Kubernetes cluster
+- **Cloud Load Balancer** - SSL termination and routing
+- **Secret Manager** - Secure credential storage
+- **Cloud Monitoring** - Dashboards and alerts
+
+### Architecture Diagram
+
+```
+Internet → Cloud Load Balancer (SSL) → GKE Ingress
+                                          ↓
+                    ┌─────────────────────┼─────────────────────┐
+                    ↓                     ↓                     ↓
+              [Frontend]            [Marketing]             [API]
+              (Nginx)               (Nginx)              (Fastify)
+                                                             ↓
+                                            ┌────────────────┴───────────┐
+                                            ↓                            ↓
+                                     [Temporal Worker] ← → [Temporal Server]
+                                            ↓                            ↓
+                              ┌─────────────┴────────────────────────────┤
+                              ↓                                          ↓
+                        [Cloud SQL HA]                           [Redis HA]
+                  (3 DBs: app, temporal,
+                   temporal_visibility)
+```
+
+---
+
+## Prerequisites
 
 ### Required Tools
 
+Install these tools on your local machine:
+
 ```bash
 # Google Cloud SDK
-curl https://sdk.cloud.google.com | bash
+# https://cloud.google.com/sdk/docs/install
 
-# kubectl
+# kubectl (via gcloud)
 gcloud components install kubectl
 
 # Pulumi
@@ -95,21 +101,31 @@ curl -fsSL https://get.pulumi.com | sh
 
 # Node.js 20+
 # https://nodejs.org/
+
+# Verify installations
+gcloud --version
+kubectl version --client
+pulumi version
+docker --version
+node --version
 ```
 
-### GCP Setup
+### GCP Project Setup
 
 ```bash
+# Create a new GCP project (or use existing)
+export GCP_PROJECT_ID="your-project-id"
+export GCP_REGION="us-central1"
+
+# Set as default
+gcloud config set project $GCP_PROJECT_ID
+gcloud config set compute/region $GCP_REGION
+
 # Authenticate
 gcloud auth login
 gcloud auth application-default login
 
-# Set project
-export GCP_PROJECT_ID="your-project-id"
-gcloud config set project $GCP_PROJECT_ID
-gcloud config set compute/region us-central1
-
-# Enable APIs
+# Enable required APIs
 gcloud services enable \
     container.googleapis.com \
     sqladmin.googleapis.com \
@@ -117,66 +133,74 @@ gcloud services enable \
     compute.googleapis.com \
     servicenetworking.googleapis.com \
     secretmanager.googleapis.com \
-    cloudbuild.googleapis.com \
-    artifactregistry.googleapis.com
+    artifactregistry.googleapis.com \
+    monitoring.googleapis.com
 ```
 
-### Temporal Cloud Setup
+### Domain Requirements
 
-1. Sign up at https://temporal.io/cloud
-2. Create namespace (e.g., `flowmaestro-production`)
-3. Download CA certificate and generate client certificates
-4. Save certificates for configuration
+- **Domain registered** and accessible for DNS configuration
+- You'll need to create A records after infrastructure deployment
 
 ---
 
-## 🏗️ 1. Deploy Infrastructure with Pulumi
+## Infrastructure Setup (Pulumi)
 
-### Initialize Pulumi
+### 1. Initialize Pulumi
 
 ```bash
-cd pulumi
+cd infra/pulumi
+
+# Install dependencies
 npm install
 
-# Login (local or cloud backend)
-pulumi login
+# Login to Pulumi (use local backend or Pulumi Cloud)
+pulumi login  # or pulumi login --local
 
-# Create stack
+# Create a new stack
 pulumi stack init production
 ```
 
-### Configure Stack
+### 2. Configure Pulumi Stack
 
 ```bash
-# GCP settings
-pulumi config set gcp:project $GCP_PROJECT_ID
+# Required: GCP Project
+pulumi config set gcp:project YOUR_PROJECT_ID
 pulumi config set gcp:region us-central1
-pulumi config set gcp:zone us-central1-a
 
-# Application settings
-pulumi config set domain "yourdomain.com"
-pulumi config set appName "flowmaestro"
-pulumi config set environment "production"
+# Required: Domain
+pulumi config set domain yourdomain.com
 
-# Generate secrets
-pulumi config set --secret dbPassword "$(openssl rand -base64 32)"
-pulumi config set --secret jwtSecret "$(openssl rand -base64 64)"
-pulumi config set --secret encryptionKey "$(openssl rand -hex 32)"
+# Required: Generate secure secrets
+pulumi config set --secret dbPassword $(openssl rand -base64 32)
+pulumi config set --secret jwtSecret $(openssl rand -base64 64)
+pulumi config set --secret encryptionKey $(openssl rand -hex 32)
 
-# Temporal Cloud configuration
-pulumi config set temporalNamespace "your-namespace"
-pulumi config set temporalAddress "your-namespace.tmprl.cloud:7233"
-pulumi config set --secret temporalCaCert "$(cat path/to/ca.pem)"
-pulumi config set --secret temporalClientCert "$(cat path/to/client.pem)"
-pulumi config set --secret temporalClientKey "$(cat path/to/client-key.pem)"
+# Optional: Temporal namespace (defaults to "default")
+pulumi config set temporalNamespace production
 
-# Optional: LLM API keys
-pulumi config set --secret openaiApiKey "sk-..."
-pulumi config set --secret anthropicApiKey "sk-ant-..."
-pulumi config set --secret googleApiKey "..."
+# Optional: Application secrets (for integrations like OpenAI, Anthropic, etc.)
+# Format: JSON object with key-value pairs
+pulumi config set appSecrets '{
+  "OPENAI_API_KEY": "sk-...",
+  "ANTHROPIC_API_KEY": "sk-ant-...",
+  "GOOGLE_API_KEY": "AIza...",
+  "SLACK_BOT_TOKEN": "xoxb-...",
+  "NOTION_API_KEY": "secret_..."
+}'
+
+# Optional: Database configuration (defaults shown)
+pulumi config set dbTier db-custom-2-7680  # 2 vCPU, 7.5GB RAM
+pulumi config set dbDiskSize 100  # GB
+pulumi config set dbHighAvailability true
+pulumi config set dbBackupEnabled true
+
+# Optional: Redis configuration (defaults shown)
+pulumi config set redisMemorySizeGb 5
+pulumi config set redisTier STANDARD_HA  # or BASIC
 ```
 
-### Deploy Infrastructure
+### 3. Deploy Infrastructure
 
 ```bash
 # Preview changes
@@ -185,70 +209,81 @@ pulumi preview
 # Deploy
 pulumi up
 
-# Save outputs
-pulumi stack output > ../outputs.json
-pulumi stack output kubeconfig > ../../kubeconfig.yaml
+# This will create:
+# - VPC network with private subnets
+# - Cloud SQL PostgreSQL (HA) with 3 databases
+# - Memorystore Redis (HA)
+# - GKE Autopilot cluster
+# - Cloud Storage buckets
+# - Secret Manager secrets
+# - Monitoring dashboards and alerts
+# - Global static IP for Load Balancer
 
-# Configure kubectl
-export KUBECONFIG=../../kubeconfig.yaml
-kubectl get nodes
+# Deployment takes approximately 20-30 minutes
 ```
 
-### Infrastructure Components Deployed
+### 4. Save Infrastructure Outputs
 
-- ✅ VPC with private subnets and Cloud NAT
-- ✅ GKE Autopilot cluster with Workload Identity
-- ✅ Cloud SQL PostgreSQL 15 (HA, automated backups)
-- ✅ Memorystore Redis 7 (HA)
-- ✅ Global Load Balancer with static IP
-- ✅ Cloud Storage buckets + CDN
-- ✅ Secret Manager secrets
-- ✅ Monitoring dashboards and alerts
+```bash
+# Get kubeconfig
+pulumi stack output kubeconfig > kubeconfig.yaml
+export KUBECONFIG=./kubeconfig.yaml
+
+# Test kubectl connectivity
+kubectl get nodes
+
+# Get other important outputs
+pulumi stack output staticIpAddress  # For DNS configuration
+pulumi stack output databasePrivateIp
+pulumi stack output redisHost
+```
 
 ---
 
-## 🐳 2. Build and Push Docker Images
+## Docker Image Build
 
-### Create Artifact Registry
+### 1. Create Artifact Registry Repository
 
 ```bash
-cd ..  # Back to infra root
+cd ../..  # Back to project root
 
+export GCP_PROJECT_ID="your-project-id"
 export GCP_REGION="us-central1"
+export IMAGE_TAG=$(git rev-parse --short HEAD)
+export REGISTRY="${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/flowmaestro"
 
+# Create repository
 gcloud artifacts repositories create flowmaestro \
     --repository-format=docker \
     --location=$GCP_REGION \
     --description="FlowMaestro container images"
 
+# Configure Docker authentication
 gcloud auth configure-docker ${GCP_REGION}-docker.pkg.dev
 ```
 
-### Build Images
+### 2. Build Images
 
 ```bash
-export IMAGE_TAG=$(git rev-parse --short HEAD)
-export REGISTRY="${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/flowmaestro"
-export DOMAIN="yourdomain.com"
-
-# Build backend (from project root)
-cd ..
-docker build -f infra/docker/backend/Dockerfile -t ${REGISTRY}/backend:${IMAGE_TAG} .
-docker tag ${REGISTRY}/backend:${IMAGE_TAG} ${REGISTRY}/backend:latest
+# Build backend (API + Worker)
+docker build -f infra/docker/backend/Dockerfile \
+    -t ${REGISTRY}/backend:${IMAGE_TAG} \
+    -t ${REGISTRY}/backend:latest .
 
 # Build frontend
 docker build -f infra/docker/frontend/Dockerfile \
-    --build-arg VITE_API_URL=https://api.${DOMAIN} \
-    --build-arg VITE_WS_URL=wss://api.${DOMAIN} \
-    -t ${REGISTRY}/frontend:${IMAGE_TAG} .
-docker tag ${REGISTRY}/frontend:${IMAGE_TAG} ${REGISTRY}/frontend:latest
+    --build-arg VITE_API_URL=https://api.yourdomain.com \
+    --build-arg VITE_WS_URL=wss://api.yourdomain.com \
+    -t ${REGISTRY}/frontend:${IMAGE_TAG} \
+    -t ${REGISTRY}/frontend:latest .
 
 # Build marketing
-docker build -f infra/docker/marketing/Dockerfile -t ${REGISTRY}/marketing:${IMAGE_TAG} .
-docker tag ${REGISTRY}/marketing:${IMAGE_TAG} ${REGISTRY}/marketing:latest
+docker build -f infra/docker/marketing/Dockerfile \
+    -t ${REGISTRY}/marketing:${IMAGE_TAG} \
+    -t ${REGISTRY}/marketing:latest .
 ```
 
-### Push Images
+### 3. Push Images
 
 ```bash
 docker push ${REGISTRY}/backend:${IMAGE_TAG}
@@ -263,436 +298,503 @@ docker push ${REGISTRY}/marketing:latest
 
 ---
 
-## ☸️ 3. Deploy to Kubernetes
+## Kubernetes Deployment
 
-### Create Secrets
+### 1. Create Kubernetes Secrets
+
+Get values from Pulumi outputs:
 
 ```bash
-cd infra
+# Get database connection info
+DB_HOST=$(pulumi stack output databasePrivateIp -C infra/pulumi)
+REDIS_HOST=$(pulumi stack output redisHost -C infra/pulumi)
 
-# Get values from Pulumi
-DB_HOST=$(pulumi stack output databasePrivateIp -C pulumi)
-REDIS_HOST=$(pulumi stack output redisHost -C pulumi)
-DB_PASSWORD=$(pulumi config get dbPassword --show-secrets -C pulumi)
-JWT_SECRET=$(pulumi config get jwtSecret --show-secrets -C pulumi)
-ENCRYPTION_KEY=$(pulumi config get encryptionKey --show-secrets -C pulumi)
-TEMPORAL_ADDRESS=$(pulumi config get temporalAddress -C pulumi)
-TEMPORAL_NAMESPACE=$(pulumi config get temporalNamespace -C pulumi)
+# Get secrets from Pulumi config
+DB_PASSWORD=$(pulumi config get dbPassword --show-secrets -C infra/pulumi)
+JWT_SECRET=$(pulumi config get jwtSecret --show-secrets -C infra/pulumi)
+ENCRYPTION_KEY=$(pulumi config get encryptionKey --show-secrets -C infra/pulumi)
+```
 
+Create secrets:
+
+```bash
 # Create namespace
 kubectl create namespace flowmaestro
 
-# Database credentials
+# Application database credentials
 kubectl create secret generic db-credentials \
     --namespace=flowmaestro \
-    --from-literal=host=$DB_HOST \
+    --from-literal=host=${DB_HOST} \
     --from-literal=port=5432 \
     --from-literal=database=flowmaestro \
     --from-literal=user=flowmaestro \
-    --from-literal=password=$DB_PASSWORD
+    --from-literal=password="${DB_PASSWORD}"
+
+# Temporal database credentials
+kubectl create secret generic temporal-db-credentials \
+    --namespace=flowmaestro \
+    --from-literal=host=${DB_HOST} \
+    --from-literal=port=5432 \
+    --from-literal=database=temporal \
+    --from-literal=visibility-database=temporal_visibility \
+    --from-literal=user=temporal \
+    --from-literal=password="${DB_PASSWORD}"
 
 # Redis credentials
 kubectl create secret generic redis-credentials \
     --namespace=flowmaestro \
-    --from-literal=host=$REDIS_HOST \
+    --from-literal=host=${REDIS_HOST} \
     --from-literal=port=6379
 
 # Application secrets
 kubectl create secret generic app-secrets \
     --namespace=flowmaestro \
-    --from-literal=jwt-secret=$JWT_SECRET \
-    --from-literal=encryption-key=$ENCRYPTION_KEY
+    --from-literal=jwt-secret="${JWT_SECRET}" \
+    --from-literal=encryption-key="${ENCRYPTION_KEY}"
 
-# Temporal credentials
-kubectl create secret generic temporal-credentials \
+# Integration secrets (optional - from appSecrets config)
+kubectl create secret generic integration-secrets \
     --namespace=flowmaestro \
-    --from-literal=address=$TEMPORAL_ADDRESS \
-    --from-literal=namespace=$TEMPORAL_NAMESPACE \
-    --from-file=ca-cert=path/to/ca.pem \
-    --from-file=client-cert=path/to/client.pem \
-    --from-file=client-key=path/to/client-key.pem
-
-# Optional: LLM API keys
-kubectl create secret generic llm-api-keys \
-    --namespace=flowmaestro \
-    --from-literal=openai-api-key=$OPENAI_API_KEY \
-    --from-literal=anthropic-api-key=$ANTHROPIC_API_KEY \
-    --from-literal=google-api-key=$GOOGLE_API_KEY
+    --from-literal=OPENAI_API_KEY="sk-..." \
+    --from-literal=ANTHROPIC_API_KEY="sk-ant-..." \
+    --from-literal=GOOGLE_API_KEY="AIza..." \
+    --from-literal=SLACK_BOT_TOKEN="xoxb-..." \
+    --from-literal=NOTION_API_KEY="secret_..."
 ```
 
-### Update Manifests
+### 2. Update Kubernetes Manifests
+
+Replace placeholders in manifests:
 
 ```bash
+cd infra
+
+# Update manifests with your values
+export GCP_PROJECT_ID="your-project-id"
+export GCP_REGION="us-central1"
+export DOMAIN="yourdomain.com"
+
 # Replace placeholders
-find k8s -type f -name "*.yaml" -exec sed -i \
-    -e "s|PROJECT_ID|${GCP_PROJECT_ID}|g" \
+find k8s -type f -name "*.yaml" -exec sed -i.bak \
     -e "s|REGION|${GCP_REGION}|g" \
+    -e "s|PROJECT_ID|${GCP_PROJECT_ID}|g" \
     -e "s|DOMAIN|${DOMAIN}|g" \
     {} \;
+
+# Remove backup files
+find k8s -type f -name "*.bak" -delete
 ```
 
-### Run Database Migrations
+### 3. Deploy Temporal
 
 ```bash
+# Run Temporal schema migration
+kubectl apply -f k8s/jobs/temporal-schema-migration.yaml
+
+# Wait for migration to complete
+kubectl wait --for=condition=complete --timeout=10m \
+    job/temporal-schema-migration -n flowmaestro
+
+# Check migration logs
+kubectl logs -f job/temporal-schema-migration -n flowmaestro
+
+# Deploy Temporal server and UI
+kubectl apply -f k8s/base/temporal-deployment.yaml
+
+# Wait for Temporal to be ready
+kubectl wait --for=condition=available --timeout=10m \
+    deployment/temporal-server -n flowmaestro
+```
+
+### 4. Deploy Application
+
+```bash
+# Run application database migrations
 kubectl apply -f k8s/jobs/db-migration.yaml
+
+# Wait for migration to complete
+kubectl wait --for=condition=complete --timeout=10m \
+    job/db-migration -n flowmaestro
+
+# Check migration logs
 kubectl logs -f job/db-migration -n flowmaestro
-kubectl wait --for=condition=complete --timeout=300s job/db-migration -n flowmaestro
-```
 
-### Deploy Applications
-
-```bash
+# Deploy all services (API, workers, frontend, marketing)
 kubectl apply -k k8s/overlays/production
 
-# Watch rollout
-kubectl rollout status deployment/api-server -n flowmaestro
-kubectl rollout status deployment/temporal-worker -n flowmaestro
+# Wait for deployments
+kubectl rollout status deployment/api-server -n flowmaestro --timeout=10m
+kubectl rollout status deployment/temporal-worker -n flowmaestro --timeout=10m
+kubectl rollout status deployment/frontend -n flowmaestro --timeout=10m
+kubectl rollout status deployment/marketing -n flowmaestro --timeout=10m
 
-# Verify
+# Verify all pods are running
 kubectl get pods -n flowmaestro
-kubectl get services -n flowmaestro
-kubectl get ingress -n flowmaestro
-kubectl get hpa -n flowmaestro
 ```
 
 ---
 
-## 🌐 4. Configure DNS
+## DNS & SSL Configuration
 
-### Get Load Balancer IP
-
-```bash
-cd pulumi
-STATIC_IP=$(pulumi stack output staticIpAddress)
-echo "Load Balancer IP: $STATIC_IP"
-```
-
-### Add DNS Records
-
-Add these A records to your DNS provider:
-
-```
-api.yourdomain.com  -> <STATIC_IP>
-app.yourdomain.com  -> <STATIC_IP>
-www.yourdomain.com  -> <STATIC_IP>
-```
-
-### Wait for SSL Certificate
+### 1. Get Load Balancer IP
 
 ```bash
-# Check status (takes 15-60 minutes)
+# Get the external IP address
+kubectl get ingress flowmaestro-ingress -n flowmaestro
+
+# Example output:
+# NAME                   CLASS    HOSTS                           ADDRESS          PORTS     AGE
+# flowmaestro-ingress   <none>   api.example.com,app.example...  34.120.45.67     80, 443   5m
+```
+
+### 2. Configure DNS
+
+Create A records in your DNS provider pointing to the Load Balancer IP:
+
+```
+Type    Name    Value           TTL
+A       api     34.120.45.67    300
+A       app     34.120.45.67    300
+A       www     34.120.45.67    300
+A       @       34.120.45.67    300
+```
+
+### 3. Wait for SSL Certificate
+
+Google-managed SSL certificates take 15-60 minutes to provision after DNS propagation:
+
+```bash
+# Check certificate status
 kubectl describe managedcertificate flowmaestro-cert -n flowmaestro
 
-# Wait for Active status
-watch kubectl get managedcertificate flowmaestro-cert -n flowmaestro
+# Status will change from "Provisioning" to "Active"
+# You can also check:
+watch kubectl get managedcertificate -n flowmaestro
+```
+
+### 4. Verify Deployment
+
+Once SSL is active:
+
+```bash
+# Test API
+curl https://api.yourdomain.com/health
+
+# Test Frontend
+open https://app.yourdomain.com
+
+# Test Marketing
+open https://www.yourdomain.com
+
+# View Temporal UI (if you want to expose it)
+kubectl port-forward -n flowmaestro svc/temporal-ui-service 8080:8080
+# Then access: http://localhost:8080
 ```
 
 ---
 
-## 🔄 5. Set Up CI/CD (Optional)
+## Automated Deployment
 
-### Cloud Build Trigger
-
-```bash
-gcloud builds triggers create github \
-    --name="flowmaestro-production" \
-    --repo-name="flowmaestro" \
-    --repo-owner="your-github-username" \
-    --branch-pattern="^main$" \
-    --build-config="cloudbuild.yaml"
-```
-
-### Manual Build
+Use the deployment script for automated deployment:
 
 ```bash
-cd ..  # Project root
-gcloud builds submit --config=cloudbuild.yaml
+cd infra
+
+# Make script executable
+chmod +x deploy.sh
+
+# Run deployment
+./deploy.sh
+
+# The script will:
+# 1. Check prerequisites
+# 2. Prompt for configuration (project, region, domain)
+# 3. Create Artifact Registry repository
+# 4. Build and push Docker images
+# 5. Update Kubernetes manifests
+# 6. Check for required secrets
+# 7. Deploy Temporal schema migration
+# 8. Deploy Temporal server
+# 9. Deploy application database migration
+# 10. Deploy all services
+# 11. Show deployment status
 ```
+
+**Note**: You must create Kubernetes secrets before running the script. The script will check for secrets and prompt you if they're missing.
 
 ---
 
-## 📊 Monitoring
+## Troubleshooting
 
-### Cloud Console
-
-- **Workloads**: https://console.cloud.google.com/kubernetes/workload
-- **Logs**: https://console.cloud.google.com/logs
-- **Monitoring**: https://console.cloud.google.com/monitoring
-
-### Dashboard
+### Check Pod Status
 
 ```bash
-cd infra/pulumi
-DASHBOARD_ID=$(pulumi stack output dashboardId)
-echo "https://console.cloud.google.com/monitoring/dashboards/custom/$DASHBOARD_ID"
+# Get all pods
+kubectl get pods -n flowmaestro
+
+# Describe a pod
+kubectl describe pod <pod-name> -n flowmaestro
+
+# View logs
+kubectl logs -f <pod-name> -n flowmaestro
+
+# View previous logs (if pod restarted)
+kubectl logs --previous <pod-name> -n flowmaestro
 ```
 
-### Kubernetes Metrics
+### Common Issues
+
+#### 1. Pods Stuck in Pending
 
 ```bash
-# Pod metrics
-kubectl top pods -n flowmaestro
+# Check events
+kubectl get events -n flowmaestro --sort-by='.lastTimestamp'
 
-# Node metrics
+# Check node resources
 kubectl top nodes
 
-# HPA status
-kubectl get hpa -n flowmaestro
-
-# Logs
-kubectl logs -f deployment/api-server -n flowmaestro
-kubectl logs -f deployment/temporal-worker -n flowmaestro
+# Common causes:
+# - Insufficient cluster resources (GKE Autopilot will auto-scale)
+# - Image pull errors (check image name and registry auth)
 ```
 
----
-
-## 🔧 Operations
-
-### Update Application
+#### 2. Temporal Migration Fails
 
 ```bash
-# Build new images with new tag
-export NEW_TAG=$(git rev-parse --short HEAD)
+# View migration logs
+kubectl logs -f job/temporal-schema-migration -n flowmaestro
 
-# Build and push (same as before with NEW_TAG)
+# Common causes:
+# - Database not accessible (check firewall rules)
+# - Incorrect database credentials (check secret)
+# - Database user lacks permissions
 
-# Update deployments
-kubectl set image deployment/api-server \
-    api-server=${REGISTRY}/backend:${NEW_TAG} -n flowmaestro
-
-kubectl set image deployment/temporal-worker \
-    temporal-worker=${REGISTRY}/backend:${NEW_TAG} -n flowmaestro
-
-# Watch rollout
-kubectl rollout status deployment/api-server -n flowmaestro
-kubectl rollout status deployment/temporal-worker -n flowmaestro
+# Retry migration
+kubectl delete job temporal-schema-migration -n flowmaestro
+kubectl apply -f k8s/jobs/temporal-schema-migration.yaml
 ```
 
-### Scale Manually
+#### 3. SSL Certificate Not Provisioning
 
 ```bash
-# Scale API server
-kubectl scale deployment api-server --replicas=5 -n flowmaestro
-
-# Scale worker
-kubectl scale deployment temporal-worker --replicas=3 -n flowmaestro
-```
-
-### Rollback
-
-```bash
-# Rollback to previous version
-kubectl rollout undo deployment/api-server -n flowmaestro
-
-# Rollback to specific revision
-kubectl rollout history deployment/api-server -n flowmaestro
-kubectl rollout undo deployment/api-server --to-revision=2 -n flowmaestro
-```
-
-### Update ConfigMap
-
-```bash
-# Edit ConfigMap
-kubectl edit configmap flowmaestro-config -n flowmaestro
-
-# Or apply updated file
-kubectl apply -f k8s/base/configmap.yaml
-
-# Restart deployments to pick up changes
-kubectl rollout restart deployment/api-server -n flowmaestro
-kubectl rollout restart deployment/temporal-worker -n flowmaestro
-```
-
----
-
-## 🌍 Multi-Environment Setup
-
-### Create Staging Environment
-
-```bash
-# Pulumi stack
-cd pulumi
-pulumi stack init staging
-pulumi config set environment "staging"
-pulumi config set domain "staging.yourdomain.com"
-
-# Use smaller resources
-pulumi config set dbTier "db-f1-micro"
-pulumi config set dbHighAvailability false
-pulumi config set redisMemorySizeGb 1
-pulumi config set redisTier "BASIC"
-
-# Set new secrets
-pulumi config set --secret dbPassword "$(openssl rand -base64 32)"
-pulumi config set --secret jwtSecret "$(openssl rand -base64 64)"
-pulumi config set --secret encryptionKey "$(openssl rand -hex 32)"
-
-# Deploy
-pulumi up
-
-# Deploy to Kubernetes
-cd ../k8s
-kubectl create namespace flowmaestro-staging
-# Create staging secrets...
-kubectl apply -k overlays/staging
-```
-
----
-
-## 🧹 Cleanup
-
-### Delete Kubernetes Resources
-
-```bash
-kubectl delete namespace flowmaestro
-```
-
-### Destroy Infrastructure
-
-```bash
-cd infra/pulumi
-pulumi destroy
-pulumi stack rm production
-```
-
----
-
-## 💰 Cost Estimate
-
-Production infrastructure costs approximately **$810-1,350/month**:
-
-| Service           | Configuration       | Monthly Cost |
-| ----------------- | ------------------- | ------------ |
-| GKE Autopilot     | ~10 vCPUs, 20GB RAM | $250-400     |
-| Cloud SQL         | HA, 2 vCPUs, 7.5GB  | $180-220     |
-| Memorystore Redis | 5GB Standard        | $150-180     |
-| Load Balancer     | Global HTTPS        | $20-30       |
-| Cloud CDN         | 100GB egress        | $10-20       |
-| Temporal Cloud    | Depends on plan     | $200-500     |
-
-**Cost Optimization Tips:**
-
-- Use Autopilot GKE (pay for pods only)
-- Enable Cloud CDN caching
-- Use committed use discounts (37% savings)
-- Right-size resources after monitoring
-- Use staging for testing (lower costs)
-
----
-
-## 🆘 Troubleshooting
-
-### Pods Not Starting
-
-```bash
-kubectl get pods -n flowmaestro
-kubectl describe pod <pod-name> -n flowmaestro
-kubectl logs <pod-name> -n flowmaestro
-
-# Common issues:
-# - Image pull errors: Check Artifact Registry permissions
-# - Secret not found: Verify secrets exist
-# - Resource limits: Check HPA metrics
-```
-
-### Database Connection Errors
-
-```bash
-# Verify secret
-kubectl get secret db-credentials -n flowmaestro -o yaml
-
-# Test from pod
-kubectl exec -it deployment/api-server -n flowmaestro -- sh
-nc -zv <db-host> 5432
-```
-
-### SSL Certificate Not Provisioning
-
-```bash
+# Check certificate status
 kubectl describe managedcertificate flowmaestro-cert -n flowmaestro
 
-# Common issues:
-# - DNS not propagated: Wait 24-48 hours
-# - Domain verification failed: Check DNS records
-# - Load balancer not created: Check ingress
+# Common causes:
+# - DNS not configured correctly (verify A records)
+# - DNS not propagated yet (wait 5-10 minutes)
+# - Domain verification failed (check domain ownership)
 
-# Force renewal
-kubectl delete managedcertificate flowmaestro-cert -n flowmaestro
-kubectl apply -f k8s/base/ingress.yaml
+# Verify DNS propagation
+dig api.yourdomain.com
+nslookup api.yourdomain.com
 ```
 
-### WebSocket Connection Failures
+#### 4. Database Connection Errors
 
 ```bash
-# Check ingress
-kubectl describe ingress flowmaestro-ingress -n flowmaestro
+# Test database connectivity from a pod
+kubectl run -it --rm debug --image=postgres:15 --restart=Never -n flowmaestro -- \
+    psql -h <DB_HOST> -U flowmaestro -d flowmaestro
 
-# Verify service endpoints
-kubectl get endpoints api-service -n flowmaestro
-
-# Test
-curl -i -N -H "Connection: Upgrade" -H "Upgrade: websocket" \
-    https://api.yourdomain.com/ws
+# Common causes:
+# - Incorrect host/credentials in secrets
+# - Cloud SQL private IP not accessible from GKE
+# - Database user not created properly
 ```
 
-### Infrastructure Issues
+#### 5. Temporal Server Not Starting
 
 ```bash
-cd pulumi
+# Check Temporal server logs
+kubectl logs -f deployment/temporal-server -n flowmaestro
 
-# Check stack
-pulumi stack
+# Common causes:
+# - Database schema not migrated
+# - Incorrect database credentials
+# - Port conflicts
 
-# Refresh state
-pulumi refresh
+# Restart Temporal
+kubectl rollout restart deployment/temporal-server -n flowmaestro
+```
 
-# View resources
-pulumi stack export
+### View Logs
 
-# Verbose logs
-pulumi up -v=9
+```bash
+# API server logs
+kubectl logs -f deployment/api-server -n flowmaestro
+
+# Worker logs
+kubectl logs -f deployment/temporal-worker -n flowmaestro
+
+# Frontend logs
+kubectl logs -f deployment/frontend -n flowmaestro
+
+# Temporal server logs
+kubectl logs -f deployment/temporal-server -n flowmaestro
+
+# All logs for a deployment
+kubectl logs -f deployment/<deployment-name> -n flowmaestro --all-containers=true
+```
+
+### Scale Deployments
+
+```bash
+# Scale a deployment manually
+kubectl scale deployment api-server --replicas=5 -n flowmaestro
+
+# View HPA status
+kubectl get hpa -n flowmaestro
+
+# Describe HPA
+kubectl describe hpa api-server-hpa -n flowmaestro
+```
+
+### Database Access
+
+```bash
+# Get Cloud SQL connection info
+pulumi stack output databaseConnectionName -C pulumi
+
+# Connect via Cloud SQL Proxy
+cloud_sql_proxy -instances=<CONNECTION_NAME>=tcp:5432
+
+# Or connect directly from GKE
+kubectl run -it --rm psql --image=postgres:15 --restart=Never -n flowmaestro -- \
+    psql -h <DB_PRIVATE_IP> -U flowmaestro -d flowmaestro
 ```
 
 ---
 
-## 📚 Additional Documentation
+## Cost Estimation
 
-- **Detailed Infrastructure Guide**: [../\_docs/infrastructure-setup.md](../_docs/infrastructure-setup.md)
-- **Architecture Overview**: [../\_docs/architecture.md](../_docs/architecture.md)
-- **Development Guidelines**: [../claude.md](../claude.md)
-- **Project README**: [../README.md](../README.md)
+### Monthly Costs (High Availability Configuration)
 
-### External Resources
+| Service | Configuration | Est. Monthly Cost |
+|---------|--------------|-------------------|
+| **GKE Autopilot** | Variable based on actual usage | $200-400 |
+| **Cloud SQL PostgreSQL** | HA, db-custom-2-7680, 100GB | $250-350 |
+| **Memorystore Redis** | HA, 5GB | $150-200 |
+| **Load Balancer** | Global external | $20-30 |
+| **Cloud Storage** | Standard, ~50GB | $1-5 |
+| **Artifact Registry** | ~10GB images | $5-10 |
+| **Secret Manager** | ~20 secrets | $0.50 |
+| **Monitoring** | Standard metrics | Included |
+| **Network Egress** | Variable | $20-50 |
+| **Total** | | **~$650-1,050/month** |
 
-- [Pulumi GCP Documentation](https://www.pulumi.com/docs/clouds/gcp/)
-- [GKE Documentation](https://cloud.google.com/kubernetes-engine/docs)
-- [Cloud SQL Documentation](https://cloud.google.com/sql/docs)
-- [Temporal Documentation](https://docs.temporal.io)
-- [Kubernetes Documentation](https://kubernetes.io/docs/)
+### Cost Optimization Tips
+
+1. **Disable HA for Development**:
+   ```bash
+   pulumi config set dbHighAvailability false
+   pulumi config set redisTier BASIC
+   # Saves ~$200-300/month
+   ```
+
+2. **Use Smaller Database Instance**:
+   ```bash
+   pulumi config set dbTier db-custom-1-3840  # 1 vCPU, 3.75GB
+   # Saves ~$100-150/month
+   ```
+
+3. **Reduce Replica Counts** (Staging):
+   - Use staging overlay with 1 replica per service
+   - Saves ~$100-200/month
+
+4. **Use Preemptible/Spot Instances** (Development):
+   - Note: GKE Autopilot doesn't support spot instances
+   - Consider standard GKE for development environments
 
 ---
 
-## ✅ Production Checklist
+## Next Steps
 
-- [ ] GCP project created and APIs enabled
-- [ ] Temporal Cloud namespace created
-- [ ] Domain registered and DNS ready
-- [ ] Pulumi installed and authenticated
-- [ ] Infrastructure deployed via Pulumi
-- [ ] Docker images built and pushed
-- [ ] Kubernetes secrets created
-- [ ] Database migrations completed
-- [ ] Applications deployed and healthy
-- [ ] DNS records configured
-- [ ] SSL certificates provisioned
-- [ ] Monitoring dashboards set up
-- [ ] Alert policies configured
-- [ ] CI/CD pipeline configured
-- [ ] Backup strategy verified
-- [ ] Security scan completed
-- [ ] Load testing completed
+After successful deployment:
+
+1. **Monitor Application**:
+   - View GCP Monitoring Dashboard (link in Pulumi outputs)
+   - Set up alerts for errors and resource usage
+
+2. **Configure Backups**:
+   - Cloud SQL automated backups are enabled
+   - Test backup restoration procedure
+
+3. **Set Up CI/CD**:
+   - Use Cloud Build or GitHub Actions
+   - Automate image builds and deployments
+
+4. **Security Hardening**:
+   - Review NetworkPolicies
+   - Enable Binary Authorization
+   - Set up VPC Service Controls
+   - Rotate secrets regularly
+
+5. **Performance Tuning**:
+   - Monitor HPA metrics
+   - Adjust replica counts based on traffic
+   - Optimize database queries
+   - Enable connection pooling
+
+6. **Documentation**:
+   - Document custom workflows
+   - Create runbooks for common operations
+   - Train team on Temporal workflows
 
 ---
 
-**Version**: 2.0.0
-**Last Updated**: 2025-01-04
+## Local Testing
+
+Before deploying to GCP, you can test everything locally using Minikube or kind.
+
+### Quick Local Test
+
+```bash
+cd infra
+./local-test.sh
+```
+
+This automated script will:
+1. Start a local Kubernetes cluster (Minikube or kind)
+2. Deploy PostgreSQL and Redis via Helm
+3. Build Docker images locally
+4. Deploy all FlowMaestro services
+5. Provide access URLs
+
+### Documentation
+
+- **Quick Start**: [LOCAL_QUICKSTART.md](LOCAL_QUICKSTART.md) - Get started in 10 minutes
+- **Detailed Guide**: [LOCAL_TESTING.md](LOCAL_TESTING.md) - Complete local testing documentation
+
+### Benefits of Local Testing
+
+✅ **Fast Iteration**: Test changes without deploying to GCP
+✅ **Cost Savings**: No cloud costs during development
+✅ **Offline Development**: Work without internet connection
+✅ **Safe Experimentation**: Break things without consequences
+✅ **CI/CD Validation**: Test K8s manifests before production
+
+---
+
+## Additional Resources
+
+- **Main Docs**: `/_docs/` directory in project root
+- **Architecture**: `/_docs/architecture.md`
+- **Temporal**: `/_docs/temporal-orchestration.md`
+- **Testing**: `/_docs/testing-strategy.md`
+- **Local Testing**: [LOCAL_TESTING.md](LOCAL_TESTING.md)
+- **Pulumi Docs**: https://www.pulumi.com/docs/
+- **GKE Docs**: https://cloud.google.com/kubernetes-engine/docs
+- **Temporal Docs**: https://docs.temporal.io/
+
+---
+
+**Questions or Issues?**
+
+- Check the troubleshooting section above
+- Review logs with `kubectl logs`
+- Check GCP Cloud Console for infrastructure issues
+- Review Pulumi state with `pulumi stack`
+- For local testing issues, see [LOCAL_TESTING.md](LOCAL_TESTING.md#troubleshooting)
+
+**Happy Deploying! 🚀**

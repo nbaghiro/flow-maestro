@@ -1,0 +1,133 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: temporal-schema-migration
+  namespace: flowmaestro
+  labels:
+    app: flowmaestro
+    component: temporal-schema-migration
+spec:
+  backoffLimit: 3
+  completions: 1
+  parallelism: 1
+  template:
+    metadata:
+      labels:
+        app: flowmaestro
+        component: temporal-schema-migration
+    spec:
+      serviceAccountName: flowmaestro-sa
+      restartPolicy: OnFailure
+      containers:
+        - name: temporal-schema-setup
+          image: temporalio/admin-tools:1.23.0
+          imagePullPolicy: IfNotPresent
+          command:
+            - sh
+            - -c
+            - |
+              set -e
+              echo "Setting up Temporal database schemas..."
+
+              # Build connection strings
+              export SQL_HOST="${POSTGRES_HOST}"
+              export SQL_PORT="${POSTGRES_PORT}"
+              export SQL_USER="${POSTGRES_USER}"
+              export SQL_PASSWORD="${POSTGRES_PASSWORD}"
+              export SQL_DATABASE="${POSTGRES_DATABASE}"
+              export SQL_VISIBILITY_DATABASE="${POSTGRES_VISIBILITY_DATABASE}"
+
+              echo "Connecting to database at ${SQL_HOST}:${SQL_PORT}"
+
+              # Setup main Temporal database schema
+              echo "Setting up main Temporal database schema..."
+              temporal-sql-tool \
+                --plugin postgres \
+                --ep "${SQL_HOST}" \
+                --port "${SQL_PORT}" \
+                --db "${SQL_DATABASE}" \
+                --user "${SQL_USER}" \
+                --password "${SQL_PASSWORD}" \
+                setup-schema -v 0.0
+
+              echo "Updating main Temporal database schema to latest version..."
+              temporal-sql-tool \
+                --plugin postgres \
+                --ep "${SQL_HOST}" \
+                --port "${SQL_PORT}" \
+                --db "${SQL_DATABASE}" \
+                --user "${SQL_USER}" \
+                --password "${SQL_PASSWORD}" \
+                update-schema -d /etc/temporal/schema/postgresql/v96/temporal/versioned
+
+              # Setup visibility database schema
+              echo "Setting up visibility database schema..."
+              temporal-sql-tool \
+                --plugin postgres \
+                --ep "${SQL_HOST}" \
+                --port "${SQL_PORT}" \
+                --db "${SQL_VISIBILITY_DATABASE}" \
+                --user "${SQL_USER}" \
+                --password "${SQL_PASSWORD}" \
+                setup-schema -v 0.0
+
+              echo "Updating visibility database schema to latest version..."
+              temporal-sql-tool \
+                --plugin postgres \
+                --ep "${SQL_HOST}" \
+                --port "${SQL_PORT}" \
+                --db "${SQL_VISIBILITY_DATABASE}" \
+                --user "${SQL_USER}" \
+                --password "${SQL_PASSWORD}" \
+                update-schema -d /etc/temporal/schema/postgresql/v96/visibility/versioned
+
+              echo "Temporal database schemas setup completed successfully!"
+
+          env:
+            # Database credentials
+            - name: POSTGRES_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: temporal-db-credentials
+                  key: host
+            - name: POSTGRES_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: temporal-db-credentials
+                  key: port
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: temporal-db-credentials
+                  key: user
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: temporal-db-credentials
+                  key: password
+            - name: POSTGRES_DATABASE
+              valueFrom:
+                secretKeyRef:
+                  name: temporal-db-credentials
+                  key: database
+            - name: POSTGRES_VISIBILITY_DATABASE
+              valueFrom:
+                secretKeyRef:
+                  name: temporal-db-credentials
+                  key: visibility-database
+
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+
+          securityContext:
+            runAsNonRoot: false  # Temporal admin tools run as root
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+            capabilities:
+              drop:
+                - ALL

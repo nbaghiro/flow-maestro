@@ -17,3 +17,7 @@ patchesStrategicMerge:
 images:
   - name: REGION-docker.pkg.dev/PROJECT_ID/flowmaestro/backend
     newTag: latest
+  - name: REGION-docker.pkg.dev/PROJECT_ID/flowmaestro/frontend
+    newTag: latest
+  - name: REGION-docker.pkg.dev/PROJECT_ID/flowmaestro/marketing
+    newTag: latest

@@ -1,0 +1,285 @@
+# Temporal Server Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: temporal-server
+  namespace: flowmaestro
+  labels:
+    app: flowmaestro
+    component: temporal-server
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: flowmaestro
+      component: temporal-server
+  template:
+    metadata:
+      labels:
+        app: flowmaestro
+        component: temporal-server
+    spec:
+      serviceAccountName: flowmaestro-sa
+      containers:
+        - name: temporal-server
+          image: temporalio/auto-setup:1.23.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: rpc
+              containerPort: 7233
+              protocol: TCP
+            - name: metrics
+              containerPort: 9090
+              protocol: TCP
+          env:
+            # Database configuration
+            - name: DB
+              value: "postgresql"
+            - name: POSTGRES_SEEDS
+              valueFrom:
+                secretKeyRef:
+                  name: temporal-db-credentials
+                  key: host
+            - name: DB_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: temporal-db-credentials
+                  key: port
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: temporal-db-credentials
+                  key: user
+            - name: POSTGRES_PWD
+              valueFrom:
+                secretKeyRef:
+                  name: temporal-db-credentials
+                  key: password
+            # Default database (main)
+            - name: DBNAME
+              valueFrom:
+                secretKeyRef:
+                  name: temporal-db-credentials
+                  key: database
+            # Visibility database
+            - name: VISIBILITY_DBNAME
+              valueFrom:
+                secretKeyRef:
+                  name: temporal-db-credentials
+                  key: visibility-database
+
+            # Service configuration
+            - name: TEMPORAL_CLI_ADDRESS
+              value: "temporal-service:7233"
+            - name: BIND_ON_IP
+              value: "0.0.0.0"
+            - name: NUM_HISTORY_SHARDS
+              value: "512"
+            - name: SKIP_SCHEMA_SETUP
+              value: "true"  # Schema is created by migration job
+            - name: SKIP_DB_CREATE
+              value: "true"  # Databases created by Pulumi
+            - name: DYNAMIC_CONFIG_FILE_PATH
+              value: "config/dynamicconfig/development-sql.yaml"
+
+          volumeMounts:
+            - name: dynamic-config
+              mountPath: /etc/temporal/config/dynamicconfig
+              readOnly: true
+
+          resources:
+            requests:
+              cpu: 500m
+              memory: 512Mi
+            limits:
+              cpu: 2000m
+              memory: 2Gi
+          livenessProbe:
+            tcpSocket:
+              port: 7233
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            successThreshold: 1
+            failureThreshold: 5
+          readinessProbe:
+            tcpSocket:
+              port: 7233
+            initialDelaySeconds: 15
+            periodSeconds: 5
+            timeoutSeconds: 3
+            successThreshold: 1
+            failureThreshold: 3
+          securityContext:
+            runAsNonRoot: false  # Temporal container runs as root
+            allowPrivilegeEscalation: false
+      volumes:
+        - name: dynamic-config
+          configMap:
+            name: temporal-dynamic-config
+            items:
+              - key: development-sql.yaml
+                path: development-sql.yaml
+      restartPolicy: Always
+
+---
+# Temporal UI Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: temporal-ui
+  namespace: flowmaestro
+  labels:
+    app: flowmaestro
+    component: temporal-ui
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: flowmaestro
+      component: temporal-ui
+  template:
+    metadata:
+      labels:
+        app: flowmaestro
+        component: temporal-ui
+    spec:
+      serviceAccountName: flowmaestro-sa
+      containers:
+        - name: temporal-ui
+          image: temporalio/ui:2.21.3
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          env:
+            - name: TEMPORAL_ADDRESS
+              value: "temporal-service:7233"
+            - name: TEMPORAL_CORS_ORIGINS
+              value: "http://localhost:3000"
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 3
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 2
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            allowPrivilegeEscalation: false
+      restartPolicy: Always
+
+---
+# Temporal Server Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: temporal-service
+  namespace: flowmaestro
+  labels:
+    app: flowmaestro
+    component: temporal-server
+spec:
+  type: ClusterIP
+  selector:
+    app: flowmaestro
+    component: temporal-server
+  ports:
+    - name: rpc
+      port: 7233
+      targetPort: 7233
+      protocol: TCP
+    - name: metrics
+      port: 9090
+      targetPort: 9090
+      protocol: TCP
+  sessionAffinity: ClientIP
+  sessionAffinityConfig:
+    clientIP:
+      timeoutSeconds: 10800  # 3 hours for long-running workflows
+
+---
+# Temporal UI Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: temporal-ui-service
+  namespace: flowmaestro
+  labels:
+    app: flowmaestro
+    component: temporal-ui
+spec:
+  type: ClusterIP
+  selector:
+    app: flowmaestro
+    component: temporal-ui
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+      protocol: TCP
+  sessionAffinity: None
+
+---
+# HPA for Temporal Server
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: temporal-server-hpa
+  namespace: flowmaestro
+  labels:
+    app: flowmaestro
+    component: temporal-server
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: temporal-server
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 75
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 600  # 10 minutes
+      policies:
+        - type: Pods
+          value: 1
+          periodSeconds: 180  # Scale down slowly (1 pod every 3 min)
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+        - type: Percent
+          value: 50
+          periodSeconds: 60
+        - type: Pods
+          value: 2
+          periodSeconds: 60
+      selectPolicy: Max

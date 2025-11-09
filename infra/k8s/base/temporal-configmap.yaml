@@ -1,0 +1,42 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: temporal-dynamic-config
+  namespace: flowmaestro
+  labels:
+    app: flowmaestro
+    component: temporal-server
+data:
+  development-sql.yaml: |
+    # Temporal Dynamic Configuration
+    # This file contains runtime configuration for self-hosted Temporal
+
+    # Enable search attributes for better workflow visibility
+    system.forceSearchAttributesCacheRefreshOnRead:
+      - value: true
+        constraints: {}
+
+    # Increase history size limits
+    history.maxPageSize:
+      - value: 1000
+        constraints: {}
+
+    # Workflow execution retention (30 days for production)
+    system.workflowExecutionRetentionPeriodInDays:
+      - value: 30
+        constraints: {}
+
+    # Frontend rate limits (production settings)
+    frontend.rps:
+      - value: 10000
+        constraints: {}
+
+    # Keep alive settings
+    frontend.keepAliveMaxConnectionAge:
+      - value: 3600000000000
+        constraints: {}
+
+    # Enable advanced features
+    system.enableNexus:
+      - value: true
+        constraints: {}

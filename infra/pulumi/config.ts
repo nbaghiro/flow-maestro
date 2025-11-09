@@ -31,23 +31,17 @@ export interface InfrastructureConfig {
     redisMemorySizeGb: number;
     redisTier: "BASIC" | "STANDARD_HA";
 
-    // Secrets
+    // Secrets (required)
     dbPassword: string;
     jwtSecret: string;
     encryptionKey: string;
 
-    // Temporal Cloud Configuration
+    // Temporal Configuration (self-hosted)
     temporalNamespace: string;
-    temporalAddress: string;
-    temporalCaCert?: string;
-    temporalClientCert?: string;
-    temporalClientKey?: string;
 
-    // Optional: LLM API Keys
-    openaiApiKey?: string;
-    anthropicApiKey?: string;
-    googleApiKey?: string;
-    cohereApiKey?: string;
+    // Application Secrets (flexible key-value pairs for any integration)
+    // Format: JSON object like {"OPENAI_API_KEY": "sk-...", "SLACK_TOKEN": "xoxb-..."}
+    appSecrets: { [key: string]: string };
 }
 
 // Default configuration values
@@ -63,6 +57,24 @@ const defaults = {
     redisMemorySizeGb: 5,
     redisTier: "STANDARD_HA" as const
 };
+
+// Parse application secrets from JSON config
+function parseAppSecrets(): { [key: string]: string } {
+    const secretsJson = config.get("appSecrets");
+    if (!secretsJson) {
+        return {};
+    }
+
+    try {
+        const parsed = JSON.parse(secretsJson);
+        if (typeof parsed !== "object" || Array.isArray(parsed)) {
+            throw new Error("appSecrets must be a JSON object");
+        }
+        return parsed;
+    } catch (error) {
+        throw new Error(`Failed to parse appSecrets: ${error}`);
+    }
+}
 
 // Export configuration
 export const infrastructureConfig: InfrastructureConfig = {
@@ -97,18 +109,11 @@ export const infrastructureConfig: InfrastructureConfig = {
     jwtSecret: config.requireSecret("jwtSecret"),
     encryptionKey: config.requireSecret("encryptionKey"),
 
-    // Temporal Cloud Configuration
-    temporalNamespace: config.require("temporalNamespace"),
-    temporalAddress: config.require("temporalAddress"),
-    temporalCaCert: config.getSecret("temporalCaCert"),
-    temporalClientCert: config.getSecret("temporalClientCert"),
-    temporalClientKey: config.getSecret("temporalClientKey"),
+    // Temporal Configuration (self-hosted)
+    temporalNamespace: config.get("temporalNamespace") || "default",
 
-    // Optional: LLM API Keys
-    openaiApiKey: config.getSecret("openaiApiKey"),
-    anthropicApiKey: config.getSecret("anthropicApiKey"),
-    googleApiKey: config.getSecret("googleApiKey"),
-    cohereApiKey: config.getSecret("cohereApiKey")
+    // Application Secrets (flexible)
+    appSecrets: parseAppSecrets()
 };
 
 // Helper function to create resource names

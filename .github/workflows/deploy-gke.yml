@@ -1,0 +1,176 @@
+name: Deploy to GKE
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Deployment environment"
+        required: true
+        type: choice
+        options:
+          - production
+          - staging
+        default: staging
+      image_tag:
+        description: "Docker image tag (leave empty to use git SHA)"
+        required: false
+        type: string
+
+env:
+  GCP_REGION: us-central1
+  GKE_CLUSTER: flowmaestro-cluster
+  ARTIFACT_REGISTRY: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/flowmaestro
+  IMAGE_TAG: ${{ github.event.inputs.image_tag || github.sha }}
+
+jobs:
+  build-and-deploy:
+    name: Build and Deploy to GKE
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment }}
+
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      # Checkout code
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Authenticate to Google Cloud using Workload Identity Federation
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      # Setup Cloud SDK
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      # Configure Docker to use gcloud as credential helper
+      - name: Configure Docker for Artifact Registry
+        run: |
+          gcloud auth configure-docker ${{ env.GCP_REGION }}-docker.pkg.dev
+
+      # Get GKE credentials
+      - name: Get GKE credentials
+        run: |
+          gcloud container clusters get-credentials ${{ env.GKE_CLUSTER }} \
+            --region=${{ env.GCP_REGION }} \
+            --project=${{ vars.GCP_PROJECT_ID }}
+
+      # Set up Docker Buildx for better caching
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Build and push backend image
+      - name: Build and push backend image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: infra/docker/backend/Dockerfile
+          push: true
+          tags: |
+            ${{ env.ARTIFACT_REGISTRY }}/backend:${{ env.IMAGE_TAG }}
+            ${{ env.ARTIFACT_REGISTRY }}/backend:latest
+          cache-from: type=registry,ref=${{ env.ARTIFACT_REGISTRY }}/backend:latest
+          cache-to: type=inline
+
+      # Build and push frontend image
+      - name: Build and push frontend image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: infra/docker/frontend/Dockerfile
+          push: true
+          build-args: |
+            VITE_API_URL=${{ vars.VITE_API_URL }}
+            VITE_WS_URL=${{ vars.VITE_WS_URL }}
+          tags: |
+            ${{ env.ARTIFACT_REGISTRY }}/frontend:${{ env.IMAGE_TAG }}
+            ${{ env.ARTIFACT_REGISTRY }}/frontend:latest
+          cache-from: type=registry,ref=${{ env.ARTIFACT_REGISTRY }}/frontend:latest
+          cache-to: type=inline
+
+      # Build and push marketing image
+      - name: Build and push marketing image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: infra/docker/marketing/Dockerfile
+          push: true
+          tags: |
+            ${{ env.ARTIFACT_REGISTRY }}/marketing:${{ env.IMAGE_TAG }}
+            ${{ env.ARTIFACT_REGISTRY }}/marketing:latest
+          cache-from: type=registry,ref=${{ env.ARTIFACT_REGISTRY }}/marketing:latest
+          cache-to: type=inline
+
+      # Install kustomize
+      - name: Install kustomize
+        run: |
+          curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
+          sudo mv kustomize /usr/local/bin/
+
+      # Update Kustomize overlay with new image tags
+      - name: Update Kustomize images
+        working-directory: infra/k8s/overlays/${{ github.event.inputs.environment }}
+        run: |
+          kustomize edit set image \
+            REGION-docker.pkg.dev/PROJECT_ID/flowmaestro/backend=${{ env.ARTIFACT_REGISTRY }}/backend:${{ env.IMAGE_TAG }} \
+            REGION-docker.pkg.dev/PROJECT_ID/flowmaestro/frontend=${{ env.ARTIFACT_REGISTRY }}/frontend:${{ env.IMAGE_TAG }} \
+            REGION-docker.pkg.dev/PROJECT_ID/flowmaestro/marketing=${{ env.ARTIFACT_REGISTRY }}/marketing:${{ env.IMAGE_TAG }}
+
+      # Deploy to GKE
+      - name: Deploy to GKE
+        working-directory: infra
+        run: |
+          echo "Deploying to ${{ github.event.inputs.environment }} environment..."
+          kubectl apply -k k8s/overlays/${{ github.event.inputs.environment }}
+
+      # Wait for deployments to rollout
+      - name: Wait for API server rollout
+        run: |
+          kubectl rollout status deployment/api-server -n flowmaestro --timeout=10m
+
+      - name: Wait for Temporal worker rollout
+        run: |
+          kubectl rollout status deployment/temporal-worker -n flowmaestro --timeout=10m
+
+      - name: Wait for frontend rollout
+        run: |
+          kubectl rollout status deployment/frontend -n flowmaestro --timeout=10m
+
+      - name: Wait for marketing rollout
+        run: |
+          kubectl rollout status deployment/marketing -n flowmaestro --timeout=10m
+
+      - name: Wait for Temporal server rollout
+        run: |
+          kubectl rollout status deployment/temporal-server -n flowmaestro --timeout=10m
+
+      # Verify deployment
+      - name: Verify deployment
+        run: |
+          echo "=== Deployment Status ==="
+          kubectl get pods -n flowmaestro
+          echo ""
+          echo "=== Services ==="
+          kubectl get services -n flowmaestro
+          echo ""
+          echo "=== Ingress ==="
+          kubectl get ingress -n flowmaestro
+
+      # Output deployment info
+      - name: Deployment summary
+        run: |
+          echo "✅ Deployment completed successfully!"
+          echo ""
+          echo "Environment: ${{ github.event.inputs.environment }}"
+          echo "Image Tag: ${{ env.IMAGE_TAG }}"
+          echo "Namespace: flowmaestro"
+          echo ""
+          echo "Images deployed:"
+          echo "  - backend: ${{ env.ARTIFACT_REGISTRY }}/backend:${{ env.IMAGE_TAG }}"
+          echo "  - frontend: ${{ env.ARTIFACT_REGISTRY }}/frontend:${{ env.IMAGE_TAG }}"
+          echo "  - marketing: ${{ env.ARTIFACT_REGISTRY }}/marketing:${{ env.IMAGE_TAG }}"

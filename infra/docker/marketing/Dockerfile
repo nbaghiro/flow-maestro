@@ -22,7 +22,7 @@ RUN npm run build --workspace=marketing
 FROM nginx:alpine
 
 # Copy custom nginx config
-COPY marketing/nginx.conf /etc/nginx/conf.d/default.conf
+COPY infra/docker/marketing/nginx.conf /etc/nginx/conf.d/default.conf
 
 # Copy built files from builder stage
 COPY --from=builder /app/marketing/dist /usr/share/nginx/html

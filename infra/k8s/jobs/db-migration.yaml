@@ -26,9 +26,17 @@ spec:
             - sh
             - -c
             - |
+              set -e
               echo "Starting database migration..."
+
+              # Construct DATABASE_URL from environment variables
+              export DATABASE_URL="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}"
+
+              echo "Connecting to database at ${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}"
+
               cd backend
               npm run db:migrate
+
               echo "Database migration completed successfully"
           env:
             # Database credentials (from secret)
@@ -57,10 +65,6 @@ spec:
                 secretKeyRef:
                   name: db-credentials
                   key: password
-
-            # Construct DATABASE_URL for node-pg-migrate
-            - name: DATABASE_URL
-              value: "postgresql://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@$(POSTGRES_HOST):$(POSTGRES_PORT)/$(POSTGRES_DB)"
 
           resources:
             requests:

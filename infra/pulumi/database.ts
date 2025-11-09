@@ -21,6 +21,14 @@ export const database = new gcp.sql.DatabaseInstance(
 
             availabilityType: infrastructureConfig.dbHighAvailability ? "REGIONAL" : "ZONAL",
 
+            // Database flags for extensions and configuration
+            databaseFlags: [
+                {
+                    name: "cloudsql.enable_pgvector",
+                    value: "on"
+                }
+            ],
+
             ipConfiguration: {
                 ipv4Enabled: false,
                 privateNetwork: network.id,
@@ -62,17 +70,40 @@ export const database = new gcp.sql.DatabaseInstance(
     }
 );
 
-// Create database
-export const databaseName = new gcp.sql.Database(resourceName("database"), {
+// Create application database
+export const appDatabaseName = new gcp.sql.Database(resourceName("app-database"), {
     name: "flowmaestro",
     instance: database.name,
     charset: "UTF8",
     collation: "en_US.UTF8"
 });
 
-// Create database user
-export const databaseUser = new gcp.sql.User(resourceName("db-user"), {
+// Create Temporal database (for self-hosted Temporal)
+export const temporalDatabaseName = new gcp.sql.Database(resourceName("temporal-database"), {
+    name: "temporal",
+    instance: database.name,
+    charset: "UTF8",
+    collation: "en_US.UTF8"
+});
+
+// Create Temporal visibility database (required by Temporal)
+export const temporalVisibilityDatabaseName = new gcp.sql.Database(resourceName("temporal-visibility-database"), {
+    name: "temporal_visibility",
+    instance: database.name,
+    charset: "UTF8",
+    collation: "en_US.UTF8"
+});
+
+// Create application database user
+export const appDatabaseUser = new gcp.sql.User(resourceName("app-db-user"), {
     name: "flowmaestro",
+    instance: database.name,
+    password: infrastructureConfig.dbPassword
+});
+
+// Create Temporal database user
+export const temporalDatabaseUser = new gcp.sql.User(resourceName("temporal-db-user"), {
+    name: "temporal",
     instance: database.name,
     password: infrastructureConfig.dbPassword
 });
@@ -82,9 +113,20 @@ export const databaseOutputs = {
     instanceName: database.name,
     instanceConnectionName: database.connectionName,
     privateIp: database.privateIpAddress,
-    databaseName: databaseName.name,
-    userName: databaseUser.name
+
+    // Application database
+    appDatabaseName: appDatabaseName.name,
+    appUserName: appDatabaseUser.name,
+
+    // Temporal databases
+    temporalDatabaseName: temporalDatabaseName.name,
+    temporalVisibilityDatabaseName: temporalVisibilityDatabaseName.name,
+    temporalUserName: temporalDatabaseUser.name
 };
 
-// Export database connection string for Kubernetes
-export const databaseConnectionString = pulumi.interpolate`postgresql://${databaseUser.name}:${infrastructureConfig.dbPassword}@${database.privateIpAddress}:5432/${databaseName.name}`;
+// Export database connection strings for Kubernetes
+export const appDatabaseConnectionString = pulumi.interpolate`postgresql://${appDatabaseUser.name}:${infrastructureConfig.dbPassword}@${database.privateIpAddress}:5432/${appDatabaseName.name}`;
+
+export const temporalDatabaseConnectionString = pulumi.interpolate`postgresql://${temporalDatabaseUser.name}:${infrastructureConfig.dbPassword}@${database.privateIpAddress}:5432/${temporalDatabaseName.name}`;
+
+export const temporalVisibilityDatabaseConnectionString = pulumi.interpolate`postgresql://${temporalDatabaseUser.name}:${infrastructureConfig.dbPassword}@${database.privateIpAddress}:5432/${temporalVisibilityDatabaseName.name}`;

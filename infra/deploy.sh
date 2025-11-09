@@ -120,21 +120,23 @@ build_images() {
 
     # Build backend
     print_info "Building backend image..."
-    docker build -f infra/docker/backend/Dockerfile -t ${REGISTRY}/backend:${IMAGE_TAG} .
-    docker tag ${REGISTRY}/backend:${IMAGE_TAG} ${REGISTRY}/backend:latest
+    docker build -f infra/docker/backend/Dockerfile \
+        -t ${REGISTRY}/backend:${IMAGE_TAG} \
+        -t ${REGISTRY}/backend:latest .
 
     # Build frontend
     print_info "Building frontend image..."
     docker build -f infra/docker/frontend/Dockerfile \
         --build-arg VITE_API_URL=https://api.${DOMAIN} \
         --build-arg VITE_WS_URL=wss://api.${DOMAIN} \
-        -t ${REGISTRY}/frontend:${IMAGE_TAG} .
-    docker tag ${REGISTRY}/frontend:${IMAGE_TAG} ${REGISTRY}/frontend:latest
+        -t ${REGISTRY}/frontend:${IMAGE_TAG} \
+        -t ${REGISTRY}/frontend:latest .
 
     # Build marketing
     print_info "Building marketing image..."
-    docker build -f infra/docker/marketing/Dockerfile -t ${REGISTRY}/marketing:${IMAGE_TAG} .
-    docker tag ${REGISTRY}/marketing:${IMAGE_TAG} ${REGISTRY}/marketing:latest
+    docker build -f infra/docker/marketing/Dockerfile \
+        -t ${REGISTRY}/marketing:${IMAGE_TAG} \
+        -t ${REGISTRY}/marketing:latest .
 
     print_info "All images built successfully"
 }
@@ -159,40 +161,121 @@ push_images() {
 update_k8s_images() {
     print_info "Updating Kubernetes deployment images..."
 
+    # Create a temporary directory for modified manifests
+    mkdir -p /tmp/flowmaestro-k8s
+    cp -r infra/k8s/* /tmp/flowmaestro-k8s/
+
     # Update manifests with project-specific values
-    find infra/k8s -type f -name "*.yaml" -exec sed -i.bak \
+    find /tmp/flowmaestro-k8s -type f -name "*.yaml" -exec sed -i.bak \
         -e "s|REGION-docker.pkg.dev/PROJECT_ID|${REGISTRY}|g" \
         -e "s|PROJECT_ID|${GCP_PROJECT_ID}|g" \
+        -e "s|REGION|${GCP_REGION}|g" \
         -e "s|DOMAIN|${DOMAIN}|g" \
         {} \;
 
     # Remove backup files
-    find infra/k8s -type f -name "*.bak" -delete
+    find /tmp/flowmaestro-k8s -type f -name "*.bak" -delete
+
+    # Copy back modified manifests
+    cp -r /tmp/flowmaestro-k8s/* infra/k8s/
 
     print_info "Kubernetes manifests updated"
+}
+
+# Prompt for secrets creation
+check_secrets() {
+    print_info "Checking for required Kubernetes secrets..."
+
+    local secrets_missing=false
+
+    if ! kubectl get secret db-credentials -n flowmaestro &> /dev/null; then
+        print_warn "Secret 'db-credentials' not found"
+        secrets_missing=true
+    fi
+
+    if ! kubectl get secret temporal-db-credentials -n flowmaestro &> /dev/null; then
+        print_warn "Secret 'temporal-db-credentials' not found"
+        secrets_missing=true
+    fi
+
+    if ! kubectl get secret redis-credentials -n flowmaestro &> /dev/null; then
+        print_warn "Secret 'redis-credentials' not found"
+        secrets_missing=true
+    fi
+
+    if ! kubectl get secret app-secrets -n flowmaestro &> /dev/null; then
+        print_warn "Secret 'app-secrets' not found"
+        secrets_missing=true
+    fi
+
+    if [ "$secrets_missing" = true ]; then
+        echo ""
+        print_error "Required secrets are missing!"
+        print_error "You must create Kubernetes secrets before deployment."
+        print_error "Run 'pulumi stack output' to get connection info, then create secrets."
+        print_error "See infra/README.md for detailed instructions."
+        echo ""
+        read -p "Have you created all required secrets? (y/n): " secrets_confirm
+        if [ "$secrets_confirm" != "y" ]; then
+            print_error "Please create secrets first, then re-run this script"
+            exit 1
+        fi
+    else
+        print_info "All required secrets found"
+    fi
 }
 
 # Deploy to Kubernetes
 deploy_to_k8s() {
     print_info "Deploying to Kubernetes..."
 
-    # Apply database migration job first
-    print_info "Running database migrations..."
+    # Create namespace if it doesn't exist
+    kubectl create namespace flowmaestro --dry-run=client -o yaml | kubectl apply -f -
+
+    # Deploy Temporal schema migration
+    print_info "Running Temporal schema migrations..."
+    kubectl apply -f infra/k8s/jobs/temporal-schema-migration.yaml
+    kubectl wait --for=condition=complete --timeout=600s job/temporal-schema-migration -n flowmaestro || {
+        print_error "Temporal schema migration failed"
+        kubectl logs -f job/temporal-schema-migration -n flowmaestro
+        exit 1
+    }
+    print_info "Temporal schema migration completed"
+
+    # Deploy Temporal server
+    print_info "Deploying Temporal server..."
+    kubectl apply -f infra/k8s/base/temporal-deployment.yaml
+    kubectl wait --for=condition=available --timeout=600s deployment/temporal-server -n flowmaestro
+    print_info "Temporal server deployed"
+
+    # Run application database migrations
+    print_info "Running application database migrations..."
     kubectl apply -f infra/k8s/jobs/db-migration.yaml
-    kubectl wait --for=condition=complete --timeout=300s job/db-migration -n flowmaestro
+    kubectl wait --for=condition=complete --timeout=600s job/db-migration -n flowmaestro || {
+        print_error "Database migration failed"
+        kubectl logs -f job/db-migration -n flowmaestro
+        exit 1
+    }
+    print_info "Database migrations completed"
 
     # Deploy application
     print_info "Deploying application..."
     kubectl apply -k infra/k8s/overlays/production
 
-    # Wait for rollout
+    # Wait for rollouts
     print_info "Waiting for API server rollout..."
-    kubectl rollout status deployment/api-server -n flowmaestro --timeout=5m
+    kubectl rollout status deployment/api-server -n flowmaestro --timeout=600s
 
     print_info "Waiting for worker rollout..."
-    kubectl rollout status deployment/temporal-worker -n flowmaestro --timeout=5m
+    kubectl rollout status deployment/temporal-worker -n flowmaestro --timeout=600s
 
-    print_info "Deployment completed successfully"
+    print_info "Waiting for frontend rollout..."
+    kubectl rollout status deployment/frontend -n flowmaestro --timeout=600s
+
+    print_info "Waiting for marketing rollout..."
+    kubectl rollout status deployment/marketing -n flowmaestro --timeout=600s
+
+    print_info "All deployments completed successfully"
 }
 
 # Show deployment status
@@ -235,15 +318,33 @@ main() {
     build_images
     push_images
     update_k8s_images
+    check_secrets
     deploy_to_k8s
     show_status
 
     echo ""
     print_info "=== Deployment Complete! ==="
+    echo ""
     print_info "Next steps:"
-    print_info "1. Configure DNS to point to the load balancer IP"
-    print_info "2. Wait for SSL certificate provisioning (15-60 minutes)"
-    print_info "3. Access your application at https://app.${DOMAIN}"
+    print_info "1. Get the Load Balancer IP:"
+    print_info "   kubectl get ingress flowmaestro-ingress -n flowmaestro"
+    echo ""
+    print_info "2. Configure DNS A records to point to the Load Balancer IP:"
+    print_info "   - api.${DOMAIN}"
+    print_info "   - app.${DOMAIN}"
+    print_info "   - www.${DOMAIN}"
+    print_info "   - ${DOMAIN}"
+    echo ""
+    print_info "3. Wait for SSL certificate provisioning (15-60 minutes):"
+    print_info "   kubectl describe managedcertificate flowmaestro-cert -n flowmaestro"
+    echo ""
+    print_info "4. Access your application:"
+    print_info "   - API: https://api.${DOMAIN}"
+    print_info "   - Frontend: https://app.${DOMAIN}"
+    print_info "   - Marketing: https://www.${DOMAIN}"
+    echo ""
+    print_info "5. Monitor your deployment:"
+    print_info "   kubectl get pods -n flowmaestro -w"
 }
 
 # Run main function

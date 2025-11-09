@@ -6,8 +6,12 @@ namespace: flowmaestro
 resources:
   - namespace.yaml
   - configmap.yaml
+  - temporal-configmap.yaml
   - api-deployment.yaml
   - worker-deployment.yaml
+  - frontend-deployment.yaml
+  - marketing-deployment.yaml
+  - temporal-deployment.yaml
   - services.yaml
   - ingress.yaml
 

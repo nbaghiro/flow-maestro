@@ -4,6 +4,8 @@
 
 This guide provides comprehensive instructions for deploying FlowMaestro to Google Kubernetes Engine (GKE) using Pulumi for infrastructure-as-code.
 
+> **📍 Local Development**: For local Docker Compose development setup, see [`/infra/local/README.md`](../infra/local/README.md)
+
 ---
 
 ## Architecture Overview
@@ -20,8 +22,8 @@ This guide provides comprehensive instructions for deploying FlowMaestro to Goog
 
 1. **Cloud SQL PostgreSQL 15** - Primary database with pgvector extension
 2. **Memorystore Redis** - Pub/sub and caching layer
-3. **Temporal Cloud** - Managed workflow orchestration (SaaS)
-4. **Cloud Storage** - Static asset hosting
+3. **Temporal Server (Self-Hosted)** - Workflow orchestration running in GKE
+4. **Cloud Storage** - Static asset hosting and file uploads (GCS)
 5. **Cloud CDN** - Global content delivery
 6. **Secret Manager** - Secure credential storage
 
@@ -48,13 +50,13 @@ This guide provides comprehensive instructions for deploying FlowMaestro to Goog
          │          │          │(2 pods)     │
          └────┬─────┘          └──────┬──────┘
               │                       │
-    ┌─────────┼───────────────────────┼─────────┐
-    │         │                       │         │
-┌───▼────┐ ┌─-▼─────┐        ┌───────-▼───┐  ┌──▼──────────┐
-│Cloud   │ │Memory  │        │Temporal    │  │Secret       │
-│SQL     │ │store   │        │Cloud       │  │Manager      │
-│Postgres│ │Redis   │        │(External)  │  │             │
-└────────┘ └────────┘        └────────────┘  └─────────────┘
+    ┌─────────┼───────────────────────┼─────────────┐
+    │         │                       │             │
+┌───▼────┐ ┌─-▼─────┐      ┌─────────▼──────┐  ┌──▼──────────┐
+│Cloud   │ │Memory  │      │Temporal Server │  │Secret       │
+│SQL     │ │store   │      │(3 pods GKE)    │  │Manager      │
+│Postgres│ │Redis   │      │+ Temporal UI   │  │+ GCS        │
+└────────┘ └────────┘      └────────────────┘  └─────────────┘
 ```
 
 ---

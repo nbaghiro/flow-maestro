@@ -153,7 +153,7 @@ export function WorkflowCanvas() {
                         backgroundColor: "rgba(0, 0, 0, 0.05)",
                         border: "1px solid rgba(0, 0, 0, 0.1)"
                     }}
-                    nodeColor="#6366f1"
+                    nodeColor="#9ca3af"
                     maskColor="rgba(0, 0, 0, 0.1)"
                 />
             </ReactFlow>

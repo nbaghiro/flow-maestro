@@ -5,7 +5,7 @@
 
 import type { JsonObject } from "@flowmaestro/shared";
 import type { Tool } from "../../../storage/models/Agent";
-import { getWorkingMemoryService } from "../../../services/working-memory-service";
+import { getWorkingMemoryService } from "../../../services/WorkingMemoryService";
 
 /**
  * Create the updateWorkingMemory tool definition

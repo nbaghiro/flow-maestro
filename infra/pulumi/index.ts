@@ -1,7 +1,12 @@
 import * as pulumi from "@pulumi/pulumi";
 import { infrastructureConfig } from "./config";
 import { networkOutputs, staticIp } from "./networking";
-import { databaseOutputs, databaseConnectionString } from "./database";
+import {
+    databaseOutputs,
+    appDatabaseConnectionString,
+    temporalDatabaseConnectionString,
+    temporalVisibilityDatabaseConnectionString
+} from "./database";
 import { redisOutputs } from "./redis";
 import { clusterOutputs } from "./gke-cluster";
 import { secretOutputs } from "./secrets";
@@ -21,13 +26,22 @@ export const outputs = {
     subnetName: networkOutputs.subnetName,
     staticIpAddress: networkOutputs.staticIpAddress,
 
-    // Database
+    // Application Database
+    appDatabaseName: databaseOutputs.appDatabaseName,
+    appDatabaseUser: databaseOutputs.appUserName,
+    appDatabaseConnectionString: appDatabaseConnectionString,
+
+    // Temporal Databases
+    temporalDatabaseName: databaseOutputs.temporalDatabaseName,
+    temporalVisibilityDatabaseName: databaseOutputs.temporalVisibilityDatabaseName,
+    temporalDatabaseUser: databaseOutputs.temporalUserName,
+    temporalDatabaseConnectionString: temporalDatabaseConnectionString,
+    temporalVisibilityDatabaseConnectionString: temporalVisibilityDatabaseConnectionString,
+
+    // Database Instance Info
     databaseInstanceName: databaseOutputs.instanceName,
     databaseConnectionName: databaseOutputs.instanceConnectionName,
     databasePrivateIp: databaseOutputs.privateIp,
-    databaseName: databaseOutputs.databaseName,
-    databaseUser: databaseOutputs.userName,
-    databaseConnectionString: databaseConnectionString,
 
     // Redis
     redisHost: redisOutputs.host,
@@ -42,21 +56,20 @@ export const outputs = {
     serviceAccountEmail: clusterOutputs.serviceAccountEmail,
 
     // Storage
-    frontendBucketName: storageOutputs.frontendBucketName,
-    frontendBucketUrl: storageOutputs.frontendBucketUrl,
-    marketingBucketName: storageOutputs.marketingBucketName,
-    marketingBucketUrl: storageOutputs.marketingBucketUrl,
+    uploadsBucketName: storageOutputs.uploadsBucketName,
+    uploadsBucketUrl: storageOutputs.uploadsBucketUrl,
+    artifactsBucketName: storageOutputs.artifactsBucketName,
+    artifactsBucketUrl: storageOutputs.artifactsBucketUrl,
 
     // Monitoring
     dashboardId: monitoringOutputs.dashboardId,
 
-    // Temporal Cloud Configuration
+    // Temporal Configuration (self-hosted)
     temporalNamespace: infrastructureConfig.temporalNamespace,
-    temporalAddress: infrastructureConfig.temporalAddress,
 
     // Instructions for next steps
     nextSteps: pulumi.interpolate`
-FlowMaestro Infrastructure Deployed Successfully!
+FlowMaestro Infrastructure Deployed Successfully! 🎉
 
 Next Steps:
 ===========
@@ -67,9 +80,10 @@ Next Steps:
    $ kubectl get nodes
 
 2. Configure DNS records for your domain (${infrastructureConfig.domain}):
-   - api.${infrastructureConfig.domain} -> ${staticIp.address}
-   - app.${infrastructureConfig.domain} -> ${staticIp.address}
-   - www.${infrastructureConfig.domain} -> ${staticIp.address}
+   Create A records pointing to: ${staticIp.address}
+   - api.${infrastructureConfig.domain}
+   - app.${infrastructureConfig.domain}
+   - www.${infrastructureConfig.domain}
 
 3. Build and push Docker images:
    $ export IMAGE_TAG=$(git rev-parse --short HEAD)
@@ -80,28 +94,43 @@ Next Steps:
        --repository-format=docker \\
        --location=${infrastructureConfig.region}
 
-   # Build and push backend
-   $ docker build -f backend/Dockerfile -t $REGISTRY/backend:$IMAGE_TAG .
+   # Authenticate Docker
+   $ gcloud auth configure-docker ${infrastructureConfig.region}-docker.pkg.dev
+
+   # Build and push images
+   $ docker build -f infra/docker/backend/Dockerfile -t $REGISTRY/backend:$IMAGE_TAG .
    $ docker push $REGISTRY/backend:$IMAGE_TAG
 
-   # Build and push frontend
-   $ docker build -f frontend/Dockerfile \\
+   $ docker build -f infra/docker/frontend/Dockerfile \\
        --build-arg VITE_API_URL=https://api.${infrastructureConfig.domain} \\
        --build-arg VITE_WS_URL=wss://api.${infrastructureConfig.domain} \\
        -t $REGISTRY/frontend:$IMAGE_TAG .
    $ docker push $REGISTRY/frontend:$IMAGE_TAG
 
+   $ docker build -f infra/docker/marketing/Dockerfile -t $REGISTRY/marketing:$IMAGE_TAG .
+   $ docker push $REGISTRY/marketing:$IMAGE_TAG
+
 4. Create Kubernetes secrets:
    $ kubectl create namespace flowmaestro
 
-   # Database credentials
+   # Application database credentials
    $ kubectl create secret generic db-credentials \\
        --namespace=flowmaestro \\
        --from-literal=host=${databaseOutputs.privateIp} \\
        --from-literal=port=5432 \\
-       --from-literal=database=${databaseOutputs.databaseName} \\
-       --from-literal=user=${databaseOutputs.userName} \\
-       --from-literal=password='<from-pulumi-config>'
+       --from-literal=database=${databaseOutputs.appDatabaseName} \\
+       --from-literal=user=${databaseOutputs.appUserName} \\
+       --from-literal=password='<from-pulumi-config-dbPassword>'
+
+   # Temporal database credentials
+   $ kubectl create secret generic temporal-db-credentials \\
+       --namespace=flowmaestro \\
+       --from-literal=host=${databaseOutputs.privateIp} \\
+       --from-literal=port=5432 \\
+       --from-literal=database=${databaseOutputs.temporalDatabaseName} \\
+       --from-literal=visibility-database=${databaseOutputs.temporalVisibilityDatabaseName} \\
+       --from-literal=user=${databaseOutputs.temporalUserName} \\
+       --from-literal=password='<from-pulumi-config-dbPassword>'
 
    # Redis credentials
    $ kubectl create secret generic redis-credentials \\
@@ -112,24 +141,25 @@ Next Steps:
    # Application secrets
    $ kubectl create secret generic app-secrets \\
        --namespace=flowmaestro \\
-       --from-literal=jwt-secret='<from-pulumi-config>' \\
-       --from-literal=encryption-key='<from-pulumi-config>'
+       --from-literal=jwt-secret='<from-pulumi-config-jwtSecret>' \\
+       --from-literal=encryption-key='<from-pulumi-config-encryptionKey>'
 
-   # Temporal credentials
-   $ kubectl create secret generic temporal-credentials \\
+   # Integration secrets (from appSecrets config)
+   $ kubectl create secret generic integration-secrets \\
        --namespace=flowmaestro \\
-       --from-literal=address='${infrastructureConfig.temporalAddress}' \\
-       --from-literal=namespace='${infrastructureConfig.temporalNamespace}' \\
-       --from-file=ca-cert=temporal-ca.pem \\
-       --from-file=client-cert=temporal-client.pem \\
-       --from-file=client-key=temporal-client-key.pem
+       --from-literal=OPENAI_API_KEY='<from-config>' \\
+       --from-literal=ANTHROPIC_API_KEY='<from-config>' \\
+       --from-literal=GOOGLE_API_KEY='<from-config>'
 
-5. Run database migrations:
-   $ kubectl apply -f k8s/jobs/db-migration.yaml
-   $ kubectl logs -f job/db-migration -n flowmaestro
+5. Deploy Temporal server:
+   $ kubectl apply -f infra/k8s/jobs/temporal-schema-migration.yaml
+   $ kubectl wait --for=condition=complete job/temporal-schema-migration -n flowmaestro --timeout=5m
+   $ kubectl apply -f infra/k8s/base/temporal-deployment.yaml
 
-6. Deploy applications:
-   $ kubectl apply -k k8s/overlays/production
+6. Deploy application:
+   $ kubectl apply -f infra/k8s/jobs/db-migration.yaml
+   $ kubectl wait --for=condition=complete job/db-migration -n flowmaestro --timeout=5m
+   $ kubectl apply -k infra/k8s/overlays/production
 
 7. Wait for SSL certificate (15-60 minutes):
    $ kubectl describe managedcertificate flowmaestro-cert -n flowmaestro
@@ -137,17 +167,30 @@ Next Steps:
 8. Verify deployment:
    $ kubectl get pods -n flowmaestro
    $ kubectl get ingress -n flowmaestro
+   $ kubectl get hpa -n flowmaestro
 
-9. Access monitoring dashboard:
-   https://console.cloud.google.com/monitoring/dashboards/custom/${monitoringOutputs.dashboardId}
+9. Access your application:
+   - API: https://api.${infrastructureConfig.domain}
+   - Frontend: https://app.${infrastructureConfig.domain}
+   - Marketing: https://www.${infrastructureConfig.domain}
+   - Monitoring: https://console.cloud.google.com/monitoring/dashboards/custom/${monitoringOutputs.dashboardId}
 
-Database Connection:
+Connection Info:
+================
+Application Database:
   Host: ${databaseOutputs.privateIp}
   Port: 5432
-  Database: ${databaseOutputs.databaseName}
-  User: ${databaseOutputs.userName}
+  Database: ${databaseOutputs.appDatabaseName}
+  User: ${databaseOutputs.appUserName}
 
-Redis Connection:
+Temporal Databases:
+  Host: ${databaseOutputs.privateIp}
+  Port: 5432
+  Main: ${databaseOutputs.temporalDatabaseName}
+  Visibility: ${databaseOutputs.temporalVisibilityDatabaseName}
+  User: ${databaseOutputs.temporalUserName}
+
+Redis:
   Host: ${redisOutputs.host}
   Port: ${redisOutputs.port}
 

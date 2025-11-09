@@ -21,3 +21,7 @@ patchesStrategicMerge:
 images:
   - name: REGION-docker.pkg.dev/PROJECT_ID/flowmaestro/backend
     newTag: staging
+  - name: REGION-docker.pkg.dev/PROJECT_ID/flowmaestro/frontend
+    newTag: staging
+  - name: REGION-docker.pkg.dev/PROJECT_ID/flowmaestro/marketing
+    newTag: staging
