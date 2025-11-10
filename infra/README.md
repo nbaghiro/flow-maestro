@@ -7,6 +7,7 @@ Complete guide for deploying FlowMaestro to Google Kubernetes Engine (GKE) with 
 ## 🚀 Quick Start
 
 **Want to test locally first?** → See [LOCAL_QUICKSTART.md](LOCAL_QUICKSTART.md) or run:
+
 ```bash
 cd infra
 ./local-test.sh
@@ -47,9 +48,9 @@ All services run in Kubernetes (GKE):
 ### Managed Services (GCP)
 
 - **Cloud SQL PostgreSQL 15** (HA) - 3 databases:
-  - `flowmaestro` - Application data
-  - `temporal` - Temporal workflow state
-  - `temporal_visibility` - Temporal visibility data
+    - `flowmaestro` - Application data
+    - `temporal` - Temporal workflow state
+    - `temporal_visibility` - Temporal visibility data
 - **Memorystore Redis 7** (HA) - Caching and pub/sub
 - **Cloud Storage** - User uploads and workflow artifacts
 - **GKE Autopilot** - Managed Kubernetes cluster
@@ -670,41 +671,43 @@ kubectl run -it --rm psql --image=postgres:15 --restart=Never -n flowmaestro -- 
 
 ### Monthly Costs (High Availability Configuration)
 
-| Service | Configuration | Est. Monthly Cost |
-|---------|--------------|-------------------|
-| **GKE Autopilot** | Variable based on actual usage | $200-400 |
-| **Cloud SQL PostgreSQL** | HA, db-custom-2-7680, 100GB | $250-350 |
-| **Memorystore Redis** | HA, 5GB | $150-200 |
-| **Load Balancer** | Global external | $20-30 |
-| **Cloud Storage** | Standard, ~50GB | $1-5 |
-| **Artifact Registry** | ~10GB images | $5-10 |
-| **Secret Manager** | ~20 secrets | $0.50 |
-| **Monitoring** | Standard metrics | Included |
-| **Network Egress** | Variable | $20-50 |
-| **Total** | | **~$650-1,050/month** |
+| Service                  | Configuration                  | Est. Monthly Cost     |
+| ------------------------ | ------------------------------ | --------------------- |
+| **GKE Autopilot**        | Variable based on actual usage | $200-400              |
+| **Cloud SQL PostgreSQL** | HA, db-custom-2-7680, 100GB    | $250-350              |
+| **Memorystore Redis**    | HA, 5GB                        | $150-200              |
+| **Load Balancer**        | Global external                | $20-30                |
+| **Cloud Storage**        | Standard, ~50GB                | $1-5                  |
+| **Artifact Registry**    | ~10GB images                   | $5-10                 |
+| **Secret Manager**       | ~20 secrets                    | $0.50                 |
+| **Monitoring**           | Standard metrics               | Included              |
+| **Network Egress**       | Variable                       | $20-50                |
+| **Total**                |                                | **~$650-1,050/month** |
 
 ### Cost Optimization Tips
 
 1. **Disable HA for Development**:
-   ```bash
-   pulumi config set dbHighAvailability false
-   pulumi config set redisTier BASIC
-   # Saves ~$200-300/month
-   ```
+
+    ```bash
+    pulumi config set dbHighAvailability false
+    pulumi config set redisTier BASIC
+    # Saves ~$200-300/month
+    ```
 
 2. **Use Smaller Database Instance**:
-   ```bash
-   pulumi config set dbTier db-custom-1-3840  # 1 vCPU, 3.75GB
-   # Saves ~$100-150/month
-   ```
+
+    ```bash
+    pulumi config set dbTier db-custom-1-3840  # 1 vCPU, 3.75GB
+    # Saves ~$100-150/month
+    ```
 
 3. **Reduce Replica Counts** (Staging):
-   - Use staging overlay with 1 replica per service
-   - Saves ~$100-200/month
+    - Use staging overlay with 1 replica per service
+    - Saves ~$100-200/month
 
 4. **Use Preemptible/Spot Instances** (Development):
-   - Note: GKE Autopilot doesn't support spot instances
-   - Consider standard GKE for development environments
+    - Note: GKE Autopilot doesn't support spot instances
+    - Consider standard GKE for development environments
 
 ---
 
@@ -713,33 +716,33 @@ kubectl run -it --rm psql --image=postgres:15 --restart=Never -n flowmaestro -- 
 After successful deployment:
 
 1. **Monitor Application**:
-   - View GCP Monitoring Dashboard (link in Pulumi outputs)
-   - Set up alerts for errors and resource usage
+    - View GCP Monitoring Dashboard (link in Pulumi outputs)
+    - Set up alerts for errors and resource usage
 
 2. **Configure Backups**:
-   - Cloud SQL automated backups are enabled
-   - Test backup restoration procedure
+    - Cloud SQL automated backups are enabled
+    - Test backup restoration procedure
 
 3. **Set Up CI/CD**:
-   - Use Cloud Build or GitHub Actions
-   - Automate image builds and deployments
+    - Use Cloud Build or GitHub Actions
+    - Automate image builds and deployments
 
 4. **Security Hardening**:
-   - Review NetworkPolicies
-   - Enable Binary Authorization
-   - Set up VPC Service Controls
-   - Rotate secrets regularly
+    - Review NetworkPolicies
+    - Enable Binary Authorization
+    - Set up VPC Service Controls
+    - Rotate secrets regularly
 
 5. **Performance Tuning**:
-   - Monitor HPA metrics
-   - Adjust replica counts based on traffic
-   - Optimize database queries
-   - Enable connection pooling
+    - Monitor HPA metrics
+    - Adjust replica counts based on traffic
+    - Optimize database queries
+    - Enable connection pooling
 
 6. **Documentation**:
-   - Document custom workflows
-   - Create runbooks for common operations
-   - Train team on Temporal workflows
+    - Document custom workflows
+    - Create runbooks for common operations
+    - Train team on Temporal workflows
 
 ---
 
@@ -755,6 +758,7 @@ cd infra
 ```
 
 This automated script will:
+
 1. Start a local Kubernetes cluster (Minikube or kind)
 2. Deploy PostgreSQL and Redis via Helm
 3. Build Docker images locally

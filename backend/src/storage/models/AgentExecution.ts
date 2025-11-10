@@ -23,6 +23,7 @@ export interface AgentExecutionModel {
     id: string;
     agent_id: string;
     user_id: string;
+    thread_id: string; // Thread this execution belongs to
     status: AgentExecutionStatus;
     conversation_history: ConversationMessage[];
     iterations: number;
@@ -36,6 +37,7 @@ export interface AgentExecutionModel {
 export interface AgentMessageModel {
     id: string;
     execution_id: string;
+    thread_id: string; // Thread this message belongs to
     role: MessageRole;
     content: string;
     tool_calls: ToolCall[] | null;
@@ -47,6 +49,7 @@ export interface AgentMessageModel {
 export interface CreateAgentExecutionInput {
     agent_id: string;
     user_id: string;
+    thread_id: string; // Required: execution must belong to a thread
     status?: AgentExecutionStatus;
     conversation_history?: ConversationMessage[];
     iterations?: number;

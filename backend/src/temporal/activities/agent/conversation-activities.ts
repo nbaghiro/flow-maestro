@@ -35,16 +35,19 @@ export async function loadConversationHistory(
 /**
  * Save new conversation messages incrementally
  * Only saves messages that haven't been saved yet
+ *
+ * Thread-aware: Saves messages to both execution and agent_messages table with thread_id
  */
 export interface SaveConversationIncrementalInput {
     executionId: string;
+    threadId: string; // Thread ID for message persistence
     messages: ConversationMessage[];
 }
 
 export async function saveConversationIncremental(
     input: SaveConversationIncrementalInput
 ): Promise<{ saved: number }> {
-    const { executionId, messages } = input;
+    const { executionId, threadId, messages } = input;
 
     if (messages.length === 0) {
         return { saved: 0 };
@@ -93,13 +96,17 @@ export async function saveConversationIncremental(
     // Get all messages for storage
     const allMessages = conversation.toDatabase();
 
-    // Update execution with all messages
+    // Update execution with all messages (for backward compatibility)
     await executionRepo.update(executionId, {
         conversation_history: allMessages
     });
 
+    // Also save individual messages to agent_messages table with thread_id
+    // This allows messages to persist across multiple executions in the same thread
+    await executionRepo.saveMessagesToThread(threadId, executionId, messages);
+
     console.log(
-        `[ConversationActivity] Saved ${messages.length} new messages for execution ${executionId}`
+        `[ConversationActivity] Saved ${messages.length} new messages for execution ${executionId} in thread ${threadId}`
     );
 
     return { saved: messages.length };

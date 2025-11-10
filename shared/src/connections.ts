@@ -3,7 +3,7 @@
  * These types are shared between frontend and backend for external service connections
  */
 
-import type { JsonSchema, JsonValue } from "./json-types";
+import type { JsonSchema, JsonValue } from "./types";
 
 export type ConnectionMethod = "api_key" | "oauth2" | "mcp" | "basic_auth" | "custom";
 export type ConnectionStatus = "active" | "invalid" | "expired" | "revoked";

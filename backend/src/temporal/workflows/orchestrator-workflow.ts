@@ -1,11 +1,12 @@
 import { proxyActivities } from "@temporalio/workflow";
 import type { WorkflowDefinition, WorkflowNode, JsonObject } from "@flowmaestro/shared";
+import { SpanType } from "../../shared/observability/types";
 import type * as activities from "../activities";
 
 // Re-export WorkflowDefinition for use by other workflow files
 export type { WorkflowDefinition, WorkflowNode };
 
-const { executeNode } = proxyActivities<typeof activities>({
+const { executeNode, createSpan, endSpan } = proxyActivities<typeof activities>({
     startToCloseTimeout: "10 minutes",
     retry: {
         maximumAttempts: 3,
@@ -54,11 +55,31 @@ export interface OrchestratorResult {
  * Main workflow orchestrator - executes a workflow definition
  */
 export async function orchestratorWorkflow(input: OrchestratorInput): Promise<OrchestratorResult> {
-    const { executionId, workflowDefinition, inputs = {} } = input;
+    const { executionId, workflowDefinition, inputs = {}, userId } = input;
     const { nodes, edges } = workflowDefinition;
 
     // Get workflow start time
     const workflowStartTime = Date.now();
+
+    // Create WORKFLOW_RUN span for entire workflow execution
+    const workflowRunContext = await createSpan({
+        traceId: executionId,
+        parentSpanId: undefined,
+        name: `Workflow: ${workflowDefinition.name || "Unnamed"}`,
+        spanType: SpanType.WORKFLOW_RUN,
+        entityId: executionId,
+        input: {
+            workflowName: workflowDefinition.name,
+            inputs
+        },
+        attributes: {
+            userId,
+            workflowName: workflowDefinition.name,
+            nodeCount: Object.keys(nodes).length,
+            edgeCount: edges.length
+        }
+    });
+    const workflowRunSpanId = workflowRunContext.spanId;
 
     // Convert nodes Record to entries for processing
     const nodeEntries = Object.entries(nodes);
@@ -79,6 +100,15 @@ export async function orchestratorWorkflow(input: OrchestratorInput): Promise<Or
         await emitExecutionFailed({
             executionId,
             error: errorMessage
+        });
+
+        // End WORKFLOW_RUN span with error
+        await endSpan({
+            spanId: workflowRunSpanId,
+            error: new Error(errorMessage),
+            attributes: {
+                failureReason: "input_validation_failed"
+            }
         });
 
         return {
@@ -191,6 +221,27 @@ export async function orchestratorWorkflow(input: OrchestratorInput): Promise<Or
 
         console.log(`[Orchestrator] Executing node ${nodeId} (${node.type})`);
 
+        // Create NODE_EXECUTION span for this node
+        const nodeContext = await createSpan({
+            traceId: executionId,
+            parentSpanId: workflowRunSpanId,
+            name: `Node: ${node.name || nodeId}`,
+            spanType: SpanType.NODE_EXECUTION,
+            entityId: nodeId,
+            input: {
+                nodeId,
+                nodeType: node.type,
+                nodeConfig: node.config
+            },
+            attributes: {
+                userId,
+                nodeId,
+                nodeType: node.type,
+                nodeName: node.name
+            }
+        });
+        const nodeSpanId = nodeContext.spanId;
+
         // Emit node started event
         await emitNodeStarted({
             executionId,
@@ -281,6 +332,18 @@ export async function orchestratorWorkflow(input: OrchestratorInput): Promise<Or
                 duration: nodeDuration
             });
 
+            // End NODE_EXECUTION span with success
+            await endSpan({
+                spanId: nodeSpanId,
+                output: {
+                    nodeType: node.type,
+                    success: true
+                },
+                attributes: {
+                    durationMs: nodeDuration
+                }
+            });
+
             // Update progress
             completedNodeCount++;
             const percentage = Math.round((completedNodeCount / nodeEntries.length) * 100);
@@ -333,6 +396,16 @@ export async function orchestratorWorkflow(input: OrchestratorInput): Promise<Or
             console.error(`[Orchestrator] Node ${nodeId} failed: ${errorMessage}`);
             errors[nodeId] = errorMessage;
 
+            // End NODE_EXECUTION span with error
+            await endSpan({
+                spanId: nodeSpanId,
+                error: error instanceof Error ? error : new Error(errorMessage),
+                attributes: {
+                    success: false,
+                    failureReason: "node_execution_failed"
+                }
+            });
+
             // Emit node failed event
             await emitNodeFailed({
                 executionId,
@@ -366,6 +439,17 @@ export async function orchestratorWorkflow(input: OrchestratorInput): Promise<Or
                 failedNodeId
             });
 
+            // End WORKFLOW_RUN span with error
+            await endSpan({
+                spanId: workflowRunSpanId,
+                error: new Error(errorMessage),
+                attributes: {
+                    failureReason: "node_execution_errors",
+                    failedNodeCount: Object.keys(errors).length,
+                    completedNodeCount
+                }
+            });
+
             return {
                 success: false,
                 outputs: context,
@@ -391,6 +475,16 @@ export async function orchestratorWorkflow(input: OrchestratorInput): Promise<Or
                 error: errorMessage
             });
 
+            // End WORKFLOW_RUN span with error
+            await endSpan({
+                spanId: workflowRunSpanId,
+                error: new Error(errorMessage),
+                attributes: {
+                    failureReason: "output_validation_failed",
+                    completedNodeCount
+                }
+            });
+
             return {
                 success: false,
                 outputs: context,
@@ -405,6 +499,20 @@ export async function orchestratorWorkflow(input: OrchestratorInput): Promise<Or
             duration: workflowDuration
         });
 
+        // End WORKFLOW_RUN span with success
+        await endSpan({
+            spanId: workflowRunSpanId,
+            output: {
+                success: true,
+                outputs: context
+            },
+            attributes: {
+                durationMs: workflowDuration,
+                completedNodeCount,
+                totalNodeCount: nodeEntries.length
+            }
+        });
+
         return {
             success: true,
             outputs: context
@@ -417,6 +525,16 @@ export async function orchestratorWorkflow(input: OrchestratorInput): Promise<Or
         await emitExecutionFailed({
             executionId,
             error: errorMessage
+        });
+
+        // End WORKFLOW_RUN span with error
+        await endSpan({
+            spanId: workflowRunSpanId,
+            error: error instanceof Error ? error : new Error(errorMessage),
+            attributes: {
+                failureReason: "workflow_exception",
+                completedNodeCount
+            }
         });
 
         return {

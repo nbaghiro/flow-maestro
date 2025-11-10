@@ -18,7 +18,7 @@
             "resolveSourceMapLocations": ["${workspaceFolder}/**", "!**/node_modules/**"]
         },
         {
-            "name": "Temporal Worker (Hot Reload)",
+            "name": "Temporal Worker",
             "type": "node",
             "request": "launch",
             "runtimeExecutable": "npx",
@@ -33,24 +33,6 @@
             "port": 9230,
             "outFiles": ["${workspaceFolder}/backend/dist/**/*.js"],
             "resolveSourceMapLocations": ["${workspaceFolder}/**", "!**/node_modules/**"]
-        },
-        {
-            "name": "Backend API + Temporal Worker",
-            "type": "node",
-            "request": "launch",
-            "compounds": ["Backend API", "Temporal Worker"]
-        }
-    ],
-    "compounds": [
-        {
-            "name": "Backend API + Temporal Worker",
-            "configurations": ["Backend API", "Temporal Worker (Hot Reload)"],
-            "stopAll": true,
-            "presentation": {
-                "hidden": false,
-                "group": "FlowMaestro",
-                "order": 1
-            }
         }
     ]
 }

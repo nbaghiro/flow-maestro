@@ -6,7 +6,8 @@ import type {
     UpdateAgentRequest,
     AgentExecution,
     ConversationMessage,
-    AddToolRequest
+    AddToolRequest,
+    Thread
 } from "../lib/api";
 
 interface AgentStore {
@@ -14,6 +15,8 @@ interface AgentStore {
     agents: Agent[];
     currentAgent: Agent | null;
     currentExecution: AgentExecution | null;
+    currentThread: Thread | null; // Currently active thread
+    threads: Thread[]; // List of threads for current agent
     isLoading: boolean;
     error: string | null;
 
@@ -30,8 +33,20 @@ interface AgentStore {
     addTool: (agentId: string, data: AddToolRequest) => Promise<void>;
     removeTool: (agentId: string, toolId: string) => Promise<void>;
 
-    // Execution actions
-    executeAgent: (agentId: string, message: string) => Promise<string>;
+    // Thread actions
+    fetchThreads: (agentId?: string) => Promise<void>;
+    setCurrentThread: (thread: Thread | null) => void;
+    createNewThread: () => void;
+    updateThreadTitle: (threadId: string, title: string) => Promise<void>;
+    archiveThread: (threadId: string) => Promise<void>;
+    deleteThread: (threadId: string) => Promise<void>;
+
+    // Execution actions (now thread-aware)
+    executeAgent: (
+        agentId: string,
+        message: string,
+        threadId?: string
+    ) => Promise<{ executionId: string; threadId: string }>;
     sendMessage: (message: string) => Promise<void>;
     fetchExecution: (agentId: string, executionId: string) => Promise<void>;
     clearExecution: () => void;
@@ -42,6 +57,8 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
     agents: [],
     currentAgent: null,
     currentExecution: null,
+    currentThread: null,
+    threads: [],
     isLoading: false,
     error: null,
 
@@ -193,12 +210,110 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
         }
     },
 
-    // Execute an agent with initial message
-    executeAgent: async (agentId: string, message: string) => {
+    // Thread actions
+    fetchThreads: async (agentId?: string) => {
         set({ isLoading: true, error: null });
         try {
-            const response = await api.executeAgent(agentId, message);
-            const executionId = response.data.executionId;
+            const response = await api.getThreads({
+                agent_id: agentId,
+                status: "active"
+            });
+            set({ threads: response.data.threads, isLoading: false });
+        } catch (error) {
+            set({
+                error: error instanceof Error ? error.message : "Failed to fetch threads",
+                isLoading: false
+            });
+        }
+    },
+
+    setCurrentThread: (thread: Thread | null) => {
+        set({ currentThread: thread });
+    },
+
+    createNewThread: () => {
+        // Clear current thread and execution to start fresh
+        set({
+            currentThread: null,
+            currentExecution: null
+        });
+    },
+
+    updateThreadTitle: async (threadId: string, title: string) => {
+        try {
+            const response = await api.updateThread(threadId, { title });
+            const updatedThread = response.data;
+
+            // Update threads list and currentThread if it matches
+            set((state) => ({
+                threads: state.threads.map((t) => (t.id === threadId ? updatedThread : t)),
+                currentThread:
+                    state.currentThread?.id === threadId ? updatedThread : state.currentThread
+            }));
+        } catch (error) {
+            set({
+                error: error instanceof Error ? error.message : "Failed to update thread title"
+            });
+            throw error;
+        }
+    },
+
+    archiveThread: async (threadId: string) => {
+        try {
+            await api.archiveThread(threadId);
+
+            // Remove from threads list and clear if current
+            set((state) => ({
+                threads: state.threads.filter((t) => t.id !== threadId),
+                currentThread: state.currentThread?.id === threadId ? null : state.currentThread,
+                currentExecution:
+                    state.currentExecution?.thread_id === threadId ? null : state.currentExecution
+            }));
+        } catch (error) {
+            set({
+                error: error instanceof Error ? error.message : "Failed to archive thread"
+            });
+            throw error;
+        }
+    },
+
+    deleteThread: async (threadId: string) => {
+        try {
+            await api.deleteThread(threadId);
+
+            // Remove from threads list and clear if current
+            set((state) => ({
+                threads: state.threads.filter((t) => t.id !== threadId),
+                currentThread: state.currentThread?.id === threadId ? null : state.currentThread,
+                currentExecution:
+                    state.currentExecution?.thread_id === threadId ? null : state.currentExecution
+            }));
+        } catch (error) {
+            set({
+                error: error instanceof Error ? error.message : "Failed to delete thread"
+            });
+            throw error;
+        }
+    },
+
+    // Execute an agent with initial message (thread-aware)
+    executeAgent: async (agentId: string, message: string, threadId?: string) => {
+        set({ isLoading: true, error: null });
+        try {
+            const response = await api.executeAgent(agentId, message, threadId);
+            const { executionId, threadId: returnedThreadId } = response.data;
+
+            // If we got a new thread, add it to the list
+            if (!threadId && returnedThreadId) {
+                // Fetch the thread details
+                const threadResponse = await api.getThread(returnedThreadId);
+                const newThread = threadResponse.data as Thread;
+
+                set((state) => ({
+                    currentThread: newThread,
+                    threads: [newThread, ...state.threads]
+                }));
+            }
 
             // Create initial execution state
             set({
@@ -206,6 +321,7 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
                     id: executionId,
                     agent_id: agentId,
                     user_id: "",
+                    thread_id: returnedThreadId,
                     status: "running",
                     conversation_history: [
                         {
@@ -225,7 +341,7 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
                 isLoading: false
             });
 
-            return executionId;
+            return { executionId, threadId: returnedThreadId };
         } catch (error) {
             set({
                 error: error instanceof Error ? error.message : "Failed to execute agent",

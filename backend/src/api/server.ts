@@ -3,6 +3,7 @@ import jwt from "@fastify/jwt";
 import multipart from "@fastify/multipart";
 import websocket from "@fastify/websocket";
 import Fastify from "fastify";
+import { analyticsScheduler } from "../shared/analytics/analytics-scheduler";
 import { config } from "../shared/config";
 import { redisEventBus } from "../shared/events/RedisEventBus";
 import { initializeSpanService, getSpanService } from "../shared/observability";
@@ -11,6 +12,7 @@ import { eventBridge } from "../shared/websocket/EventBridge";
 import { db } from "../storage/database";
 import { errorHandler, requestContextMiddleware } from "./middleware";
 import { agentRoutes } from "./routes/agents";
+import { analyticsRoutes } from "./routes/analytics";
 import { authRoutes } from "./routes/auth";
 import { connectionRoutes } from "./routes/connections";
 import { executionRoutes } from "./routes/executions";
@@ -18,6 +20,7 @@ import { knowledgeBaseRoutes } from "./routes/knowledge-bases";
 import { mcpRoutes } from "./routes/mcp";
 import { nodeRoutes } from "./routes/nodes";
 import { oauthRoutes } from "./routes/oauth";
+import { threadRoutes } from "./routes/threads";
 import { triggerRoutes } from "./routes/triggers";
 import { websocketRoutes } from "./routes/websocket";
 import { workflowRoutes } from "./routes/workflows";
@@ -78,6 +81,10 @@ export async function buildServer() {
 
     fastify.log.info("SpanService initialized for distributed tracing");
 
+    // Start analytics scheduler for periodic aggregation
+    await analyticsScheduler.start();
+    fastify.log.info("Analytics scheduler started");
+
     // Register RequestContext middleware (runs on every request)
     fastify.addHook("onRequest", requestContextMiddleware);
 
@@ -110,8 +117,10 @@ export async function buildServer() {
     await fastify.register(nodeRoutes, { prefix: "/api/nodes" });
     await fastify.register(knowledgeBaseRoutes, { prefix: "/api/knowledge-bases" });
     await fastify.register(agentRoutes, { prefix: "/api/agents" });
+    await fastify.register(threadRoutes, { prefix: "/api/threads" });
     await fastify.register(mcpRoutes, { prefix: "/api/mcp" });
     await fastify.register(triggerRoutes, { prefix: "/api" });
+    await fastify.register(analyticsRoutes);
     await fastify.register(websocketRoutes);
 
     // Error handler (must be last)
@@ -141,6 +150,9 @@ export async function startServer() {
         process.on(signal, async () => {
             fastify.log.info(`Received ${signal}, closing server...`);
             await fastify.close();
+
+            // Stop analytics scheduler
+            analyticsScheduler.stop();
 
             // Flush spans before shutdown
             const spanService = getSpanService();

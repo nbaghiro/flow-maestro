@@ -27,7 +27,7 @@ export async function createSpan(input: CreateSpanInput): Promise<SpanContext> {
 export async function endSpan(params: {
     spanId: string;
     output?: Record<string, unknown>;
-    error?: { message: string; type: string; stack?: string };
+    error?: Error | { message: string; type: string; stack?: string };
     attributes?: SpanAttributes;
 }): Promise<void> {
     const spanService = getSpanService();

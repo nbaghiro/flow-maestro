@@ -1,4 +1,5 @@
 import type { JsonObject } from "@flowmaestro/shared";
+import type { SafetyConfig } from "../../shared/safety/types";
 
 export type LLMProvider = "openai" | "anthropic" | "google" | "cohere";
 export type ToolType = "workflow" | "function" | "knowledge_base" | "agent";
@@ -49,6 +50,7 @@ export interface AgentModel {
     max_iterations: number;
     available_tools: Tool[];
     memory_config: MemoryConfig;
+    safety_config: SafetyConfig;
     metadata: JsonObject;
     created_at: Date;
     updated_at: Date;
@@ -68,6 +70,7 @@ export interface CreateAgentInput {
     max_iterations?: number;
     available_tools?: Tool[];
     memory_config?: MemoryConfig;
+    safety_config?: SafetyConfig;
     metadata?: JsonObject;
 }
 
@@ -83,5 +86,6 @@ export interface UpdateAgentInput {
     max_iterations?: number;
     available_tools?: Tool[];
     memory_config?: MemoryConfig;
+    safety_config?: SafetyConfig;
     metadata?: JsonObject;
 }

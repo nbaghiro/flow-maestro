@@ -14,6 +14,7 @@ interface AgentExecutionRow {
     id: string;
     agent_id: string;
     user_id: string;
+    thread_id: string;
     status: string;
     conversation_history: string | JsonValue[];
     iterations: number;
@@ -29,6 +30,7 @@ interface AgentExecutionRow {
 interface AgentMessageRow {
     id: string;
     execution_id: string;
+    thread_id: string;
     role: string;
     content: string;
     tool_calls: string | JsonValue[] | null;
@@ -41,16 +43,17 @@ export class AgentExecutionRepository {
     async create(input: CreateAgentExecutionInput): Promise<AgentExecutionModel> {
         const query = `
             INSERT INTO flowmaestro.agent_executions (
-                agent_id, user_id, status, conversation_history,
+                agent_id, user_id, thread_id, status, conversation_history,
                 iterations, tool_calls_count, metadata
             )
-            VALUES ($1, $2, $3, $4, $5, $6, $7)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
             RETURNING *
         `;
 
         const values = [
             input.agent_id,
             input.user_id,
+            input.thread_id,
             input.status || "running",
             JSON.stringify(input.conversation_history || []),
             input.iterations || 0,
@@ -275,6 +278,57 @@ export class AgentExecutionRepository {
 
         const result = await db.query(query, [id]);
         return (result.rowCount || 0) > 0;
+    }
+
+    /**
+     * Save messages to thread (thread-aware persistence)
+     * This saves messages to agent_messages table with thread_id for persistence across executions
+     */
+    async saveMessagesToThread(
+        threadId: string,
+        executionId: string,
+        messages: Array<{
+            id: string;
+            role: string;
+            content: string;
+            tool_calls?: unknown[];
+            tool_name?: string;
+            tool_call_id?: string;
+        }>
+    ): Promise<void> {
+        if (messages.length === 0) {
+            return;
+        }
+
+        // Build multi-row insert query
+        const values: unknown[] = [];
+        const valueStrings: string[] = [];
+        let paramIndex = 1;
+
+        for (const msg of messages) {
+            valueStrings.push(
+                `($${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++})`
+            );
+            values.push(
+                threadId,
+                executionId,
+                msg.role,
+                msg.content,
+                msg.tool_calls ? JSON.stringify(msg.tool_calls) : null,
+                msg.tool_name || null,
+                msg.tool_call_id || null
+            );
+        }
+
+        const query = `
+            INSERT INTO flowmaestro.agent_messages (
+                thread_id, execution_id, role, content, tool_calls, tool_name, tool_call_id
+            )
+            VALUES ${valueStrings.join(", ")}
+            ON CONFLICT DO NOTHING
+        `;
+
+        await db.query(query, values);
     }
 
     private mapExecutionRow(row: AgentExecutionRow): AgentExecutionModel {

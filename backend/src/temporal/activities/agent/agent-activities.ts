@@ -49,7 +49,8 @@ export async function getAgentConfig(input: GetAgentConfigInput): Promise<AgentC
         max_tokens: agent.max_tokens,
         max_iterations: agent.max_iterations,
         available_tools: toolsWithMemory,
-        memory_config: agent.memory_config
+        memory_config: agent.memory_config,
+        safety_config: agent.safety_config
     };
 }
 
@@ -186,6 +187,11 @@ async function callOpenAI(input: OpenAICallInput): Promise<LLMResponse> {
             };
             finish_reason: string;
         }>;
+        usage?: {
+            prompt_tokens: number;
+            completion_tokens: number;
+            total_tokens: number;
+        };
     }
 
     const data = (await response.json()) as OpenAIResponse;
@@ -205,7 +211,14 @@ async function callOpenAI(input: OpenAICallInput): Promise<LLMResponse> {
     return {
         content: message.content || "",
         tool_calls: toolCalls,
-        isComplete: choice.finish_reason === "stop" && !toolCalls
+        isComplete: choice.finish_reason === "stop" && !toolCalls,
+        usage: data.usage
+            ? {
+                  promptTokens: data.usage.prompt_tokens,
+                  completionTokens: data.usage.completion_tokens,
+                  totalTokens: data.usage.total_tokens
+              }
+            : undefined
     };
 }
 
@@ -300,6 +313,10 @@ async function callAnthropic(input: AnthropicCallInput): Promise<LLMResponse> {
             | { type: "tool_use"; id: string; name: string; input: JsonObject }
         >;
         stop_reason: string;
+        usage?: {
+            input_tokens: number;
+            output_tokens: number;
+        };
     }
 
     const data = (await response.json()) as AnthropicResponse;
@@ -324,7 +341,14 @@ async function callAnthropic(input: AnthropicCallInput): Promise<LLMResponse> {
     return {
         content,
         tool_calls: toolCalls,
-        isComplete: data.stop_reason === "end_turn" && !toolCalls
+        isComplete: data.stop_reason === "end_turn" && !toolCalls,
+        usage: data.usage
+            ? {
+                  promptTokens: data.usage.input_tokens,
+                  completionTokens: data.usage.output_tokens,
+                  totalTokens: data.usage.input_tokens + data.usage.output_tokens
+              }
+            : undefined
     };
 }
 
@@ -919,10 +943,22 @@ async function executeAgentTool(input: ExecuteAgentToolInput): Promise<JsonObjec
     const agentExecutionId = `agent-tool-${Date.now()}-${Math.random().toString(36).substring(7)}`;
 
     try {
-        // Create execution record
+        // Import ThreadRepository
+        const { ThreadRepository } = await import("../../../storage/repositories/ThreadRepository");
+        const threadRepo = new ThreadRepository();
+
+        // Create a thread for this agent execution
+        const thread = await threadRepo.create({
+            user_id: userId,
+            agent_id: tool.config.agentId,
+            title: `Agent Tool Call: ${agentInput.substring(0, 50)}...`
+        });
+
+        // Create execution record linked to thread
         const execution = await executionRepo.create({
             agent_id: tool.config.agentId,
             user_id: userId,
+            thread_id: thread.id,
             status: "running",
             conversation_history: [
                 {
@@ -939,14 +975,15 @@ async function executeAgentTool(input: ExecuteAgentToolInput): Promise<JsonObjec
         });
 
         // Start agent execution workflow
-        const handle = await client.workflow.start("agentOrchestratorWorkflowV2", {
-            taskQueue: process.env.TEMPORAL_TASK_QUEUE || "flowmaestro",
+        const handle = await client.workflow.start("agentOrchestratorWorkflow", {
+            taskQueue: process.env.TEMPORAL_TASK_QUEUE || "flowmaestro-orchestrator",
             workflowId: agentExecutionId,
             args: [
                 {
                     executionId: execution.id,
                     agentId: tool.config.agentId,
                     userId,
+                    threadId: thread.id,
                     initialMessage: agentInput
                 }
             ]

@@ -1,0 +1,220 @@
+---
+# Hourly Analytics Aggregation CronJob
+# Runs every hour to aggregate execution data into hourly_analytics table
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: analytics-hourly-aggregation
+  namespace: flowmaestro
+  labels:
+    app: flowmaestro
+    component: analytics-aggregation
+    schedule: hourly
+spec:
+  # Run every hour at minute 5 (e.g., 1:05, 2:05, 3:05)
+  # Offset by 5 minutes to ensure spans are fully written
+  schedule: "5 * * * *"
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  concurrencyPolicy: Forbid # Don't run concurrent jobs
+  startingDeadlineSeconds: 300 # Start within 5 minutes or skip
+  jobTemplate:
+    metadata:
+      labels:
+        app: flowmaestro
+        component: analytics-aggregation
+        schedule: hourly
+    spec:
+      backoffLimit: 2
+      completions: 1
+      parallelism: 1
+      template:
+        metadata:
+          labels:
+            app: flowmaestro
+            component: analytics-aggregation
+        spec:
+          serviceAccountName: flowmaestro-sa
+          restartPolicy: OnFailure
+          containers:
+            - name: analytics-aggregation
+              image: REGION-docker.pkg.dev/PROJECT_ID/flowmaestro/backend:latest
+              imagePullPolicy: Always
+              command:
+                - sh
+                - -c
+                - |
+                  set -e
+                  echo "Starting hourly analytics aggregation..."
+                  echo "Timestamp: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+                  # Construct DATABASE_URL from environment variables
+                  export DATABASE_URL="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}"
+
+                  echo "Connecting to database at ${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}"
+
+                  cd backend
+
+                  # Run hourly aggregation (for the previous hour)
+                  npm run analytics:aggregate
+
+                  echo "Hourly analytics aggregation completed successfully"
+                  echo "Completed at: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+              env:
+                # Database credentials (from secret)
+                - name: POSTGRES_HOST
+                  valueFrom:
+                    secretKeyRef:
+                      name: db-credentials
+                      key: host
+                - name: POSTGRES_PORT
+                  valueFrom:
+                    secretKeyRef:
+                      name: db-credentials
+                      key: port
+                - name: POSTGRES_DB
+                  valueFrom:
+                    secretKeyRef:
+                      name: db-credentials
+                      key: database
+                - name: POSTGRES_USER
+                  valueFrom:
+                    secretKeyRef:
+                      name: db-credentials
+                      key: user
+                - name: POSTGRES_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: db-credentials
+                      key: password
+
+                # Node environment
+                - name: NODE_ENV
+                  value: "production"
+
+              resources:
+                requests:
+                  cpu: 100m
+                  memory: 256Mi
+                limits:
+                  cpu: 500m
+                  memory: 512Mi
+
+              securityContext:
+                runAsNonRoot: true
+                runAsUser: 1001
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: false
+                capabilities:
+                  drop:
+                    - ALL
+
+---
+# Daily Analytics Aggregation CronJob
+# Runs once per day at midnight to aggregate daily statistics
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: analytics-daily-aggregation
+  namespace: flowmaestro
+  labels:
+    app: flowmaestro
+    component: analytics-aggregation
+    schedule: daily
+spec:
+  # Run daily at 00:05 UTC (5 minutes past midnight)
+  schedule: "5 0 * * *"
+  successfulJobsHistoryLimit: 7
+  failedJobsHistoryLimit: 3
+  concurrencyPolicy: Forbid # Don't run concurrent jobs
+  startingDeadlineSeconds: 600 # Start within 10 minutes or skip
+  jobTemplate:
+    metadata:
+      labels:
+        app: flowmaestro
+        component: analytics-aggregation
+        schedule: daily
+    spec:
+      backoffLimit: 3
+      completions: 1
+      parallelism: 1
+      template:
+        metadata:
+          labels:
+            app: flowmaestro
+            component: analytics-aggregation
+        spec:
+          serviceAccountName: flowmaestro-sa
+          restartPolicy: OnFailure
+          containers:
+            - name: analytics-aggregation
+              image: REGION-docker.pkg.dev/PROJECT_ID/flowmaestro/backend:latest
+              imagePullPolicy: Always
+              command:
+                - sh
+                - -c
+                - |
+                  set -e
+                  echo "Starting daily analytics aggregation..."
+                  echo "Timestamp: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+                  # Construct DATABASE_URL from environment variables
+                  export DATABASE_URL="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}"
+
+                  echo "Connecting to database at ${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}"
+
+                  cd backend
+
+                  # Run daily aggregation (for yesterday)
+                  npm run analytics:aggregate
+
+                  echo "Daily analytics aggregation completed successfully"
+                  echo "Completed at: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+              env:
+                # Database credentials (from secret)
+                - name: POSTGRES_HOST
+                  valueFrom:
+                    secretKeyRef:
+                      name: db-credentials
+                      key: host
+                - name: POSTGRES_PORT
+                  valueFrom:
+                    secretKeyRef:
+                      name: db-credentials
+                      key: port
+                - name: POSTGRES_DB
+                  valueFrom:
+                    secretKeyRef:
+                      name: db-credentials
+                      key: database
+                - name: POSTGRES_USER
+                  valueFrom:
+                    secretKeyRef:
+                      name: db-credentials
+                      key: user
+                - name: POSTGRES_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: db-credentials
+                      key: password
+
+                # Node environment
+                - name: NODE_ENV
+                  value: "production"
+
+              resources:
+                requests:
+                  cpu: 200m
+                  memory: 512Mi
+                limits:
+                  cpu: 1000m
+                  memory: 1Gi
+
+              securityContext:
+                runAsNonRoot: true
+                runAsUser: 1001
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: false
+                capabilities:
+                  drop:
+                    - ALL

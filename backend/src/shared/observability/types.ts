@@ -88,6 +88,11 @@ export interface SpanAttributes {
     temperature?: number;
     maxTokens?: number;
 
+    // Cost tracking (USD)
+    inputCost?: number;
+    outputCost?: number;
+    totalCost?: number;
+
     // Tool-specific attributes
     toolName?: string;
     toolType?: string;

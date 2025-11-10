@@ -4,6 +4,7 @@
  */
 
 import { randomUUID } from "crypto";
+import { calculateCost } from "./model-pricing";
 import {
     CreateSpanInput,
     EndSpanInput,
@@ -204,6 +205,36 @@ export class SpanService {
                 ...span.attributes,
                 ...input.attributes
             };
+        }
+
+        // Auto-calculate cost for MODEL_GENERATION spans with token usage
+        if (
+            span.spanType === SpanType.MODEL_GENERATION &&
+            span.attributes?.provider &&
+            span.attributes?.model &&
+            span.attributes?.promptTokens &&
+            span.attributes?.completionTokens
+        ) {
+            const costResult = calculateCost({
+                provider: String(span.attributes.provider),
+                model: String(span.attributes.model),
+                promptTokens: Number(span.attributes.promptTokens),
+                completionTokens: Number(span.attributes.completionTokens)
+            });
+
+            if (costResult.found) {
+                span.attributes.inputCost = costResult.inputCost;
+                span.attributes.outputCost = costResult.outputCost;
+                span.attributes.totalCost = costResult.totalCost;
+
+                console.log(
+                    `[SpanService] Calculated cost for ${span.attributes.provider}:${span.attributes.model}: $${costResult.totalCost.toFixed(6)}`
+                );
+            } else {
+                console.warn(
+                    `[SpanService] No pricing found for ${span.attributes.provider}:${span.attributes.model}`
+                );
+            }
         }
 
         // Flush immediately on error for debugging

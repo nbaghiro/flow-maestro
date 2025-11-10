@@ -12,6 +12,7 @@ cd infra
 ```
 
 This script will:
+
 1. ✅ Check prerequisites
 2. ✅ Start Minikube or kind cluster
 3. ✅ Deploy PostgreSQL & Redis
@@ -43,6 +44,7 @@ open /Applications/Docker.app
 After deployment completes:
 
 ### Access Frontend
+
 ```bash
 # Minikube
 open http://$(minikube ip)
@@ -52,6 +54,7 @@ open http://localhost
 ```
 
 ### Access API
+
 ```bash
 # Minikube
 curl http://$(minikube ip)/api/health
@@ -61,6 +64,7 @@ curl http://localhost/api/health
 ```
 
 ### Access Temporal UI
+
 ```bash
 kubectl port-forward -n flowmaestro svc/temporal-ui-service 8082:8080
 open http://localhost:8082
@@ -71,6 +75,7 @@ open http://localhost:8082
 ## Common Tasks
 
 ### View Logs
+
 ```bash
 # API logs
 kubectl logs -f deployment/api-server -n flowmaestro
@@ -127,6 +132,7 @@ rm -rf infra/k8s/overlays/local
 ## Troubleshooting
 
 ### Pods not starting?
+
 ```bash
 kubectl get pods -n flowmaestro
 kubectl describe pod <pod-name> -n flowmaestro
@@ -134,6 +140,7 @@ kubectl logs <pod-name> -n flowmaestro
 ```
 
 ### Out of memory?
+
 ```bash
 # Increase Minikube resources
 minikube delete
@@ -141,6 +148,7 @@ minikube start --cpus=6 --memory=12288
 ```
 
 ### Images not found?
+
 ```bash
 # For Minikube: Use Minikube's Docker
 eval $(minikube docker-env)
@@ -154,23 +162,24 @@ kind load docker-image local/backend:latest --name flowmaestro-local
 
 ## What's Different from Production?
 
-| Component | Production | Local |
-|-----------|-----------|-------|
-| **Kubernetes** | GKE Autopilot | Minikube/kind |
-| **PostgreSQL** | Cloud SQL HA | Helm chart (single instance) |
-| **Redis** | Memorystore HA | Helm chart (single instance) |
-| **Temporal** | Self-hosted (HA) | Self-hosted (single instance) |
-| **Ingress** | GKE Ingress | Nginx Ingress |
-| **Replicas** | 2-3 per service | 1 per service |
-| **Resources** | Production limits | Reduced limits |
-| **Domain** | yourdomain.com | localhost |
-| **SSL** | Google-managed cert | None (HTTP only) |
+| Component      | Production          | Local                         |
+| -------------- | ------------------- | ----------------------------- |
+| **Kubernetes** | GKE Autopilot       | Minikube/kind                 |
+| **PostgreSQL** | Cloud SQL HA        | Helm chart (single instance)  |
+| **Redis**      | Memorystore HA      | Helm chart (single instance)  |
+| **Temporal**   | Self-hosted (HA)    | Self-hosted (single instance) |
+| **Ingress**    | GKE Ingress         | Nginx Ingress                 |
+| **Replicas**   | 2-3 per service     | 1 per service                 |
+| **Resources**  | Production limits   | Reduced limits                |
+| **Domain**     | yourdomain.com      | localhost                     |
+| **SSL**        | Google-managed cert | None (HTTP only)              |
 
 ---
 
 ## Next Steps
 
 ✅ Once local testing passes, deploy to GCP:
+
 1. Follow `infra/README.md` for production deployment
 2. Use `infra/deploy.sh` for automated GCP deployment
 

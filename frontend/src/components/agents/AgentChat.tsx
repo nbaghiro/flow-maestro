@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import { cn } from "../../lib/utils";
 import { wsClient } from "../../lib/websocket";
 import { useAgentStore } from "../../stores/agentStore";
+import { ConfirmDialog } from "../common/ConfirmDialog";
 import type { Agent, ConversationMessage } from "../../lib/api";
 
 interface AgentChatProps {
@@ -15,6 +16,7 @@ export function AgentChat({ agent }: AgentChatProps) {
     const [input, setInput] = useState("");
     const [isSending, setIsSending] = useState(false);
     const [messages, setMessages] = useState<ConversationMessage[]>([]);
+    const [showClearConfirm, setShowClearConfirm] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     // Scroll to bottom when messages change
@@ -113,10 +115,9 @@ export function AgentChat({ agent }: AgentChatProps) {
     };
 
     const handleClear = () => {
-        if (confirm("Start a new conversation? This will clear the current chat.")) {
-            clearExecution();
-            setMessages([]);
-        }
+        clearExecution();
+        setMessages([]);
+        setShowClearConfirm(false);
     };
 
     return (
@@ -136,7 +137,7 @@ export function AgentChat({ agent }: AgentChatProps) {
                 </div>
                 {currentExecution && (
                     <button
-                        onClick={handleClear}
+                        onClick={() => setShowClearConfirm(true)}
                         className="p-2 hover:bg-muted rounded-lg transition-colors"
                         title="Start new conversation"
                     >
@@ -255,6 +256,18 @@ export function AgentChat({ agent }: AgentChatProps) {
                     Having trouble? Report your issue to our team
                 </p>
             </div>
+
+            {/* Clear Confirmation Dialog */}
+            <ConfirmDialog
+                isOpen={showClearConfirm}
+                onClose={() => setShowClearConfirm(false)}
+                onConfirm={handleClear}
+                title="Start New Conversation"
+                message="This will clear the current chat. Are you sure you want to continue?"
+                confirmText="Yes, start new"
+                cancelText="Cancel"
+                variant="default"
+            />
         </div>
     );
 }

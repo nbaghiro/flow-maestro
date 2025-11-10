@@ -7,6 +7,7 @@ import {
     Tool,
     MemoryConfig
 } from "../models/Agent";
+import type { SafetyConfig } from "../../shared/safety/types";
 
 // Database row interface
 interface AgentRow {
@@ -23,6 +24,7 @@ interface AgentRow {
     max_iterations: number | string;
     available_tools: Tool[] | string;
     memory_config: MemoryConfig | string;
+    safety_config: SafetyConfig | string;
     metadata: JsonObject | string;
     created_at: string | Date;
     updated_at: string | Date;
@@ -240,6 +242,10 @@ export class AgentRepository {
                 typeof row.memory_config === "string"
                     ? JSON.parse(row.memory_config)
                     : row.memory_config,
+            safety_config:
+                typeof row.safety_config === "string"
+                    ? JSON.parse(row.safety_config)
+                    : row.safety_config,
             metadata: typeof row.metadata === "string" ? JSON.parse(row.metadata) : row.metadata,
             created_at: new Date(row.created_at),
             updated_at: new Date(row.updated_at),

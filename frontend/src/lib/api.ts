@@ -1185,10 +1185,48 @@ export interface UpdateAgentRequest {
     memory_config?: MemoryConfig;
 }
 
+// Thread types
+export interface Thread {
+    id: string;
+    user_id: string;
+    agent_id: string;
+    title: string | null;
+    status: "active" | "archived" | "deleted";
+    metadata: JsonObject;
+    created_at: string;
+    updated_at: string;
+    last_message_at: string | null;
+    archived_at: string | null;
+    deleted_at: string | null;
+}
+
+export interface ThreadWithStats extends Thread {
+    stats: {
+        message_count: number;
+        execution_count: number;
+        first_message_at: string | null;
+        last_message_at: string | null;
+    };
+}
+
+export interface CreateThreadRequest {
+    agent_id: string;
+    title?: string;
+    status?: "active" | "archived";
+    metadata?: JsonObject;
+}
+
+export interface UpdateThreadRequest {
+    title?: string;
+    status?: "active" | "archived";
+    metadata?: JsonObject;
+}
+
 export interface AgentExecution {
     id: string;
     agent_id: string;
     user_id: string;
+    thread_id: string; // Thread this execution belongs to
     status: "running" | "completed" | "failed";
     conversation_history: ConversationMessage[];
     iterations: number;
@@ -1339,13 +1377,15 @@ export async function deleteAgent(
 
 /**
  * Execute an agent with an initial message
+ * Optionally continue an existing thread
  */
 export async function executeAgent(
     agentId: string,
-    message: string
+    message: string,
+    threadId?: string
 ): Promise<{
     success: boolean;
-    data: { executionId: string; agentId: string; status: string };
+    data: { executionId: string; threadId: string; agentId: string; status: string };
     error?: string;
 }> {
     const token = getAuthToken();
@@ -1356,7 +1396,10 @@ export async function executeAgent(
             "Content-Type": "application/json",
             ...(token && { Authorization: `Bearer ${token}` })
         },
-        body: JSON.stringify({ message })
+        body: JSON.stringify({
+            message,
+            ...(threadId && { thread_id: threadId })
+        })
     });
 
     if (!response.ok) {
@@ -1471,6 +1514,194 @@ export async function removeAgentTool(
     const response = await fetch(`${API_BASE_URL}/api/agents/${agentId}/tools/${toolId}`, {
         method: "DELETE",
         headers: {
+            ...(token && { Authorization: `Bearer ${token}` })
+        }
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    return response.json();
+}
+
+// ===== Thread API Functions =====
+
+/**
+ * Get threads (conversations) for an agent or all agents
+ */
+export async function getThreads(params?: {
+    agent_id?: string;
+    status?: "active" | "archived";
+    limit?: number;
+    offset?: number;
+    search?: string;
+}): Promise<{ success: boolean; data: { threads: Thread[]; total: number }; error?: string }> {
+    const token = getAuthToken();
+    const queryParams = new URLSearchParams();
+
+    if (params?.agent_id) queryParams.set("agent_id", params.agent_id);
+    if (params?.status) queryParams.set("status", params.status);
+    if (params?.limit) queryParams.set("limit", params.limit.toString());
+    if (params?.offset) queryParams.set("offset", params.offset.toString());
+    if (params?.search) queryParams.set("search", params.search);
+
+    const url = `${API_BASE_URL}/api/threads${queryParams.toString() ? `?${queryParams.toString()}` : ""}`;
+
+    const response = await fetch(url, {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json",
+            ...(token && { Authorization: `Bearer ${token}` })
+        }
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    return response.json();
+}
+
+/**
+ * Get a specific thread with optional stats
+ */
+export async function getThread(
+    threadId: string,
+    includeStats = false
+): Promise<{ success: boolean; data: ThreadWithStats | Thread; error?: string }> {
+    const token = getAuthToken();
+    const url = `${API_BASE_URL}/api/threads/${threadId}${includeStats ? "?include_stats=true" : ""}`;
+
+    const response = await fetch(url, {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json",
+            ...(token && { Authorization: `Bearer ${token}` })
+        }
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    return response.json();
+}
+
+/**
+ * Create a new thread
+ */
+export async function createThread(
+    data: CreateThreadRequest
+): Promise<{ success: boolean; data: Thread; error?: string }> {
+    const token = getAuthToken();
+
+    const response = await fetch(`${API_BASE_URL}/api/threads`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            ...(token && { Authorization: `Bearer ${token}` })
+        },
+        body: JSON.stringify(data)
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    return response.json();
+}
+
+/**
+ * Update thread (e.g., change title or status)
+ */
+export async function updateThread(
+    threadId: string,
+    data: UpdateThreadRequest
+): Promise<{ success: boolean; data: Thread; error?: string }> {
+    const token = getAuthToken();
+
+    const response = await fetch(`${API_BASE_URL}/api/threads/${threadId}`, {
+        method: "PUT",
+        headers: {
+            "Content-Type": "application/json",
+            ...(token && { Authorization: `Bearer ${token}` })
+        },
+        body: JSON.stringify(data)
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    return response.json();
+}
+
+/**
+ * Delete a thread
+ */
+export async function deleteThread(
+    threadId: string
+): Promise<{ success: boolean; message?: string; error?: string }> {
+    const token = getAuthToken();
+
+    const response = await fetch(`${API_BASE_URL}/api/threads/${threadId}`, {
+        method: "DELETE",
+        headers: {
+            "Content-Type": "application/json",
+            ...(token && { Authorization: `Bearer ${token}` })
+        }
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    return response.json();
+}
+
+/**
+ * Archive a thread
+ */
+export async function archiveThread(
+    threadId: string
+): Promise<{ success: boolean; data: Thread; error?: string }> {
+    const token = getAuthToken();
+
+    const response = await fetch(`${API_BASE_URL}/api/threads/${threadId}/archive`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            ...(token && { Authorization: `Bearer ${token}` })
+        }
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    return response.json();
+}
+
+/**
+ * Unarchive a thread
+ */
+export async function unarchiveThread(
+    threadId: string
+): Promise<{ success: boolean; data: Thread; error?: string }> {
+    const token = getAuthToken();
+
+    const response = await fetch(`${API_BASE_URL}/api/threads/${threadId}/unarchive`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
             ...(token && { Authorization: `Bearer ${token}` })
         }
     });
@@ -1871,6 +2102,135 @@ export async function reprocessDocument(kbId: string, docId: string): Promise<Ap
             }
         }
     );
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    return response.json();
+}
+
+// ===== Analytics API Functions =====
+
+export interface AnalyticsOverview {
+    period: string;
+    totalExecutions: number;
+    successfulExecutions: number;
+    failedExecutions: number;
+    successRate: number;
+    totalTokens: number;
+    totalCost: number;
+    avgDurationMs: number;
+    topModels: Array<{
+        provider: string;
+        model: string;
+        totalCost: number;
+    }>;
+}
+
+export interface DailyAnalytics {
+    date: string;
+    entityType: string;
+    entityId: string;
+    totalExecutions: number;
+    successfulExecutions: number;
+    failedExecutions: number;
+    totalTokens: number;
+    totalCost: number;
+    avgDurationMs: number;
+}
+
+export interface ModelAnalytics {
+    provider: string;
+    model: string;
+    totalCalls: number;
+    successfulCalls: number;
+    failedCalls: number;
+    totalTokens: number;
+    totalCost: number;
+    avgCostPerCall: number;
+    avgDurationMs: number;
+}
+
+/**
+ * Get analytics overview
+ */
+export async function getAnalyticsOverview(days?: number): Promise<ApiResponse<AnalyticsOverview>> {
+    const token = getAuthToken();
+    const queryParams = days ? `?days=${days}` : "";
+
+    const response = await fetch(`${API_BASE_URL}/api/analytics/overview${queryParams}`, {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json",
+            ...(token && { Authorization: `Bearer ${token}` })
+        }
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    return response.json();
+}
+
+/**
+ * Get daily analytics time-series data
+ */
+export async function getDailyAnalytics(params?: {
+    days?: number;
+    entityType?: string;
+    entityId?: string;
+}): Promise<ApiResponse<DailyAnalytics[]>> {
+    const token = getAuthToken();
+    const queryParams = new URLSearchParams();
+
+    if (params?.days) queryParams.set("days", params.days.toString());
+    if (params?.entityType) queryParams.set("entityType", params.entityType);
+    if (params?.entityId) queryParams.set("entityId", params.entityId);
+
+    const url = `${API_BASE_URL}/api/analytics/daily${queryParams.toString() ? `?${queryParams.toString()}` : ""}`;
+
+    const response = await fetch(url, {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json",
+            ...(token && { Authorization: `Bearer ${token}` })
+        }
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    return response.json();
+}
+
+/**
+ * Get model usage analytics
+ */
+export async function getModelAnalytics(params?: {
+    days?: number;
+    provider?: string;
+}): Promise<ApiResponse<ModelAnalytics[]>> {
+    const token = getAuthToken();
+    const queryParams = new URLSearchParams();
+
+    if (params?.days) queryParams.set("days", params.days.toString());
+    if (params?.provider) queryParams.set("provider", params.provider);
+
+    const url = `${API_BASE_URL}/api/analytics/models${queryParams.toString() ? `?${queryParams.toString()}` : ""}`;
+
+    const response = await fetch(url, {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json",
+            ...(token && { Authorization: `Bearer ${token}` })
+        }
+    });
 
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));

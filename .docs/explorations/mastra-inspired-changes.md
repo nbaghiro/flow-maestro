@@ -14,6 +14,7 @@
 **FlowMaestro** is a **visual workflow platform** (45K LOC) focused on **end-user accessibility and durable execution**. It provides a drag-and-drop UI for building AI workflows and agents, powered by Temporal orchestration.
 
 **Key Philosophical Difference**:
+
 - **Mastra**: "Framework for developers building AI applications"
 - **FlowMaestro**: "Platform for users creating AI automations"
 
@@ -23,29 +24,30 @@
 
 ### **Core Architecture Patterns**
 
-| Aspect | Mastra | FlowMaestro |
-|--------|--------|-------------|
-| **Design Pattern** | Central orchestration hub with dependency injection | Temporal-first with REST API layer |
-| **Component Registry** | Single `Mastra` class manages all components | Database-backed repository pattern |
-| **Execution Model** | In-process workflow engine (DefaultExecutionEngine) + Evented (pub/sub) | Temporal workflows only (cloud-native) |
-| **State Management** | In-memory + optional storage | Temporal history + PostgreSQL |
-| **Type System** | Heavy generics, discriminated unions, type inference | Simpler types, JsonObject/JsonValue |
-| **Extensibility** | Plugin architecture (adapters, processors, deployers) | Node executors + provider abstraction |
+| Aspect                 | Mastra                                                                  | FlowMaestro                            |
+| ---------------------- | ----------------------------------------------------------------------- | -------------------------------------- |
+| **Design Pattern**     | Central orchestration hub with dependency injection                     | Temporal-first with REST API layer     |
+| **Component Registry** | Single `Mastra` class manages all components                            | Database-backed repository pattern     |
+| **Execution Model**    | In-process workflow engine (DefaultExecutionEngine) + Evented (pub/sub) | Temporal workflows only (cloud-native) |
+| **State Management**   | In-memory + optional storage                                            | Temporal history + PostgreSQL          |
+| **Type System**        | Heavy generics, discriminated unions, type inference                    | Simpler types, JsonObject/JsonValue    |
+| **Extensibility**      | Plugin architecture (adapters, processors, deployers)                   | Node executors + provider abstraction  |
 
 ### **Key Architectural Differences**
 
 #### **1.1 Component Organization**
 
 **Mastra** - Monolithic SDK:
+
 ```typescript
 const mastra = new Mastra({
-  agents: { myAgent },
-  workflows: { myWorkflow },
-  tools: { myTool },
-  vectors: { pgVector },
-  storage: pgStorage,
-  observability,
-  logger
+    agents: { myAgent },
+    workflows: { myWorkflow },
+    tools: { myTool },
+    vectors: { pgVector },
+    storage: pgStorage,
+    observability,
+    logger
 });
 
 // All components registered at initialization
@@ -53,13 +55,14 @@ const mastra = new Mastra({
 ```
 
 **FlowMaestro** - Service-Oriented:
+
 ```typescript
 // Components stored in database
 const workflow = await WorkflowRepository.findById(id);
 const agent = await AgentRepository.findById(id);
 
 // Execution via Temporal
-await temporalClient.workflow.execute('orchestrator', { workflow });
+await temporalClient.workflow.execute("orchestrator", { workflow });
 
 // No central registry - services are independent
 ```
@@ -69,6 +72,7 @@ await temporalClient.workflow.execute('orchestrator', { workflow });
 #### **1.2 Initialization & Lifecycle**
 
 **Mastra** - Registration Phase:
+
 ```typescript
 // Order matters: tools → processors → vectors → scorers → workflows → MCP → agents
 constructor(config) {
@@ -86,6 +90,7 @@ constructor(config) {
 ```
 
 **FlowMaestro** - On-Demand Loading:
+
 ```typescript
 // No initialization phase
 // Components loaded from database when needed
@@ -103,16 +108,17 @@ async executeWorkflow(workflowId) {
 #### **1.3 Storage Abstraction**
 
 **Mastra** - Multi-Adapter with Feature Flags:
+
 ```typescript
 abstract class MastraStorage {
-  get supports() {
-    return {
-      selectByIncludeResourceScope: boolean,
-      resourceWorkingMemory: boolean,
-      observabilityInstance: boolean,
-      // 8+ feature flags
-    };
-  }
+    get supports() {
+        return {
+            selectByIncludeResourceScope: boolean,
+            resourceWorkingMemory: boolean,
+            observabilityInstance: boolean
+            // 8+ feature flags
+        };
+    }
 }
 
 // PostgreSQL, LibSQL, Upstash, etc. implement interface
@@ -120,14 +126,15 @@ abstract class MastraStorage {
 ```
 
 **FlowMaestro** - PostgreSQL Only:
+
 ```typescript
 // Hard-coded to PostgreSQL
 class WorkflowRepository {
-  private pool: pg.Pool;
+    private pool: pg.Pool;
 
-  async findById(id: string) {
-    return await this.pool.query('SELECT * FROM workflows WHERE id = $1', [id]);
-  }
+    async findById(id: string) {
+        return await this.pool.query("SELECT * FROM workflows WHERE id = $1", [id]);
+    }
 }
 ```
 
@@ -139,20 +146,21 @@ class WorkflowRepository {
 
 ### **2.1 AGENT SYSTEM**
 
-| Feature | Mastra | FlowMaestro | Winner |
-|---------|--------|-------------|--------|
-| **LLM Integration** | AI SDK v4/v5 with unified interface | Direct provider SDKs | **Mastra** - Better abstraction |
-| **Tool Discovery** | 6 sources (assigned, memory, toolsets, client, agents, workflows) | 4 types (workflow, function, KB, MCP) | **Mastra** - More flexible |
-| **Memory Strategies** | 3 (conversation history, semantic recall, working memory) | 3 (buffer, summary, vector) | **Tie** - Different approaches |
-| **Message Management** | MessageList class with multi-format support | JSONB array in database | **Mastra** - Better abstraction |
-| **Streaming** | Rich chunk types (text-delta, tool-call, reasoning) | Basic token streaming | **Mastra** - More granular |
-| **Sub-agents** | Hierarchical networks with automatic tool generation | None | **Mastra** |
-| **Voice Integration** | Separate @mastra/voice package | Built-in LiveKit integration | **FlowMaestro** - More integrated |
-| **Model Fallbacks** | Array of models with automatic retry | Single primary + fallback array | **Mastra** - More sophisticated |
+| Feature                | Mastra                                                            | FlowMaestro                           | Winner                            |
+| ---------------------- | ----------------------------------------------------------------- | ------------------------------------- | --------------------------------- |
+| **LLM Integration**    | AI SDK v4/v5 with unified interface                               | Direct provider SDKs                  | **Mastra** - Better abstraction   |
+| **Tool Discovery**     | 6 sources (assigned, memory, toolsets, client, agents, workflows) | 4 types (workflow, function, KB, MCP) | **Mastra** - More flexible        |
+| **Memory Strategies**  | 3 (conversation history, semantic recall, working memory)         | 3 (buffer, summary, vector)           | **Tie** - Different approaches    |
+| **Message Management** | MessageList class with multi-format support                       | JSONB array in database               | **Mastra** - Better abstraction   |
+| **Streaming**          | Rich chunk types (text-delta, tool-call, reasoning)               | Basic token streaming                 | **Mastra** - More granular        |
+| **Sub-agents**         | Hierarchical networks with automatic tool generation              | None                                  | **Mastra**                        |
+| **Voice Integration**  | Separate @mastra/voice package                                    | Built-in LiveKit integration          | **FlowMaestro** - More integrated |
+| **Model Fallbacks**    | Array of models with automatic retry                              | Single primary + fallback array       | **Mastra** - More sophisticated   |
 
 #### **Deep Dive: Tool Execution Context**
 
 **Mastra** - Rich Context with Nested Organization:
+
 ```typescript
 // Context automatically reorganized based on execution source
 {
@@ -184,6 +192,7 @@ class WorkflowRepository {
 ```
 
 **FlowMaestro** - Simple Context:
+
 ```typescript
 {
   userId: string,
@@ -195,6 +204,7 @@ class WorkflowRepository {
 ```
 
 **Learning for FlowMaestro**:
+
 1. **Add `requestContext`** - Enable passing custom data through execution
 2. **Add `tracingContext`** - Enable distributed tracing
 3. **Nest execution-specific data** - Cleaner separation (agent vs workflow)
@@ -203,85 +213,87 @@ class WorkflowRepository {
 #### **Deep Dive: Memory System**
 
 **Mastra** - Sophisticated Architecture:
+
 ```typescript
 class Memory extends MastraMemory {
-  // Recall with semantic search
-  async recall({ threadId, vectorSearchString }) {
-    // 1. Recent messages (pagination)
-    const recent = await storage.listMessages({
-      threadId,
-      perPage: config.lastMessages
-    });
+    // Recall with semantic search
+    async recall({ threadId, vectorSearchString }) {
+        // 1. Recent messages (pagination)
+        const recent = await storage.listMessages({
+            threadId,
+            perPage: config.lastMessages
+        });
 
-    // 2. Semantic recall (RAG)
-    const embeddings = await embedder.embed(vectorSearchString);
-    const semanticResults = await vector.query({
-      queryVector: embeddings[0],
-      topK: 5,
-      filter: { resource_id: resourceId }
-    });
+        // 2. Semantic recall (RAG)
+        const embeddings = await embedder.embed(vectorSearchString);
+        const semanticResults = await vector.query({
+            queryVector: embeddings[0],
+            topK: 5,
+            filter: { resource_id: resourceId }
+        });
 
-    // 3. Retrieve with context windows
-    const messagesWithContext = await storage.listMessages({
-      threadId,
-      include: semanticResults.map(r => ({
-        id: r.metadata.message_id,
-        withPreviousMessages: 1,
-        withNextMessages: 1
-      }))
-    });
+        // 3. Retrieve with context windows
+        const messagesWithContext = await storage.listMessages({
+            threadId,
+            include: semanticResults.map((r) => ({
+                id: r.metadata.message_id,
+                withPreviousMessages: 1,
+                withNextMessages: 1
+            }))
+        });
 
-    // 4. Deduplicate and merge
-    return deduplicateAndSort([...recent, ...messagesWithContext]);
-  }
-
-  // Working memory with mutex protection
-  async updateWorkingMemory({ threadId, workingMemory, searchString }) {
-    const mutex = this.mutexes.get(threadId);
-    const release = await mutex.acquire();
-
-    try {
-      const existing = await getWorkingMemory(threadId);
-
-      // Search and replace
-      if (searchString && existing.includes(searchString)) {
-        return existing.replace(searchString, workingMemory);
-      }
-
-      // Duplicate detection
-      if (existing.includes(workingMemory)) {
-        return { success: false, reason: 'duplicate' };
-      }
-
-      // Append
-      return existing + '\n' + workingMemory;
-    } finally {
-      release();
+        // 4. Deduplicate and merge
+        return deduplicateAndSort([...recent, ...messagesWithContext]);
     }
-  }
+
+    // Working memory with mutex protection
+    async updateWorkingMemory({ threadId, workingMemory, searchString }) {
+        const mutex = this.mutexes.get(threadId);
+        const release = await mutex.acquire();
+
+        try {
+            const existing = await getWorkingMemory(threadId);
+
+            // Search and replace
+            if (searchString && existing.includes(searchString)) {
+                return existing.replace(searchString, workingMemory);
+            }
+
+            // Duplicate detection
+            if (existing.includes(workingMemory)) {
+                return { success: false, reason: "duplicate" };
+            }
+
+            // Append
+            return existing + "\n" + workingMemory;
+        } finally {
+            release();
+        }
+    }
 }
 ```
 
 **FlowMaestro** - Basic Implementation:
+
 ```typescript
 // Buffer memory
 const history = await db.query(
-  'SELECT conversation_history FROM agent_executions WHERE agent_id = $1',
-  [agentId]
+    "SELECT conversation_history FROM agent_executions WHERE agent_id = $1",
+    [agentId]
 );
 messages = [...history, newMessage];
 
 // Summary memory
 if (messages.length > maxMessages) {
-  const summary = await llm.summarize(messages.slice(0, -maxMessages));
-  messages = [{ role: 'system', content: summary }, ...messages.slice(-maxMessages)];
+    const summary = await llm.summarize(messages.slice(0, -maxMessages));
+    messages = [{ role: "system", content: summary }, ...messages.slice(-maxMessages)];
 }
 
 // Vector memory
 const embedding = await embedder.embed(userMessage);
 const similar = await db.query(
-  'SELECT * FROM agent_memory_vectors ORDER BY embedding <=> $1 LIMIT 5',
-  [embedding]
+    "SELECT * FROM agent_memory_vectors ORDER BY embedding <=> $1 LIMIT 5",
+    [embedding]
 );
 ```
 
@@ -297,6 +309,7 @@ const similar = await db.query(
 #### **Deep Dive: MessageList Abstraction**
 
 **Mastra's MessageList** - Central to Everything:
+
 ```typescript
 class MessageList {
   // Tracks message sources
@@ -332,33 +345,41 @@ class MessageList {
 ```
 
 **Why This Matters**:
+
 - **Source tracking** enables efficient incremental saves (don't re-save memory messages)
 - **Multi-format** eliminates conversion logic scattered everywhere
 - **Serialization** enables workflow suspend/resume
 - **Deduplication** prevents duplicate messages across recall + new input
 
 **FlowMaestro Should Implement**:
+
 ```typescript
 class ConversationManager {
-  private messages: Message[] = [];
-  private saved = new Set<string>();
+    private messages: Message[] = [];
+    private saved = new Set<string>();
 
-  addFromMemory(messages: Message[]) {
-    this.messages.push(...messages);
-    messages.forEach(m => this.saved.add(m.id));
-  }
+    addFromMemory(messages: Message[]) {
+        this.messages.push(...messages);
+        messages.forEach((m) => this.saved.add(m.id));
+    }
 
-  addUserMessage(message: Message) {
-    this.messages.push(message);
-  }
+    addUserMessage(message: Message) {
+        this.messages.push(message);
+    }
 
-  getUnsaved(): Message[] {
-    return this.messages.filter(m => !this.saved.has(m.id));
-  }
+    getUnsaved(): Message[] {
+        return this.messages.filter((m) => !this.saved.has(m.id));
+    }
 
-  toOpenAI(): OpenAIMessage[] { /* ... */ }
-  toAnthropic(): AnthropicMessage[] { /* ... */ }
-  toDatabase(): DbMessage[] { /* ... */ }
+    toOpenAI(): OpenAIMessage[] {
+        /* ... */
+    }
+    toAnthropic(): AnthropicMessage[] {
+        /* ... */
+    }
+    toDatabase(): DbMessage[] {
+        /* ... */
+    }
 }
 ```
 
@@ -366,20 +387,21 @@ class ConversationManager {
 
 ### **2.2 WORKFLOW SYSTEM**
 
-| Feature | Mastra | FlowMaestro | Winner |
-|---------|--------|-------------|--------|
-| **Execution Engine** | Custom (DefaultExecutionEngine) | Temporal (cloud-native) | **FlowMaestro** - Battle-tested |
-| **Step Types** | 8 (step, parallel, conditional, loop, foreach, sleep, sleepUntil, branch) | 20+ node types | **FlowMaestro** - More variety |
-| **State Management** | Typed state with Zod schemas | JSONB context in Temporal | **Mastra** - Type-safe |
-| **Suspend/Resume** | Built-in with step-level support | User input workflow (signals) | **Mastra** - More granular |
-| **Visual Editor** | None (code-only) | React Flow canvas | **FlowMaestro** - Better UX |
-| **Durability** | Optional (evented mode with pub/sub) | Always (Temporal guarantees) | **FlowMaestro** - More reliable |
-| **Error Handling** | Retry config per step | Temporal retry policies | **Tie** - Both sophisticated |
-| **Observability** | Full span tracing | Temporal UI + WebSocket events | **Tie** - Different approaches |
+| Feature              | Mastra                                                                    | FlowMaestro                    | Winner                          |
+| -------------------- | ------------------------------------------------------------------------- | ------------------------------ | ------------------------------- |
+| **Execution Engine** | Custom (DefaultExecutionEngine)                                           | Temporal (cloud-native)        | **FlowMaestro** - Battle-tested |
+| **Step Types**       | 8 (step, parallel, conditional, loop, foreach, sleep, sleepUntil, branch) | 20+ node types                 | **FlowMaestro** - More variety  |
+| **State Management** | Typed state with Zod schemas                                              | JSONB context in Temporal      | **Mastra** - Type-safe          |
+| **Suspend/Resume**   | Built-in with step-level support                                          | User input workflow (signals)  | **Mastra** - More granular      |
+| **Visual Editor**    | None (code-only)                                                          | React Flow canvas              | **FlowMaestro** - Better UX     |
+| **Durability**       | Optional (evented mode with pub/sub)                                      | Always (Temporal guarantees)   | **FlowMaestro** - More reliable |
+| **Error Handling**   | Retry config per step                                                     | Temporal retry policies        | **Tie** - Both sophisticated    |
+| **Observability**    | Full span tracing                                                         | Temporal UI + WebSocket events | **Tie** - Different approaches  |
 
 #### **Deep Dive: Step Graph Topology**
 
 **Mastra** - Linear Array with Nested Structures:
+
 ```typescript
 // Workflow stored as array of entries
 stepFlow: [
@@ -395,6 +417,7 @@ suspendedPaths: { 'approval-step': [3, 0] }
 ```
 
 **FlowMaestro** - Graph with Nodes and Edges:
+
 ```typescript
 {
   nodes: {
@@ -417,6 +440,7 @@ const outgoing = new Map(); // node → [dependents]
 **Learning**: FlowMaestro's graph approach is better for visual editing. Mastra's array approach is simpler for programmatic construction.
 
 **Recommendation for FlowMaestro**:
+
 - Keep graph structure for UI
 - Add **typed state schema** validation like Mastra
 - Add **path tracking** for better debugging
@@ -425,6 +449,7 @@ const outgoing = new Map(); // node → [dependents]
 #### **Deep Dive: Suspend/Resume**
 
 **Mastra** - Step-Level Suspend:
+
 ```typescript
 const approvalStep = createStep({
   suspendSchema: z.object({ requestId: z.string() }),
@@ -455,30 +480,35 @@ await run.resume({
 ```
 
 **FlowMaestro** - Workflow-Level Suspend:
+
 ```typescript
 // User input workflow
 export async function userInputWorkflow(params) {
-  setHandler(inputSignal, (input) => { receivedInput = input; });
+    setHandler(inputSignal, (input) => {
+        receivedInput = input;
+    });
 
-  // Wait for signal
-  await condition(() => receivedInput !== null, '5m');
+    // Wait for signal
+    await condition(() => receivedInput !== null, "5m");
 
-  if (!receivedInput) {
-    throw ApplicationFailure.create({ message: 'Timeout' });
-  }
+    if (!receivedInput) {
+        throw ApplicationFailure.create({ message: "Timeout" });
+    }
 
-  return { input: receivedInput };
+    return { input: receivedInput };
 }
 
 // From external API
-await temporalClient.workflow.signal('userInputWorkflow', 'inputSignal', { data });
+await temporalClient.workflow.signal("userInputWorkflow", "inputSignal", { data });
 ```
 
 **Key Difference**:
+
 - Mastra suspends **within** a step (fine-grained)
 - FlowMaestro suspends entire **workflow** (coarse-grained)
 
 **Learning for FlowMaestro**:
+
 1. **Add suspend capability to node executors** - Some nodes might need user input mid-execution
 2. **Add resume labels** - Enable named resume points for complex workflows
 3. **Track suspended paths** - Better visibility into where workflow is paused
@@ -487,6 +517,7 @@ await temporalClient.workflow.signal('userInputWorkflow', 'inputSignal', { data 
 #### **Deep Dive: ForEach with Suspend**
 
 **Mastra's Sophisticated ForEach**:
+
 ```typescript
 // Execute items with concurrency control
 for (let i = 0; i < items.length; i += concurrency) {
@@ -522,31 +553,34 @@ const { foreachIndex, foreachOutput } = resumePayload.__workflow_meta;
 ```
 
 **FlowMaestro's Loop Node**:
+
 ```typescript
 // Basic iteration
 const items = context[config.arraySource];
 const results = [];
 
 for (let i = 0; i < items.length; i++) {
-  const itemContext = { ...context, loopItem: items[i], loopIndex: i };
-  const result = await executeNode({
-    nodeType: config.iteratorNode,
-    nodeConfig: config.nodeConfig,
-    context: itemContext
-  });
-  results.push(result);
+    const itemContext = { ...context, loopItem: items[i], loopIndex: i };
+    const result = await executeNode({
+        nodeType: config.iteratorNode,
+        nodeConfig: config.nodeConfig,
+        context: itemContext
+    });
+    results.push(result);
 }
 
 return { loopResults: results };
 ```
 
 **Missing in FlowMaestro**:
+
 1. **Concurrency control** - Process N items in parallel
 2. **Suspend/resume** - Loop can't pause mid-iteration
 3. **Progress tracking** - No visibility into which item is processing
 4. **Partial results** - If loop fails at item 50/100, lose all progress
 
 **Recommendation**:
+
 ```typescript
 // Enhanced loop node
 {
@@ -570,66 +604,68 @@ return { loopResults: results };
 
 ### **2.3 TOOLS SYSTEM**
 
-| Feature | Mastra | FlowMaestro | Winner |
-|---------|--------|-------------|--------|
-| **Tool Definition** | TypeScript with Zod schemas | JSON Schema | **Mastra** - Type inference |
-| **Execution Context** | Rich (agent/workflow nested, requestContext, tracingContext) | Basic (userId, executionId, variables) | **Mastra** - More context |
-| **Schema Validation** | Automatic input validation + compatibility layers | No runtime validation | **Mastra** - Safer |
-| **Tool Discovery** | 6 sources with priority order | Manual configuration | **Mastra** - More flexible |
-| **Suspend Support** | Built-in with schemas | Not supported | **Mastra** |
-| **Streaming** | ToolStream wrapper for real-time output | Not supported | **Mastra** |
-| **Provider Tools** | Google Search, OpenAI Web Search (provider-defined) | None | **Mastra** |
-| **Integration** | Via Integration class with OAuth | Via Connection repository | **FlowMaestro** - Better UX |
+| Feature               | Mastra                                                       | FlowMaestro                            | Winner                      |
+| --------------------- | ------------------------------------------------------------ | -------------------------------------- | --------------------------- |
+| **Tool Definition**   | TypeScript with Zod schemas                                  | JSON Schema                            | **Mastra** - Type inference |
+| **Execution Context** | Rich (agent/workflow nested, requestContext, tracingContext) | Basic (userId, executionId, variables) | **Mastra** - More context   |
+| **Schema Validation** | Automatic input validation + compatibility layers            | No runtime validation                  | **Mastra** - Safer          |
+| **Tool Discovery**    | 6 sources with priority order                                | Manual configuration                   | **Mastra** - More flexible  |
+| **Suspend Support**   | Built-in with schemas                                        | Not supported                          | **Mastra**                  |
+| **Streaming**         | ToolStream wrapper for real-time output                      | Not supported                          | **Mastra**                  |
+| **Provider Tools**    | Google Search, OpenAI Web Search (provider-defined)          | None                                   | **Mastra**                  |
+| **Integration**       | Via Integration class with OAuth                             | Via Connection repository              | **FlowMaestro** - Better UX |
 
 #### **Deep Dive: Tool Validation Pipeline**
 
 **Mastra** - Multi-Layer Validation:
+
 ```typescript
 class Tool {
-  constructor(opts) {
-    const originalExecute = opts.execute;
+    constructor(opts) {
+        const originalExecute = opts.execute;
 
-    this.execute = async (inputData, context) => {
-      // 1. Input validation
-      const { data, error } = validateToolInput(this.inputSchema, inputData);
-      if (error) return error;
+        this.execute = async (inputData, context) => {
+            // 1. Input validation
+            const { data, error } = validateToolInput(this.inputSchema, inputData);
+            if (error) return error;
 
-      // 2. Context organization (agent vs workflow)
-      const organizedContext = organizeContext(context);
+            // 2. Context organization (agent vs workflow)
+            const organizedContext = organizeContext(context);
 
-      // 3. Execute with validated data
-      return await originalExecute(data, organizedContext);
-    };
-  }
+            // 3. Execute with validated data
+            return await originalExecute(data, organizedContext);
+        };
+    }
 }
 
 // Validation function
 function validateToolInput(schema, input) {
-  if (!schema) return { data: input };
+    if (!schema) return { data: input };
 
-  const validation = schema.safeParse(input);
+    const validation = schema.safeParse(input);
 
-  if (validation.success) {
-    return { data: validation.data };  // Coerced data
-  }
-
-  return {
-    data: input,
-    error: {
-      error: true,
-      message: formatErrors(validation.error),
-      validationErrors: validation.error.format()
+    if (validation.success) {
+        return { data: validation.data }; // Coerced data
     }
-  };
+
+    return {
+        data: input,
+        error: {
+            error: true,
+            message: formatErrors(validation.error),
+            validationErrors: validation.error.format()
+        }
+    };
 }
 ```
 
 **FlowMaestro** - No Validation:
+
 ```typescript
 // LLM returns tool call
 const toolCall = {
-  name: 'search_arxiv',
-  arguments: { query: 'quantum computing' }
+    name: "search_arxiv",
+    arguments: { query: "quantum computing" }
 };
 
 // Direct execution (trust LLM)
@@ -639,6 +675,7 @@ const result = await executeToolCall(toolDef, toolCall.arguments, context);
 **Risk**: LLM can hallucinate invalid arguments. Mastra catches this at runtime.
 
 **Learning for FlowMaestro**:
+
 1. **Add Zod validation** - Validate tool arguments before execution
 2. **Return validation errors to LLM** - Let LLM retry with correct format
 3. **Add output validation** - Ensure tools return expected format
@@ -648,50 +685,51 @@ const result = await executeToolCall(toolDef, toolCall.arguments, context);
 
 **What Mastra Provides** vs **What FlowMaestro Provides**:
 
-| Context Field | Mastra | FlowMaestro | Why It Matters |
-|---------------|--------|-------------|----------------|
-| `mastra` | ✅ (Wrapped with tracing) | ❌ | Access to other components (agents, workflows) |
-| `requestContext` | ✅ (RequestContext class) | ❌ | Pass custom data (userId, sessionId, etc.) |
-| `tracingContext` | ✅ (Span hierarchy) | ❌ | Distributed tracing across tools |
-| `writer` | ✅ (ToolStream) | ❌ | Stream tool output back to user |
-| `suspend` | ✅ (With schemas) | ❌ | Tool can pause for user input |
-| `abort` | ✅ (AbortSignal) | ❌ | Cancel long-running tools |
-| `state` (workflow) | ✅ (Get/set) | ✅ (Via context) | Workflow state access |
-| `setState` (workflow) | ✅ | ❌ | Modify workflow state |
-| `threadId` (agent) | ✅ | ❌ | Memory/conversation scoping |
-| `resourceId` (agent) | ✅ | ❌ | User-level scoping |
+| Context Field         | Mastra                    | FlowMaestro      | Why It Matters                                 |
+| --------------------- | ------------------------- | ---------------- | ---------------------------------------------- |
+| `mastra`              | ✅ (Wrapped with tracing) | ❌               | Access to other components (agents, workflows) |
+| `requestContext`      | ✅ (RequestContext class) | ❌               | Pass custom data (userId, sessionId, etc.)     |
+| `tracingContext`      | ✅ (Span hierarchy)       | ❌               | Distributed tracing across tools               |
+| `writer`              | ✅ (ToolStream)           | ❌               | Stream tool output back to user                |
+| `suspend`             | ✅ (With schemas)         | ❌               | Tool can pause for user input                  |
+| `abort`               | ✅ (AbortSignal)          | ❌               | Cancel long-running tools                      |
+| `state` (workflow)    | ✅ (Get/set)              | ✅ (Via context) | Workflow state access                          |
+| `setState` (workflow) | ✅                        | ❌               | Modify workflow state                          |
+| `threadId` (agent)    | ✅                        | ❌               | Memory/conversation scoping                    |
+| `resourceId` (agent)  | ✅                        | ❌               | User-level scoping                             |
 
 **Implementation for FlowMaestro**:
+
 ```typescript
 interface ToolExecutionContext {
-  // Existing
-  userId: string;
-  agentId: string;
-  executionId: string;
-  connectionId?: string;
-  variables: JsonObject;
+    // Existing
+    userId: string;
+    agentId: string;
+    executionId: string;
+    connectionId?: string;
+    variables: JsonObject;
 
-  // Add from Mastra
-  requestContext?: RequestContext;  // Custom request-scoped data
-  tracingContext?: TracingContext;  // Span for observability
-  writer?: ToolStream;              // Real-time output streaming
-  abortSignal?: AbortSignal;        // Cancellation
+    // Add from Mastra
+    requestContext?: RequestContext; // Custom request-scoped data
+    tracingContext?: TracingContext; // Span for observability
+    writer?: ToolStream; // Real-time output streaming
+    abortSignal?: AbortSignal; // Cancellation
 
-  // Agent-specific
-  agent?: {
-    threadId: string;
-    resourceId: string;
-    messages: Message[];
-    suspend?: (payload: any) => Promise<any>;
-  };
+    // Agent-specific
+    agent?: {
+        threadId: string;
+        resourceId: string;
+        messages: Message[];
+        suspend?: (payload: any) => Promise<any>;
+    };
 
-  // Workflow-specific
-  workflow?: {
-    runId: string;
-    workflowId: string;
-    state: JsonObject;
-    setState: (state: JsonObject) => void;
-  };
+    // Workflow-specific
+    workflow?: {
+        runId: string;
+        workflowId: string;
+        state: JsonObject;
+        setState: (state: JsonObject) => void;
+    };
 }
 ```
 
@@ -699,64 +737,67 @@ interface ToolExecutionContext {
 
 ### **2.4 STORAGE LAYER**
 
-| Feature | Mastra | FlowMaestro | Winner |
-|---------|--------|-------------|--------|
-| **Abstraction** | Multi-adapter (PostgreSQL, LibSQL, Upstash, etc.) | PostgreSQL only | **Mastra** - More flexible |
-| **Feature Flags** | Adapters declare capabilities | N/A | **Mastra** |
-| **Context Windows** | Include parameter for message retrieval | Not supported | **Mastra** |
-| **Dual Timestamps** | TEXT + TIMESTAMPTZ for compatibility | Single timestamp | **Mastra** - Better perf |
-| **Auto Indexes** | Creates composite indexes automatically | Manual CREATE INDEX | **Mastra** - Optimized |
-| **Pagination** | Advanced (perPage=false, offset, include) | Basic (LIMIT/OFFSET) | **Mastra** - More flexible |
-| **Transactions** | Explicit transaction helpers | Manual BEGIN/COMMIT | **Tie** |
-| **Migrations** | Built-in schema evolution | node-pg-migrate | **FlowMaestro** - Industry standard |
+| Feature             | Mastra                                            | FlowMaestro          | Winner                              |
+| ------------------- | ------------------------------------------------- | -------------------- | ----------------------------------- |
+| **Abstraction**     | Multi-adapter (PostgreSQL, LibSQL, Upstash, etc.) | PostgreSQL only      | **Mastra** - More flexible          |
+| **Feature Flags**   | Adapters declare capabilities                     | N/A                  | **Mastra**                          |
+| **Context Windows** | Include parameter for message retrieval           | Not supported        | **Mastra**                          |
+| **Dual Timestamps** | TEXT + TIMESTAMPTZ for compatibility              | Single timestamp     | **Mastra** - Better perf            |
+| **Auto Indexes**    | Creates composite indexes automatically           | Manual CREATE INDEX  | **Mastra** - Optimized              |
+| **Pagination**      | Advanced (perPage=false, offset, include)         | Basic (LIMIT/OFFSET) | **Mastra** - More flexible          |
+| **Transactions**    | Explicit transaction helpers                      | Manual BEGIN/COMMIT  | **Tie**                             |
+| **Migrations**      | Built-in schema evolution                         | node-pg-migrate      | **FlowMaestro** - Industry standard |
 
 #### **Deep Dive: Feature Flag System**
 
 **Mastra's Adapter Pattern**:
+
 ```typescript
 class PostgresStorage extends MastraStorage {
-  get supports() {
-    return {
-      selectByIncludeResourceScope: true,
-      resourceWorkingMemory: true,
-      observabilityInstance: true,
-      indexManagement: true,
-      deleteMessages: true,
-      hasColumn: true,
-      createTable: true,
-      listScoresBySpan: true
-    };
-  }
+    get supports() {
+        return {
+            selectByIncludeResourceScope: true,
+            resourceWorkingMemory: true,
+            observabilityInstance: true,
+            indexManagement: true,
+            deleteMessages: true,
+            hasColumn: true,
+            createTable: true,
+            listScoresBySpan: true
+        };
+    }
 }
 
 class UpstashStorage extends MastraStorage {
-  get supports() {
-    return {
-      selectByIncludeResourceScope: true,
-      resourceWorkingMemory: true,
-      observabilityInstance: false,  // Redis can't store spans
-      indexManagement: false,         // No SQL indexes
-      deleteMessages: true,
-      hasColumn: false,               // Schemaless
-      createTable: false,             // Schemaless
-      listScoresBySpan: true
-    };
-  }
+    get supports() {
+        return {
+            selectByIncludeResourceScope: true,
+            resourceWorkingMemory: true,
+            observabilityInstance: false, // Redis can't store spans
+            indexManagement: false, // No SQL indexes
+            deleteMessages: true,
+            hasColumn: false, // Schemaless
+            createTable: false, // Schemaless
+            listScoresBySpan: true
+        };
+    }
 }
 
 // Memory system checks before using features
 if (!storage.supports.resourceWorkingMemory) {
-  throw new Error('Storage adapter does not support resource-scoped working memory');
+    throw new Error("Storage adapter does not support resource-scoped working memory");
 }
 ```
 
 **Why This Matters**:
+
 - Enables graceful degradation (disable features not supported)
 - Better error messages (tell user exactly what's missing)
 - Allows testing with lightweight adapters (in-memory for tests)
 - Enables adapter marketplace (community can build adapters)
 
 **Learning for FlowMaestro**:
+
 1. **Extract storage interface** - Define `IWorkflowStorage`, `IAgentStorage`
 2. **Implement multiple adapters** - PostgreSQL, SQLite, MySQL
 3. **Add feature flags** - Let adapters declare capabilities
@@ -765,17 +806,18 @@ if (!storage.supports.resourceWorkingMemory) {
 #### **Deep Dive: Context Windows**
 
 **Mastra's Include Parameter**:
+
 ```typescript
 await storage.listMessages({
-  threadId,
-  perPage: 10,
-  include: [
-    {
-      id: 'msg-50',  // Message from semantic search
-      withPreviousMessages: 2,
-      withNextMessages: 2
-    }
-  ]
+    threadId,
+    perPage: 10,
+    include: [
+        {
+            id: "msg-50", // Message from semantic search
+            withPreviousMessages: 2,
+            withNextMessages: 2
+        }
+    ]
 });
 
 // Returns:
@@ -787,6 +829,7 @@ await storage.listMessages({
 ```
 
 **PostgreSQL Implementation**:
+
 ```sql
 WITH ordered_messages AS (
   SELECT *, ROW_NUMBER() OVER (ORDER BY created_at ASC) as row_num
@@ -807,34 +850,36 @@ ORDER BY created_at ASC
 ```
 
 **Why Context Windows Matter**:
+
 - Semantic search finds relevant message from middle of conversation
 - Without context, message makes no sense (lacks continuity)
 - Including N before/after preserves conversation flow
 
 **FlowMaestro Should Implement**:
+
 ```typescript
 interface ListMessagesOptions {
-  agentId: string;
-  userId: string;
-  limit?: number;
-  include?: Array<{
-    messageId: string;
-    contextBefore?: number;  // Default: 1
-    contextAfter?: number;   // Default: 1
-  }>;
+    agentId: string;
+    userId: string;
+    limit?: number;
+    include?: Array<{
+        messageId: string;
+        contextBefore?: number; // Default: 1
+        contextAfter?: number; // Default: 1
+    }>;
 }
 
 // Usage in vector memory
 const similarMessages = await vectorSearch(query);
 const messagesWithContext = await storage.listMessages({
-  agentId,
-  userId,
-  limit: 10,
-  include: similarMessages.map(m => ({
-    messageId: m.id,
-    contextBefore: 1,
-    contextAfter: 1
-  }))
+    agentId,
+    userId,
+    limit: 10,
+    include: similarMessages.map((m) => ({
+        messageId: m.id,
+        contextBefore: 1,
+        contextAfter: 1
+    }))
 });
 ```
 
@@ -842,18 +887,19 @@ const messagesWithContext = await storage.listMessages({
 
 ### **2.5 OBSERVABILITY & TRACING**
 
-| Feature | Mastra | FlowMaestro | Winner |
-|---------|--------|-------------|--------|
-| **Tracing** | Full distributed tracing with spans | Temporal built-in + basic logs | **Mastra** - More granular |
-| **Span Storage** | Database table with queries | Temporal history only | **Mastra** - Queryable |
-| **Real-time Events** | Pub/sub with event types | WebSocket for workflows, SSE for agents | **FlowMaestro** - Better UX |
-| **Metrics** | Usage tracking in spans | None | **Mastra** |
-| **Error Tracking** | MastraError with domains/categories | Generic Error | **Mastra** - Better classification |
-| **Logging** | Pluggable logger (Console, Pino, custom) | Console.log | **Mastra** - Production-ready |
+| Feature              | Mastra                                   | FlowMaestro                             | Winner                             |
+| -------------------- | ---------------------------------------- | --------------------------------------- | ---------------------------------- |
+| **Tracing**          | Full distributed tracing with spans      | Temporal built-in + basic logs          | **Mastra** - More granular         |
+| **Span Storage**     | Database table with queries              | Temporal history only                   | **Mastra** - Queryable             |
+| **Real-time Events** | Pub/sub with event types                 | WebSocket for workflows, SSE for agents | **FlowMaestro** - Better UX        |
+| **Metrics**          | Usage tracking in spans                  | None                                    | **Mastra**                         |
+| **Error Tracking**   | MastraError with domains/categories      | Generic Error                           | **Mastra** - Better classification |
+| **Logging**          | Pluggable logger (Console, Pino, custom) | Console.log                             | **Mastra** - Production-ready      |
 
 #### **Deep Dive: Span Architecture**
 
 **Mastra's Span Hierarchy**:
+
 ```typescript
 // Root span
 const agentSpan = createSpan({
@@ -882,6 +928,7 @@ agentSpan.end({ output: { text: 'Here is our billing policy...' } });
 ```
 
 **Span Hierarchy**:
+
 ```
 AGENT_RUN (customer-support)
 ├─ MODEL_GENERATION (gpt-4o)
@@ -892,6 +939,7 @@ AGENT_RUN (customer-support)
 ```
 
 **Storage**:
+
 ```sql
 CREATE TABLE mastra_ai_spans (
   trace_id UUID,
@@ -914,6 +962,7 @@ CREATE INDEX ON mastra_ai_spans (span_type, started_at DESC);
 ```
 
 **Queries**:
+
 ```typescript
 // Get full trace
 const trace = await storage.getTrace(traceId);
@@ -921,21 +970,23 @@ const trace = await storage.getTrace(traceId);
 
 // Paginated traces
 const traces = await storage.getTracesPaginated({
-  filters: {
-    spanType: SpanType.AGENT_RUN,
-    entityId: 'customer-support',
-    dateRange: { start: new Date('2025-01-01') }
-  },
-  pagination: { page: 0, perPage: 50 }
+    filters: {
+        spanType: SpanType.AGENT_RUN,
+        entityId: "customer-support",
+        dateRange: { start: new Date("2025-01-01") }
+    },
+    pagination: { page: 0, perPage: 50 }
 });
 ```
 
 **FlowMaestro's Approach**:
+
 - Temporal workflow history (automatic)
 - WebSocket events (fire-and-forget, not persisted)
 - `execution_logs` table (text logs, not spans)
 
 **Learning for FlowMaestro**:
+
 1. **Add span storage** - Persist execution traces for analysis
 2. **Implement span hierarchy** - Track parent-child relationships
 3. **Add span queries** - Filter by entity, type, date range
@@ -953,57 +1004,60 @@ const traces = await storage.getTracesPaginated({
 **What It Is**: Thread-local storage for request-scoped data
 
 **Mastra Implementation**:
+
 ```typescript
 class RequestContext {
-  private contextMap = new Map<string, any>();
+    private contextMap = new Map<string, any>();
 
-  set<T>(key: string, value: T): void {
-    this.contextMap.set(key, value);
-  }
+    set<T>(key: string, value: T): void {
+        this.contextMap.set(key, value);
+    }
 
-  get<T>(key: string): T | undefined {
-    return this.contextMap.get(key);
-  }
+    get<T>(key: string): T | undefined {
+        return this.contextMap.get(key);
+    }
 }
 
 // Usage
 const ctx = new RequestContext();
-ctx.set('userId', 'user-123');
-ctx.set('sessionId', 'session-456');
-ctx.set('tenantId', 'tenant-789');
+ctx.set("userId", "user-123");
+ctx.set("sessionId", "session-456");
+ctx.set("tenantId", "tenant-789");
 
 // Pass through execution
 await agent.generate(message, { requestContext: ctx });
 
 // Tools can access
 execute: async ({ requestContext }) => {
-  const userId = requestContext.get('userId');
-  const tenantId = requestContext.get('tenantId');
-  // Use for authorization, logging, etc.
-}
+    const userId = requestContext.get("userId");
+    const tenantId = requestContext.get("tenantId");
+    // Use for authorization, logging, etc.
+};
 ```
 
 **FlowMaestro Application**:
+
 ```typescript
 // In API routes
-app.post('/api/agents/:id/chat', async (req, res) => {
-  const ctx = new RequestContext();
-  ctx.set('userId', req.user.id);
-  ctx.set('ipAddress', req.ip);
-  ctx.set('requestId', generateId());
-  ctx.set('userAgent', req.headers['user-agent']);
+app.post("/api/agents/:id/chat", async (req, res) => {
+    const ctx = new RequestContext();
+    ctx.set("userId", req.user.id);
+    ctx.set("ipAddress", req.ip);
+    ctx.set("requestId", generateId());
+    ctx.set("userAgent", req.headers["user-agent"]);
 
-  const stream = await agentService.chat({
-    agentId: req.params.id,
-    message: req.body.message,
-    requestContext: ctx  // Pass through
-  });
+    const stream = await agentService.chat({
+        agentId: req.params.id,
+        message: req.body.message,
+        requestContext: ctx // Pass through
+    });
 
-  // Tools can log with request ID, check user permissions, etc.
+    // Tools can log with request ID, check user permissions, etc.
 });
 ```
 
 **Benefits**:
+
 - Eliminates need to pass userId, sessionId everywhere
 - Enables request tracking across distributed systems
 - Supports custom logging with request IDs
@@ -1021,75 +1075,75 @@ app.post('/api/agents/:id/chat', async (req, res) => {
 
 ```typescript
 class ConversationManager {
-  private messages: Message[] = [];
-  private savedMessageIds = new Set<string>();
+    private messages: Message[] = [];
+    private savedMessageIds = new Set<string>();
 
-  // Add from memory (already saved)
-  addFromMemory(messages: Message[]) {
-    this.messages.push(...messages);
-    messages.forEach(m => this.savedMessageIds.add(m.id));
-  }
+    // Add from memory (already saved)
+    addFromMemory(messages: Message[]) {
+        this.messages.push(...messages);
+        messages.forEach((m) => this.savedMessageIds.add(m.id));
+    }
 
-  // Add new user message
-  addUserMessage(content: string) {
-    const message = {
-      id: generateId(),
-      role: 'user',
-      content,
-      timestamp: new Date()
-    };
-    this.messages.push(message);
-    return message;
-  }
+    // Add new user message
+    addUserMessage(content: string) {
+        const message = {
+            id: generateId(),
+            role: "user",
+            content,
+            timestamp: new Date()
+        };
+        this.messages.push(message);
+        return message;
+    }
 
-  // Add assistant message
-  addAssistantMessage(content: string, toolCalls?: ToolCall[]) {
-    const message = {
-      id: generateId(),
-      role: 'assistant',
-      content,
-      toolCalls,
-      timestamp: new Date()
-    };
-    this.messages.push(message);
-    return message;
-  }
+    // Add assistant message
+    addAssistantMessage(content: string, toolCalls?: ToolCall[]) {
+        const message = {
+            id: generateId(),
+            role: "assistant",
+            content,
+            toolCalls,
+            timestamp: new Date()
+        };
+        this.messages.push(message);
+        return message;
+    }
 
-  // Get unsaved messages for persistence
-  getUnsaved(): Message[] {
-    return this.messages.filter(m => !this.savedMessageIds.has(m.id));
-  }
+    // Get unsaved messages for persistence
+    getUnsaved(): Message[] {
+        return this.messages.filter((m) => !this.savedMessageIds.has(m.id));
+    }
 
-  // Mark as saved
-  markSaved(messageIds: string[]) {
-    messageIds.forEach(id => this.savedMessageIds.add(id));
-  }
+    // Mark as saved
+    markSaved(messageIds: string[]) {
+        messageIds.forEach((id) => this.savedMessageIds.add(id));
+    }
 
-  // Convert to provider format
-  toOpenAI(): OpenAIMessage[] {
-    return this.messages.map(m => ({
-      role: m.role,
-      content: m.content,
-      ...(m.toolCalls && { tool_calls: m.toolCalls })
-    }));
-  }
+    // Convert to provider format
+    toOpenAI(): OpenAIMessage[] {
+        return this.messages.map((m) => ({
+            role: m.role,
+            content: m.content,
+            ...(m.toolCalls && { tool_calls: m.toolCalls })
+        }));
+    }
 
-  toAnthropic(): AnthropicMessage[] {
-    // Different format (current message separate from history)
-    const history = this.messages.slice(0, -1);
-    const current = this.messages[this.messages.length - 1];
-    return { history, current };
-  }
+    toAnthropic(): AnthropicMessage[] {
+        // Different format (current message separate from history)
+        const history = this.messages.slice(0, -1);
+        const current = this.messages[this.messages.length - 1];
+        return { history, current };
+    }
 
-  toDatabase(): DbMessage[] {
-    return this.messages.map(m => ({
-      id: m.id,
-      role: m.role,
-      content: m.content,
-      metadata: { toolCalls: m.toolCalls },
-      created_at: m.timestamp
-    }));
-  }
+    toDatabase(): DbMessage[] {
+        return this.messages.map((m) => ({
+            id: m.id,
+            role: m.role,
+            content: m.content,
+            metadata: { toolCalls: m.toolCalls },
+            created_at: m.timestamp
+        }));
+    }
 }
 
 // Usage
@@ -1100,7 +1154,7 @@ const history = await agentMemory.getHistory(agentId, userId);
 conversation.addFromMemory(history);
 
 // Add new user message
-conversation.addUserMessage('What is my account balance?');
+conversation.addUserMessage("What is my account balance?");
 
 // Get for LLM
 const messages = conversation.toOpenAI();
@@ -1112,10 +1166,11 @@ conversation.addAssistantMessage(response.choices[0].message.content);
 // Save only new messages
 const unsaved = conversation.getUnsaved();
 await db.saveMessages(unsaved);
-conversation.markSaved(unsaved.map(m => m.id));
+conversation.markSaved(unsaved.map((m) => m.id));
 ```
 
 **Benefits**:
+
 - No more scattered conversion logic
 - Automatic deduplication (don't re-save memory messages)
 - Single source of truth for message formats
@@ -1134,59 +1189,59 @@ conversation.markSaved(unsaved.map(m => m.id));
 ```typescript
 // Define tool with schema
 const searchArxivTool = {
-  type: 'function' as const,
-  name: 'search_arxiv',
-  description: 'Search arXiv for research papers',
-  parameters: {
-    type: 'object',
-    properties: {
-      query: { type: 'string', description: 'Search query' },
-      maxResults: { type: 'number', description: 'Max results (1-50)', default: 10 }
+    type: "function" as const,
+    name: "search_arxiv",
+    description: "Search arXiv for research papers",
+    parameters: {
+        type: "object",
+        properties: {
+            query: { type: "string", description: "Search query" },
+            maxResults: { type: "number", description: "Max results (1-50)", default: 10 }
+        },
+        required: ["query"]
     },
-    required: ['query']
-  },
 
-  // Add Zod schema for validation
-  inputSchema: z.object({
-    query: z.string().min(1).max(500),
-    maxResults: z.number().int().min(1).max(50).default(10)
-  }),
+    // Add Zod schema for validation
+    inputSchema: z.object({
+        query: z.string().min(1).max(500),
+        maxResults: z.number().int().min(1).max(50).default(10)
+    }),
 
-  execute: async (args: unknown, context: ToolExecutionContext) => {
-    // Validate before execution
-    const validation = searchArxivTool.inputSchema.safeParse(args);
+    execute: async (args: unknown, context: ToolExecutionContext) => {
+        // Validate before execution
+        const validation = searchArxivTool.inputSchema.safeParse(args);
 
-    if (!validation.success) {
-      // Return validation error to LLM
-      return {
-        error: true,
-        message: `Invalid arguments: ${formatZodError(validation.error)}`,
-        validationErrors: validation.error.format()
-      };
+        if (!validation.success) {
+            // Return validation error to LLM
+            return {
+                error: true,
+                message: `Invalid arguments: ${formatZodError(validation.error)}`,
+                validationErrors: validation.error.format()
+            };
+        }
+
+        // Execute with validated data
+        const { query, maxResults } = validation.data;
+        const results = await searchArxiv(query, maxResults);
+        return { results };
     }
-
-    // Execute with validated data
-    const { query, maxResults } = validation.data;
-    const results = await searchArxiv(query, maxResults);
-    return { results };
-  }
 };
 
 // Helper to format Zod errors for LLM
 function formatZodError(error: ZodError): string {
-  return error.issues
-    .map(issue => `- ${issue.path.join('.')}: ${issue.message}`)
-    .join('\n');
+    return error.issues.map((issue) => `- ${issue.path.join(".")}: ${issue.message}`).join("\n");
 }
 ```
 
 **LLM Retry Flow**:
+
 1. LLM: `search_arxiv({ query: '', maxResults: 1000 })`
 2. Validation fails: `query: String must contain at least 1 character, maxResults: Number must be less than or equal to 50`
 3. LLM retries: `search_arxiv({ query: 'quantum computing', maxResults: 10 })`
 4. Validation passes, execution proceeds
 
 **Benefits**:
+
 - Prevents errors from invalid tool arguments
 - Better error messages for debugging
 - LLM learns correct format through feedback
@@ -1274,6 +1329,7 @@ async getRelevantMessages({
 ```
 
 **Optimized with Window Functions**:
+
 ```sql
 WITH target_messages AS (
   SELECT id, created_at,
@@ -1308,6 +1364,7 @@ ORDER BY m.created_at ASC
 **What**: Distributed tracing with hierarchical spans
 
 **Schema**:
+
 ```sql
 CREATE TABLE execution_spans (
   trace_id UUID NOT NULL,
@@ -1332,32 +1389,33 @@ CREATE INDEX idx_spans_entity ON execution_spans (entity_id, started_at DESC);
 ```
 
 **Usage**:
+
 ```typescript
 // Workflow execution
 const workflowSpan = createSpan({
-  type: 'workflow',
-  name: `workflow: ${workflow.name}`,
-  entityId: workflow.id,
-  input: { variables: inputs }
+    type: "workflow",
+    name: `workflow: ${workflow.name}`,
+    entityId: workflow.id,
+    input: { variables: inputs }
 });
 
 // Node execution (child span)
 const nodeSpan = workflowSpan.createChild({
-  type: 'node',
-  name: `node: ${node.name}`,
-  attributes: { nodeType: node.type }
+    type: "node",
+    name: `node: ${node.name}`,
+    attributes: { nodeType: node.type }
 });
 
 // LLM call (grandchild span)
 const llmSpan = nodeSpan.createChild({
-  type: 'llm',
-  name: 'llm: gpt-4o',
-  attributes: { provider: 'openai', model: 'gpt-4o' }
+    type: "llm",
+    name: "llm: gpt-4o",
+    attributes: { provider: "openai", model: "gpt-4o" }
 });
 
 llmSpan.end({
-  output: { text: '...', tokens: 150 },
-  attributes: { prompt_tokens: 100, completion_tokens: 50 }
+    output: { text: "...", tokens: 150 },
+    attributes: { prompt_tokens: 100, completion_tokens: 50 }
 });
 
 nodeSpan.end({ output: nodeResult });
@@ -1365,19 +1423,21 @@ workflowSpan.end({ output: workflowResult });
 ```
 
 **Queries**:
+
 ```typescript
 // Get all workflow executions
 const workflows = await db.getSpans({
-  spanType: 'workflow',
-  dateRange: { start: '2025-01-01' },
-  limit: 50
+    spanType: "workflow",
+    dateRange: { start: "2025-01-01" },
+    limit: 50
 });
 
 // Get trace (workflow + all nodes)
 const trace = await db.getTrace(traceId);
 
 // Token usage by agent
-const usage = await db.query(`
+const usage = await db.query(
+    `
   SELECT
     entity_id as agent_id,
     SUM((attributes->>'prompt_tokens')::int) as prompt_tokens,
@@ -1386,10 +1446,13 @@ const usage = await db.query(`
   WHERE span_type = 'llm'
   AND started_at >= $1
   GROUP BY entity_id
-`, [startDate]);
+`,
+    [startDate]
+);
 ```
 
 **Benefits**:
+
 - Track token usage per agent/workflow
 - Identify slow nodes/tools
 - Debug failed executions
@@ -1405,6 +1468,7 @@ const usage = await db.query(`
 **What**: Persistent agent memory with concurrent update safety
 
 **Schema**:
+
 ```sql
 CREATE TABLE agent_working_memory (
   agent_id UUID NOT NULL,
@@ -1416,108 +1480,116 @@ CREATE TABLE agent_working_memory (
 ```
 
 **Implementation**:
+
 ```typescript
 class WorkingMemoryService {
-  private mutexes = new Map<string, Mutex>();
+    private mutexes = new Map<string, Mutex>();
 
-  async update({
-    agentId,
-    userId,
-    newMemory,
-    searchString
-  }: {
-    agentId: string;
-    userId: string;
-    newMemory: string;
-    searchString?: string;
-  }): Promise<{ success: boolean; reason: string }> {
-    // Get or create mutex for this agent+user
-    const key = `${agentId}:${userId}`;
-    if (!this.mutexes.has(key)) {
-      this.mutexes.set(key, new Mutex());
-    }
-    const mutex = this.mutexes.get(key)!;
+    async update({
+        agentId,
+        userId,
+        newMemory,
+        searchString
+    }: {
+        agentId: string;
+        userId: string;
+        newMemory: string;
+        searchString?: string;
+    }): Promise<{ success: boolean; reason: string }> {
+        // Get or create mutex for this agent+user
+        const key = `${agentId}:${userId}`;
+        if (!this.mutexes.has(key)) {
+            this.mutexes.set(key, new Mutex());
+        }
+        const mutex = this.mutexes.get(key)!;
 
-    // Acquire lock
-    const release = await mutex.acquire();
+        // Acquire lock
+        const release = await mutex.acquire();
 
-    try {
-      // Read current memory
-      const current = await db.query(`
+        try {
+            // Read current memory
+            const current = await db.query(
+                `
         SELECT working_memory FROM agent_working_memory
         WHERE agent_id = $1 AND user_id = $2
-      `, [agentId, userId]);
+      `,
+                [agentId, userId]
+            );
 
-      const existing = current.rows[0]?.working_memory || '';
+            const existing = current.rows[0]?.working_memory || "";
 
-      // Search and replace
-      if (searchString && existing.includes(searchString)) {
-        const updated = existing.replace(searchString, newMemory);
-        await this.save(agentId, userId, updated);
-        return { success: true, reason: 'replaced' };
-      }
+            // Search and replace
+            if (searchString && existing.includes(searchString)) {
+                const updated = existing.replace(searchString, newMemory);
+                await this.save(agentId, userId, updated);
+                return { success: true, reason: "replaced" };
+            }
 
-      // Duplicate detection
-      if (existing.includes(newMemory)) {
-        return { success: false, reason: 'duplicate' };
-      }
+            // Duplicate detection
+            if (existing.includes(newMemory)) {
+                return { success: false, reason: "duplicate" };
+            }
 
-      // Append
-      const updated = existing + '\n' + newMemory;
-      await this.save(agentId, userId, updated);
-      return { success: true, reason: 'appended' };
-
-    } finally {
-      // Always release lock
-      release();
+            // Append
+            const updated = existing + "\n" + newMemory;
+            await this.save(agentId, userId, updated);
+            return { success: true, reason: "appended" };
+        } finally {
+            // Always release lock
+            release();
+        }
     }
-  }
 
-  private async save(agentId: string, userId: string, memory: string) {
-    await db.query(`
+    private async save(agentId: string, userId: string, memory: string) {
+        await db.query(
+            `
       INSERT INTO agent_working_memory (agent_id, user_id, working_memory, updated_at)
       VALUES ($1, $2, $3, NOW())
       ON CONFLICT (agent_id, user_id) DO UPDATE SET
         working_memory = $3,
         updated_at = NOW()
-    `, [agentId, userId, memory]);
-  }
+    `,
+            [agentId, userId, memory]
+        );
+    }
 }
 ```
 
 **Auto-Inject Tool**:
+
 ```typescript
 const updateWorkingMemoryTool = {
-  name: 'update_working_memory',
-  description: 'Update your working memory about the user',
-  parameters: {
-    type: 'object',
-    properties: {
-      newMemory: { type: 'string', description: 'New information to add' },
-      searchString: {
-        type: 'string',
-        description: 'Text to find and replace (optional)'
-      }
+    name: "update_working_memory",
+    description: "Update your working memory about the user",
+    parameters: {
+        type: "object",
+        properties: {
+            newMemory: { type: "string", description: "New information to add" },
+            searchString: {
+                type: "string",
+                description: "Text to find and replace (optional)"
+            }
+        },
+        required: ["newMemory"]
     },
-    required: ['newMemory']
-  },
-  execute: async (args, context) => {
-    return await workingMemoryService.update({
-      agentId: context.agentId,
-      userId: context.userId,
-      newMemory: args.newMemory,
-      searchString: args.searchString
-    });
-  }
+    execute: async (args, context) => {
+        return await workingMemoryService.update({
+            agentId: context.agentId,
+            userId: context.userId,
+            newMemory: args.newMemory,
+            searchString: args.searchString
+        });
+    }
 };
 
 // Auto-inject when working memory enabled
 if (agent.config.workingMemory?.enabled) {
-  tools.push(updateWorkingMemoryTool);
+    tools.push(updateWorkingMemoryTool);
 }
 ```
 
 **Benefits**:
+
 - Prevents race conditions (multiple concurrent updates)
 - Duplicate detection (don't re-add same info)
 - Search/replace (update existing facts)
@@ -1532,6 +1604,7 @@ if (agent.config.workingMemory?.enabled) {
 **What**: Type-safe workflow state with Zod schemas
 
 **Current**:
+
 ```typescript
 // Untyped state (any JSON)
 const context = { ...inputs };
@@ -1540,6 +1613,7 @@ context.step2Result = await executeNode(...);
 ```
 
 **Enhanced**:
+
 ```typescript
 // Define state schema
 const dataProcessingWorkflow = {
@@ -1580,6 +1654,7 @@ export async function orchestratorWorkflow(params) {
 ```
 
 **Benefits**:
+
 - Type safety in workflow execution
 - Runtime validation prevents corruption
 - Better IDE autocomplete
@@ -1596,6 +1671,7 @@ export async function orchestratorWorkflow(params) {
 **Goal**: Support multiple databases (PostgreSQL, SQLite, MySQL)
 
 **Interface**:
+
 ```typescript
 interface IStorage {
   // Feature flags
@@ -1667,6 +1743,7 @@ if (storage.supports.vectors) {
 ```
 
 **Benefits**:
+
 - Local development with SQLite (no Docker)
 - Cloud flexibility (PostgreSQL, MySQL, etc.)
 - Testing with in-memory SQLite (fast tests)
@@ -1681,36 +1758,38 @@ if (storage.supports.vectors) {
 **What**: Agents can call other agents as tools
 
 **Mastra Pattern**:
+
 ```typescript
 const researchAgent = new Agent({
-  name: 'researcher',
-  instructions: 'Research topics thoroughly',
-  tools: { webSearch, wikipedia }
+    name: "researcher",
+    instructions: "Research topics thoroughly",
+    tools: { webSearch, wikipedia }
 });
 
 const writerAgent = new Agent({
-  name: 'writer',
-  instructions: 'Write engaging content',
-  tools: {}
+    name: "writer",
+    instructions: "Write engaging content",
+    tools: {}
 });
 
 const coordinatorAgent = new Agent({
-  name: 'coordinator',
-  instructions: 'Coordinate research and writing',
-  agents: {
-    researcher: researchAgent,
-    writer: writerAgent
-  }
-  // Auto-generates tools: agent-researcher, agent-writer
+    name: "coordinator",
+    instructions: "Coordinate research and writing",
+    agents: {
+        researcher: researchAgent,
+        writer: writerAgent
+    }
+    // Auto-generates tools: agent-researcher, agent-writer
 });
 
 // Usage
-await coordinatorAgent.generate('Write a blog post about AI agents');
+await coordinatorAgent.generate("Write a blog post about AI agents");
 // Coordinator calls researcher agent → gets info
 // Coordinator calls writer agent → creates blog post
 ```
 
 **FlowMaestro Implementation**:
+
 ```typescript
 // 1. Auto-generate agent tools
 function generateAgentTool(targetAgent: Agent): ToolDefinition {
@@ -1772,6 +1851,7 @@ const coordinatorAgent = {
 ```
 
 **Multi-Level Delegation**:
+
 ```
 User → Coordinator Agent
   ├─ Researcher Agent
@@ -1782,6 +1862,7 @@ User → Coordinator Agent
 ```
 
 **Benefits**:
+
 - Modular agent design (single responsibility)
 - Reusable specialist agents
 - Complex task decomposition
@@ -1796,164 +1877,164 @@ User → Coordinator Agent
 **What**: Nodes can pause execution for external input
 
 **Mastra Pattern**:
+
 ```typescript
 const approvalStep = createStep({
-  suspendSchema: z.object({ requestId: string }),
-  resumeSchema: z.object({ approved: boolean }),
+    suspendSchema: z.object({ requestId: string }),
+    resumeSchema: z.object({ approved: boolean }),
 
-  execute: async ({ suspend, resumeData }) => {
-    if (resumeData) {
-      return { approved: resumeData.approved };
+    execute: async ({ suspend, resumeData }) => {
+        if (resumeData) {
+            return { approved: resumeData.approved };
+        }
+
+        // First execution - create approval request
+        const requestId = await createApprovalRequest();
+
+        // Suspend workflow
+        await suspend({ requestId }, { resumeLabel: "approval" });
     }
-
-    // First execution - create approval request
-    const requestId = await createApprovalRequest();
-
-    // Suspend workflow
-    await suspend({ requestId }, { resumeLabel: 'approval' });
-  }
 });
 ```
 
 **FlowMaestro Implementation**:
 
 **1. Add Suspend Capability to Node Executors**:
+
 ```typescript
 interface NodeExecutor {
-  type: string;
-  execute(config: any, context: ExecutionContext): Promise<any>;
-  canSuspend?: boolean;  // Flag if node supports suspend
-  resumeDataSchema?: JsonSchema;  // Expected resume data
+    type: string;
+    execute(config: any, context: ExecutionContext): Promise<any>;
+    canSuspend?: boolean; // Flag if node supports suspend
+    resumeDataSchema?: JsonSchema; // Expected resume data
 }
 
 const approvalNode: NodeExecutor = {
-  type: 'approval',
-  canSuspend: true,
-  resumeDataSchema: {
-    type: 'object',
-    properties: {
-      approved: { type: 'boolean' },
-      approver: { type: 'string' }
+    type: "approval",
+    canSuspend: true,
+    resumeDataSchema: {
+        type: "object",
+        properties: {
+            approved: { type: "boolean" },
+            approver: { type: "string" }
+        },
+        required: ["approved"]
     },
-    required: ['approved']
-  },
 
-  execute: async (config, context) => {
-    // Check if resuming
-    if (context.resumeData) {
-      return {
-        approved: context.resumeData.approved,
-        approver: context.resumeData.approver
-      };
+    execute: async (config, context) => {
+        // Check if resuming
+        if (context.resumeData) {
+            return {
+                approved: context.resumeData.approved,
+                approver: context.resumeData.approver
+            };
+        }
+
+        // First execution - request approval
+        const requestId = await createApprovalRequest({
+            workflowId: context.workflowId,
+            executionId: context.executionId,
+            nodeId: context.nodeId,
+            message: config.approvalMessage
+        });
+
+        // Suspend workflow (Temporal signal)
+        await context.suspend({
+            nodeId: context.nodeId,
+            requestId,
+            waitingFor: "approval"
+        });
     }
-
-    // First execution - request approval
-    const requestId = await createApprovalRequest({
-      workflowId: context.workflowId,
-      executionId: context.executionId,
-      nodeId: context.nodeId,
-      message: config.approvalMessage
-    });
-
-    // Suspend workflow (Temporal signal)
-    await context.suspend({
-      nodeId: context.nodeId,
-      requestId,
-      waitingFor: 'approval'
-    });
-  }
 };
 ```
 
 **2. Update Orchestrator Workflow**:
+
 ```typescript
 export async function orchestratorWorkflow(params) {
-  const { workflow, inputs, executionId } = params;
+    const { workflow, inputs, executionId } = params;
 
-  // Track suspended nodes
-  const suspendedNodes = new Map<string, any>();
+    // Track suspended nodes
+    const suspendedNodes = new Map<string, any>();
 
-  // Set up signal handler for resume
-  setHandler(resumeNodeSignal, (data: { nodeId: string; resumeData: any }) => {
-    suspendedNodes.set(data.nodeId, data.resumeData);
-  });
+    // Set up signal handler for resume
+    setHandler(resumeNodeSignal, (data: { nodeId: string; resumeData: any }) => {
+        suspendedNodes.set(data.nodeId, data.resumeData);
+    });
 
-  // Execute nodes
-  for (const node of sortedNodes) {
-    // Check if this node is suspended
-    if (isSuspended(node.id)) {
-      // Wait for resume signal
-      await condition(
-        () => suspendedNodes.has(node.id),
-        '24h'  // Timeout
-      );
+    // Execute nodes
+    for (const node of sortedNodes) {
+        // Check if this node is suspended
+        if (isSuspended(node.id)) {
+            // Wait for resume signal
+            await condition(
+                () => suspendedNodes.has(node.id),
+                "24h" // Timeout
+            );
 
-      // Get resume data
-      const resumeData = suspendedNodes.get(node.id);
-      context.resumeData = resumeData;
-    }
+            // Get resume data
+            const resumeData = suspendedNodes.get(node.id);
+            context.resumeData = resumeData;
+        }
 
-    try {
-      const result = await executeNode({
-        nodeType: node.type,
-        nodeConfig: node.config,
-        context: {
-          ...context,
-          nodeId: node.id,
-          suspend: async (suspendPayload) => {
-            // Emit suspended event
-            await emitNodeSuspended({ nodeId: node.id, suspendPayload });
+        try {
+            const result = await executeNode({
+                nodeType: node.type,
+                nodeConfig: node.config,
+                context: {
+                    ...context,
+                    nodeId: node.id,
+                    suspend: async (suspendPayload) => {
+                        // Emit suspended event
+                        await emitNodeSuspended({ nodeId: node.id, suspendPayload });
 
-            // Mark as suspended
-            await updateExecutionStatus(executionId, 'suspended', {
-              suspendedNode: node.id,
-              suspendPayload
+                        // Mark as suspended
+                        await updateExecutionStatus(executionId, "suspended", {
+                            suspendedNode: node.id,
+                            suspendPayload
+                        });
+
+                        // Wait for signal (Temporal handles this)
+                        throw new SuspendError(suspendPayload);
+                    }
+                }
             });
 
-            // Wait for signal (Temporal handles this)
-            throw new SuspendError(suspendPayload);
-          }
+            context[node.id] = result;
+        } catch (error) {
+            if (error instanceof SuspendError) {
+                // Mark node as suspended, will resume later
+                return { status: "suspended", nodeId: node.id };
+            }
+            throw error;
         }
-      });
-
-      context[node.id] = result;
-
-    } catch (error) {
-      if (error instanceof SuspendError) {
-        // Mark node as suspended, will resume later
-        return { status: 'suspended', nodeId: node.id };
-      }
-      throw error;
     }
-  }
 }
 ```
 
 **3. Resume API**:
+
 ```typescript
-app.post('/api/executions/:id/resume', async (req, res) => {
-  const { nodeId, resumeData } = req.body;
+app.post("/api/executions/:id/resume", async (req, res) => {
+    const { nodeId, resumeData } = req.body;
 
-  // Validate resume data against node's schema
-  const node = workflow.nodes[nodeId];
-  const executor = getNodeExecutor(node.type);
+    // Validate resume data against node's schema
+    const node = workflow.nodes[nodeId];
+    const executor = getNodeExecutor(node.type);
 
-  if (executor.resumeDataSchema) {
-    validateSchema(executor.resumeDataSchema, resumeData);
-  }
+    if (executor.resumeDataSchema) {
+        validateSchema(executor.resumeDataSchema, resumeData);
+    }
 
-  // Send signal to Temporal workflow
-  await temporalClient.workflow.signal(
-    executionId,
-    'resumeNode',
-    { nodeId, resumeData }
-  );
+    // Send signal to Temporal workflow
+    await temporalClient.workflow.signal(executionId, "resumeNode", { nodeId, resumeData });
 
-  res.json({ success: true });
+    res.json({ success: true });
 });
 ```
 
 **Benefits**:
+
 - Human-in-the-loop workflows (approvals, input)
 - Long-running operations (wait for webhook)
 - Compliance workflows (multi-stage approvals)
@@ -1970,24 +2051,24 @@ app.post('/api/executions/:id/resume', async (req, res) => {
 **Goal**: Improve reliability and developer experience with minimal breaking changes
 
 1. ✅ **Add RequestContext** (2-3 hours)
-   - Create RequestContext class
-   - Pass through agent/workflow execution
-   - Update tool context interface
+    - Create RequestContext class
+    - Pass through agent/workflow execution
+    - Update tool context interface
 
 2. ✅ **Implement ConversationManager** (4-6 hours)
-   - Build message abstraction class
-   - Add format converters
-   - Update agent service to use it
+    - Build message abstraction class
+    - Add format converters
+    - Update agent service to use it
 
 3. ✅ **Add Tool Input Validation** (3-4 hours)
-   - Add Zod schemas to tool definitions
-   - Validate before execution
-   - Return errors to LLM
+    - Add Zod schemas to tool definitions
+    - Validate before execution
+    - Return errors to LLM
 
 4. ✅ **Add Context Windows to Memory** (4-6 hours)
-   - Update memory query to include before/after
-   - Optimize with window functions
-   - Test with semantic search
+    - Update memory query to include before/after
+    - Optimize with window functions
+    - Test with semantic search
 
 **Total Effort**: 13-19 hours (~2 weeks part-time)
 
@@ -1998,26 +2079,26 @@ app.post('/api/executions/:id/resume', async (req, res) => {
 **Goal**: Add production-grade features for reliability and observability
 
 5. ✅ **Implement Span-Based Observability** (8-12 hours)
-   - Create spans table
-   - Add span creation/querying
-   - Integrate with workflow/agent execution
-   - Build analytics queries
+    - Create spans table
+    - Add span creation/querying
+    - Integrate with workflow/agent execution
+    - Build analytics queries
 
 6. ✅ **Add Working Memory with Mutex** (6-8 hours)
-   - Create working memory table
-   - Implement mutex-protected updates
-   - Add updateWorkingMemory tool
-   - Auto-inject when enabled
+    - Create working memory table
+    - Implement mutex-protected updates
+    - Add updateWorkingMemory tool
+    - Auto-inject when enabled
 
 7. ✅ **Add State Schema Validation** (4-6 hours)
-   - Define state schemas for workflows
-   - Validate on updates
-   - Add to workflow definition UI
+    - Define state schemas for workflows
+    - Validate on updates
+    - Add to workflow definition UI
 
 8. ✅ **Fix Remaining TypeScript Errors** (3-5 hours)
-   - Fix backend errors (145)
-   - Fix frontend errors (175)
-   - Enable strict mode everywhere
+    - Fix backend errors (145)
+    - Fix frontend errors (175)
+    - Enable strict mode everywhere
 
 **Total Effort**: 21-31 hours (~3-4 weeks part-time)
 
@@ -2028,11 +2109,11 @@ app.post('/api/executions/:id/resume', async (req, res) => {
 **Goal**: Major architectural improvements for scalability
 
 9. ✅ **Build Storage Abstraction** (16-20 hours)
-   - Define storage interface
-   - Implement PostgreSQL adapter
-   - Implement SQLite adapter
-   - Add feature flag system
-   - Update repositories to use abstraction
+    - Define storage interface
+    - Implement PostgreSQL adapter
+    - Implement SQLite adapter
+    - Add feature flag system
+    - Update repositories to use abstraction
 
 10. ✅ **Multi-Agent Orchestration** (12-16 hours)
     - Auto-generate agent tools
@@ -2110,22 +2191,15 @@ app.post('/api/executions/:id/resume', async (req, res) => {
 ### **Priority Order** (By Impact/Effort Ratio)
 
 **Immediate** (High Impact, Low Effort):
+
 1. RequestContext
 2. ConversationManager
 3. Tool validation
 4. Context windows
 
-**Soon** (High Impact, Medium Effort):
-5. Span observability
-6. Working memory
-7. State schemas
-8. TypeScript fixes
+**Soon** (High Impact, Medium Effort): 5. Span observability 6. Working memory 7. State schemas 8. TypeScript fixes
 
-**Later** (High Impact, High Effort):
-9. Storage abstraction
-10. Multi-agent orchestration
-11. Node-level suspend/resume
-12. Comprehensive testing
+**Later** (High Impact, High Effort): 9. Storage abstraction 10. Multi-agent orchestration 11. Node-level suspend/resume 12. Comprehensive testing
 
 ### **Final Recommendation**
 

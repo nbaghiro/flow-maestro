@@ -9,14 +9,14 @@ Complete guide for setting up GitHub Actions to deploy FlowMaestro to GKE with W
 This repository includes two GitHub Actions workflows:
 
 1. **`ci.yml`** - Continuous Integration
-   - Runs on pull requests and pushes to main/develop
-   - Type checking, linting, testing, Docker build validation
+    - Runs on pull requests and pushes to main/develop
+    - Type checking, linting, testing, Docker build validation
 
 2. **`deploy-gke.yml`** - Deployment to GKE
-   - Manual trigger (workflow_dispatch)
-   - Builds and pushes Docker images to Artifact Registry
-   - Deploys to GKE using Kustomize
-   - Supports production and staging environments
+    - Manual trigger (workflow_dispatch)
+    - Builds and pushes Docker images to Artifact Registry
+    - Deploys to GKE using Kustomize
+    - Supports production and staging environments
 
 ---
 
@@ -126,10 +126,10 @@ Go to your GitHub repository → Settings → Secrets and variables → Actions
 
 Create these secrets:
 
-| Secret Name | Value | Description |
-|-------------|-------|-------------|
-| `GCP_WORKLOAD_IDENTITY_PROVIDER` | `projects/PROJECT_NUMBER/locations/global/workloadIdentityPools/github-actions-pool/providers/github-provider` | From Step 3 |
-| `GCP_SERVICE_ACCOUNT` | `github-actions-deployer@PROJECT_ID.iam.gserviceaccount.com` | Service account email |
+| Secret Name                      | Value                                                                                                          | Description           |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------- | --------------------- |
+| `GCP_WORKLOAD_IDENTITY_PROVIDER` | `projects/PROJECT_NUMBER/locations/global/workloadIdentityPools/github-actions-pool/providers/github-provider` | From Step 3           |
+| `GCP_SERVICE_ACCOUNT`            | `github-actions-deployer@PROJECT_ID.iam.gserviceaccount.com`                                                   | Service account email |
 
 **To get the full Workload Identity Provider path:**
 
@@ -141,12 +141,12 @@ echo "projects/$(gcloud projects describe $PROJECT_ID --format='value(projectNum
 
 Create these variables:
 
-| Variable Name | Value | Description |
-|---------------|-------|-------------|
-| `GCP_PROJECT_ID` | `your-gcp-project-id` | Your GCP project ID |
-| `GCP_REGION` | `us-central1` | GCP region |
-| `VITE_API_URL` | `https://api.yourdomain.com` | Frontend API URL |
-| `VITE_WS_URL` | `wss://api.yourdomain.com` | Frontend WebSocket URL |
+| Variable Name    | Value                        | Description            |
+| ---------------- | ---------------------------- | ---------------------- |
+| `GCP_PROJECT_ID` | `your-gcp-project-id`        | Your GCP project ID    |
+| `GCP_REGION`     | `us-central1`                | GCP region             |
+| `VITE_API_URL`   | `https://api.yourdomain.com` | Frontend API URL       |
+| `VITE_WS_URL`    | `wss://api.yourdomain.com`   | Frontend WebSocket URL |
 
 ### Step 6: Configure GitHub Environments (Optional but Recommended)
 
@@ -154,10 +154,11 @@ GitHub Environments allow environment-specific secrets and protection rules.
 
 1. Go to repository → Settings → Environments
 2. Create two environments:
-   - `production`
-   - `staging`
+    - `production`
+    - `staging`
 
 For each environment, you can:
+
 - Add environment-specific variables (e.g., different domains)
 - Require approval before deployment (recommended for production)
 - Restrict to specific branches
@@ -175,10 +176,12 @@ For each environment, you can:
 ### Running CI Workflow
 
 The CI workflow runs automatically on:
+
 - Pull requests to `main` or `develop`
 - Pushes to `main` or `develop`
 
 **What it does:**
+
 - Type checks all TypeScript code
 - Runs linting
 - Checks code formatting
@@ -195,9 +198,9 @@ The deployment workflow is **manually triggered**.
 2. Select "Deploy to GKE" workflow
 3. Click "Run workflow"
 4. Select:
-   - **Branch**: Choose branch to deploy (usually `main`)
-   - **Environment**: `production` or `staging`
-   - **Image tag** (optional): Leave empty to use git SHA
+    - **Branch**: Choose branch to deploy (usually `main`)
+    - **Environment**: `production` or `staging`
+    - **Image tag** (optional): Leave empty to use git SHA
 
 #### Via GitHub CLI:
 
@@ -227,8 +230,8 @@ When you trigger the deployment workflow:
 2. **Authenticate to GCP** using Workload Identity Federation
 3. **Build Docker images** (backend, frontend, marketing) in parallel
 4. **Push images** to Artifact Registry with tags:
-   - `{git-sha}` (e.g., `abc123f`)
-   - `latest`
+    - `{git-sha}` (e.g., `abc123f`)
+    - `latest`
 5. **Update Kustomize overlay** with new image tags
 6. **Deploy to GKE** using `kubectl apply -k`
 7. **Wait for rollouts** to complete (all deployments must be healthy)
@@ -264,20 +267,20 @@ Jobs:
 
 ```yaml
 Triggers:
-  - Pull requests to main/develop
-  - Pushes to main/develop
+    - Pull requests to main/develop
+    - Pushes to main/develop
 
 Jobs:
-  test:
-    - Node.js 20.x
-    - npm ci (install dependencies)
-    - Type check, lint, format check
-    - Unit tests, integration tests
-    - Build all packages
+    test:
+        - Node.js 20.x
+        - npm ci (install dependencies)
+        - Type check, lint, format check
+        - Unit tests, integration tests
+        - Build all packages
 
-  docker-build:
-    - Test Docker builds without pushing
-    - Validates Dockerfiles
+    docker-build:
+        - Test Docker builds without pushing
+        - Validates Dockerfiles
 ```
 
 ---
@@ -287,19 +290,21 @@ Jobs:
 ### Adding More Environments
 
 1. Create new Kustomize overlay:
-   ```bash
-   cp -r infra/k8s/overlays/staging infra/k8s/overlays/dev
-   ```
+
+    ```bash
+    cp -r infra/k8s/overlays/staging infra/k8s/overlays/dev
+    ```
 
 2. Update `deploy-gke.yml`:
-   ```yaml
-   inputs:
-     environment:
-       options:
-         - production
-         - staging
-         - dev  # Add new environment
-   ```
+
+    ```yaml
+    inputs:
+        environment:
+            options:
+                - production
+                - staging
+                - dev # Add new environment
+    ```
 
 3. Create GitHub environment (optional) for environment-specific variables
 
@@ -309,19 +314,19 @@ To deploy staging and production to different GCP projects:
 
 1. Create separate Workload Identity Providers in each project
 2. Configure environment-specific secrets in GitHub:
-   - `GCP_WORKLOAD_IDENTITY_PROVIDER_STAGING`
-   - `GCP_WORKLOAD_IDENTITY_PROVIDER_PRODUCTION`
-   - `GCP_SERVICE_ACCOUNT_STAGING`
-   - `GCP_SERVICE_ACCOUNT_PRODUCTION`
+    - `GCP_WORKLOAD_IDENTITY_PROVIDER_STAGING`
+    - `GCP_WORKLOAD_IDENTITY_PROVIDER_PRODUCTION`
+    - `GCP_SERVICE_ACCOUNT_STAGING`
+    - `GCP_SERVICE_ACCOUNT_PRODUCTION`
 
 3. Update workflow to use environment-specific secrets:
-   ```yaml
-   - name: Authenticate to Google Cloud
-     uses: google-github-actions/auth@v2
-     with:
-       workload_identity_provider: ${{ secrets[format('GCP_WORKLOAD_IDENTITY_PROVIDER_{0}', upper(github.event.inputs.environment))] }}
-       service_account: ${{ secrets[format('GCP_SERVICE_ACCOUNT_{0}', upper(github.event.inputs.environment))] }}
-   ```
+    ```yaml
+    - name: Authenticate to Google Cloud
+      uses: google-github-actions/auth@v2
+      with:
+          workload_identity_provider: ${{ secrets[format('GCP_WORKLOAD_IDENTITY_PROVIDER_{0}', upper(github.event.inputs.environment))] }}
+          service_account: ${{ secrets[format('GCP_SERVICE_ACCOUNT_{0}', upper(github.event.inputs.environment))] }}
+    ```
 
 ### Auto-Deploy on Merge
 
@@ -330,17 +335,17 @@ To auto-deploy when merging to specific branches:
 ```yaml
 # Add to deploy-gke.yml
 on:
-  workflow_dispatch:
-    # ... existing inputs ...
+    workflow_dispatch:
+        # ... existing inputs ...
 
-  push:
-    branches:
-      - main  # Auto-deploy production on merge to main
+    push:
+        branches:
+            - main # Auto-deploy production on merge to main
 
 jobs:
-  build-and-deploy:
-    # Set environment based on trigger
-    environment: ${{ github.event.inputs.environment || 'production' }}
+    build-and-deploy:
+        # Set environment based on trigger
+        environment: ${{ github.event.inputs.environment || 'production' }}
 ```
 
 ---
@@ -378,18 +383,19 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
 **Error**: `Waiting for deployment rollout to finish... timeout`
 
 **Solution**:
+
 1. Check pod logs:
-   ```bash
-   kubectl logs -f deployment/api-server -n flowmaestro
-   ```
+    ```bash
+    kubectl logs -f deployment/api-server -n flowmaestro
+    ```
 2. Check pod events:
-   ```bash
-   kubectl describe pod <pod-name> -n flowmaestro
-   ```
+    ```bash
+    kubectl describe pod <pod-name> -n flowmaestro
+    ```
 3. Common issues:
-   - Image pull errors (check registry permissions)
-   - Missing secrets (verify K8s secrets exist)
-   - Database connection issues (check Cloud SQL proxy)
+    - Image pull errors (check registry permissions)
+    - Missing secrets (verify K8s secrets exist)
+    - Database connection issues (check Cloud SQL proxy)
 
 ### Kustomize Edit Failed
 
@@ -400,9 +406,9 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
 ```yaml
 # infra/k8s/overlays/production/kustomization.yaml
 images:
-  - name: REGION-docker.pkg.dev/PROJECT_ID/flowmaestro/backend
-    newName: us-central1-docker.pkg.dev/actual-project/flowmaestro/backend
-    newTag: latest
+    - name: REGION-docker.pkg.dev/PROJECT_ID/flowmaestro/backend
+      newName: us-central1-docker.pkg.dev/actual-project/flowmaestro/backend
+      newTag: latest
 ```
 
 ---
@@ -453,16 +459,19 @@ gcloud artifacts docker images list \
 ## Cost Considerations
 
 GitHub Actions pricing:
+
 - **Public repositories**: Free unlimited minutes
 - **Private repositories**:
-  - Free tier: 2,000 minutes/month
-  - After free tier: $0.008/minute
+    - Free tier: 2,000 minutes/month
+    - After free tier: $0.008/minute
 
 **Typical workflow usage:**
+
 - CI workflow: ~5 minutes per run
 - Deployment workflow: ~10 minutes per run
 
 **Estimated monthly cost** (private repo, 50 deployments/month):
+
 - CI runs: 100 × 5 min = 500 min (free tier)
 - Deployments: 50 × 10 min = 500 min (free tier)
 - **Total: $0/month** (within free tier)

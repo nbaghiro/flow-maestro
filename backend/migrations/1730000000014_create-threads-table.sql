@@ -1,0 +1,200 @@
+-- Migration: Create Threads Table
+-- Description: Implements thread-based conversation model inspired by Mastra architecture
+-- This allows persistent conversations across multiple agent executions
+
+-- Create threads table (persistent conversations)
+CREATE TABLE IF NOT EXISTS flowmaestro.threads (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES flowmaestro.users(id) ON DELETE CASCADE,
+    agent_id UUID NOT NULL REFERENCES flowmaestro.agents(id) ON DELETE CASCADE,
+
+    -- Thread metadata
+    title TEXT, -- Auto-generated or user-set
+    status VARCHAR(50) NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'archived', 'deleted')),
+
+    -- Working memory at thread level (optional, for thread-specific memory)
+    metadata JSONB DEFAULT '{}'::jsonb,
+
+    -- Timestamps
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    last_message_at TIMESTAMPTZ, -- For sorting by recent activity
+    archived_at TIMESTAMPTZ,
+
+    -- Soft delete
+    deleted_at TIMESTAMPTZ
+);
+
+-- Add thread_id to agent_executions (for backward compatibility during migration)
+-- An execution now belongs to a thread
+ALTER TABLE flowmaestro.agent_executions
+ADD COLUMN IF NOT EXISTS thread_id UUID REFERENCES flowmaestro.threads(id) ON DELETE CASCADE;
+
+-- Add thread_id to agent_messages
+-- Messages belong to threads, but can optionally reference execution
+ALTER TABLE flowmaestro.agent_messages
+ADD COLUMN IF NOT EXISTS thread_id UUID REFERENCES flowmaestro.threads(id) ON DELETE CASCADE;
+
+-- Add thread_id to agent_conversation_embeddings
+-- Embeddings are scoped to threads for semantic search
+ALTER TABLE flowmaestro.agent_conversation_embeddings
+ADD COLUMN IF NOT EXISTS thread_id UUID REFERENCES flowmaestro.threads(id) ON DELETE CASCADE;
+
+-- Update agent_working_memory to support thread-specific memory
+-- Add thread_id as optional (NULL = global agent+user memory)
+ALTER TABLE flowmaestro.agent_working_memory
+DROP CONSTRAINT IF EXISTS agent_working_memory_pkey;
+
+ALTER TABLE flowmaestro.agent_working_memory
+ADD COLUMN IF NOT EXISTS thread_id UUID REFERENCES flowmaestro.threads(id) ON DELETE CASCADE;
+
+-- Add generated column for unique constraint (handles NULL thread_id)
+ALTER TABLE flowmaestro.agent_working_memory
+ADD COLUMN IF NOT EXISTS thread_id_coalesced UUID
+GENERATED ALWAYS AS (COALESCE(thread_id, '00000000-0000-0000-0000-000000000000'::uuid)) STORED;
+
+-- New composite primary key using generated column
+ALTER TABLE flowmaestro.agent_working_memory
+ADD CONSTRAINT agent_working_memory_pkey
+PRIMARY KEY (agent_id, user_id, thread_id_coalesced);
+
+-- Indexes for threads table
+CREATE INDEX IF NOT EXISTS idx_threads_user_id
+ON flowmaestro.threads(user_id) WHERE deleted_at IS NULL;
+
+CREATE INDEX IF NOT EXISTS idx_threads_agent_id
+ON flowmaestro.threads(agent_id) WHERE deleted_at IS NULL;
+
+CREATE INDEX IF NOT EXISTS idx_threads_user_agent
+ON flowmaestro.threads(user_id, agent_id) WHERE deleted_at IS NULL;
+
+CREATE INDEX IF NOT EXISTS idx_threads_last_message_at
+ON flowmaestro.threads(last_message_at DESC) WHERE deleted_at IS NULL;
+
+CREATE INDEX IF NOT EXISTS idx_threads_status
+ON flowmaestro.threads(status) WHERE deleted_at IS NULL;
+
+CREATE INDEX IF NOT EXISTS idx_threads_created_at
+ON flowmaestro.threads(created_at DESC) WHERE deleted_at IS NULL;
+
+-- Index for metadata JSONB queries
+CREATE INDEX IF NOT EXISTS idx_threads_metadata
+ON flowmaestro.threads USING gin(metadata jsonb_path_ops);
+
+-- Indexes for new foreign keys
+CREATE INDEX IF NOT EXISTS idx_agent_executions_thread_id
+ON flowmaestro.agent_executions(thread_id);
+
+CREATE INDEX IF NOT EXISTS idx_agent_messages_thread_id
+ON flowmaestro.agent_messages(thread_id, created_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_agent_conv_embeddings_thread_id
+ON flowmaestro.agent_conversation_embeddings(thread_id);
+
+-- Trigger for updated_at on threads table
+CREATE TRIGGER update_threads_updated_at
+BEFORE UPDATE ON flowmaestro.threads
+FOR EACH ROW EXECUTE FUNCTION flowmaestro.update_updated_at_column();
+
+-- Function to update last_message_at when messages are added
+CREATE OR REPLACE FUNCTION flowmaestro.update_thread_last_message_at()
+RETURNS TRIGGER AS $$
+BEGIN
+    UPDATE flowmaestro.threads
+    SET last_message_at = NEW.created_at
+    WHERE id = NEW.thread_id;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Trigger to update thread's last_message_at
+CREATE TRIGGER update_thread_last_message_at_trigger
+AFTER INSERT ON flowmaestro.agent_messages
+FOR EACH ROW
+WHEN (NEW.thread_id IS NOT NULL)
+EXECUTE FUNCTION flowmaestro.update_thread_last_message_at();
+
+-- Comments for documentation
+COMMENT ON TABLE flowmaestro.threads IS
+'Persistent conversation threads - allows ongoing conversations across multiple agent executions';
+
+COMMENT ON COLUMN flowmaestro.threads.title IS
+'Thread title - auto-generated by LLM or set by user';
+
+COMMENT ON COLUMN flowmaestro.threads.status IS
+'Thread status: active (in use), archived (hidden from main view), deleted (soft delete)';
+
+COMMENT ON COLUMN flowmaestro.threads.metadata IS
+'Flexible metadata storage (tags, custom fields, thread-specific config)';
+
+COMMENT ON COLUMN flowmaestro.threads.last_message_at IS
+'Timestamp of last message in thread - used for sorting by recent activity';
+
+COMMENT ON COLUMN flowmaestro.agent_executions.thread_id IS
+'Thread this execution belongs to - threads can have multiple executions (continuations)';
+
+COMMENT ON COLUMN flowmaestro.agent_messages.thread_id IS
+'Thread this message belongs to';
+
+COMMENT ON COLUMN flowmaestro.agent_conversation_embeddings.thread_id IS
+'Thread for semantic search scoping';
+
+COMMENT ON COLUMN flowmaestro.agent_working_memory.thread_id IS
+'Optional thread ID - NULL means global memory for agent+user, non-NULL means thread-specific memory';
+
+-- Migration helper: Create threads for existing executions (backward compatibility)
+-- This allows existing data to work with the new thread model
+DO $$
+DECLARE
+    exec_record RECORD;
+    new_thread_id UUID;
+BEGIN
+    FOR exec_record IN
+        SELECT id, agent_id, user_id, started_at
+        FROM flowmaestro.agent_executions
+        WHERE thread_id IS NULL
+    LOOP
+        -- Create a thread for this execution
+        INSERT INTO flowmaestro.threads (
+            user_id,
+            agent_id,
+            title,
+            created_at,
+            updated_at,
+            last_message_at
+        ) VALUES (
+            exec_record.user_id,
+            exec_record.agent_id,
+            'Conversation ' || TO_CHAR(exec_record.started_at, 'Mon DD, YYYY HH24:MI'),
+            exec_record.started_at,
+            exec_record.started_at,
+            exec_record.started_at
+        )
+        RETURNING id INTO new_thread_id;
+
+        -- Update execution with thread_id
+        UPDATE flowmaestro.agent_executions
+        SET thread_id = new_thread_id
+        WHERE id = exec_record.id;
+
+        -- Update messages with thread_id
+        UPDATE flowmaestro.agent_messages
+        SET thread_id = new_thread_id
+        WHERE execution_id = exec_record.id;
+
+        -- Update embeddings with thread_id
+        UPDATE flowmaestro.agent_conversation_embeddings
+        SET thread_id = new_thread_id
+        WHERE execution_id = exec_record.id;
+    END LOOP;
+END $$;
+
+-- Make thread_id NOT NULL after migration (ensures data integrity going forward)
+ALTER TABLE flowmaestro.agent_executions
+ALTER COLUMN thread_id SET NOT NULL;
+
+ALTER TABLE flowmaestro.agent_messages
+ALTER COLUMN thread_id SET NOT NULL;
+
+ALTER TABLE flowmaestro.agent_conversation_embeddings
+ALTER COLUMN thread_id SET NOT NULL;

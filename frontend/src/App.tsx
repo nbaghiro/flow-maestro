@@ -4,6 +4,7 @@ import { ProtectedRoute } from "./components/ProtectedRoute";
 import { Account } from "./pages/Account";
 import { AgentBuilder } from "./pages/AgentBuilder";
 import { Agents } from "./pages/Agents";
+import { Analytics } from "./pages/Analytics";
 import { Connections } from "./pages/Connections";
 import { FlowBuilder } from "./pages/FlowBuilder";
 import { KnowledgeBaseList, KnowledgeBaseDetail } from "./pages/KnowledgeBases";
@@ -32,6 +33,7 @@ function App() {
             >
                 <Route index element={<Workflows />} />
                 <Route path="agents" element={<Agents />} />
+                <Route path="analytics" element={<Analytics />} />
                 <Route path="connections" element={<Connections />} />
                 <Route path="knowledge-bases" element={<KnowledgeBaseList />} />
                 <Route path="knowledge-bases/:id" element={<KnowledgeBaseDetail />} />

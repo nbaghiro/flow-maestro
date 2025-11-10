@@ -227,7 +227,7 @@ export async function authorizeHandler(
         provider: "authkit", // Use WorkOS hosted UI
         redirectUri: `${process.env.APP_URL}/auth/callback`,
         state: generateState(), // CSRF protection
-        clientId: process.env.WORKOS_CLIENT_ID!,
+        clientId: process.env.WORKOS_CLIENT_ID!
     });
 
     reply.redirect(authUrl);
@@ -241,10 +241,7 @@ import { workos } from "../../../services/workos";
 import { userRepository } from "../../../storage/repositories/UserRepository";
 import { createSession } from "../../../services/workos/session";
 
-export async function callbackHandler(
-    request: FastifyRequest,
-    reply: FastifyReply
-): Promise<void> {
+export async function callbackHandler(request: FastifyRequest, reply: FastifyReply): Promise<void> {
     const { code, state } = request.query as { code: string; state: string };
 
     // Validate state (CSRF protection)
@@ -253,7 +250,7 @@ export async function callbackHandler(
     // Exchange code for user profile
     const { user, accessToken, refreshToken } = await workos.userManagement.authenticateWithCode({
         code,
-        clientId: process.env.WORKOS_CLIENT_ID!,
+        clientId: process.env.WORKOS_CLIENT_ID!
     });
 
     // Create or update user in FlowMaestro database
@@ -265,13 +262,13 @@ export async function callbackHandler(
             email: user.email,
             name: user.firstName + " " + user.lastName,
             email_verified: user.emailVerified,
-            organization_id: user.organizationId, // For multi-org support
+            organization_id: user.organizationId // For multi-org support
         });
     } else {
         await userRepository.update(localUser.id, {
             email: user.email,
             name: user.firstName + " " + user.lastName,
-            email_verified: user.emailVerified,
+            email_verified: user.emailVerified
         });
     }
 
@@ -280,7 +277,7 @@ export async function callbackHandler(
         userId: localUser.id,
         workosUserId: user.id,
         accessToken,
-        refreshToken,
+        refreshToken
     });
 
     // Set session cookie
@@ -289,7 +286,7 @@ export async function callbackHandler(
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",
         maxAge: 7 * 24 * 60 * 60, // 7 days
-        path: "/",
+        path: "/"
     });
 
     // Redirect to dashboard
@@ -373,7 +370,7 @@ export async function authorizeHandler(
         provider: provider || "authkit", // GoogleOAuth, MicrosoftOAuth, etc.
         redirectUri: `${process.env.APP_URL}/auth/callback`,
         state: generateState(),
-        clientId: process.env.WORKOS_CLIENT_ID!,
+        clientId: process.env.WORKOS_CLIENT_ID!
     });
 
     reply.redirect(authUrl);
@@ -412,12 +409,12 @@ export async function sendMagicLinkHandler(
 
     await workos.userManagement.sendMagicLink({
         email,
-        redirectUri: `${process.env.APP_URL}/auth/callback`,
+        redirectUri: `${process.env.APP_URL}/auth/callback`
     });
 
     reply.send({
         success: true,
-        message: "Magic link sent to your email",
+        message: "Magic link sent to your email"
     });
 }
 ```
@@ -558,29 +555,29 @@ export async function createSSOConnectionHandler(
     // Create WorkOS organization
     const workosOrg = await workos.organizations.createOrganization({
         name: domain,
-        domains: [domain],
+        domains: [domain]
     });
 
     // Store organization in FlowMaestro database
     const org = await organizationRepository.create({
         name: domain,
         workos_org_id: workosOrg.id,
-        owner_user_id: userId,
+        owner_user_id: userId
     });
 
     // Generate Admin Portal link for SSO setup
     const adminPortalLink = await workos.portal.generateLink({
         organization: workosOrg.id,
         intent: "sso",
-        returnUrl: `${process.env.APP_URL}/admin/sso`,
+        returnUrl: `${process.env.APP_URL}/admin/sso`
     });
 
     reply.send({
         success: true,
         data: {
             organizationId: org.id,
-            adminPortalUrl: adminPortalLink,
-        },
+            adminPortalUrl: adminPortalLink
+        }
     });
 }
 ```
@@ -606,7 +603,7 @@ export async function ssoAuthorizeHandler(
         organization: org.workos_org_id,
         redirectUri: `${process.env.APP_URL}/auth/callback`,
         state: generateState(),
-        clientId: process.env.WORKOS_CLIENT_ID!,
+        clientId: process.env.WORKOS_CLIENT_ID!
     });
 
     reply.redirect(authUrl);
@@ -718,14 +715,14 @@ export async function authorizationServerMetadataHandler(
             "workflows:read",
             "workflows:execute",
             "agents:read",
-            "agents:execute",
+            "agents:execute"
         ],
 
         // Token introspection
         introspection_endpoint_auth_methods_supported: ["client_secret_basic"],
 
         // OAuth 2.1 compliance
-        pkce_required: true,
+        pkce_required: true
     });
 }
 ```
@@ -741,14 +738,9 @@ export async function protectedResourceMetadataHandler(
     reply.send({
         resource: process.env.APP_URL,
         authorization_servers: [process.env.APP_URL],
-        scopes_supported: [
-            "workflows:read",
-            "workflows:execute",
-            "agents:read",
-            "agents:execute",
-        ],
+        scopes_supported: ["workflows:read", "workflows:execute", "agents:read", "agents:execute"],
         bearer_methods_supported: ["header"],
-        resource_signing_alg_values_supported: ["RS256"],
+        resource_signing_alg_values_supported: ["RS256"]
     });
 }
 ```
@@ -771,7 +763,7 @@ export async function registerClientHandler(
         client_name,
         redirect_uris,
         grant_types = ["authorization_code", "refresh_token"],
-        scope,
+        scope
     } = request.body as {
         client_name: string;
         redirect_uris: string[];
@@ -790,7 +782,7 @@ export async function registerClientHandler(
         client_name,
         redirect_uris,
         grant_types,
-        scope: scope || "workflows:read workflows:execute",
+        scope: scope || "workflows:read workflows:execute"
     });
 
     reply.code(201).send({
@@ -800,7 +792,7 @@ export async function registerClientHandler(
         redirect_uris,
         grant_types,
         scope,
-        client_id_issued_at: Math.floor(Date.now() / 1000),
+        client_id_issued_at: Math.floor(Date.now() / 1000)
     });
 }
 ```
@@ -820,7 +812,7 @@ export async function oauthAuthorizeHandler(
         scope,
         state,
         code_challenge,
-        code_challenge_method,
+        code_challenge_method
     } = request.query as Record<string, string>;
 
     // Validate client
@@ -843,9 +835,9 @@ export async function oauthAuthorizeHandler(
             redirect_uri,
             scope,
             state,
-            code_challenge,
+            code_challenge
         }),
-        clientId: process.env.WORKOS_CLIENT_ID!,
+        clientId: process.env.WORKOS_CLIENT_ID!
     });
 
     reply.redirect(workosAuthUrl);
@@ -867,7 +859,7 @@ export async function oauthTokenHandler(
         client_id,
         client_secret,
         code_verifier,
-        refresh_token,
+        refresh_token
     } = request.body as Record<string, string>;
 
     if (grant_type === "authorization_code") {
@@ -887,12 +879,12 @@ export async function oauthTokenHandler(
         const accessToken = generateAccessToken({
             userId: authCode.user_id,
             clientId: client_id,
-            scope: authCode.scope,
+            scope: authCode.scope
         });
 
         const refreshToken = generateRefreshToken({
             userId: authCode.user_id,
-            clientId: client_id,
+            clientId: client_id
         });
 
         // Store tokens
@@ -902,7 +894,7 @@ export async function oauthTokenHandler(
             user_id: authCode.user_id,
             client_id,
             scope: authCode.scope,
-            expires_at: Date.now() + 3600 * 1000, // 1 hour
+            expires_at: Date.now() + 3600 * 1000 // 1 hour
         });
 
         reply.send({
@@ -910,7 +902,7 @@ export async function oauthTokenHandler(
             token_type: "Bearer",
             expires_in: 3600,
             refresh_token: refreshToken,
-            scope: authCode.scope,
+            scope: authCode.scope
         });
     } else if (grant_type === "refresh_token") {
         // Handle refresh token flow
@@ -922,14 +914,14 @@ export async function oauthTokenHandler(
         const newAccessToken = generateAccessToken({
             userId: token.user_id,
             clientId: token.client_id,
-            scope: token.scope,
+            scope: token.scope
         });
 
         reply.send({
             access_token: newAccessToken,
             token_type: "Bearer",
             expires_in: 3600,
-            scope: token.scope,
+            scope: token.scope
         });
     } else {
         throw new Error("Unsupported grant_type");
@@ -973,15 +965,15 @@ export async function executeWorkflowMCPHandler(
     const execution = await executeWorkflow({
         workflowId,
         inputs,
-        userId: tokenData.user_id,
+        userId: tokenData.user_id
     });
 
     reply.send({
         success: true,
         data: {
             executionId: execution.id,
-            status: execution.status,
-        },
+            status: execution.status
+        }
     });
 }
 ```
@@ -1157,7 +1149,7 @@ interface SessionData {
 export async function createSession(data: SessionData): Promise<string> {
     const sealed = await sealData(data, {
         password: WORKOS_COOKIE_PASSWORD,
-        ttl: 7 * 24 * 60 * 60, // 7 days
+        ttl: 7 * 24 * 60 * 60 // 7 days
     });
 
     return sealed;
@@ -1166,7 +1158,7 @@ export async function createSession(data: SessionData): Promise<string> {
 export async function validateSession(sessionCookie: string): Promise<SessionData | null> {
     try {
         const data = await unsealData<SessionData>(sessionCookie, {
-            password: WORKOS_COOKIE_PASSWORD,
+            password: WORKOS_COOKIE_PASSWORD
         });
 
         // Check if token expired
@@ -1186,13 +1178,13 @@ async function refreshSession(refreshToken: string): Promise<SessionData> {
     const { accessToken: newAccessToken, refreshToken: newRefreshToken } =
         await workos.userManagement.authenticateWithRefreshToken({
             refreshToken,
-            clientId: WORKOS_CLIENT_ID,
+            clientId: WORKOS_CLIENT_ID
         });
 
     return {
         accessToken: newAccessToken,
         refreshToken: newRefreshToken,
-        expiresAt: Date.now() + 3600 * 1000, // 1 hour
+        expiresAt: Date.now() + 3600 * 1000 // 1 hour
         // userId and workosUserId remain the same
     } as SessionData;
 }
@@ -1284,7 +1276,7 @@ export class UserRepository {
                 input.name,
                 input.email_verified,
                 input.workos_organization_id,
-                input.auth_method || "password",
+                input.auth_method || "password"
             ]
         );
 
@@ -1580,14 +1572,14 @@ const session = await createSession({
     workosUserId: workosUser.id,
     accessToken: tokens.accessToken,
     refreshToken: tokens.refreshToken,
-    expiresAt: Date.now() + 3600 * 1000,
+    expiresAt: Date.now() + 3600 * 1000
 });
 
 reply.setCookie("flowmaestro_session", session, {
     httpOnly: true,
     secure: true,
     sameSite: "lax",
-    maxAge: 7 * 24 * 60 * 60, // 7 days
+    maxAge: 7 * 24 * 60 * 60 // 7 days
 });
 ```
 
@@ -1609,7 +1601,7 @@ request.user = await userRepository.findById(session.userId);
 ```typescript
 if (session.expiresAt < Date.now()) {
     const { accessToken, refreshToken } = await workos.userManagement.authenticateWithRefreshToken({
-        refreshToken: session.refreshToken,
+        refreshToken: session.refreshToken
     });
 
     // Update session
@@ -1617,10 +1609,12 @@ if (session.expiresAt < Date.now()) {
         ...session,
         accessToken,
         refreshToken,
-        expiresAt: Date.now() + 3600 * 1000,
+        expiresAt: Date.now() + 3600 * 1000
     });
 
-    reply.setCookie("flowmaestro_session", newSession, { /* ... */ });
+    reply.setCookie("flowmaestro_session", newSession, {
+        /* ... */
+    });
 }
 ```
 
@@ -1891,7 +1885,7 @@ describe("Session Management", () => {
             workosUserId: "workos-456",
             accessToken: "token",
             refreshToken: "refresh",
-            expiresAt: Date.now() + 3600000,
+            expiresAt: Date.now() + 3600000
         });
 
         const validated = await validateSession(session);
@@ -1904,7 +1898,7 @@ describe("Session Management", () => {
             workosUserId: "workos-456",
             accessToken: "old-token",
             refreshToken: "refresh",
-            expiresAt: Date.now() - 1000, // Expired
+            expiresAt: Date.now() - 1000 // Expired
         });
 
         const refreshed = await validateSession(expiredSession);
@@ -2089,14 +2083,14 @@ For production, create your own OAuth apps:
 
 **Comparison to Building In-House:**
 
-| Feature                     | Build In-House | WorkOS      |
-| --------------------------- | -------------- | ----------- |
-| Initial Development Time    | 3-6 months     | 1-2 weeks   |
-| Ongoing Maintenance         | 1-2 engineers  | $0-125/mo   |
+| Feature                      | Build In-House | WorkOS      |
+| ---------------------------- | -------------- | ----------- |
+| Initial Development Time     | 3-6 months     | 1-2 weeks   |
+| Ongoing Maintenance          | 1-2 engineers  | $0-125/mo   |
 | SSO Integration Per Provider | 2-4 weeks      | Immediate   |
-| Security Compliance         | DIY audits     | SOC 2 ready |
-| MFA Implementation          | 4-6 weeks      | Immediate   |
-| **Total Cost (Year 1)**     | **$200k+**     | **$0-1500** |
+| Security Compliance          | DIY audits     | SOC 2 ready |
+| MFA Implementation           | 4-6 weeks      | Immediate   |
+| **Total Cost (Year 1)**      | **$200k+**     | **$0-1500** |
 
 **ROI:** WorkOS saves 95%+ of authentication development costs.
 

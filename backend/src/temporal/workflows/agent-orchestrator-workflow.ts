@@ -1,3 +1,8 @@
+/**
+ * Agent Orchestrator Workflow - With ConversationManager
+ * Refactored to use ConversationManager for better message handling
+ */
+
 import {
     proxyActivities,
     condition,
@@ -5,14 +10,24 @@ import {
     setHandler,
     continueAsNew
 } from "@temporalio/workflow";
+import type { JsonObject } from "@flowmaestro/shared";
+import { SpanType } from "../../shared/observability/types";
+import type { SerializedConversation } from "../../shared/conversation/conversation-manager";
 import type { Tool } from "../../storage/models/Agent";
 import type { ConversationMessage, ToolCall } from "../../storage/models/AgentExecution";
 import type * as activities from "../activities";
 
 // Proxy activities
-const { getAgentConfig, callLLM, executeToolCall, saveAgentCheckpoint } = proxyActivities<
-    typeof activities
->({
+const {
+    getAgentConfig,
+    callLLM,
+    executeToolCall,
+    saveConversationIncremental,
+    validateInput,
+    validateOutput,
+    createSpan,
+    endSpan
+} = proxyActivities<typeof activities>({
     startToCloseTimeout: "10 minutes",
     retry: {
         maximumAttempts: 3,
@@ -44,15 +59,16 @@ export interface AgentOrchestratorInput {
     executionId: string;
     agentId: string;
     userId: string;
+    threadId: string; // Thread this execution belongs to
     initialMessage?: string;
-    // For continue-as-new
-    messages?: ConversationMessage[];
+    // For continue-as-new with ConversationManager
+    serializedConversation?: SerializedConversation;
     iterations?: number;
 }
 
 export interface AgentOrchestratorResult {
     success: boolean;
-    messages: ConversationMessage[];
+    serializedConversation: SerializedConversation;
     iterations: number;
     finalMessage?: string;
     error?: string;
@@ -73,6 +89,15 @@ export interface AgentConfig {
         type: "buffer" | "summary" | "vector";
         max_messages: number;
     };
+    safety_config: {
+        enablePiiDetection: boolean;
+        enablePromptInjectionDetection: boolean;
+        enableContentModeration: boolean;
+        piiRedactionEnabled: boolean;
+        piiRedactionPlaceholder?: string;
+        promptInjectionAction: "allow" | "block" | "redact" | "warn";
+        contentModerationThreshold?: number;
+    };
 }
 
 export interface LLMResponse {
@@ -80,52 +105,144 @@ export interface LLMResponse {
     tool_calls?: ToolCall[];
     requiresUserInput?: boolean;
     isComplete?: boolean;
+    // Token usage for cost tracking and observability
+    usage?: {
+        promptTokens: number;
+        completionTokens: number;
+        totalTokens: number;
+    };
 }
 
 /**
- * Agent Orchestrator Workflow
+ * Message state for workflow (deterministic, plain objects only)
+ */
+interface WorkflowMessageState {
+    messages: ConversationMessage[];
+    savedMessageIds: string[];
+    metadata: JsonObject;
+}
+
+/**
+ * Agent Orchestrator Workflow V2 with ConversationManager
  *
- * Implements the ReAct (Reasoning + Acting) pattern for AI agents:
- * 1. LLM reasons about the current state
- * 2. LLM decides to call tools or respond
- * 3. Tools are executed
- * 4. Results are fed back to LLM
- * 5. Loop continues until agent signals completion or reaches max iterations
- *
- * Uses continue-as-new to prevent Temporal history limits for long conversations.
+ * Improvements over V1:
+ * - Uses ConversationManager pattern for message handling
+ * - Incremental persistence (only save new messages)
+ * - Source tracking (memory vs new messages)
+ * - Better serialization for continue-as-new
+ * - Multi-format conversion support
  */
 export async function agentOrchestratorWorkflow(
     input: AgentOrchestratorInput
 ): Promise<AgentOrchestratorResult> {
-    const { executionId, agentId, userId, initialMessage, messages = [], iterations = 0 } = input;
+    const {
+        executionId,
+        agentId,
+        userId,
+        threadId,
+        initialMessage,
+        serializedConversation,
+        iterations = 0
+    } = input;
 
     console.log(
-        `[Agent] Starting orchestrator for execution ${executionId}, iteration ${iterations}`
+        `[Agent] Starting orchestrator for execution ${executionId} in thread ${threadId}, iteration ${iterations}`
     );
 
     // Load agent configuration
     const agent = await getAgentConfig({ agentId, userId });
 
-    // Initialize conversation history
-    const conversationHistory: ConversationMessage[] = [...messages];
+    // Create AGENT_RUN span for entire execution (only on first run, not continue-as-new)
+    let agentRunSpanId: string | undefined = undefined;
+    if (iterations === 0) {
+        const agentRunContext = await createSpan({
+            traceId: executionId,
+            parentSpanId: undefined,
+            name: `Agent: ${agent.name}`,
+            spanType: SpanType.AGENT_RUN,
+            entityId: agentId,
+            input: {
+                agentId,
+                threadId,
+                initialMessage
+            },
+            attributes: {
+                userId,
+                agentName: agent.name,
+                model: agent.model,
+                provider: agent.provider
+            }
+        });
+        agentRunSpanId = agentRunContext.spanId;
+    }
 
-    // Add system prompt if first run
-    if (conversationHistory.length === 0) {
-        conversationHistory.push({
+    // Initialize message state (deterministic - just plain objects)
+    let messageState: WorkflowMessageState;
+
+    if (serializedConversation) {
+        // Restoring from continue-as-new
+        messageState = {
+            messages: serializedConversation.messages,
+            savedMessageIds: serializedConversation.savedMessageIds,
+            metadata: serializedConversation.metadata
+        };
+    } else {
+        // First run - initialize
+        messageState = {
+            messages: [],
+            savedMessageIds: [],
+            metadata: {}
+        };
+
+        // Add system prompt
+        const systemMessage: ConversationMessage = {
             id: `sys-${Date.now()}`,
             role: "system",
             content: agent.system_prompt,
             timestamp: new Date()
-        });
+        };
+        messageState.messages.push(systemMessage);
+        messageState.savedMessageIds.push(systemMessage.id); // System message is "saved"
 
         // Add initial user message if provided
         if (initialMessage) {
-            conversationHistory.push({
+            // Safety check: Validate user input
+            const safetyResult = await validateInput({
+                content: initialMessage,
+                context: {
+                    userId,
+                    agentId,
+                    executionId,
+                    threadId,
+                    direction: "input",
+                    messageRole: "user"
+                },
+                config: agent.safety_config
+            });
+
+            // If safety check blocks, fail the execution
+            if (!safetyResult.shouldProceed) {
+                const blockReasons = safetyResult.violations
+                    .filter((v) => v.action === "block")
+                    .map((v) => v.message || v.type)
+                    .join(", ");
+
+                await emitAgentExecutionFailed({
+                    executionId,
+                    error: `Input blocked by safety check: ${blockReasons}`
+                });
+
+                throw new Error(`Input blocked by safety check: ${blockReasons}`);
+            }
+
+            // Use potentially redacted content
+            const userMessage: ConversationMessage = {
                 id: `user-${Date.now()}`,
                 role: "user",
-                content: initialMessage,
+                content: safetyResult.content,
                 timestamp: new Date()
-            });
+            };
+            messageState.messages.push(userMessage);
         }
 
         // Emit execution started event
@@ -151,20 +268,43 @@ export async function agentOrchestratorWorkflow(
     while (currentIterations < maxIterations) {
         console.log(`[Agent] Iteration ${currentIterations}/${maxIterations}`);
 
+        // Create AGENT_ITERATION span for this iteration
+        const iterationContext = await createSpan({
+            traceId: executionId,
+            parentSpanId: agentRunSpanId,
+            name: `Iteration ${currentIterations + 1}`,
+            spanType: SpanType.AGENT_ITERATION,
+            entityId: agentId,
+            input: {
+                iteration: currentIterations,
+                messageCount: messageState.messages.length
+            },
+            attributes: {
+                iteration: currentIterations,
+                maxIterations
+            }
+        });
+        const iterationSpanId = iterationContext.spanId;
+
         // Continue-as-new every 50 iterations to prevent history bloat
         if (currentIterations > 0 && currentIterations % CONTINUE_AS_NEW_THRESHOLD === 0) {
             console.log(`[Agent] Continue-as-new at iteration ${currentIterations}`);
 
-            // Save checkpoint
-            await saveAgentCheckpoint({
-                executionId,
-                messages: conversationHistory,
-                iterations: currentIterations
-            });
+            // Save incremental messages before continue-as-new
+            const unsavedMessages = getUnsavedMessages(messageState);
+            if (unsavedMessages.length > 0) {
+                await saveConversationIncremental({
+                    executionId,
+                    threadId,
+                    messages: unsavedMessages
+                });
+                // Mark as saved
+                unsavedMessages.forEach((msg) => messageState.savedMessageIds.push(msg.id));
+            }
 
             // Summarize history if needed (keep last N messages)
-            const summarizedHistory = summarizeHistory(
-                conversationHistory,
+            const summarizedState = summarizeMessageState(
+                messageState,
                 agent.memory_config.max_messages
             );
 
@@ -172,13 +312,35 @@ export async function agentOrchestratorWorkflow(
                 executionId,
                 agentId,
                 userId,
-                messages: summarizedHistory,
+                threadId,
+                serializedConversation: summarizedState,
                 iterations: currentIterations
             });
         }
 
         // Emit thinking event
         await emitAgentThinking({ executionId });
+
+        // Create MODEL_GENERATION span for LLM call
+        const modelGenContext = await createSpan({
+            traceId: executionId,
+            parentSpanId: iterationSpanId,
+            name: `${agent.provider}:${agent.model}`,
+            spanType: SpanType.MODEL_GENERATION,
+            entityId: agentId,
+            input: {
+                model: agent.model,
+                provider: agent.provider,
+                messageCount: messageState.messages.length
+            },
+            attributes: {
+                model: agent.model,
+                provider: agent.provider,
+                temperature: agent.temperature,
+                maxTokens: agent.max_tokens
+            }
+        });
+        const modelGenSpanId = modelGenContext.spanId;
 
         // Call LLM with conversation history and available tools
         let llmResponse: LLMResponse;
@@ -187,37 +349,124 @@ export async function agentOrchestratorWorkflow(
                 model: agent.model,
                 provider: agent.provider,
                 connectionId: agent.connection_id,
-                messages: conversationHistory,
+                messages: messageState.messages,
                 tools: agent.available_tools,
                 temperature: agent.temperature,
                 maxTokens: agent.max_tokens
             });
+
+            // End MODEL_GENERATION span with success and token usage
+            await endSpan({
+                spanId: modelGenSpanId,
+                output: {
+                    content: llmResponse.content,
+                    hasToolCalls: !!(llmResponse.tool_calls && llmResponse.tool_calls.length > 0)
+                },
+                attributes: {
+                    responseLength: llmResponse.content.length,
+                    toolCallCount: llmResponse.tool_calls?.length || 0,
+                    // Token usage for cost tracking
+                    ...(llmResponse.usage && {
+                        promptTokens: llmResponse.usage.promptTokens,
+                        completionTokens: llmResponse.usage.completionTokens,
+                        totalTokens: llmResponse.usage.totalTokens
+                    })
+                }
+            });
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : "Unknown LLM error";
             console.error(`[Agent] LLM call failed: ${errorMessage}`);
+
+            // End MODEL_GENERATION span with error
+            await endSpan({
+                spanId: modelGenSpanId,
+                error: error instanceof Error ? error : new Error(errorMessage)
+            });
+
+            // End AGENT_ITERATION span with error
+            await endSpan({
+                spanId: iterationSpanId,
+                error: error instanceof Error ? error : new Error(errorMessage),
+                attributes: {
+                    failureReason: "llm_call_failed"
+                }
+            });
 
             await emitAgentExecutionFailed({
                 executionId,
                 error: errorMessage
             });
 
+            // End AGENT_RUN span with error
+            if (agentRunSpanId) {
+                await endSpan({
+                    spanId: agentRunSpanId,
+                    error: error instanceof Error ? error : new Error(errorMessage),
+                    attributes: {
+                        totalIterations: currentIterations,
+                        failureReason: "llm_call_failed"
+                    }
+                });
+            }
+
             return {
                 success: false,
-                messages: conversationHistory,
+                serializedConversation: messageState,
                 iterations: currentIterations,
                 error: errorMessage
             };
         }
 
-        // Add assistant response to history
+        // Safety check: Validate agent output
+        const outputSafetyResult = await validateOutput({
+            content: llmResponse.content,
+            context: {
+                userId,
+                agentId,
+                executionId,
+                threadId,
+                direction: "output",
+                messageRole: "assistant"
+            },
+            config: agent.safety_config
+        });
+
+        // If safety check blocks, fail the execution
+        if (!outputSafetyResult.shouldProceed) {
+            const blockReasons = outputSafetyResult.violations
+                .filter((v) => v.action === "block")
+                .map((v) => v.message || v.type)
+                .join(", ");
+
+            await emitAgentExecutionFailed({
+                executionId,
+                error: `Output blocked by safety check: ${blockReasons}`
+            });
+
+            // End AGENT_RUN span with error
+            if (agentRunSpanId) {
+                await endSpan({
+                    spanId: agentRunSpanId,
+                    error: new Error(`Output blocked by safety check: ${blockReasons}`),
+                    attributes: {
+                        totalIterations: currentIterations,
+                        failureReason: "safety_check_blocked_output"
+                    }
+                });
+            }
+
+            throw new Error(`Output blocked by safety check: ${blockReasons}`);
+        }
+
+        // Add assistant response to history (with potentially redacted content)
         const assistantMessage: ConversationMessage = {
             id: `asst-${Date.now()}-${currentIterations}`,
             role: "assistant",
-            content: llmResponse.content,
+            content: outputSafetyResult.content,
             tool_calls: llmResponse.tool_calls,
             timestamp: new Date()
         };
-        conversationHistory.push(assistantMessage);
+        messageState.messages.push(assistantMessage);
 
         // Emit message event
         await emitAgentMessage({
@@ -244,22 +493,97 @@ export async function agentOrchestratorWorkflow(
                         error: timeoutError
                     });
 
+                    // End AGENT_ITERATION span with error
+                    await endSpan({
+                        spanId: iterationSpanId,
+                        error: new Error(timeoutError),
+                        attributes: {
+                            failureReason: "user_input_timeout"
+                        }
+                    });
+
+                    // End AGENT_RUN span with error
+                    if (agentRunSpanId) {
+                        await endSpan({
+                            spanId: agentRunSpanId,
+                            error: new Error(timeoutError),
+                            attributes: {
+                                totalIterations: currentIterations
+                            }
+                        });
+                    }
+
                     return {
                         success: false,
-                        messages: conversationHistory,
+                        serializedConversation: messageState,
                         iterations: currentIterations,
                         error: timeoutError
                     };
                 }
 
-                // Add user message to history
+                // Safety check: Validate user input
+                const pendingSafetyResult = await validateInput({
+                    content: pendingUserMessage!,
+                    context: {
+                        userId,
+                        agentId,
+                        executionId,
+                        threadId,
+                        direction: "input",
+                        messageRole: "user"
+                    },
+                    config: agent.safety_config
+                });
+
+                // If safety check blocks, fail the execution
+                if (!pendingSafetyResult.shouldProceed) {
+                    const blockReasons = pendingSafetyResult.violations
+                        .filter((v) => v.action === "block")
+                        .map((v) => v.message || v.type)
+                        .join(", ");
+
+                    await emitAgentExecutionFailed({
+                        executionId,
+                        error: `User message blocked by safety check: ${blockReasons}`
+                    });
+
+                    // End AGENT_ITERATION span with error
+                    await endSpan({
+                        spanId: iterationSpanId,
+                        error: new Error(`Safety check blocked user message: ${blockReasons}`),
+                        attributes: {
+                            failureReason: "safety_check_blocked_user_input"
+                        }
+                    });
+
+                    // End AGENT_RUN span with error
+                    if (agentRunSpanId) {
+                        await endSpan({
+                            spanId: agentRunSpanId,
+                            error: new Error(`Safety check blocked user message: ${blockReasons}`),
+                            attributes: {
+                                totalIterations: currentIterations,
+                                failureReason: "safety_check_blocked"
+                            }
+                        });
+                    }
+
+                    return {
+                        success: false,
+                        serializedConversation: messageState,
+                        iterations: currentIterations,
+                        error: `User message blocked by safety check: ${blockReasons}`
+                    };
+                }
+
+                // Add user message to history (with potentially redacted content)
                 const userMessage: ConversationMessage = {
                     id: `user-${Date.now()}-${currentIterations}`,
                     role: "user",
-                    content: pendingUserMessage!,
+                    content: pendingSafetyResult.content,
                     timestamp: new Date()
                 };
-                conversationHistory.push(userMessage);
+                messageState.messages.push(userMessage);
 
                 await emitAgentMessage({
                     executionId,
@@ -269,12 +593,32 @@ export async function agentOrchestratorWorkflow(
                 // Reset pending message
                 pendingUserMessage = null;
 
+                // End AGENT_ITERATION span before continuing
+                await endSpan({
+                    spanId: iterationSpanId,
+                    output: {
+                        receivedUserInput: true
+                    },
+                    attributes: {
+                        messageCount: messageState.messages.length
+                    }
+                });
+
                 // Continue loop to process user input
                 currentIterations++;
                 continue;
             }
 
-            // Agent is done
+            // Agent is done - save any unsaved messages
+            const unsavedMessages = getUnsavedMessages(messageState);
+            if (unsavedMessages.length > 0) {
+                await saveConversationIncremental({
+                    executionId,
+                    threadId,
+                    messages: unsavedMessages
+                });
+            }
+
             console.log("[Agent] Agent completed task");
 
             await emitAgentExecutionCompleted({
@@ -283,9 +627,37 @@ export async function agentOrchestratorWorkflow(
                 iterations: currentIterations
             });
 
+            // End AGENT_ITERATION span on completion
+            await endSpan({
+                spanId: iterationSpanId,
+                output: {
+                    completed: true,
+                    finalMessage: llmResponse.content
+                },
+                attributes: {
+                    messageCount: messageState.messages.length
+                }
+            });
+
+            // End AGENT_RUN span on successful completion
+            if (agentRunSpanId) {
+                await endSpan({
+                    spanId: agentRunSpanId,
+                    output: {
+                        success: true,
+                        finalMessage: llmResponse.content,
+                        iterations: currentIterations
+                    },
+                    attributes: {
+                        totalIterations: currentIterations,
+                        messageCount: messageState.messages.length
+                    }
+                });
+            }
+
             return {
                 success: true,
-                messages: conversationHistory,
+                serializedConversation: messageState,
                 iterations: currentIterations,
                 finalMessage: llmResponse.content
             };
@@ -301,12 +673,31 @@ export async function agentOrchestratorWorkflow(
                 arguments: toolCall.arguments
             });
 
+            // Create TOOL_EXECUTION span for this tool call
+            const toolContext = await createSpan({
+                traceId: executionId,
+                parentSpanId: iterationSpanId,
+                name: `Tool: ${toolCall.name}`,
+                spanType: SpanType.TOOL_EXECUTION,
+                entityId: agentId,
+                input: {
+                    toolName: toolCall.name,
+                    arguments: toolCall.arguments
+                },
+                attributes: {
+                    toolName: toolCall.name,
+                    toolCallId: toolCall.id
+                }
+            });
+            const toolSpanId = toolContext.spanId;
+
             try {
                 const toolResult = await executeToolCall({
                     executionId,
                     toolCall,
                     availableTools: agent.available_tools,
-                    userId
+                    userId,
+                    agentId
                 });
 
                 // Add tool result to conversation
@@ -318,7 +709,17 @@ export async function agentOrchestratorWorkflow(
                     tool_call_id: toolCall.id,
                     timestamp: new Date()
                 };
-                conversationHistory.push(toolMessage);
+                messageState.messages.push(toolMessage);
+
+                // End TOOL_EXECUTION span with success
+                await endSpan({
+                    spanId: toolSpanId,
+                    output: toolResult,
+                    attributes: {
+                        success: true,
+                        resultLength: JSON.stringify(toolResult).length
+                    }
+                });
 
                 await emitAgentToolCallCompleted({
                     executionId,
@@ -338,7 +739,16 @@ export async function agentOrchestratorWorkflow(
                     tool_call_id: toolCall.id,
                     timestamp: new Date()
                 };
-                conversationHistory.push(toolMessage);
+                messageState.messages.push(toolMessage);
+
+                // End TOOL_EXECUTION span with error
+                await endSpan({
+                    spanId: toolSpanId,
+                    error: error instanceof Error ? error : new Error(errorMessage),
+                    attributes: {
+                        success: false
+                    }
+                });
 
                 await emitAgentToolCallFailed({
                     executionId,
@@ -348,6 +758,31 @@ export async function agentOrchestratorWorkflow(
             }
         }
 
+        // Save unsaved messages periodically (every 10 iterations)
+        if (currentIterations > 0 && currentIterations % 10 === 0) {
+            const unsavedMessages = getUnsavedMessages(messageState);
+            if (unsavedMessages.length > 0) {
+                await saveConversationIncremental({
+                    executionId,
+                    threadId,
+                    messages: unsavedMessages
+                });
+                unsavedMessages.forEach((msg) => messageState.savedMessageIds.push(msg.id));
+            }
+        }
+
+        // End AGENT_ITERATION span on successful iteration
+        await endSpan({
+            spanId: iterationSpanId,
+            output: {
+                hasToolCalls: !!(llmResponse.tool_calls && llmResponse.tool_calls.length > 0),
+                toolCallCount: llmResponse.tool_calls?.length || 0
+            },
+            attributes: {
+                messageCount: messageState.messages.length
+            }
+        });
+
         currentIterations++;
     }
 
@@ -355,36 +790,83 @@ export async function agentOrchestratorWorkflow(
     const maxIterError = `Max iterations (${maxIterations}) reached`;
     console.log(`[Agent] ${maxIterError}`);
 
+    // Save any unsaved messages
+    const unsavedMessages = getUnsavedMessages(messageState);
+    if (unsavedMessages.length > 0) {
+        await saveConversationIncremental({
+            executionId,
+            threadId,
+            messages: unsavedMessages
+        });
+    }
+
     await emitAgentExecutionFailed({
         executionId,
         error: maxIterError
     });
 
+    // End AGENT_RUN span with error
+    if (agentRunSpanId) {
+        await endSpan({
+            spanId: agentRunSpanId,
+            error: new Error(maxIterError),
+            attributes: {
+                totalIterations: currentIterations,
+                failureReason: "max_iterations_reached"
+            }
+        });
+    }
+
     return {
         success: false,
-        messages: conversationHistory,
+        serializedConversation: messageState,
         iterations: currentIterations,
         error: maxIterError
     };
 }
 
 /**
- * Summarize conversation history to keep only recent messages
+ * Get unsaved messages from message state
+ */
+function getUnsavedMessages(state: WorkflowMessageState): ConversationMessage[] {
+    const savedIds = new Set(state.savedMessageIds);
+    return state.messages.filter((msg) => !savedIds.has(msg.id));
+}
+
+/**
+ * Summarize message state to keep only recent messages
  * This prevents history from growing too large for continue-as-new
  */
-function summarizeHistory(
-    messages: ConversationMessage[],
+function summarizeMessageState(
+    state: WorkflowMessageState,
     maxMessages: number
-): ConversationMessage[] {
-    if (messages.length <= maxMessages) {
-        return messages;
+): SerializedConversation {
+    if (state.messages.length <= maxMessages) {
+        return {
+            messages: state.messages,
+            savedMessageIds: state.savedMessageIds,
+            metadata: state.metadata
+        };
     }
 
     // Always keep the system prompt (first message)
-    const systemPrompt = messages[0];
+    const systemPrompt = state.messages.find((msg) => msg.role === "system");
 
     // Keep the last N messages
-    const recentMessages = messages.slice(-(maxMessages - 1));
+    const recentMessages = state.messages.slice(-(maxMessages - 1));
 
-    return [systemPrompt, ...recentMessages];
+    // Combine
+    const summarizedMessages = systemPrompt
+        ? [systemPrompt, ...recentMessages.filter((msg) => msg.id !== systemPrompt.id)]
+        : recentMessages;
+
+    // Keep only saved IDs that are still in the messages
+    const keptMessageIds = new Set(summarizedMessages.map((m) => m.id));
+    const savedIds = state.savedMessageIds.filter((id) => keptMessageIds.has(id));
+
+    return {
+        messages: summarizedMessages,
+        savedMessageIds: savedIds,
+        metadata: state.metadata
+    };
 }

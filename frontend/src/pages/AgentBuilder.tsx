@@ -6,7 +6,10 @@ import { AddCustomMCPDialog } from "../components/agents/AddCustomMCPDialog";
 import { AddMCPIntegrationDialog } from "../components/agents/AddMCPIntegrationDialog";
 import { AddWorkflowDialog } from "../components/agents/AddWorkflowDialog";
 import { AgentChat } from "../components/agents/AgentChat";
+import { ThreadChat } from "../components/agents/ThreadChat";
+import { ThreadList } from "../components/agents/ThreadList";
 import { ToolsList } from "../components/agents/ToolsList";
+import { ConfirmDialog } from "../components/common/ConfirmDialog";
 import { cn } from "../lib/utils";
 import { useAgentStore } from "../stores/agentStore";
 import { useConnectionStore } from "../stores/connectionStore";
@@ -27,7 +30,15 @@ export function AgentBuilder() {
         updateAgent,
         setCurrentAgent,
         addTool,
-        removeTool
+        removeTool,
+        threads,
+        currentThread,
+        fetchThreads,
+        setCurrentThread,
+        createNewThread,
+        updateThreadTitle,
+        archiveThread,
+        deleteThread
     } = useAgentStore();
     const { connections, fetchConnections } = useConnectionStore();
 
@@ -51,6 +62,12 @@ export function AgentBuilder() {
     const [isWorkflowDialogOpen, setIsWorkflowDialogOpen] = useState(false);
     const [isMCPDialogOpen, setIsMCPDialogOpen] = useState(false);
     const [isCustomMCPDialogOpen, setIsCustomMCPDialogOpen] = useState(false);
+
+    // Thread management state
+    const [threadToDelete, setThreadToDelete] = useState<{
+        id: string;
+        title: string;
+    } | null>(null);
 
     // Load agent if editing
     useEffect(() => {
@@ -79,6 +96,13 @@ export function AgentBuilder() {
             setTools(currentAgent.available_tools || []);
         }
     }, [currentAgent]);
+
+    // Load threads when agent loads or when switching to conversations tab
+    useEffect(() => {
+        if (currentAgent && activeTab === "conversations") {
+            fetchThreads(currentAgent.id);
+        }
+    }, [currentAgent, activeTab, fetchThreads]);
 
     // Set default model when provider changes
     useEffect(() => {
@@ -208,6 +232,32 @@ export function AgentBuilder() {
         } catch (error) {
             console.error("Failed to add custom MCP:", error);
             setError(error instanceof Error ? error.message : "Failed to add custom MCP");
+        }
+    };
+
+    // Thread management handlers
+    const handleNewThread = () => {
+        createNewThread();
+    };
+
+    const handleArchiveThread = async (threadId: string) => {
+        try {
+            await archiveThread(threadId);
+        } catch (error) {
+            console.error("Failed to archive thread:", error);
+            setError(error instanceof Error ? error.message : "Failed to archive thread");
+        }
+    };
+
+    const handleDeleteThread = async () => {
+        if (!threadToDelete) return;
+
+        try {
+            await deleteThread(threadToDelete.id);
+            setThreadToDelete(null);
+        } catch (error) {
+            console.error("Failed to delete thread:", error);
+            setError(error instanceof Error ? error.message : "Failed to delete thread");
         }
     };
 
@@ -468,13 +518,44 @@ export function AgentBuilder() {
                     )}
 
                     {activeTab === "conversations" && (
-                        <div className="flex-1 flex items-center justify-center bg-white">
-                            <div className="text-center text-muted-foreground">
-                                <MessageSquare className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                                <p className="text-sm">Conversation history will appear here</p>
-                                <p className="text-xs mt-2">Coming soon</p>
+                        <>
+                            {/* Left panel: Thread List */}
+                            <div className="w-80 flex-shrink-0 h-full">
+                                <ThreadList
+                                    threads={threads}
+                                    currentThread={currentThread}
+                                    onThreadSelect={setCurrentThread}
+                                    onNewThread={handleNewThread}
+                                    onUpdateTitle={updateThreadTitle}
+                                    onArchiveThread={handleArchiveThread}
+                                    onDeleteThread={async (threadId) => {
+                                        const thread = threads.find((t) => t.id === threadId);
+                                        setThreadToDelete({
+                                            id: threadId,
+                                            title: thread?.title || `Thread ${threadId.slice(0, 8)}`
+                                        });
+                                    }}
+                                />
                             </div>
-                        </div>
+
+                            {/* Right panel: Thread Chat */}
+                            <div className="flex-1 bg-background min-w-0">
+                                {currentAgent && currentThread ? (
+                                    <ThreadChat agent={currentAgent} thread={currentThread} />
+                                ) : (
+                                    <div className="h-full flex items-center justify-center text-muted-foreground">
+                                        <div className="text-center">
+                                            <MessageSquare className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                                            <p>
+                                                {threads.length === 0
+                                                    ? "Start a new conversation"
+                                                    : "Select a conversation to continue"}
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </>
                     )}
 
                     {activeTab === "slack" && (
@@ -634,6 +715,18 @@ export function AgentBuilder() {
                 isOpen={isCustomMCPDialogOpen}
                 onClose={() => setIsCustomMCPDialogOpen(false)}
                 onAdd={handleAddCustomMCP}
+            />
+
+            {/* Delete Thread Confirmation Dialog */}
+            <ConfirmDialog
+                isOpen={threadToDelete !== null}
+                onClose={() => setThreadToDelete(null)}
+                onConfirm={handleDeleteThread}
+                title="Delete Conversation"
+                message={`Are you sure you want to delete "${threadToDelete?.title}"? This will permanently delete the conversation and all its messages.`}
+                confirmText="Delete"
+                cancelText="Cancel"
+                variant="danger"
             />
         </div>
     );

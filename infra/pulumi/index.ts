@@ -160,6 +160,9 @@ Next Steps:
    $ kubectl wait --for=condition=complete job/db-migration -n flowmaestro --timeout=5m
    $ kubectl apply -k infra/k8s/overlays/production
 
+   # Deploy analytics aggregation CronJobs
+   $ kubectl apply -f infra/k8s/jobs/analytics-aggregation.yaml
+
 7. Wait for SSL certificate (15-60 minutes):
    $ kubectl describe managedcertificate flowmaestro-cert -n flowmaestro
 
