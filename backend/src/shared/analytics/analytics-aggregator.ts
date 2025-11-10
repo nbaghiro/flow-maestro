@@ -40,8 +40,8 @@ export class AnalyticsAggregator {
                 total_cost
             )
             SELECT
-                DATE_TRUNC('hour', s.start_time) as hour,
-                s.user_id,
+                DATE_TRUNC('hour', s.started_at) as hour,
+                (s.attributes->>'userId')::uuid,
                 CASE
                     WHEN s.span_type = 'WORKFLOW_RUN' THEN 'workflow'
                     WHEN s.span_type = 'AGENT_RUN' THEN 'agent'
@@ -51,7 +51,7 @@ export class AnalyticsAggregator {
                 COUNT(*) as total_executions,
                 COUNT(*) FILTER (WHERE s.status = 'completed') as successful_executions,
                 COUNT(*) FILTER (WHERE s.status = 'failed' OR s.status = 'error') as failed_executions,
-                AVG(EXTRACT(EPOCH FROM (s.end_time - s.start_time)) * 1000) as avg_duration_ms,
+                AVG(EXTRACT(EPOCH FROM (s.ended_at - s.started_at)) * 1000) as avg_duration_ms,
                 SUM(COALESCE((s.attributes->>'promptTokens')::bigint, 0)) as total_prompt_tokens,
                 SUM(COALESCE((s.attributes->>'completionTokens')::bigint, 0)) as total_completion_tokens,
                 SUM(
@@ -62,11 +62,19 @@ export class AnalyticsAggregator {
                 SUM(COALESCE((s.attributes->>'outputCost')::numeric, 0)) as total_output_cost,
                 SUM(COALESCE((s.attributes->>'totalCost')::numeric, 0)) as total_cost
             FROM flowmaestro.execution_spans s
-            WHERE s.start_time >= $1
-                AND s.start_time < $2
+            WHERE s.started_at >= $1
+                AND s.started_at < $2
                 AND s.span_type IN ('WORKFLOW_RUN', 'AGENT_RUN')
-                AND s.end_time IS NOT NULL
-            GROUP BY DATE_TRUNC('hour', s.start_time), s.user_id, entity_type, entity_id
+                AND s.ended_at IS NOT NULL
+            GROUP BY
+                DATE_TRUNC('hour', s.started_at),
+                (s.attributes->>'userId')::uuid,
+                CASE
+                    WHEN s.span_type = 'WORKFLOW_RUN' THEN 'workflow'
+                    WHEN s.span_type = 'AGENT_RUN' THEN 'agent'
+                    ELSE 'global'
+                END,
+                COALESCE(s.attributes->>'workflowId', s.attributes->>'agentId', 'global')
             ON CONFLICT (hour, user_id, entity_type, entity_id)
             DO UPDATE SET
                 total_executions = EXCLUDED.total_executions,
@@ -121,8 +129,8 @@ export class AnalyticsAggregator {
                 total_cost
             )
             SELECT
-                DATE(s.start_time) as date,
-                s.user_id,
+                DATE(s.started_at) as date,
+                (s.attributes->>'userId')::uuid,
                 CASE
                     WHEN s.span_type = 'WORKFLOW_RUN' THEN 'workflow'
                     WHEN s.span_type = 'AGENT_RUN' THEN 'agent'
@@ -132,7 +140,7 @@ export class AnalyticsAggregator {
                 COUNT(*) as total_executions,
                 COUNT(*) FILTER (WHERE s.status = 'completed') as successful_executions,
                 COUNT(*) FILTER (WHERE s.status = 'failed' OR s.status = 'error') as failed_executions,
-                AVG(EXTRACT(EPOCH FROM (s.end_time - s.start_time)) * 1000) as avg_duration_ms,
+                AVG(EXTRACT(EPOCH FROM (s.ended_at - s.started_at)) * 1000) as avg_duration_ms,
                 SUM(COALESCE((s.attributes->>'promptTokens')::bigint, 0)) as total_prompt_tokens,
                 SUM(COALESCE((s.attributes->>'completionTokens')::bigint, 0)) as total_completion_tokens,
                 SUM(
@@ -143,11 +151,19 @@ export class AnalyticsAggregator {
                 SUM(COALESCE((s.attributes->>'outputCost')::numeric, 0)) as total_output_cost,
                 SUM(COALESCE((s.attributes->>'totalCost')::numeric, 0)) as total_cost
             FROM flowmaestro.execution_spans s
-            WHERE s.start_time >= $1
-                AND s.start_time < $2
+            WHERE s.started_at >= $1
+                AND s.started_at < $2
                 AND s.span_type IN ('WORKFLOW_RUN', 'AGENT_RUN')
-                AND s.end_time IS NOT NULL
-            GROUP BY DATE(s.start_time), s.user_id, entity_type, entity_id
+                AND s.ended_at IS NOT NULL
+            GROUP BY
+                DATE(s.started_at),
+                (s.attributes->>'userId')::uuid,
+                CASE
+                    WHEN s.span_type = 'WORKFLOW_RUN' THEN 'workflow'
+                    WHEN s.span_type = 'AGENT_RUN' THEN 'agent'
+                    ELSE 'global'
+                END,
+                COALESCE(s.attributes->>'workflowId', s.attributes->>'agentId', 'global')
             ON CONFLICT (date, user_id, entity_type, entity_id)
             DO UPDATE SET
                 total_executions = EXCLUDED.total_executions,
@@ -206,8 +222,8 @@ export class AnalyticsAggregator {
                 p99_duration_ms
             )
             SELECT
-                DATE(s.start_time) as date,
-                s.user_id,
+                DATE(s.started_at) as date,
+                (s.attributes->>'userId')::uuid,
                 s.attributes->>'provider' as provider,
                 s.attributes->>'model' as model,
                 COUNT(*) as total_calls,
@@ -223,18 +239,18 @@ export class AnalyticsAggregator {
                 SUM(COALESCE((s.attributes->>'outputCost')::numeric, 0)) as total_output_cost,
                 SUM(COALESCE((s.attributes->>'totalCost')::numeric, 0)) as total_cost,
                 AVG(COALESCE((s.attributes->>'totalCost')::numeric, 0)) as avg_cost_per_call,
-                AVG(EXTRACT(EPOCH FROM (s.end_time - s.start_time)) * 1000) as avg_duration_ms,
-                PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY EXTRACT(EPOCH FROM (s.end_time - s.start_time)) * 1000) as p50_duration_ms,
-                PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY EXTRACT(EPOCH FROM (s.end_time - s.start_time)) * 1000) as p95_duration_ms,
-                PERCENTILE_CONT(0.99) WITHIN GROUP (ORDER BY EXTRACT(EPOCH FROM (s.end_time - s.start_time)) * 1000) as p99_duration_ms
+                AVG(EXTRACT(EPOCH FROM (s.ended_at - s.started_at)) * 1000) as avg_duration_ms,
+                PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY EXTRACT(EPOCH FROM (s.ended_at - s.started_at)) * 1000) as p50_duration_ms,
+                PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY EXTRACT(EPOCH FROM (s.ended_at - s.started_at)) * 1000) as p95_duration_ms,
+                PERCENTILE_CONT(0.99) WITHIN GROUP (ORDER BY EXTRACT(EPOCH FROM (s.ended_at - s.started_at)) * 1000) as p99_duration_ms
             FROM flowmaestro.execution_spans s
-            WHERE s.start_time >= $1
-                AND s.start_time < $2
+            WHERE s.started_at >= $1
+                AND s.started_at < $2
                 AND s.span_type = 'MODEL_GENERATION'
-                AND s.end_time IS NOT NULL
+                AND s.ended_at IS NOT NULL
                 AND s.attributes->>'provider' IS NOT NULL
                 AND s.attributes->>'model' IS NOT NULL
-            GROUP BY DATE(s.start_time), s.user_id, s.attributes->>'provider', s.attributes->>'model'
+            GROUP BY DATE(s.started_at), (s.attributes->>'userId')::uuid, s.attributes->>'provider', s.attributes->>'model'
             ON CONFLICT (date, user_id, provider, model)
             DO UPDATE SET
                 total_calls = EXCLUDED.total_calls,
