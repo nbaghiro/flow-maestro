@@ -1,7 +1,9 @@
 import path from "path";
 import { Worker, NativeConnection } from "@temporalio/worker";
 import { redisEventBus } from "../../shared/events/RedisEventBus";
+import { initializeSpanService } from "../../shared/observability";
 import { registerAllNodes } from "../../shared/registry/register-nodes";
+import { db } from "../../storage/database";
 import * as activities from "../activities";
 
 /**
@@ -13,6 +15,14 @@ import * as activities from "../activities";
 async function run() {
     // Register all node types
     registerAllNodes();
+
+    // Initialize SpanService for observability
+    initializeSpanService({
+        pool: db.getPool(),
+        batchSize: 10,
+        flushIntervalMs: 5000
+    });
+    console.log("✅ SpanService initialized for worker");
 
     // Connect to Redis for cross-process event communication
     try {
