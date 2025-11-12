@@ -19,5 +19,9 @@ GRANT ALL PRIVILEGES ON DATABASE temporal_visibility TO flowmaestro;
 \c flowmaestro;
 CREATE EXTENSION IF NOT EXISTS vector;
 
+-- Create flowmaestro schema (required by migrations)
+CREATE SCHEMA IF NOT EXISTS flowmaestro;
+GRANT ALL PRIVILEGES ON SCHEMA flowmaestro TO flowmaestro;
+
 -- Note: Application migrations will be run separately via npm run db:migrate
--- This init script only sets up extensions and databases
+-- This init script only sets up extensions, databases, and schemas

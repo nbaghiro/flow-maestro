@@ -1,6 +1,9 @@
 -- Enable pgvector extension if not already enabled
 -- (Should already be enabled from migration 1730000000004)
 
+-- Ensure public schema is in search path for vector type
+SET search_path TO flowmaestro, public;
+
 -- Agent Conversation Embeddings Table
 -- Stores vector embeddings for agent conversation messages to enable semantic search
 -- with context window retrieval for better conversation continuity

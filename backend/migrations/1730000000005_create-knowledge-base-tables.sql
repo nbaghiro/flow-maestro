@@ -1,6 +1,9 @@
 -- Migration: Create knowledge base tables for RAG functionality
 -- Supports file upload, document processing, embeddings, and similarity search
 
+-- Ensure public schema is in search path for vector type
+SET search_path TO flowmaestro, public;
+
 -- Knowledge Bases table
 -- Stores the main knowledge base entities that group documents together
 CREATE TABLE flowmaestro.knowledge_bases (

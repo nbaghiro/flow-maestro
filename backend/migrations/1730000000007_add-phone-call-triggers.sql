@@ -5,6 +5,86 @@
 -- Set search path
 SET search_path TO flowmaestro, public;
 
+-- Step 0: Create trigger_type enum and workflow_triggers table if they don't exist
+DO $$
+BEGIN
+    -- Create trigger_type enum if it doesn't exist
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'trigger_type') THEN
+        CREATE TYPE trigger_type AS ENUM ('schedule', 'webhook', 'event', 'manual');
+    END IF;
+END$$;
+
+-- Create workflow_triggers table if it doesn't exist
+CREATE TABLE IF NOT EXISTS workflow_triggers (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    workflow_id UUID NOT NULL REFERENCES workflows(id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL,
+    trigger_type trigger_type NOT NULL,
+    config JSONB NOT NULL DEFAULT '{}',
+    enabled BOOLEAN DEFAULT true,
+    last_triggered_at TIMESTAMP NULL,
+    next_scheduled_at TIMESTAMP NULL,
+    trigger_count BIGINT DEFAULT 0,
+    temporal_schedule_id VARCHAR(255) NULL,
+    webhook_secret VARCHAR(255) NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP NULL
+);
+
+-- Create trigger_executions table if it doesn't exist
+CREATE TABLE IF NOT EXISTS trigger_executions (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    trigger_id UUID NOT NULL REFERENCES workflow_triggers(id) ON DELETE CASCADE,
+    execution_id UUID REFERENCES executions(id) ON DELETE SET NULL,
+    trigger_payload JSONB NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create webhook_logs table if it doesn't exist
+CREATE TABLE IF NOT EXISTS webhook_logs (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    trigger_id UUID NULL REFERENCES workflow_triggers(id) ON DELETE SET NULL,
+    workflow_id UUID NULL REFERENCES workflows(id) ON DELETE SET NULL,
+    request_method VARCHAR(10) NOT NULL,
+    request_path TEXT NULL,
+    request_headers JSONB NULL,
+    request_body JSONB NULL,
+    request_query JSONB NULL,
+    response_status INTEGER NULL,
+    response_body JSONB NULL,
+    error TEXT NULL,
+    execution_id UUID NULL,
+    ip_address VARCHAR(45) NULL,
+    user_agent TEXT NULL,
+    processing_time_ms INTEGER NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create indexes for workflow_triggers
+CREATE INDEX IF NOT EXISTS idx_workflow_triggers_workflow_id ON workflow_triggers(workflow_id);
+CREATE INDEX IF NOT EXISTS idx_workflow_triggers_trigger_type ON workflow_triggers(trigger_type);
+CREATE INDEX IF NOT EXISTS idx_workflow_triggers_enabled ON workflow_triggers(enabled) WHERE deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_workflow_triggers_next_scheduled ON workflow_triggers(next_scheduled_at) WHERE enabled = true AND deleted_at IS NULL;
+
+-- Create indexes for trigger_executions
+CREATE INDEX IF NOT EXISTS idx_trigger_executions_trigger_id ON trigger_executions(trigger_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_trigger_executions_execution_id ON trigger_executions(execution_id);
+
+-- Create indexes for webhook_logs
+CREATE INDEX IF NOT EXISTS idx_webhook_logs_trigger_id ON webhook_logs(trigger_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_webhook_logs_workflow_id ON webhook_logs(workflow_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_webhook_logs_created_at ON webhook_logs(created_at DESC);
+
+-- Create updated_at trigger for workflow_triggers
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'update_workflow_triggers_updated_at') THEN
+        CREATE TRIGGER update_workflow_triggers_updated_at BEFORE UPDATE ON workflow_triggers
+            FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+    END IF;
+END$$;
+
 -- Step 1: Add phone_call to trigger_type enum
 ALTER TYPE trigger_type ADD VALUE IF NOT EXISTS 'phone_call';
 

@@ -32,7 +32,8 @@
         "docker:up": "docker-compose -f infra/local/docker-compose.yml up -d",
         "docker:down": "docker-compose -f infra/local/docker-compose.yml down",
         "docker:logs": "docker-compose -f infra/local/docker-compose.yml logs -f",
-        "docker:clean": "docker-compose -f infra/local/docker-compose.yml down -v"
+        "docker:clean": "docker-compose -f infra/local/docker-compose.yml down && docker volume rm flowmaestro_postgres_data flowmaestro_redis_data 2>/dev/null || true && docker volume create flowmaestro_postgres_data && docker volume create flowmaestro_redis_data",
+        "docker:reset": "npm run docker:clean && npm run docker:up && sleep 5 && npm run db:migrate"
     },
     "devDependencies": {
         "@typescript-eslint/eslint-plugin": "^8.18.2",
