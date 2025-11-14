@@ -48,11 +48,25 @@
         background: linear-gradient(
             135deg,
             rgba(139, 92, 246, 0.5),
-            rgba(217, 70, 239, 0.5)
+            rgba(70, 225, 239, 0.5)
         );
         -webkit-mask: linear-gradient(#fff 0 0) content-box,
             linear-gradient(#fff 0 0);
         -webkit-mask-composite: xor;
         mask-composite: exclude;
+    }
+}
+
+@layer components {
+    .navbar-container {
+        @apply flex items-center z-50 h-fit w-fit pr-4;
+    }
+
+    .navbar-floating {
+        @apply absolute bottom-[90px] left-[60px];
+    }
+
+    .navbar-sticky {
+        @apply fixed left-[60px] mt-[20px];
     }
 }

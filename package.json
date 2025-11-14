@@ -61,5 +61,8 @@
         ]
     },
     "author": "FlowMaestro Team",
-    "license": "MIT"
+    "license": "MIT",
+    "dependencies": {
+        "react-fast-marquee": "^1.6.5"
+    }
 }
