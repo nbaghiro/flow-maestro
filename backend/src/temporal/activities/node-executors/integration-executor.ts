@@ -5,7 +5,7 @@ import { getAccessToken } from "../../../services/oauth/TokenRefreshService";
 import { interpolateVariables } from "./utils";
 
 export interface IntegrationNodeConfig {
-    service: "slack" | "email" | "webhook" | "coda";
+    service: "slack" | "email" | "webhook" | "coda" | "notion";
     operation: string;
 
     // Authentication (prioritized in this order)
@@ -57,6 +57,10 @@ export async function executeIntegrationNode(
 
         case "coda":
             result = await executeCoda(config, context);
+            break;
+
+        case "notion":
+            result = await executeNotion(config, context);
             break;
 
         default:
@@ -544,6 +548,291 @@ async function executeCoda(
         } as unknown as JsonObject;
     } else {
         throw new Error(`Unsupported Coda operation: ${config.operation}`);
+    }
+}
+
+/**
+ * Execute Notion integration
+ */
+async function executeNotion(
+    config: IntegrationNodeConfig,
+    context: JsonObject
+): Promise<JsonObject> {
+    let accessToken: string;
+
+    if (config.connectionId) {
+        accessToken = await getAccessToken(config.connectionId);
+        console.log(`[Integration/Notion] Using OAuth connection: ${config.connectionId}`);
+    } else {
+        throw new Error(
+            "Notion requires OAuth connection. Please connect your Notion account first."
+        );
+    }
+
+    const notionConfig = config.config;
+    const baseUrl = "https://api.notion.com/v1";
+
+    const headers = {
+        Authorization: `Bearer ${accessToken}`,
+        "Notion-Version": "2022-06-28",
+        "Content-Type": "application/json"
+    };
+
+    if (config.operation === "search") {
+        console.log("[Integration/Notion] Searching pages and databases");
+
+        const query = interpolateVariables((notionConfig.query as string) || "", context);
+        const filter = notionConfig.filter as Record<string, unknown> | undefined;
+
+        const requestBody: Record<string, unknown> = {};
+        if (query) {
+            requestBody.query = query;
+        }
+        if (filter) {
+            requestBody.filter = interpolateObject(filter, context);
+        }
+
+        const response = await axios.post(`${baseUrl}/search`, requestBody, { headers });
+
+        return {
+            service: "notion",
+            operation: "search",
+            success: true,
+            data: response.data
+        } as unknown as JsonObject;
+    } else if (config.operation === "createPage") {
+        const parentId = interpolateVariables((notionConfig.parentId as string) || "", context);
+        const pageTitle = interpolateVariables((notionConfig.pageTitle as string) || "", context);
+        const pageContentStr = interpolateVariables(
+            (notionConfig.pageContent as string) || "",
+            context
+        );
+
+        if (!parentId) {
+            throw new Error("Parent ID (page or database) is required for createPage operation");
+        }
+
+        console.log(`[Integration/Notion] Creating page in parent: ${parentId}`);
+
+        let pageContent: Record<string, unknown> = {};
+        if (pageContentStr) {
+            try {
+                pageContent = JSON.parse(pageContentStr);
+            } catch (error) {
+                throw new Error(
+                    `Invalid JSON in pageContent: ${error instanceof Error ? error.message : "Unknown error"}`
+                );
+            }
+        }
+
+        const properties: Record<string, unknown> = {};
+        if (pageTitle) {
+            properties.title = [
+                {
+                    text: {
+                        content: pageTitle
+                    }
+                }
+            ];
+        }
+
+        if (pageContent.properties) {
+            Object.assign(properties, pageContent.properties);
+        }
+
+        const requestBody: Record<string, unknown> = {
+            parent: {
+                [parentId.startsWith("database-") ? "database_id" : "page_id"]: parentId
+            },
+            properties
+        };
+
+        // Add children (content blocks) if provided
+        if (pageContent.children && Array.isArray(pageContent.children)) {
+            requestBody.children = pageContent.children;
+        }
+
+        const response = await axios.post(`${baseUrl}/pages`, requestBody, { headers });
+
+        return {
+            service: "notion",
+            operation: "createPage",
+            success: true,
+            data: response.data
+        } as unknown as JsonObject;
+    } else if (config.operation === "updatePage") {
+        const pageId = interpolateVariables((notionConfig.pageId as string) || "", context);
+        const pagePropertiesStr = interpolateVariables(
+            (notionConfig.pageProperties as string) || "",
+            context
+        );
+
+        if (!pageId || !pagePropertiesStr) {
+            throw new Error("Page ID and Page Properties are required for updatePage operation");
+        }
+
+        console.log(`[Integration/Notion] Updating page: ${pageId}`);
+
+        let pageProperties: Record<string, unknown>;
+        try {
+            pageProperties = JSON.parse(pagePropertiesStr);
+        } catch (error) {
+            throw new Error(
+                `Invalid JSON in pageProperties: ${error instanceof Error ? error.message : "Unknown error"}`
+            );
+        }
+
+        const response = await axios.patch(
+            `${baseUrl}/pages/${pageId}`,
+            { properties: pageProperties },
+            { headers }
+        );
+
+        return {
+            service: "notion",
+            operation: "updatePage",
+            success: true,
+            data: response.data
+        } as unknown as JsonObject;
+    } else if (config.operation === "getPage") {
+        const pageId = interpolateVariables((notionConfig.pageId as string) || "", context);
+
+        if (!pageId) {
+            throw new Error("Page ID is required for getPage operation");
+        }
+
+        console.log(`[Integration/Notion] Getting page: ${pageId}`);
+
+        const response = await axios.get(`${baseUrl}/pages/${pageId}`, { headers });
+
+        return {
+            service: "notion",
+            operation: "getPage",
+            success: true,
+            data: response.data
+        } as unknown as JsonObject;
+    } else if (config.operation === "queryDatabase") {
+        const databaseId = interpolateVariables((notionConfig.databaseId as string) || "", context);
+        const filterStr = interpolateVariables((notionConfig.filter as string) || "", context);
+        const sortsStr = interpolateVariables((notionConfig.sorts as string) || "", context);
+
+        if (!databaseId) {
+            throw new Error("Database ID is required for queryDatabase operation");
+        }
+
+        console.log(`[Integration/Notion] Querying database: ${databaseId}`);
+
+        const requestBody: Record<string, unknown> = {};
+
+        if (filterStr) {
+            try {
+                requestBody.filter = JSON.parse(filterStr);
+            } catch (error) {
+                throw new Error(
+                    `Invalid JSON in filter: ${error instanceof Error ? error.message : "Unknown error"}`
+                );
+            }
+        }
+
+        if (sortsStr) {
+            try {
+                requestBody.sorts = JSON.parse(sortsStr);
+            } catch (error) {
+                throw new Error(
+                    `Invalid JSON in sorts: ${error instanceof Error ? error.message : "Unknown error"}`
+                );
+            }
+        }
+
+        const response = await axios.post(`${baseUrl}/databases/${databaseId}/query`, requestBody, {
+            headers
+        });
+
+        return {
+            service: "notion",
+            operation: "queryDatabase",
+            success: true,
+            data: response.data
+        } as unknown as JsonObject;
+    } else if (config.operation === "createDatabaseEntry") {
+        const databaseId = interpolateVariables((notionConfig.databaseId as string) || "", context);
+        const propertiesStr = interpolateVariables(
+            (notionConfig.properties as string) || "",
+            context
+        );
+
+        if (!databaseId || !propertiesStr) {
+            throw new Error(
+                "Database ID and Properties are required for createDatabaseEntry operation"
+            );
+        }
+
+        console.log(`[Integration/Notion] Creating entry in database: ${databaseId}`);
+
+        let properties: Record<string, unknown>;
+        try {
+            properties = JSON.parse(propertiesStr);
+        } catch (error) {
+            throw new Error(
+                `Invalid JSON in properties: ${error instanceof Error ? error.message : "Unknown error"}`
+            );
+        }
+
+        const response = await axios.post(
+            `${baseUrl}/pages`,
+            {
+                parent: {
+                    database_id: databaseId
+                },
+                properties
+            },
+            { headers }
+        );
+
+        return {
+            service: "notion",
+            operation: "createDatabaseEntry",
+            success: true,
+            data: response.data
+        } as unknown as JsonObject;
+    } else if (config.operation === "updateDatabaseEntry") {
+        const pageId = interpolateVariables((notionConfig.pageId as string) || "", context);
+        const propertiesStr = interpolateVariables(
+            (notionConfig.properties as string) || "",
+            context
+        );
+
+        if (!pageId || !propertiesStr) {
+            throw new Error(
+                "Page ID and Properties are required for updateDatabaseEntry operation"
+            );
+        }
+
+        console.log(`[Integration/Notion] Updating database entry: ${pageId}`);
+
+        let properties: Record<string, unknown>;
+        try {
+            properties = JSON.parse(propertiesStr);
+        } catch (error) {
+            throw new Error(
+                `Invalid JSON in properties: ${error instanceof Error ? error.message : "Unknown error"}`
+            );
+        }
+
+        const response = await axios.patch(
+            `${baseUrl}/pages/${pageId}`,
+            { properties },
+            { headers }
+        );
+
+        return {
+            service: "notion",
+            operation: "updateDatabaseEntry",
+            success: true,
+            data: response.data
+        } as unknown as JsonObject;
+    } else {
+        throw new Error(`Unsupported Notion operation: ${config.operation}`);
     }
 }
 
