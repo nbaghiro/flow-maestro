@@ -26,7 +26,7 @@ Built for TypeScript developers who need both visual workflow orchestration and 
 
 ### Integrations & Context
 
-- **[External Connections](./.docs/external-connections.md)** - OAuth 2.0, API keys, and MCP for 40+ AI providers and services
+- **[Integration System](./.docs/integrations-system.md)** - Provider SDK architecture with OAuth 2.0, API keys, and MCP support
 - **[Knowledge Bases](./.docs/workflow-system.md#knowledge-base)** - RAG with document processing, chunking, and vector search
 - **[Voice Calls](./.docs/voice-calls.md)** - Telnyx + LiveKit integration for phone-based AI agents
 - **Multi-LLM Support** - OpenAI, Anthropic, Google Gemini, Cohere through unified interface
@@ -84,7 +84,7 @@ Comprehensive documentation is available in the `.docs/` directory:
 - **[Workflow System](./.docs/workflow-system.md)** - Complete workflow builder guide
 - **[Agent Architecture](./.docs/agent-architecture.md)** - AI agent system and memory
 - **[Temporal Workflows](./.docs/temporal-workflows.md)** - Durable workflow execution
-- **[External Connections](./.docs/external-connections.md)** - Integrations and OAuth
+- **[Integration System](./.docs/integrations-system.md)** - Provider SDK and external connections
 
 ### Infrastructure & Operations
 
