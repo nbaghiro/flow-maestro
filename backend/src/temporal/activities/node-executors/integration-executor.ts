@@ -5,7 +5,7 @@ import { getAccessToken } from "../../../services/oauth/TokenRefreshService";
 import { interpolateVariables } from "./utils";
 
 export interface IntegrationNodeConfig {
-    service: "slack" | "email" | "webhook";
+    service: "slack" | "email" | "webhook" | "coda";
     operation: string;
 
     // Authentication (prioritized in this order)
@@ -53,6 +53,10 @@ export async function executeIntegrationNode(
 
         case "webhook":
             result = await executeWebhook(config, context);
+            break;
+
+        case "coda":
+            result = await executeCoda(config, context);
             break;
 
         default:
@@ -349,6 +353,197 @@ async function executeWebhook(
         } as unknown as JsonObject;
     } else {
         throw new Error(`Unsupported webhook operation: ${config.operation}`);
+    }
+}
+
+/**
+ * Execute Coda integration
+ */
+async function executeCoda(
+    config: IntegrationNodeConfig,
+    context: JsonObject
+): Promise<JsonObject> {
+    // Get API token from connection
+    let apiToken: string;
+
+    if (config.connectionId) {
+        // Use API key from connection
+        apiToken = await getAccessToken(config.connectionId);
+        console.log(`[Integration/Coda] Using connection: ${config.connectionId}`);
+    } else if (config.apiKey) {
+        apiToken = config.apiKey;
+        console.log("[Integration/Coda] Using provided API key");
+    } else {
+        throw new Error(
+            "Coda API token not configured. Please connect your Coda account or provide an API key."
+        );
+    }
+
+    const codaConfig = config.config;
+    const baseUrl = "https://coda.io/apis/v1";
+
+    const headers = {
+        Authorization: `Bearer ${apiToken}`,
+        "Content-Type": "application/json"
+    };
+
+    if (config.operation === "listDocuments") {
+        console.log("[Integration/Coda] Listing documents");
+
+        const response = await axios.get(`${baseUrl}/docs`, { headers });
+
+        return {
+            service: "coda",
+            operation: "listDocuments",
+            success: true,
+            data: response.data
+        } as unknown as JsonObject;
+    } else if (config.operation === "getTableRows") {
+        const docId = interpolateVariables((codaConfig.docId as string) || "", context);
+        const tableId = interpolateVariables((codaConfig.tableId as string) || "", context);
+        const query = codaConfig.query as Record<string, unknown>;
+
+        if (!docId || !tableId) {
+            throw new Error("Document ID and Table ID are required for getTableRows operation");
+        }
+
+        console.log(`[Integration/Coda] Getting rows from table: ${tableId} in doc: ${docId}`);
+
+        const params = query
+            ? Object.fromEntries(
+                  Object.entries(query).map(([key, value]) => [
+                      key,
+                      typeof value === "string" ? interpolateVariables(value, context) : value
+                  ])
+              )
+            : {};
+
+        const response = await axios.get(`${baseUrl}/docs/${docId}/tables/${tableId}/rows`, {
+            headers,
+            params
+        });
+
+        return {
+            service: "coda",
+            operation: "getTableRows",
+            success: true,
+            data: response.data
+        } as unknown as JsonObject;
+    } else if (config.operation === "insertRow") {
+        const docId = interpolateVariables((codaConfig.docId as string) || "", context);
+        const tableId = interpolateVariables((codaConfig.tableId as string) || "", context);
+        const rowDataStr = interpolateVariables((codaConfig.rowData as string) || "", context);
+
+        if (!docId || !tableId || !rowDataStr) {
+            throw new Error(
+                "Document ID, Table ID, and Row Data are required for insertRow operation"
+            );
+        }
+
+        console.log(`[Integration/Coda] Inserting row into table: ${tableId} in doc: ${docId}`);
+
+        let rowData: Record<string, unknown>;
+        try {
+            rowData = JSON.parse(rowDataStr);
+        } catch (error) {
+            throw new Error(
+                `Invalid JSON in rowData: ${error instanceof Error ? error.message : "Unknown error"}`
+            );
+        }
+
+        // Convert to Coda API format: { cells: [{ column: "columnName", value: "value" }] }
+        const cells = Object.entries(rowData).map(([column, value]) => ({
+            column,
+            value
+        }));
+
+        const response = await axios.post(
+            `${baseUrl}/docs/${docId}/tables/${tableId}/rows`,
+            {
+                rows: [{ cells }]
+            },
+            { headers }
+        );
+
+        return {
+            service: "coda",
+            operation: "insertRow",
+            success: true,
+            data: response.data
+        } as unknown as JsonObject;
+    } else if (config.operation === "updateRow") {
+        const docId = interpolateVariables((codaConfig.docId as string) || "", context);
+        const tableId = interpolateVariables((codaConfig.tableId as string) || "", context);
+        const rowId = interpolateVariables((codaConfig.rowId as string) || "", context);
+        const rowDataStr = interpolateVariables((codaConfig.rowData as string) || "", context);
+
+        if (!docId || !tableId || !rowId || !rowDataStr) {
+            throw new Error(
+                "Document ID, Table ID, Row ID, and Row Data are required for updateRow operation"
+            );
+        }
+
+        console.log(
+            `[Integration/Coda] Updating row ${rowId} in table: ${tableId} in doc: ${docId}`
+        );
+
+        let rowData: Record<string, unknown>;
+        try {
+            rowData = JSON.parse(rowDataStr);
+        } catch (error) {
+            throw new Error(
+                `Invalid JSON in rowData: ${error instanceof Error ? error.message : "Unknown error"}`
+            );
+        }
+
+        // Convert to Coda API format
+        const cells = Object.entries(rowData).map(([column, value]) => ({
+            column,
+            value
+        }));
+
+        const response = await axios.put(
+            `${baseUrl}/docs/${docId}/tables/${tableId}/rows/${rowId}`,
+            {
+                row: { cells }
+            },
+            { headers }
+        );
+
+        return {
+            service: "coda",
+            operation: "updateRow",
+            success: true,
+            data: response.data
+        } as unknown as JsonObject;
+    } else if (config.operation === "deleteRow") {
+        const docId = interpolateVariables((codaConfig.docId as string) || "", context);
+        const tableId = interpolateVariables((codaConfig.tableId as string) || "", context);
+        const rowId = interpolateVariables((codaConfig.rowId as string) || "", context);
+
+        if (!docId || !tableId || !rowId) {
+            throw new Error(
+                "Document ID, Table ID, and Row ID are required for deleteRow operation"
+            );
+        }
+
+        console.log(
+            `[Integration/Coda] Deleting row ${rowId} from table: ${tableId} in doc: ${docId}`
+        );
+
+        const response = await axios.delete(
+            `${baseUrl}/docs/${docId}/tables/${tableId}/rows/${rowId}`,
+            { headers }
+        );
+
+        return {
+            service: "coda",
+            operation: "deleteRow",
+            success: true,
+            data: response.data
+        } as unknown as JsonObject;
+    } else {
+        throw new Error(`Unsupported Coda operation: ${config.operation}`);
     }
 }
 

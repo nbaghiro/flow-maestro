@@ -148,8 +148,7 @@ export const ALL_PROVIDERS: MCPProvider[] = [
         description: "Interact with Coda documents and tables",
         logoUrl: "https://cdn.simpleicons.org/coda/F46A54",
         category: "Productivity",
-        methods: ["api_key"],
-        comingSoon: true
+        methods: ["api_key"]
     },
 
     // Developer Tools

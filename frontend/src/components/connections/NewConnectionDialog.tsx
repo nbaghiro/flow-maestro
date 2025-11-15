@@ -387,6 +387,31 @@ export function NewConnectionDialog({
                                         )}
                                     </button>
                                 </div>
+
+                                {/* Provider-specific help text */}
+                                {provider === "coda" && (
+                                    <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                                        <p className="text-sm text-blue-900 font-medium mb-1">
+                                            How to get your Coda API token:
+                                        </p>
+                                        <ol className="text-sm text-blue-800 space-y-1 list-decimal list-inside">
+                                            <li>
+                                                Go to{" "}
+                                                <a
+                                                    href="https://coda.io/account"
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="underline hover:text-blue-600"
+                                                >
+                                                    coda.io/account
+                                                </a>
+                                            </li>
+                                            <li>Navigate to Account Settings → API Settings</li>
+                                            <li>Click "Generate API token"</li>
+                                            <li>Copy the token and paste it above</li>
+                                        </ol>
+                                    </div>
+                                )}
                             </div>
 
                             {/* Error Message */}

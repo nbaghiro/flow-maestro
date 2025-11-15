@@ -12,6 +12,7 @@ const services = [
     { value: "discord", label: "Discord" },
     { value: "email", label: "Email" },
     { value: "webhook", label: "Webhook" },
+    { value: "coda", label: "Coda" },
     { value: "custom", label: "Custom API" }
 ];
 
@@ -26,6 +27,14 @@ const emailProviders = [
     { value: "sendgrid", label: "SendGrid" },
     { value: "mailgun", label: "Mailgun" },
     { value: "ses", label: "AWS SES" }
+];
+
+const codaOperations = [
+    { value: "listDocuments", label: "List Documents" },
+    { value: "getTableRows", label: "Get Table Rows" },
+    { value: "insertRow", label: "Insert Row" },
+    { value: "updateRow", label: "Update Row" },
+    { value: "deleteRow", label: "Delete Row" }
 ];
 
 export function IntegrationNodeConfig({ data, onUpdate }: IntegrationNodeConfigProps) {
@@ -52,25 +61,48 @@ export function IntegrationNodeConfig({ data, onUpdate }: IntegrationNodeConfigP
     // Webhook config
     const [webhookUrl, setWebhookUrl] = useState((data.webhookUrl as string) || "");
     const [webhookPayload, setWebhookPayload] = useState((data.webhookPayload as string) || "");
+
+    // Coda config
+    const [codaOperation, setCodaOperation] = useState(
+        (data.codaOperation as string) || "listDocuments"
+    );
+    const [codaDocId, setCodaDocId] = useState((data.codaDocId as string) || "");
+    const [codaTableId, setCodaTableId] = useState((data.codaTableId as string) || "");
+    const [codaRowId, setCodaRowId] = useState((data.codaRowId as string) || "");
+    const [codaRowData, setCodaRowData] = useState((data.codaRowData as string) || "");
+    const [codaQuery, setCodaQuery] = useState((data.codaQuery as string) || "");
+
     const [outputVariable, setOutputVariable] = useState((data.outputVariable as string) || "");
 
     useEffect(() => {
-        const config: Record<string, unknown> = { service, action, credentialsId, outputVariable };
+        const config: Record<string, unknown> = { service, credentialsId, outputVariable };
 
         if (service === "slack") {
+            config.action = action;
             config.slackChannel = slackChannel;
             config.slackMessage = slackMessage;
         } else if (service === "discord") {
+            config.action = "send";
             config.discordWebhookUrl = discordWebhookUrl;
             config.discordMessage = discordMessage;
         } else if (service === "email") {
+            config.action = "send";
             config.emailProvider = emailProvider;
             config.emailTo = emailTo;
             config.emailSubject = emailSubject;
             config.emailBody = emailBody;
         } else if (service === "webhook") {
+            config.action = "send";
             config.webhookUrl = webhookUrl;
             config.webhookPayload = webhookPayload;
+        } else if (service === "coda") {
+            config.action = codaOperation;
+            config.codaOperation = codaOperation;
+            config.codaDocId = codaDocId;
+            config.codaTableId = codaTableId;
+            config.codaRowId = codaRowId;
+            config.codaRowData = codaRowData;
+            config.codaQuery = codaQuery;
         }
 
         onUpdate(config);
@@ -88,6 +120,12 @@ export function IntegrationNodeConfig({ data, onUpdate }: IntegrationNodeConfigP
         emailBody,
         webhookUrl,
         webhookPayload,
+        codaOperation,
+        codaDocId,
+        codaTableId,
+        codaRowId,
+        codaRowData,
+        codaQuery,
         outputVariable
     ]);
 
@@ -264,6 +302,107 @@ export function IntegrationNodeConfig({ data, onUpdate }: IntegrationNodeConfigP
                         />
                     </FormField>
                 </FormSection>
+            )}
+
+            {service === "coda" && (
+                <>
+                    <FormSection title="Operation">
+                        <FormField label="Operation Type">
+                            <select
+                                value={codaOperation}
+                                onChange={(e) => setCodaOperation(e.target.value)}
+                                className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                            >
+                                {codaOperations.map((op) => (
+                                    <option key={op.value} value={op.value}>
+                                        {op.label}
+                                    </option>
+                                ))}
+                            </select>
+                        </FormField>
+                    </FormSection>
+
+                    <FormSection title="Configuration">
+                        {codaOperation !== "listDocuments" && (
+                            <FormField
+                                label="Document ID"
+                                description="Coda document ID (e.g., 'abc123' from URL or ${variableName})"
+                            >
+                                <input
+                                    type="text"
+                                    value={codaDocId}
+                                    onChange={(e) => setCodaDocId(e.target.value)}
+                                    placeholder="abc123 or ${documentId}"
+                                    className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary font-mono"
+                                />
+                            </FormField>
+                        )}
+
+                        {(codaOperation === "getTableRows" ||
+                            codaOperation === "insertRow" ||
+                            codaOperation === "updateRow" ||
+                            codaOperation === "deleteRow") && (
+                            <FormField
+                                label="Table ID"
+                                description="Table ID or name (e.g., 'grid-abc' or 'Tasks')"
+                            >
+                                <input
+                                    type="text"
+                                    value={codaTableId}
+                                    onChange={(e) => setCodaTableId(e.target.value)}
+                                    placeholder="grid-abc or ${tableId}"
+                                    className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary font-mono"
+                                />
+                            </FormField>
+                        )}
+
+                        {(codaOperation === "updateRow" || codaOperation === "deleteRow") && (
+                            <FormField label="Row ID" description="Row ID to update or delete">
+                                <input
+                                    type="text"
+                                    value={codaRowId}
+                                    onChange={(e) => setCodaRowId(e.target.value)}
+                                    placeholder="i-abc123 or ${rowId}"
+                                    className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary font-mono"
+                                />
+                            </FormField>
+                        )}
+
+                        {(codaOperation === "insertRow" || codaOperation === "updateRow") && (
+                            <FormField
+                                label="Row Data"
+                                description="JSON object with column names/IDs as keys"
+                            >
+                                <textarea
+                                    value={codaRowData}
+                                    onChange={(e) => setCodaRowData(e.target.value)}
+                                    placeholder={
+                                        '{\n  "Name": "John Doe",\n  "Email": "john@example.com",\n  "Status": "${status}"\n}'
+                                    }
+                                    rows={6}
+                                    className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none font-mono"
+                                />
+                            </FormField>
+                        )}
+
+                        {codaOperation === "getTableRows" && (
+                            <FormField
+                                label="Query Parameters"
+                                description="Optional: JSON for filters, sorting, limit (e.g., {limit: 100})"
+                            >
+                                <textarea
+                                    value={codaQuery}
+                                    onChange={(e) => setCodaQuery(e.target.value)}
+                                    placeholder={
+                                        '{\n  "limit": 100,\n  "query": "${searchTerm}"\n}'
+                                    }
+                                    rows={4}
+                                    className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none font-mono"
+                                />
+                            </FormField>
+                        )}
+                    </FormSection>
+                </>
             )}
 
             <FormSection title="Output Settings">

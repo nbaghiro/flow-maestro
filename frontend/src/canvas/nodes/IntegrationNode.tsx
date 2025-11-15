@@ -14,6 +14,16 @@ function IntegrationNode({ data, selected }: NodeProps<IntegrationNodeData>) {
     const service = data.service || "slack";
     const action = data.action || "send_message";
 
+    // Format action for display: handle both snake_case and camelCase
+    const formatAction = (actionStr: string): string => {
+        // Replace underscores with spaces
+        let formatted = actionStr.replace(/_/g, " ");
+        // Add spaces before capital letters (camelCase to space case)
+        formatted = formatted.replace(/([A-Z])/g, " $1");
+        // Capitalize first letter and trim
+        return formatted.charAt(0).toUpperCase() + formatted.slice(1).trim();
+    };
+
     return (
         <BaseNode
             icon={Plug}
@@ -29,7 +39,7 @@ function IntegrationNode({ data, selected }: NodeProps<IntegrationNodeData>) {
                 </div>
                 <div className="flex items-center justify-between">
                     <span className="text-xs text-muted-foreground">Action:</span>
-                    <span className="text-xs font-medium">{action.replace(/_/g, " ")}</span>
+                    <span className="text-xs font-medium">{formatAction(action)}</span>
                 </div>
             </div>
         </BaseNode>
