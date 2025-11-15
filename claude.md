@@ -689,11 +689,17 @@ TEMPORAL_ADDRESS=localhost:7233
 ## Development Commands
 
 ```bash
-# Start infrastructure
-npm run docker:up
+# Docker infrastructure
+npm run docker:up      # Start all services (postgres, redis, temporal, etc.)
+npm run docker:down    # Stop services (keeps data)
+npm run docker:clean   # Stop and remove volumes, create fresh ones
+npm run docker:reset   # Complete reset: clean + start + migrate (one command!)
+npm run docker:logs    # View container logs
 
-# Run migrations
-npm run db:migrate
+# Database migrations
+npm run db:migrate     # Run all pending migrations
+npm run db:migrate:down  # Rollback last migration
+npm run db:migrate:create <name>  # Create new migration file
 
 # Start development servers (frontend + backend)
 npm run dev
@@ -712,6 +718,8 @@ npm run build:backend  # Backend only
 npm run lint           # Lint all packages
 npm run format         # Format all packages
 ```
+
+**Important:** All npm scripts automatically load environment variables from `.env` files. You **never** need to manually export variables like `DATABASE_URL` - the tooling handles this automatically via `dotenv-cli`.
 
 ---
 

@@ -53,6 +53,9 @@ export class ConnectionTestService {
                 case "github":
                     return await this.testGitHub(connection);
 
+                case "coda":
+                    return await this.testCoda(connection);
+
                 default:
                     return await this.testGenericAPI(connection);
             }
@@ -366,6 +369,41 @@ export class ConnectionTestService {
                     details: axiosError.response?.data
                 };
             }
+        }
+    }
+
+    /**
+     * Test Coda API token
+     */
+    private async testCoda(connection: ConnectionWithData): Promise<ConnectionTestResult> {
+        const data = connection.data as ApiKeyData;
+
+        try {
+            const response = await axios.get("https://coda.io/apis/v1/whoami", {
+                headers: {
+                    Authorization: `Bearer ${data.api_key}`
+                }
+            });
+
+            return {
+                success: true,
+                message: "Coda API token is valid",
+                details: {
+                    name: response.data.name,
+                    type: response.data.type,
+                    workspace: response.data.workspace?.name
+                }
+            };
+        } catch (error: unknown) {
+            const axiosError = error as { response?: { data?: unknown; status?: number } };
+            return {
+                success: false,
+                message:
+                    axiosError.response?.status === 401
+                        ? "Coda API token is invalid or expired"
+                        : "Failed to test Coda token",
+                details: axiosError.response?.data
+            };
         }
     }
 

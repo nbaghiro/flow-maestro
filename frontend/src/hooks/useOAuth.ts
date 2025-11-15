@@ -47,7 +47,7 @@ export function useOAuth() {
      * Fetch available OAuth providers
      */
     const fetchProviders = async () => {
-        const token = localStorage.getItem("token");
+        const token = localStorage.getItem("auth_token");
         if (!token) return;
 
         try {
@@ -76,13 +76,15 @@ export function useOAuth() {
         setLoading(true);
 
         try {
-            const token = localStorage.getItem("token");
+            const token = localStorage.getItem("auth_token");
             if (!token) {
-                throw new Error("Not authenticated");
+                throw new Error("Not authenticated. Please log in first.");
             }
 
+            const apiUrl = `${API_BASE_URL}/api/oauth/${provider}/authorize`;
+
             // Get authorization URL from backend
-            const response = await fetch(`${API_BASE_URL}/api/oauth/${provider}/authorize`, {
+            const response = await fetch(apiUrl, {
                 headers: {
                     Authorization: `Bearer ${token}`
                 }
@@ -99,8 +101,9 @@ export function useOAuth() {
             // Open OAuth popup
             const popup = openOAuthPopup(authUrl, provider);
 
-            if (!popup) {
-                throw new Error("Failed to open popup window");
+            // Check if popup was blocked (null) or immediately closed
+            if (!popup || popup.closed) {
+                throw new Error("Failed to open popup window. Please allow popups for this site.");
             }
 
             // Wait for callback message
@@ -194,7 +197,7 @@ export function useOAuth() {
      * Revoke an OAuth connection
      */
     const revokeConnection = async (provider: string, connectionId: string): Promise<void> => {
-        const token = localStorage.getItem("token");
+        const token = localStorage.getItem("auth_token");
         if (!token) {
             throw new Error("Not authenticated");
         }
@@ -220,7 +223,7 @@ export function useOAuth() {
      * Manually refresh a connection's token
      */
     const refreshConnection = async (provider: string, connectionId: string): Promise<void> => {
-        const token = localStorage.getItem("token");
+        const token = localStorage.getItem("auth_token");
         if (!token) {
             throw new Error("Not authenticated");
         }

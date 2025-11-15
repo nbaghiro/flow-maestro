@@ -49,6 +49,7 @@ export function NewConnectionDialog({
     const [showMcpAuthKey, setShowMcpAuthKey] = useState<boolean>(false);
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
+    const [oauthInitiated, setOauthInitiated] = useState<boolean>(false);
 
     const { initiateOAuth, loading: oauthLoading } = useOAuth();
     const { addConnection } = useConnectionStore();
@@ -62,6 +63,7 @@ export function NewConnectionDialog({
         setShowMcpAuthKey(false);
         setError(null);
         setIsSubmitting(false);
+        setOauthInitiated(false);
     };
 
     const handleClose = () => {
@@ -70,23 +72,41 @@ export function NewConnectionDialog({
     };
 
     const handleOAuthSelect = useCallback(async () => {
+        // Prevent multiple simultaneous OAuth attempts
+        if (oauthInitiated || oauthLoading) {
+            console.log("[NewConnectionDialog] OAuth already in progress, ignoring click");
+            return;
+        }
+
+        console.log("[NewConnectionDialog] OAuth button clicked for provider:", provider);
+        setOauthInitiated(true);
         setError(null);
         try {
+            console.log("[NewConnectionDialog] Initiating OAuth flow...");
             await initiateOAuth(provider);
+            console.log("[NewConnectionDialog] OAuth flow completed successfully");
             if (onSuccess) onSuccess();
             handleClose();
         } catch (err) {
-            // Only show error if it's not "Not authenticated" (which happens when no existing connection)
             const errorMessage = err instanceof Error ? err.message : "OAuth authentication failed";
-            if (errorMessage !== "Not authenticated") {
+            console.error("[NewConnectionDialog] OAuth error:", errorMessage, err);
+            // Only show error if it's not a popup-blocked error (user might have already completed it)
+            if (!errorMessage.includes("popup") && !errorMessage.includes("Failed to open")) {
                 setError(errorMessage);
             }
+            // Reset flag so user can try again
+            setOauthInitiated(false);
         }
-    }, [initiateOAuth, provider, onSuccess]);
+    }, [initiateOAuth, provider, onSuccess, oauthInitiated, oauthLoading]);
 
     // Auto-select authentication method if only one is supported
     useEffect(() => {
-        if (!isOpen) return;
+        if (!isOpen) {
+            setOauthInitiated(false);
+            return;
+        }
+
+        if (oauthInitiated) return;
 
         const methodCount =
             (supportsOAuth ? 1 : 0) + (supportsApiKey ? 1 : 0) + (supportsMCP ? 1 : 0);
@@ -94,8 +114,13 @@ export function NewConnectionDialog({
         // If only one method is supported, auto-select it
         if (methodCount === 1) {
             if (supportsOAuth && !supportsApiKey && !supportsMCP) {
-                // Auto-start OAuth flow
-                handleOAuthSelect();
+                // Auto-start OAuth flow (with small delay to avoid race conditions)
+                const timer = setTimeout(() => {
+                    if (!oauthInitiated) {
+                        handleOAuthSelect();
+                    }
+                }, 100);
+                return () => clearTimeout(timer);
             } else if (supportsApiKey && !supportsOAuth && !supportsMCP) {
                 // Auto-show API Key form
                 setStep("api-key-form");
@@ -107,7 +132,7 @@ export function NewConnectionDialog({
             // Multiple methods supported, show selection
             setStep("method-selection");
         }
-    }, [isOpen, supportsOAuth, supportsApiKey, supportsMCP, handleOAuthSelect]);
+    }, [isOpen, supportsOAuth, supportsApiKey, supportsMCP, handleOAuthSelect, oauthInitiated]);
 
     const handleApiKeySelect = () => {
         setStep("api-key-form");
@@ -387,6 +412,31 @@ export function NewConnectionDialog({
                                         )}
                                     </button>
                                 </div>
+
+                                {/* Provider-specific help text */}
+                                {provider === "coda" && (
+                                    <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                                        <p className="text-sm text-blue-900 font-medium mb-1">
+                                            How to get your Coda API token:
+                                        </p>
+                                        <ol className="text-sm text-blue-800 space-y-1 list-decimal list-inside">
+                                            <li>
+                                                Go to{" "}
+                                                <a
+                                                    href="https://coda.io/account"
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="underline hover:text-blue-600"
+                                                >
+                                                    coda.io/account
+                                                </a>
+                                            </li>
+                                            <li>Navigate to Account Settings → API Settings</li>
+                                            <li>Click "Generate API token"</li>
+                                            <li>Copy the token and paste it above</li>
+                                        </ol>
+                                    </div>
+                                )}
                             </div>
 
                             {/* Error Message */}
