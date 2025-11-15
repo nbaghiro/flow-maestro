@@ -118,9 +118,7 @@ export const ALL_PROVIDERS: MCPProvider[] = [
         description: "Manage databases and pages",
         logoUrl: "https://cdn.simpleicons.org/notion/000000",
         category: "Productivity",
-        methods: ["oauth2"],
-        mcpServerUrl: "https://mcp.pipedream.com/app/notion",
-        mcpAuthType: "oauth2"
+        methods: ["oauth2"]
     },
     {
         provider: "microsoft-365",
