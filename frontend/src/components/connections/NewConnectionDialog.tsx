@@ -111,16 +111,11 @@ export function NewConnectionDialog({
         const methodCount =
             (supportsOAuth ? 1 : 0) + (supportsApiKey ? 1 : 0) + (supportsMCP ? 1 : 0);
 
-        // If only one method is supported, auto-select it
+        // If only one method is supported, auto-select it (but don't auto-trigger OAuth)
         if (methodCount === 1) {
             if (supportsOAuth && !supportsApiKey && !supportsMCP) {
-                // Auto-start OAuth flow (with small delay to avoid race conditions)
-                const timer = setTimeout(() => {
-                    if (!oauthInitiated) {
-                        handleOAuthSelect();
-                    }
-                }, 100);
-                return () => clearTimeout(timer);
+                // Show OAuth button (don't auto-trigger popup)
+                setStep("method-selection");
             } else if (supportsApiKey && !supportsOAuth && !supportsMCP) {
                 // Auto-show API Key form
                 setStep("api-key-form");
@@ -134,7 +129,7 @@ export function NewConnectionDialog({
         }
 
         return;
-    }, [isOpen, supportsOAuth, supportsApiKey, supportsMCP, handleOAuthSelect, oauthInitiated]);
+    }, [isOpen, supportsOAuth, supportsApiKey, supportsMCP, oauthInitiated]);
 
     const handleApiKeySelect = () => {
         setStep("api-key-form");

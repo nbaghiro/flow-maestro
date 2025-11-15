@@ -2111,6 +2111,88 @@ export async function reprocessDocument(kbId: string, docId: string): Promise<Ap
     return response.json();
 }
 
+// ===== Integration Provider API Functions =====
+
+export interface ProviderSummary {
+    name: string;
+    displayName: string;
+    authMethod: "oauth2" | "api_key" | "mcp";
+    category: string;
+    description?: string;
+}
+
+export interface OperationParameter {
+    name: string;
+    type: string;
+    description?: string;
+    required: boolean;
+    default?: unknown;
+}
+
+export interface OperationSummary {
+    id: string;
+    name: string;
+    description: string;
+    category?: string;
+    parameters: OperationParameter[];
+    inputSchemaJSON: JsonObject;
+}
+
+/**
+ * Get all available integration providers
+ */
+export async function getIntegrationProviders(): Promise<{
+    success: boolean;
+    data: ProviderSummary[];
+    error?: string;
+}> {
+    const token = getAuthToken();
+
+    const response = await fetch(`${API_BASE_URL}/api/integrations/providers`, {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json",
+            ...(token && { Authorization: `Bearer ${token}` })
+        }
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    return response.json();
+}
+
+/**
+ * Get operations for a specific provider
+ */
+export async function getProviderOperations(provider: string): Promise<{
+    success: boolean;
+    data: { provider: string; operations: OperationSummary[] };
+    error?: string;
+}> {
+    const token = getAuthToken();
+
+    const response = await fetch(
+        `${API_BASE_URL}/api/integrations/providers/${provider}/operations`,
+        {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                ...(token && { Authorization: `Bearer ${token}` })
+            }
+        }
+    );
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    return response.json();
+}
+
 // ===== Analytics API Functions =====
 
 export interface AnalyticsOverview {

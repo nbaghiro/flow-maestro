@@ -54,9 +54,6 @@ function ProviderCard({ provider, connections, onConnect, onViewDetails }: Provi
                     {provider.displayName}
                 </h3>
                 <p className="text-xs text-muted-foreground line-clamp-2">{provider.description}</p>
-                {isConnected && connection && (
-                    <p className="text-xs text-muted-foreground mt-1">{connection.name}</p>
-                )}
             </div>
 
             {/* Status Badge / Action */}

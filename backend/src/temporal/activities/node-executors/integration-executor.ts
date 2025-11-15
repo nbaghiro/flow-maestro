@@ -1,36 +1,39 @@
-import axios from "axios";
-import * as nodemailer from "nodemailer";
 import type { JsonObject } from "@flowmaestro/shared";
-import { getAccessToken } from "../../../services/oauth/TokenRefreshService";
-import { interpolateVariables } from "./utils";
+import { ExecutionRouter } from "../../../integrations/core/ExecutionRouter";
+import { providerRegistry } from "../../../integrations/registry";
+import { ConnectionRepository } from "../../../storage/repositories/ConnectionRepository";
+
+const connectionRepository = new ConnectionRepository();
+
+// Initialize execution router (no MCP service for now, will add later)
+const executionRouter = new ExecutionRouter(providerRegistry);
 
 export interface IntegrationNodeConfig {
-    service: "slack" | "email" | "webhook" | "coda" | "notion";
-    operation: string;
-
-    // Authentication (prioritized in this order)
-    connectionId?: string; // OAuth connection ID (preferred)
-    apiKey?: string; // Manual API key
-    credentials?: unknown; // Legacy credentials
-
-    // Service-specific config
-    config: Record<string, unknown>;
-
+    provider: string; // "slack", "coda", etc.
+    operation: string; // "sendMessage", "listDocs", etc.
+    connectionId: string; // Always required - connection ID
+    parameters: Record<string, unknown>; // Operation parameters
     outputVariable?: string;
+    nodeId?: string; // Optional node ID for context
 }
 
 export interface IntegrationNodeResult {
-    service: string;
+    provider: string;
     operation: string;
     success: boolean;
     data?: unknown;
+    error?: {
+        type: string;
+        message: string;
+        retryable: boolean;
+    };
     metadata?: {
         requestTime: number;
     };
 }
 
 /**
- * Execute Integration node - connect to external services
+ * Execute Integration node using the new Provider SDK system
  */
 export async function executeIntegrationNode(
     config: IntegrationNodeConfig,
@@ -38,820 +41,91 @@ export async function executeIntegrationNode(
 ): Promise<JsonObject> {
     const startTime = Date.now();
 
-    console.log(`[Integration] Service: ${config.service}, Operation: ${config.operation}`);
+    console.log(`[Integration] Provider: ${config.provider}, Operation: ${config.operation}`);
 
-    let result: JsonObject;
+    try {
+        // Get connection with decrypted data
+        const connection = await connectionRepository.findByIdWithData(config.connectionId);
 
-    switch (config.service) {
-        case "slack":
-            result = await executeSlack(config, context);
-            break;
+        if (!connection) {
+            throw new Error(`Connection ${config.connectionId} not found`);
+        }
 
-        case "email":
-            result = await executeEmail(config, context);
-            break;
+        if (connection.status !== "active") {
+            throw new Error(`Connection ${config.connectionId} is not active`);
+        }
 
-        case "webhook":
-            result = await executeWebhook(config, context);
-            break;
-
-        case "coda":
-            result = await executeCoda(config, context);
-            break;
-
-        case "notion":
-            result = await executeNotion(config, context);
-            break;
-
-        default:
-            throw new Error(`Unsupported integration service: ${config.service}`);
-    }
-
-    result.metadata = {
-        ...(result.metadata as JsonObject),
-        requestTime: Date.now() - startTime
-    };
-
-    console.log(
-        `[Integration] Completed in ${((result.metadata as JsonObject)?.requestTime as number) || 0}ms`
-    );
-
-    if (config.outputVariable) {
-        return { [config.outputVariable]: result } as unknown as JsonObject;
-    }
-
-    return result as unknown as JsonObject;
-}
-
-/**
- * Execute Slack integration
- */
-async function executeSlack(
-    config: IntegrationNodeConfig,
-    context: JsonObject
-): Promise<JsonObject> {
-    // Get token in priority order: OAuth connection > API key > env var
-    let token: string;
-
-    if (config.connectionId) {
-        // Use OAuth token from connection (auto-refreshes if needed!)
-        token = await getAccessToken(config.connectionId);
-        console.log(`[Integration/Slack] Using OAuth connection: ${config.connectionId}`);
-    } else if (config.apiKey) {
-        token = config.apiKey;
-        console.log("[Integration/Slack] Using provided API key");
-    } else if (process.env.SLACK_BOT_TOKEN) {
-        token = process.env.SLACK_BOT_TOKEN;
-        console.log("[Integration/Slack] Using env var SLACK_BOT_TOKEN");
-    } else {
-        throw new Error(
-            "Slack token not configured. Please connect your Slack account or provide an API key."
-        );
-    }
-
-    const slackConfig = config.config;
-
-    if (config.operation === "send_message") {
-        // Send message to Slack channel
-        const channel = interpolateVariables((slackConfig.channel as string) || "", context);
-        const text = interpolateVariables((slackConfig.text as string) || "", context);
-        const blocks = slackConfig.blocks as unknown[];
-        const threadTs = slackConfig.threadTs;
-
-        console.log(`[Integration/Slack] Sending message to channel: ${channel}`);
-
-        const response = await axios.post(
-            "https://slack.com/api/chat.postMessage",
+        // Execute via router
+        const result = await executionRouter.execute(
+            config.provider,
+            config.operation,
+            config.parameters,
+            connection,
             {
-                channel,
-                text,
-                blocks,
-                thread_ts: threadTs
-            },
-            {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                    "Content-Type": "application/json"
-                }
+                mode: "workflow",
+                workflowId: (context.workflowId as string) || "",
+                nodeId: config.nodeId || ""
             }
         );
 
-        if (!response.data.ok) {
-            throw new Error(`Slack API error: ${response.data.error}`);
-        }
-
-        return {
-            service: "slack",
-            operation: "send_message",
-            success: true,
-            data: response.data
-        } as unknown as JsonObject;
-    } else if (config.operation === "upload_file") {
-        // Upload file to Slack
-        const channels = (slackConfig.channels as string[])?.join(",") || "";
-        const content = interpolateVariables((slackConfig.content as string) || "", context);
-        const filename = interpolateVariables(
-            (slackConfig.filename as string) || "file.txt",
-            context
-        );
-
-        console.log(`[Integration/Slack] Uploading file to channels: ${channels}`);
-
-        const formData = new FormData();
-        formData.append("channels", channels);
-        formData.append("content", content);
-        formData.append("filename", filename);
-
-        const response = await axios.post("https://slack.com/api/files.upload", formData, {
-            headers: {
-                Authorization: `Bearer ${token}`
-            }
-        });
-
-        if (!response.data.ok) {
-            throw new Error(`Slack API error: ${response.data.error}`);
-        }
-
-        return {
-            service: "slack",
-            operation: "upload_file",
-            success: true,
-            data: response.data
-        } as unknown as JsonObject;
-    } else {
-        throw new Error(`Unsupported Slack operation: ${config.operation}`);
-    }
-}
-
-/**
- * Execute Email integration
- */
-async function executeEmail(
-    config: IntegrationNodeConfig,
-    context: JsonObject
-): Promise<JsonObject> {
-    const emailConfig = config.config;
-
-    if (config.operation !== "send") {
-        throw new Error(`Unsupported email operation: ${config.operation}`);
-    }
-
-    // Build transporter config
-    let transportConfig:
-        | { host: string; port: number; secure: boolean; auth: { user: string; pass: string } }
-        | Record<string, unknown> = {};
-
-    if (emailConfig.provider === "smtp") {
-        // SMTP configuration
-        const host = interpolateVariables((emailConfig.host as string) || "", context);
-        const port = emailConfig.port || 587;
-        const secure = emailConfig.secure || false;
-        const username = interpolateVariables((emailConfig.username as string) || "", context);
-        const password = interpolateVariables((emailConfig.password as string) || "", context);
-
-        transportConfig = {
-            host,
-            port,
-            secure,
-            auth: {
-                user: username,
-                pass: password
+        // Build response
+        const response: IntegrationNodeResult = {
+            provider: config.provider,
+            operation: config.operation,
+            success: result.success,
+            data: result.data,
+            error: result.error,
+            metadata: {
+                requestTime: Date.now() - startTime
             }
         };
-    } else if (emailConfig.provider === "sendgrid") {
-        // SendGrid configuration
-        const apiKey = config.apiKey || process.env.SENDGRID_API_KEY;
-        if (!apiKey) {
-            throw new Error("SendGrid API key not configured");
-        }
-
-        // Use SendGrid SMTP
-        transportConfig = {
-            host: "smtp.sendgrid.net",
-            port: 587,
-            secure: false,
-            auth: {
-                user: "apikey",
-                pass: apiKey
-            }
-        };
-    } else {
-        throw new Error(`Unsupported email provider: ${emailConfig.provider}`);
-    }
-
-    const transporter = nodemailer.createTransport(transportConfig);
-
-    // Prepare email
-    const from = interpolateVariables((emailConfig.from as string) || "", context);
-    const to = Array.isArray(emailConfig.to)
-        ? emailConfig.to.map((t: string) => interpolateVariables(t, context))
-        : interpolateVariables((emailConfig.to as string) || "", context);
-    const subject = interpolateVariables((emailConfig.subject as string) || "", context);
-    const body = interpolateVariables((emailConfig.body as string) || "", context);
-    const bodyType = emailConfig.bodyType || "text";
-
-    console.log(`[Integration/Email] Sending email to: ${to}`);
-
-    const mailOptions: {
-        from: string;
-        to: string | string[];
-        subject: string;
-        html?: string;
-        text?: string;
-        cc?: string | string[];
-        bcc?: string | string[];
-        attachments?: Array<{ filename: string; content: string }>;
-    } = {
-        from,
-        to,
-        subject,
-        [bodyType === "html" ? "html" : "text"]: body
-    };
-
-    // Add CC and BCC if specified
-    if (emailConfig.cc) {
-        mailOptions.cc = Array.isArray(emailConfig.cc)
-            ? emailConfig.cc.map((c: string) => interpolateVariables(c, context))
-            : interpolateVariables((emailConfig.cc as string) || "", context);
-    }
-
-    if (emailConfig.bcc) {
-        mailOptions.bcc = Array.isArray(emailConfig.bcc)
-            ? emailConfig.bcc.map((b: string) => interpolateVariables(b, context))
-            : interpolateVariables((emailConfig.bcc as string) || "", context);
-    }
-
-    // Add attachments if specified
-    if (emailConfig.attachments) {
-        mailOptions.attachments = (
-            emailConfig.attachments as Array<{ filename?: string; content?: string }>
-        ).map((att) => ({
-            filename: interpolateVariables(att.filename || "attachment", context),
-            content: interpolateVariables(att.content || "", context)
-        }));
-    }
-
-    const info = await transporter.sendMail(mailOptions);
-
-    console.log(`[Integration/Email] Email sent: ${info.messageId}`);
-
-    return {
-        service: "email",
-        operation: "send",
-        success: true,
-        data: {
-            messageId: info.messageId,
-            accepted: info.accepted,
-            rejected: info.rejected
-        }
-    } as unknown as JsonObject;
-}
-
-/**
- * Execute Webhook integration
- */
-async function executeWebhook(
-    config: IntegrationNodeConfig,
-    context: JsonObject
-): Promise<JsonObject> {
-    const webhookConfig = config.config;
-
-    if (config.operation === "send") {
-        // Send HTTP request to webhook URL
-        const url = interpolateVariables((webhookConfig.url as string) || "", context);
-        const method = webhookConfig.method || "POST";
-        const headers = webhookConfig.headers || {};
-        const body = interpolateObject(webhookConfig.body || {}, context);
-
-        // Interpolate headers
-        const interpolatedHeaders: Record<string, string> = {};
-        for (const [key, value] of Object.entries(headers)) {
-            interpolatedHeaders[key] = interpolateVariables(value as string, context);
-        }
-
-        console.log(`[Integration/Webhook] Sending ${method} request to: ${url}`);
-
-        const response = await axios({
-            method: (method as string).toLowerCase(),
-            url,
-            headers: interpolatedHeaders,
-            data: body,
-            timeout: (webhookConfig.timeout as number) || 30000,
-            validateStatus: () => true // Don't throw on any status code
-        });
-
-        const success = response.status >= 200 && response.status < 300;
-
-        console.log(`[Integration/Webhook] Response: ${response.status} ${response.statusText}`);
-
-        return {
-            service: "webhook",
-            operation: "send",
-            success,
-            data: {
-                status: response.status,
-                statusText: response.statusText,
-                headers: response.headers,
-                body: response.data
-            }
-        } as unknown as JsonObject;
-    } else {
-        throw new Error(`Unsupported webhook operation: ${config.operation}`);
-    }
-}
-
-/**
- * Execute Coda integration
- */
-async function executeCoda(
-    config: IntegrationNodeConfig,
-    context: JsonObject
-): Promise<JsonObject> {
-    // Get API token from connection
-    let apiToken: string;
-
-    if (config.connectionId) {
-        // Use API key from connection
-        apiToken = await getAccessToken(config.connectionId);
-        console.log(`[Integration/Coda] Using connection: ${config.connectionId}`);
-    } else if (config.apiKey) {
-        apiToken = config.apiKey;
-        console.log("[Integration/Coda] Using provided API key");
-    } else {
-        throw new Error(
-            "Coda API token not configured. Please connect your Coda account or provide an API key."
-        );
-    }
-
-    const codaConfig = config.config;
-    const baseUrl = "https://coda.io/apis/v1";
-
-    const headers = {
-        Authorization: `Bearer ${apiToken}`,
-        "Content-Type": "application/json"
-    };
-
-    if (config.operation === "listDocuments") {
-        console.log("[Integration/Coda] Listing documents");
-
-        const response = await axios.get(`${baseUrl}/docs`, { headers });
-
-        return {
-            service: "coda",
-            operation: "listDocuments",
-            success: true,
-            data: response.data
-        } as unknown as JsonObject;
-    } else if (config.operation === "getTableRows") {
-        const docId = interpolateVariables((codaConfig.docId as string) || "", context);
-        const tableId = interpolateVariables((codaConfig.tableId as string) || "", context);
-        const query = codaConfig.query as Record<string, unknown>;
-
-        if (!docId || !tableId) {
-            throw new Error("Document ID and Table ID are required for getTableRows operation");
-        }
-
-        console.log(`[Integration/Coda] Getting rows from table: ${tableId} in doc: ${docId}`);
-
-        const params = query
-            ? Object.fromEntries(
-                  Object.entries(query).map(([key, value]) => [
-                      key,
-                      typeof value === "string" ? interpolateVariables(value, context) : value
-                  ])
-              )
-            : {};
-
-        const response = await axios.get(`${baseUrl}/docs/${docId}/tables/${tableId}/rows`, {
-            headers,
-            params
-        });
-
-        return {
-            service: "coda",
-            operation: "getTableRows",
-            success: true,
-            data: response.data
-        } as unknown as JsonObject;
-    } else if (config.operation === "insertRow") {
-        const docId = interpolateVariables((codaConfig.docId as string) || "", context);
-        const tableId = interpolateVariables((codaConfig.tableId as string) || "", context);
-        const rowDataStr = interpolateVariables((codaConfig.rowData as string) || "", context);
-
-        if (!docId || !tableId || !rowDataStr) {
-            throw new Error(
-                "Document ID, Table ID, and Row Data are required for insertRow operation"
-            );
-        }
-
-        console.log(`[Integration/Coda] Inserting row into table: ${tableId} in doc: ${docId}`);
-
-        let rowData: Record<string, unknown>;
-        try {
-            rowData = JSON.parse(rowDataStr);
-        } catch (error) {
-            throw new Error(
-                `Invalid JSON in rowData: ${error instanceof Error ? error.message : "Unknown error"}`
-            );
-        }
-
-        // Convert to Coda API format: { cells: [{ column: "columnName", value: "value" }] }
-        const cells = Object.entries(rowData).map(([column, value]) => ({
-            column,
-            value
-        }));
-
-        const response = await axios.post(
-            `${baseUrl}/docs/${docId}/tables/${tableId}/rows`,
-            {
-                rows: [{ cells }]
-            },
-            { headers }
-        );
-
-        return {
-            service: "coda",
-            operation: "insertRow",
-            success: true,
-            data: response.data
-        } as unknown as JsonObject;
-    } else if (config.operation === "updateRow") {
-        const docId = interpolateVariables((codaConfig.docId as string) || "", context);
-        const tableId = interpolateVariables((codaConfig.tableId as string) || "", context);
-        const rowId = interpolateVariables((codaConfig.rowId as string) || "", context);
-        const rowDataStr = interpolateVariables((codaConfig.rowData as string) || "", context);
-
-        if (!docId || !tableId || !rowId || !rowDataStr) {
-            throw new Error(
-                "Document ID, Table ID, Row ID, and Row Data are required for updateRow operation"
-            );
-        }
 
         console.log(
-            `[Integration/Coda] Updating row ${rowId} in table: ${tableId} in doc: ${docId}`
+            `[Integration] Completed in ${response.metadata?.requestTime || 0}ms - Success: ${response.success}`
         );
 
-        let rowData: Record<string, unknown>;
-        try {
-            rowData = JSON.parse(rowDataStr);
-        } catch (error) {
-            throw new Error(
-                `Invalid JSON in rowData: ${error instanceof Error ? error.message : "Unknown error"}`
-            );
+        // Return with output variable if specified
+        if (config.outputVariable) {
+            return {
+                ...context,
+                [config.outputVariable]: result.success ? result.data : null
+            } as JsonObject;
         }
 
-        // Convert to Coda API format
-        const cells = Object.entries(rowData).map(([column, value]) => ({
-            column,
-            value
-        }));
+        return {
+            ...context,
+            integrationResult: response as unknown as JsonObject
+        } as JsonObject;
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : "Unknown error";
 
-        const response = await axios.put(
-            `${baseUrl}/docs/${docId}/tables/${tableId}/rows/${rowId}`,
-            {
-                row: { cells }
+        console.error("[Integration] Error:", errorMessage);
+
+        const response: IntegrationNodeResult = {
+            provider: config.provider,
+            operation: config.operation,
+            success: false,
+            error: {
+                type: "server_error",
+                message: errorMessage,
+                retryable: false
             },
-            { headers }
-        );
-
-        return {
-            service: "coda",
-            operation: "updateRow",
-            success: true,
-            data: response.data
-        } as unknown as JsonObject;
-    } else if (config.operation === "deleteRow") {
-        const docId = interpolateVariables((codaConfig.docId as string) || "", context);
-        const tableId = interpolateVariables((codaConfig.tableId as string) || "", context);
-        const rowId = interpolateVariables((codaConfig.rowId as string) || "", context);
-
-        if (!docId || !tableId || !rowId) {
-            throw new Error(
-                "Document ID, Table ID, and Row ID are required for deleteRow operation"
-            );
-        }
-
-        console.log(
-            `[Integration/Coda] Deleting row ${rowId} from table: ${tableId} in doc: ${docId}`
-        );
-
-        const response = await axios.delete(
-            `${baseUrl}/docs/${docId}/tables/${tableId}/rows/${rowId}`,
-            { headers }
-        );
-
-        return {
-            service: "coda",
-            operation: "deleteRow",
-            success: true,
-            data: response.data
-        } as unknown as JsonObject;
-    } else {
-        throw new Error(`Unsupported Coda operation: ${config.operation}`);
-    }
-}
-
-/**
- * Execute Notion integration
- */
-async function executeNotion(
-    config: IntegrationNodeConfig,
-    context: JsonObject
-): Promise<JsonObject> {
-    let accessToken: string;
-
-    if (config.connectionId) {
-        accessToken = await getAccessToken(config.connectionId);
-        console.log(`[Integration/Notion] Using OAuth connection: ${config.connectionId}`);
-    } else {
-        throw new Error(
-            "Notion requires OAuth connection. Please connect your Notion account first."
-        );
-    }
-
-    const notionConfig = config.config;
-    const baseUrl = "https://api.notion.com/v1";
-
-    const headers = {
-        Authorization: `Bearer ${accessToken}`,
-        "Notion-Version": "2022-06-28",
-        "Content-Type": "application/json"
-    };
-
-    if (config.operation === "search") {
-        console.log("[Integration/Notion] Searching pages and databases");
-
-        const query = interpolateVariables((notionConfig.query as string) || "", context);
-        const filter = notionConfig.filter as Record<string, unknown> | undefined;
-
-        const requestBody: Record<string, unknown> = {};
-        if (query) {
-            requestBody.query = query;
-        }
-        if (filter) {
-            requestBody.filter = interpolateObject(filter, context);
-        }
-
-        const response = await axios.post(`${baseUrl}/search`, requestBody, { headers });
-
-        return {
-            service: "notion",
-            operation: "search",
-            success: true,
-            data: response.data
-        } as unknown as JsonObject;
-    } else if (config.operation === "createPage") {
-        const parentId = interpolateVariables((notionConfig.parentId as string) || "", context);
-        const pageTitle = interpolateVariables((notionConfig.pageTitle as string) || "", context);
-        const pageContentStr = interpolateVariables(
-            (notionConfig.pageContent as string) || "",
-            context
-        );
-
-        if (!parentId) {
-            throw new Error("Parent ID (page or database) is required for createPage operation");
-        }
-
-        console.log(`[Integration/Notion] Creating page in parent: ${parentId}`);
-
-        let pageContent: Record<string, unknown> = {};
-        if (pageContentStr) {
-            try {
-                pageContent = JSON.parse(pageContentStr);
-            } catch (error) {
-                throw new Error(
-                    `Invalid JSON in pageContent: ${error instanceof Error ? error.message : "Unknown error"}`
-                );
+            metadata: {
+                requestTime: Date.now() - startTime
             }
-        }
-
-        const properties: Record<string, unknown> = {};
-        if (pageTitle) {
-            properties.title = [
-                {
-                    text: {
-                        content: pageTitle
-                    }
-                }
-            ];
-        }
-
-        if (pageContent.properties) {
-            Object.assign(properties, pageContent.properties);
-        }
-
-        const requestBody: Record<string, unknown> = {
-            parent: {
-                [parentId.startsWith("database-") ? "database_id" : "page_id"]: parentId
-            },
-            properties
         };
 
-        // Add children (content blocks) if provided
-        if (pageContent.children && Array.isArray(pageContent.children)) {
-            requestBody.children = pageContent.children;
+        if (config.outputVariable) {
+            return {
+                ...context,
+                [config.outputVariable]: null,
+                integrationError: errorMessage
+            } as JsonObject;
         }
-
-        const response = await axios.post(`${baseUrl}/pages`, requestBody, { headers });
 
         return {
-            service: "notion",
-            operation: "createPage",
-            success: true,
-            data: response.data
-        } as unknown as JsonObject;
-    } else if (config.operation === "updatePage") {
-        const pageId = interpolateVariables((notionConfig.pageId as string) || "", context);
-        const pagePropertiesStr = interpolateVariables(
-            (notionConfig.pageProperties as string) || "",
-            context
-        );
-
-        if (!pageId || !pagePropertiesStr) {
-            throw new Error("Page ID and Page Properties are required for updatePage operation");
-        }
-
-        console.log(`[Integration/Notion] Updating page: ${pageId}`);
-
-        let pageProperties: Record<string, unknown>;
-        try {
-            pageProperties = JSON.parse(pagePropertiesStr);
-        } catch (error) {
-            throw new Error(
-                `Invalid JSON in pageProperties: ${error instanceof Error ? error.message : "Unknown error"}`
-            );
-        }
-
-        const response = await axios.patch(
-            `${baseUrl}/pages/${pageId}`,
-            { properties: pageProperties },
-            { headers }
-        );
-
-        return {
-            service: "notion",
-            operation: "updatePage",
-            success: true,
-            data: response.data
-        } as unknown as JsonObject;
-    } else if (config.operation === "getPage") {
-        const pageId = interpolateVariables((notionConfig.pageId as string) || "", context);
-
-        if (!pageId) {
-            throw new Error("Page ID is required for getPage operation");
-        }
-
-        console.log(`[Integration/Notion] Getting page: ${pageId}`);
-
-        const response = await axios.get(`${baseUrl}/pages/${pageId}`, { headers });
-
-        return {
-            service: "notion",
-            operation: "getPage",
-            success: true,
-            data: response.data
-        } as unknown as JsonObject;
-    } else if (config.operation === "queryDatabase") {
-        const databaseId = interpolateVariables((notionConfig.databaseId as string) || "", context);
-        const filterStr = interpolateVariables((notionConfig.filter as string) || "", context);
-        const sortsStr = interpolateVariables((notionConfig.sorts as string) || "", context);
-
-        if (!databaseId) {
-            throw new Error("Database ID is required for queryDatabase operation");
-        }
-
-        console.log(`[Integration/Notion] Querying database: ${databaseId}`);
-
-        const requestBody: Record<string, unknown> = {};
-
-        if (filterStr) {
-            try {
-                requestBody.filter = JSON.parse(filterStr);
-            } catch (error) {
-                throw new Error(
-                    `Invalid JSON in filter: ${error instanceof Error ? error.message : "Unknown error"}`
-                );
-            }
-        }
-
-        if (sortsStr) {
-            try {
-                requestBody.sorts = JSON.parse(sortsStr);
-            } catch (error) {
-                throw new Error(
-                    `Invalid JSON in sorts: ${error instanceof Error ? error.message : "Unknown error"}`
-                );
-            }
-        }
-
-        const response = await axios.post(`${baseUrl}/databases/${databaseId}/query`, requestBody, {
-            headers
-        });
-
-        return {
-            service: "notion",
-            operation: "queryDatabase",
-            success: true,
-            data: response.data
-        } as unknown as JsonObject;
-    } else if (config.operation === "createDatabaseEntry") {
-        const databaseId = interpolateVariables((notionConfig.databaseId as string) || "", context);
-        const propertiesStr = interpolateVariables(
-            (notionConfig.properties as string) || "",
-            context
-        );
-
-        if (!databaseId || !propertiesStr) {
-            throw new Error(
-                "Database ID and Properties are required for createDatabaseEntry operation"
-            );
-        }
-
-        console.log(`[Integration/Notion] Creating entry in database: ${databaseId}`);
-
-        let properties: Record<string, unknown>;
-        try {
-            properties = JSON.parse(propertiesStr);
-        } catch (error) {
-            throw new Error(
-                `Invalid JSON in properties: ${error instanceof Error ? error.message : "Unknown error"}`
-            );
-        }
-
-        const response = await axios.post(
-            `${baseUrl}/pages`,
-            {
-                parent: {
-                    database_id: databaseId
-                },
-                properties
-            },
-            { headers }
-        );
-
-        return {
-            service: "notion",
-            operation: "createDatabaseEntry",
-            success: true,
-            data: response.data
-        } as unknown as JsonObject;
-    } else if (config.operation === "updateDatabaseEntry") {
-        const pageId = interpolateVariables((notionConfig.pageId as string) || "", context);
-        const propertiesStr = interpolateVariables(
-            (notionConfig.properties as string) || "",
-            context
-        );
-
-        if (!pageId || !propertiesStr) {
-            throw new Error(
-                "Page ID and Properties are required for updateDatabaseEntry operation"
-            );
-        }
-
-        console.log(`[Integration/Notion] Updating database entry: ${pageId}`);
-
-        let properties: Record<string, unknown>;
-        try {
-            properties = JSON.parse(propertiesStr);
-        } catch (error) {
-            throw new Error(
-                `Invalid JSON in properties: ${error instanceof Error ? error.message : "Unknown error"}`
-            );
-        }
-
-        const response = await axios.patch(
-            `${baseUrl}/pages/${pageId}`,
-            { properties },
-            { headers }
-        );
-
-        return {
-            service: "notion",
-            operation: "updateDatabaseEntry",
-            success: true,
-            data: response.data
-        } as unknown as JsonObject;
-    } else {
-        throw new Error(`Unsupported Notion operation: ${config.operation}`);
+            ...context,
+            integrationResult: response as unknown as JsonObject
+        } as JsonObject;
     }
-}
-
-/**
- * Interpolate variables in an object recursively
- */
-function interpolateObject(obj: unknown, context: JsonObject): unknown {
-    if (typeof obj === "string") {
-        return interpolateVariables(obj, context);
-    } else if (Array.isArray(obj)) {
-        return obj.map((item) => interpolateObject(item, context));
-    } else if (obj && typeof obj === "object") {
-        const result: Record<string, unknown> = {};
-        for (const key in obj) {
-            if (Object.prototype.hasOwnProperty.call(obj, key)) {
-                result[key] = interpolateObject((obj as Record<string, unknown>)[key], context);
-            }
-        }
-        return result;
-    }
-    return obj;
 }
