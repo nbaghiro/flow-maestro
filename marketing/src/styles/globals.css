@@ -59,14 +59,14 @@
 
 @layer components {
     .navbar-container {
-        @apply flex items-center z-50 h-fit w-fit pr-4;
+        @apply flex w-full justify-between items-center z-50 pl-[60px] pr-[60px];
     }
 
     .navbar-floating {
-        @apply absolute bottom-[90px] left-[60px];
+        @apply absolute bottom-[90px];
     }
 
     .navbar-sticky {
-        @apply fixed left-[60px] mt-[20px];
+        @apply fixed mt-[20px];
     }
 }

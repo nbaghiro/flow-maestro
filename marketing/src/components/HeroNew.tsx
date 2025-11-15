@@ -1,25 +1,31 @@
 import { Database, BrainCircuit, Cloud } from "lucide-react";
 import React from "react";
 import Marquee from "react-fast-marquee";
+import { ParticleAnimation } from "./animations/ParticleAnimation";
 
 export const HeroNew: React.FC = () => {
     return (
-        <section className="h-screen grid grid-rows-[1fr_2fr_1fr] overflow-hidden">
+        <section className="relative h-screen grid grid-rows-[2fr_2fr_1fr] overflow-hidden">
             {/*Intro*/}
-            <div>
-                <div className="text-4xl sm:text-5xl lg:text-5xl">
+            <div className="relative flex items-center pl-4">
+                <ParticleAnimation />
+                <div className="text-5xl sm:text-5xl lg:text-7xl w-full">
                     <p>Orchestrate Workflows & Agents</p>
                     <span>At Enterprise Scale</span>
-                </div>
-
-                <div>
-                    <p className="w-[300px]"></p>
                 </div>
             </div>
 
             {/*Hero animation*/}
-            <div className="flex items-center justify-center">
-                <p></p>
+            <div className="flex items-center justify-between pl-4 pr-10 text-xl">
+                <div className="text-center z-10">
+                    <p className="font-bold text-3xl">PLACEHOLDER</p>
+                    <p>Animation/art here with possible position absolute under texts</p>
+                </div>
+                <p className="w-[450px] font-semibold">
+                    Build visual workflows, deploy intelligent AI agents, and connect them together.
+                    FlowMaestro provides durable orchestration for both deterministic processes and
+                    autonomous agents.
+                </p>
             </div>
 
             {/*Marquee*/}
