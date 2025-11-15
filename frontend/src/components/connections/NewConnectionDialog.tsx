@@ -132,6 +132,8 @@ export function NewConnectionDialog({
             // Multiple methods supported, show selection
             setStep("method-selection");
         }
+
+        return;
     }, [isOpen, supportsOAuth, supportsApiKey, supportsMCP, handleOAuthSelect, oauthInitiated]);
 
     const handleApiKeySelect = () => {
