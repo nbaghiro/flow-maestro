@@ -23,16 +23,25 @@ export type ListChannelsParams = z.infer<typeof listChannelsSchema>;
 /**
  * List Channels operation definition
  */
-export const listChannelsOperation: OperationDefinition = {
-    id: "listChannels",
-    name: "List Channels",
-    description: "List all channels in the Slack workspace",
-    category: "channels",
-    inputSchema: listChannelsSchema,
-    inputSchemaJSON: toJSONSchema(listChannelsSchema),
-    retryable: true,
-    timeout: 10000
-};
+export const listChannelsOperation: OperationDefinition = (() => {
+    try {
+        return {
+            id: "listChannels",
+            name: "List Channels",
+            description: "List all channels in the Slack workspace",
+            category: "channels",
+            inputSchema: listChannelsSchema,
+            inputSchemaJSON: toJSONSchema(listChannelsSchema),
+            retryable: true,
+            timeout: 10000
+        };
+    } catch (error) {
+        console.error("[Slack] Failed to create listChannelsOperation:", error);
+        throw new Error(
+            `Failed to create listChannels operation: ${error instanceof Error ? error.message : "Unknown error"}`
+        );
+    }
+})();
 
 /**
  * Execute list channels operation

@@ -1,5 +1,5 @@
 import { X } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useWorkflowStore } from "../../stores/workflowStore";
 // AI & ML
 import { AudioNodeConfig } from "./configs/AudioNodeConfig";
@@ -49,9 +49,12 @@ export function NodeInspector() {
         selectNode(null);
     };
 
-    const handleUpdate = (config: unknown) => {
-        updateNode(node.id, config as unknown as import("@flowmaestro/shared").JsonObject);
-    };
+    const handleUpdate = useCallback(
+        (config: unknown) => {
+            updateNode(node.id, config as unknown as import("@flowmaestro/shared").JsonObject);
+        },
+        [node.id, updateNode]
+    );
 
     const handleNameChange = (newName: string) => {
         setNodeName(newName);

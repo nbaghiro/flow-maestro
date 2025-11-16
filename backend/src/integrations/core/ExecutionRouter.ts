@@ -137,16 +137,75 @@ export class ExecutionRouter {
      * Discover operations for a provider
      */
     async discoverOperations(providerName: string): Promise<OperationSummary[]> {
-        const provider = await this.providerRegistry.loadProvider(providerName);
-        const operations = provider.getOperations();
+        try {
+            const provider = await this.providerRegistry.loadProvider(providerName);
+            const operations = provider.getOperations();
 
-        return operations.map((op) => ({
-            id: op.id,
-            name: op.name,
-            description: op.description,
-            category: op.category,
-            inputSchema: op.inputSchemaJSON,
-            retryable: op.retryable
+            return operations.map((op) => {
+                if (!op.inputSchemaJSON) {
+                    console.error(
+                        `[ExecutionRouter] Operation ${op.id} is missing inputSchemaJSON`
+                    );
+                    throw new Error(`Operation ${op.id} is missing inputSchemaJSON`);
+                }
+
+                const parameters = this.extractParametersFromSchema(op.inputSchemaJSON);
+
+                return {
+                    id: op.id,
+                    name: op.name,
+                    description: op.description,
+                    category: op.category,
+                    inputSchema: op.inputSchemaJSON,
+                    inputSchemaJSON: op.inputSchemaJSON,
+                    parameters,
+                    retryable: op.retryable
+                };
+            });
+        } catch (error) {
+            console.error(
+                `[ExecutionRouter] Error discovering operations for ${providerName}:`,
+                error
+            );
+            throw error;
+        }
+    }
+
+    /**
+     * Extract parameters from JSON Schema for frontend compatibility
+     */
+    private extractParametersFromSchema(schema: unknown): Array<{
+        name: string;
+        type: string;
+        description?: string;
+        required: boolean;
+        default?: unknown;
+    }> {
+        const jsonSchema = schema as {
+            type?: string;
+            properties?: Record<
+                string,
+                {
+                    type?: string;
+                    description?: string;
+                    default?: unknown;
+                }
+            >;
+            required?: string[];
+        };
+
+        if (!jsonSchema.properties) {
+            return [];
+        }
+
+        const required = jsonSchema.required || [];
+
+        return Object.entries(jsonSchema.properties).map(([name, prop]) => ({
+            name,
+            type: prop.type || "string",
+            description: prop.description,
+            required: required.includes(name),
+            default: prop.default
         }));
     }
 }
