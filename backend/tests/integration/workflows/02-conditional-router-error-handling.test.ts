@@ -9,10 +9,10 @@
 
 import { Pool } from "pg";
 import { getGlobalTestPool, getGlobalDbHelper } from "../../../jest.setup";
-import workflowDefinition from "../../fixtures/workflows/03-conditional-router-error-handling.json";
+import workflowDefinition from "../../fixtures/workflows/02-conditional-router-error-handling.json";
 import { DatabaseHelper } from "../../helpers/DatabaseHelper";
 import { TestConnectionFactory } from "../../helpers/TestConnectionFactory";
-import { WorkflowTestHarness } from "../../helpers/WorkflowTestHarness";
+import { WorkflowTestHarness, WorkflowTestResult } from "../../helpers/WorkflowTestHarness";
 
 describe("Workflow 3: Conditional Router with Error Handling", () => {
     let pool: Pool;
@@ -85,7 +85,9 @@ describe("Workflow 3: Conditional Router with Error Handling", () => {
 
     it("should route to API branch when source is 'api'", async () => {
         // Execute workflow with source="api"
-        const result = await testHarness.executeWorkflow(workflowDefinition, { source: "api" });
+        const result = (await testHarness.executeWorkflow(workflowDefinition, {
+            source: "api"
+        })) as WorkflowTestResult;
 
         // Verify workflow succeeded
         expect(result.success).toBe(true);
@@ -96,21 +98,29 @@ describe("Workflow 3: Conditional Router with Error Handling", () => {
         expect(result.outputs.branch).toBe("true");
 
         // Verify API data was fetched
-        expect(result.outputs.apiData).toBeDefined();
-        expect(result.outputs.apiData.data.name).toBe("Leanne Graham");
+        const apiData = result.outputs.apiData as { data: { name: string } };
+        expect(apiData).toBeDefined();
+        expect(apiData.data.name).toBe("Leanne Graham");
 
         // Verify database branch did NOT execute
-        expect(result.outputs.dbData).toBeUndefined();
+        const dbData = result.outputs.dbData as { rows: { full_name: string }[] };
+        expect(dbData).toBeUndefined();
 
         // Verify normalized data came from API
-        expect(result.outputs.normalizedData).toBeDefined();
-        expect(result.outputs.normalizedData.userId).toBe(1);
-        expect(result.outputs.normalizedData.fullName).toBe("Leanne Graham");
-        expect(result.outputs.normalizedData.email).toBe("Sincere@april.biz");
-        expect(result.outputs.normalizedData.source).toBe("api");
+        const normalizedData = result.outputs.normalizedData as {
+            userId: number;
+            fullName: string;
+            email: string;
+            source: string;
+        };
+        expect(normalizedData).toBeDefined();
+        expect(normalizedData.userId).toBe(1);
+        expect(normalizedData.fullName).toBe("Leanne Graham");
+        expect(normalizedData.email).toBe("Sincere@april.biz");
+        expect(normalizedData.source).toBe("api");
 
         // Verify output
-        expect(result.outputs.result).toEqual(result.outputs.normalizedData);
+        expect(result.outputs.result).toEqual(normalizedData);
     });
 
     it("should route to database branch when source is 'database'", async () => {
@@ -128,23 +138,31 @@ describe("Workflow 3: Conditional Router with Error Handling", () => {
         expect(result.outputs.branch).toBe("false");
 
         // Verify database data was fetched
-        expect(result.outputs.dbData).toBeDefined();
-        expect(result.outputs.dbData.rows).toBeDefined();
-        expect(result.outputs.dbData.rows.length).toBeGreaterThan(0);
-        expect(result.outputs.dbData.rows[0].full_name).toBe("Leanne Graham");
+        const dbData = result.outputs.dbData as { rows: { full_name: string }[] };
+        expect(dbData).toBeDefined();
+        expect(dbData.rows).toBeDefined();
+        expect(dbData.rows.length).toBeGreaterThan(0);
+        expect(dbData.rows[0].full_name).toBe("Leanne Graham");
 
         // Verify API branch did NOT execute
-        expect(result.outputs.apiData).toBeUndefined();
+        const apiData = result.outputs.apiData as { data: { name: string } };
+        expect(apiData).toBeUndefined();
 
         // Verify normalized data came from database
-        expect(result.outputs.normalizedData).toBeDefined();
-        expect(result.outputs.normalizedData.userId).toBe(1);
-        expect(result.outputs.normalizedData.fullName).toBe("Leanne Graham");
-        expect(result.outputs.normalizedData.email).toBe("Sincere@april.biz");
-        expect(result.outputs.normalizedData.source).toBe("database");
+        const normalizedData = result.outputs.normalizedData as {
+            userId: number;
+            fullName: string;
+            email: string;
+            source: string;
+        };
+        expect(normalizedData).toBeDefined();
+        expect(normalizedData.userId).toBe(1);
+        expect(normalizedData.fullName).toBe("Leanne Graham");
+        expect(normalizedData.email).toBe("Sincere@april.biz");
+        expect(normalizedData.source).toBe("database");
 
         // Verify output
-        expect(result.outputs.result).toEqual(result.outputs.normalizedData);
+        expect(result.outputs.result).toEqual(normalizedData);
     });
 
     it("should verify only one branch executes (branch isolation)", async () => {
@@ -165,8 +183,8 @@ describe("Workflow 3: Conditional Router with Error Handling", () => {
         expect(dbResult.outputs.apiData).toBeUndefined();
 
         // Verify both results are different but valid
-        expect(apiResult.outputs.normalizedData.source).toBe("api");
-        expect(dbResult.outputs.normalizedData.source).toBe("database");
+        expect((apiResult.outputs.normalizedData as { source: string }).source).toBe("api");
+        expect((dbResult.outputs.normalizedData as { source: string }).source).toBe("database");
     });
 
     it("should transform data correctly from both sources", async () => {
@@ -199,8 +217,24 @@ describe("Workflow 3: Conditional Router with Error Handling", () => {
         });
 
         // Both should have the same structure (normalized)
-        expect(Object.keys(apiResult.outputs.normalizedData).sort()).toEqual(
-            Object.keys(dbResult.outputs.normalizedData).sort()
+        expect(
+            Object.keys(
+                apiResult.outputs.normalizedData as {
+                    userId: number;
+                    fullName: string;
+                    email: string;
+                    source: string;
+                }
+            ).sort()
+        ).toEqual(
+            Object.keys(
+                dbResult.outputs.normalizedData as {
+                    userId: number;
+                    fullName: string;
+                    email: string;
+                    source: string;
+                }
+            ).sort()
         );
     });
 

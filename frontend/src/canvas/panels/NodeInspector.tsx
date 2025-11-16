@@ -41,25 +41,31 @@ export function NodeInspector() {
         }
     }, [node?.id, node?.data.label]);
 
-    if (!node) {
-        return null;
-    }
-
-    const handleClose = () => {
+    const handleClose = useCallback(() => {
         selectNode(null);
-    };
+    }, [selectNode]);
 
     const handleUpdate = useCallback(
         (config: unknown) => {
+            if (!node) return;
             updateNode(node.id, config as unknown as import("@flowmaestro/shared").JsonObject);
         },
-        [node.id, updateNode]
+        [node, updateNode]
     );
 
-    const handleNameChange = (newName: string) => {
-        setNodeName(newName);
-        updateNode(node.id, { label: newName });
-    };
+    const handleNameChange = useCallback(
+        (newName: string) => {
+            if (!node) return;
+            setNodeName(newName);
+            updateNode(node.id, { label: newName });
+        },
+        [node, updateNode]
+    );
+
+    // Early return AFTER all hooks have been called
+    if (!node) {
+        return null;
+    }
 
     const renderConfig = () => {
         switch (node.type) {

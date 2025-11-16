@@ -839,3 +839,4 @@ When working on FlowMaestro:
 6. ✅ Use Fastify patterns for backend, not Express patterns
 7. ✅ Use repository pattern for database access with proper multi-tenancy
 8. ✅ Test thoroughly and handle errors gracefully
+9. ✅ Only create markdown files when specifically requested

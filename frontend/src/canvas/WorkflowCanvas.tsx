@@ -116,8 +116,7 @@ export function WorkflowCanvas() {
                 position,
                 data: {
                     label: getDefaultLabel(type),
-                    status: "idle" as const,
-                    config: {}
+                    status: "idle" as const
                 }
             };
 

@@ -1,13 +1,17 @@
 import { MongoClient, Db, Document } from "mongodb";
 import { Pool, PoolClient } from "pg";
 import type { JsonObject, JsonValue } from "@flowmaestro/shared";
+import { DatabaseConnectionRepository } from "../../../storage/repositories/DatabaseConnectionRepository";
 import { interpolateVariables } from "./utils";
 
 export interface DatabaseNodeConfig {
-    provider: "postgresql" | "mysql" | "mongodb";
+    databaseType: "postgresql" | "mysql" | "mongodb";
     operation: "query" | "insert" | "update" | "delete";
 
-    // Connection
+    // Option 1: Use saved database connection (recommended)
+    databaseConnectionId?: string;
+
+    // Option 2: Direct connection credentials (backwards compatible)
     connectionString?: string;
     host?: string;
     port?: number;
@@ -17,7 +21,7 @@ export interface DatabaseNodeConfig {
 
     // For SQL databases
     query?: string; // SQL query
-    parameters?: JsonValue[]; // Parameterized values
+    parameters?: JsonValue[] | string; // Parameterized values (can be JSON string or array)
 
     // For MongoDB
     collection?: string;
@@ -32,13 +36,14 @@ export interface DatabaseNodeConfig {
     // Options
     timeout?: number;
     maxRows?: number; // Limit result set size
+    returnFormat?: "array" | "single" | "count"; // How to format results
 
     outputVariable?: string;
 }
 
 export interface DatabaseNodeResult {
     operation: string;
-    provider: string;
+    databaseType: string;
 
     // Query results
     rows?: JsonObject[];
@@ -67,24 +72,34 @@ export async function executeDatabaseNode(
 ): Promise<JsonObject> {
     const startTime = Date.now();
 
-    console.log(`[Database] Provider: ${config.provider}, Operation: ${config.operation}`);
+    console.log(`[Database] Provider: ${config.databaseType}, Operation: ${config.operation}`);
+
+    // Normalize parameters (can be JSON string or array)
+    const normalizedConfig = { ...config };
+    if (typeof config.parameters === "string" && config.parameters.trim()) {
+        try {
+            normalizedConfig.parameters = JSON.parse(config.parameters) as JsonValue[];
+        } catch (error) {
+            console.warn("[Database] Failed to parse parameters as JSON, using as-is:", error);
+        }
+    }
 
     let result: DatabaseNodeResult;
 
-    switch (config.provider) {
+    switch (config.databaseType) {
         case "postgresql":
-            result = await executePostgreSQL(config, context);
+            result = await executePostgreSQL(normalizedConfig, context);
             break;
 
         case "mongodb":
-            result = await executeMongoDB(config, context);
+            result = await executeMongoDB(normalizedConfig, context);
             break;
 
         case "mysql":
             throw new Error("MySQL provider not yet implemented");
 
         default:
-            throw new Error(`Unsupported database provider: ${config.provider}`);
+            throw new Error(`Unsupported database type: ${config.databaseType}`);
     }
 
     const queryTime = Date.now() - startTime;
@@ -97,11 +112,102 @@ export async function executeDatabaseNode(
         `[Database] Completed in ${queryTime}ms, ${result.rowCount || result.affectedRows || 0} rows`
     );
 
+    // Apply return format if specified
+    if (config.returnFormat && result.rows) {
+        result = applyReturnFormat(result, config.returnFormat);
+    }
+
     if (config.outputVariable) {
         return { [config.outputVariable]: result } as unknown as JsonObject;
     }
 
     return result as unknown as JsonObject;
+}
+
+/**
+ * Apply return format to result
+ */
+function applyReturnFormat(
+    result: DatabaseNodeResult,
+    returnFormat: "array" | "single" | "count"
+): DatabaseNodeResult {
+    if (!result.rows) {
+        return result;
+    }
+
+    switch (returnFormat) {
+        case "single":
+            // Return only the first row
+            return {
+                ...result,
+                rows: result.rows.length > 0 ? [result.rows[0]] : []
+            };
+        case "count":
+            // Return just the count
+            return {
+                ...result,
+                rows: undefined,
+                rowCount: result.rows.length
+            };
+        case "array":
+        default:
+            // Return all rows (default behavior)
+            return result;
+    }
+}
+
+/**
+ * Get connection details from saved connection or inline credentials
+ */
+async function getConnectionDetails(
+    config: DatabaseNodeConfig,
+    context: JsonObject
+): Promise<{
+    connectionString?: string;
+    host?: string;
+    port?: number;
+    database?: string;
+    username?: string;
+    password?: string;
+    ssl_enabled?: boolean;
+}> {
+    // Option 1: Use saved database connection
+    if (config.databaseConnectionId) {
+        const repository = new DatabaseConnectionRepository();
+        // Note: We need userId from context for authorization
+        const userId = (context.userId as string) || "";
+        const connection = await repository.findById(config.databaseConnectionId, userId);
+
+        if (!connection) {
+            throw new Error(`Database connection not found: ${config.databaseConnectionId}`);
+        }
+
+        if (connection.provider !== config.databaseType) {
+            throw new Error(
+                `Connection provider mismatch: expected ${config.databaseType}, got ${connection.provider}`
+            );
+        }
+
+        return {
+            connectionString: connection.connection_string,
+            host: connection.host,
+            port: connection.port,
+            database: connection.database,
+            username: connection.username,
+            password: connection.password,
+            ssl_enabled: connection.ssl_enabled
+        };
+    }
+
+    // Option 2: Use inline credentials (backwards compatible)
+    return {
+        connectionString: config.connectionString,
+        host: config.host,
+        port: config.port,
+        database: config.database,
+        username: config.username,
+        password: config.password
+    };
 }
 
 /**
@@ -111,10 +217,23 @@ async function executePostgreSQL(
     config: DatabaseNodeConfig,
     context: JsonObject
 ): Promise<DatabaseNodeResult> {
+    // Get connection details (from saved connection or inline credentials)
+    const connDetails = await getConnectionDetails(config, context);
+
     // Build connection string
-    const connectionString = config.connectionString
-        ? interpolateVariables(config.connectionString, context)
-        : buildPostgreSQLConnectionString(config, context);
+    const connectionString = connDetails.connectionString
+        ? interpolateVariables(connDetails.connectionString, context)
+        : buildPostgreSQLConnectionString(
+              {
+                  ...config,
+                  host: connDetails.host,
+                  port: connDetails.port,
+                  database: connDetails.database,
+                  username: connDetails.username,
+                  password: connDetails.password
+              },
+              context
+          );
 
     // Get or create connection pool
     let pool = pgPools.get(connectionString);
@@ -151,7 +270,7 @@ async function executePostgreSQL(
 
             return {
                 operation: "query",
-                provider: "postgresql",
+                databaseType: "postgresql",
                 rows,
                 rowCount: result.rowCount || 0,
                 metadata: {
@@ -174,7 +293,7 @@ async function executePostgreSQL(
 
             return {
                 operation: "insert",
-                provider: "postgresql",
+                databaseType: "postgresql",
                 affectedRows: result.rowCount || 0,
                 insertId: result.rows[0]?.id, // If RETURNING id
                 metadata: {
@@ -197,7 +316,7 @@ async function executePostgreSQL(
 
             return {
                 operation: config.operation,
-                provider: "postgresql",
+                databaseType: "postgresql",
                 affectedRows: result.rowCount || 0,
                 metadata: {
                     queryTime: 0,
@@ -219,10 +338,23 @@ async function executeMongoDB(
     config: DatabaseNodeConfig,
     context: JsonObject
 ): Promise<DatabaseNodeResult> {
+    // Get connection details (from saved connection or inline credentials)
+    const connDetails = await getConnectionDetails(config, context);
+
     // Build connection string
-    const connectionString = config.connectionString
-        ? interpolateVariables(config.connectionString, context)
-        : buildMongoDBConnectionString(config, context);
+    const connectionString = connDetails.connectionString
+        ? interpolateVariables(connDetails.connectionString, context)
+        : buildMongoDBConnectionString(
+              {
+                  ...config,
+                  host: connDetails.host,
+                  port: connDetails.port,
+                  database: connDetails.database,
+                  username: connDetails.username,
+                  password: connDetails.password
+              },
+              context
+          );
 
     // Get or create MongoDB client
     let client = mongoClients.get(connectionString);
@@ -262,7 +394,7 @@ async function executeMongoDB(
 
         return {
             operation: "query",
-            provider: "mongodb",
+            databaseType: "mongodb",
             rows,
             rowCount: rows.length,
             metadata: {
@@ -280,7 +412,7 @@ async function executeMongoDB(
             const result = await collection.insertMany(document as Document[]);
             return {
                 operation: "insert",
-                provider: "mongodb",
+                databaseType: "mongodb",
                 affectedRows: result.insertedCount,
                 insertId: Object.values(result.insertedIds).map((id) => id.toString()),
                 metadata: {
@@ -292,7 +424,7 @@ async function executeMongoDB(
             const result = await collection.insertOne(document as Document);
             return {
                 operation: "insert",
-                provider: "mongodb",
+                databaseType: "mongodb",
                 affectedRows: result.acknowledged ? 1 : 0,
                 insertId: result.insertedId.toString(),
                 metadata: {
@@ -312,7 +444,7 @@ async function executeMongoDB(
 
         return {
             operation: "update",
-            provider: "mongodb",
+            databaseType: "mongodb",
             affectedRows: result.modifiedCount,
             metadata: {
                 queryTime: 0,
@@ -329,7 +461,7 @@ async function executeMongoDB(
 
         return {
             operation: "delete",
-            provider: "mongodb",
+            databaseType: "mongodb",
             affectedRows: result.deletedCount,
             metadata: {
                 queryTime: 0,
