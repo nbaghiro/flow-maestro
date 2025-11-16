@@ -1,6 +1,6 @@
-import { AxiosError } from "axios";
 import { BaseAPIClient, BaseAPIClientConfig } from "../../../core/BaseAPIClient";
 import type { OAuth2TokenData } from "../../../../storage/models/Connection";
+import type { RequestConfig } from "../../../core/types";
 
 export interface NotionClientConfig {
     accessToken: string;
@@ -43,8 +43,11 @@ export class NotionClient extends BaseAPIClient {
         this.accessToken = config.accessToken;
 
         // Add request interceptor for auth header and Notion-Version
-        this.client.interceptors.request.use((config) => {
-            config.headers.Authorization = `Bearer ${this.accessToken}`;
+        this.client.addRequestInterceptor((config) => {
+            if (!config.headers) {
+                config.headers = {};
+            }
+            config.headers["Authorization"] = `Bearer ${this.accessToken}`;
             config.headers["Notion-Version"] = "2022-06-28";
             config.headers["Content-Type"] = "application/json";
             return config;
@@ -54,7 +57,7 @@ export class NotionClient extends BaseAPIClient {
     /**
      * Override request to handle Notion-specific response format
      */
-    async request<T = unknown>(config: never): Promise<T> {
+    async request<T = unknown>(config: RequestConfig): Promise<T> {
         const response = await super.request<NotionResponse>(config);
         return response as T;
     }
@@ -62,7 +65,11 @@ export class NotionClient extends BaseAPIClient {
     /**
      * Handle Notion-specific errors
      */
-    protected async handleError(error: AxiosError): Promise<never> {
+    protected async handleError(
+        error: Error & {
+            response?: { status?: number; data?: unknown; headers?: Record<string, string> };
+        }
+    ): Promise<never> {
         if (error.response) {
             const data = error.response.data as {
                 object?: string;
@@ -94,7 +101,7 @@ export class NotionClient extends BaseAPIClient {
 
         // Handle rate limiting
         if (error.response?.status === 429) {
-            const retryAfter = error.response.headers["retry-after"];
+            const retryAfter = error.response.headers?.["retry-after"];
             throw new Error(`Rate limited. Retry after ${retryAfter || "unknown"} seconds.`);
         }
 

@@ -1,4 +1,3 @@
-import axios from "axios";
 import type {
     MCPRegistryServer,
     MCPRegistryServerDetails,
@@ -133,25 +132,44 @@ export class MCPRegistryClient {
 
             // Fetch all pages using cursor-based pagination
             while (hasMore) {
-                const params: { cursor?: string } = cursor ? { cursor } : {};
+                const url = new URL(`${this.registryUrl}/servers`);
+                if (cursor) {
+                    url.searchParams.set("cursor", cursor);
+                }
 
-                const response = await axios.get<RawMCPResponse>(`${this.registryUrl}/servers`, {
-                    params,
-                    timeout: 10000
-                });
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-                const rawServers = response.data.servers || [];
-                const mappedServers = rawServers.map((raw: RawMCPServer) => this.mapRawServer(raw));
-                allServers = allServers.concat(mappedServers);
+                try {
+                    const response = await fetch(url.toString(), {
+                        signal: controller.signal
+                    });
+                    clearTimeout(timeoutId);
 
-                // Check if there are more pages
-                cursor = response.data.nextCursor;
-                hasMore = !!cursor;
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
 
-                // Safety limit to prevent infinite loops (max 100 pages)
-                if (allServers.length > 3000) {
-                    console.warn("MCP registry fetch limit reached (3000 servers)");
-                    break;
+                    const data = (await response.json()) as RawMCPResponse;
+
+                    const rawServers = data.servers || [];
+                    const mappedServers = rawServers.map((raw: RawMCPServer) =>
+                        this.mapRawServer(raw)
+                    );
+                    allServers = allServers.concat(mappedServers);
+
+                    // Check if there are more pages
+                    cursor = data.nextCursor;
+                    hasMore = !!cursor;
+
+                    // Safety limit to prevent infinite loops (max 100 pages)
+                    if (allServers.length > 3000) {
+                        console.warn("MCP registry fetch limit reached (3000 servers)");
+                        break;
+                    }
+                } catch (error) {
+                    clearTimeout(timeoutId);
+                    throw error;
                 }
             }
 
@@ -177,18 +195,33 @@ export class MCPRegistryClient {
         }
 
         try {
-            const response = await axios.get<MCPRegistryResponse>(`${this.registryUrl}/servers`, {
-                params: {
-                    search: query,
-                    limit: 100
-                },
-                timeout: 10000
-            });
+            const url = new URL(`${this.registryUrl}/servers`);
+            url.searchParams.set("search", query);
+            url.searchParams.set("limit", "100");
 
-            const servers = response.data.servers || [];
-            this.setCache(cacheKey, servers);
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-            return servers;
+            try {
+                const response = await fetch(url.toString(), {
+                    signal: controller.signal
+                });
+                clearTimeout(timeoutId);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
+                const data = (await response.json()) as MCPRegistryResponse;
+
+                const servers = data.servers || [];
+                this.setCache(cacheKey, servers);
+
+                return servers;
+            } catch (error) {
+                clearTimeout(timeoutId);
+                throw error;
+            }
         } catch (error) {
             console.error(`Failed to search MCP registry for "${query}":`, error);
             return [];
@@ -207,17 +240,29 @@ export class MCPRegistryClient {
         }
 
         try {
-            const response = await axios.get<MCPRegistryServerDetails>(
-                `${this.registryUrl}/servers/${encodeURIComponent(serverId)}`,
-                {
-                    timeout: 10000
+            const url = `${this.registryUrl}/servers/${encodeURIComponent(serverId)}`;
+
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+            try {
+                const response = await fetch(url, {
+                    signal: controller.signal
+                });
+                clearTimeout(timeoutId);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
                 }
-            );
 
-            const server = response.data;
-            this.setCache(cacheKey, server);
+                const server = (await response.json()) as MCPRegistryServerDetails;
+                this.setCache(cacheKey, server);
 
-            return server;
+                return server;
+            } catch (error) {
+                clearTimeout(timeoutId);
+                throw error;
+            }
         } catch (error) {
             console.error(`Failed to fetch MCP server "${serverId}":`, error);
             return null;

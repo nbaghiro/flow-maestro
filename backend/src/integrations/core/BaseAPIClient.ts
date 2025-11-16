@@ -1,6 +1,4 @@
-import { Agent as HttpAgent } from "http";
-import { Agent as HttpsAgent } from "https";
-import axios, { AxiosInstance, AxiosRequestConfig, AxiosError, isAxiosError } from "axios";
+import { FetchClient, isFetchError } from "../../shared/utils/fetch-client";
 import type { RequestConfig, RetryConfig, OperationResult, OperationError } from "./types";
 
 export interface BaseAPIClientConfig {
@@ -19,7 +17,7 @@ export interface BaseAPIClientConfig {
  * Base API client with connection pooling, retry logic, and error handling
  */
 export abstract class BaseAPIClient {
-    protected client: AxiosInstance;
+    protected client: FetchClient;
     protected retryConfig: RetryConfig;
 
     constructor(config: BaseAPIClientConfig) {
@@ -35,56 +33,37 @@ export abstract class BaseAPIClient {
 
         // Connection pooling configuration
         const poolConfig = config.connectionPool || {};
-        const httpAgent = new HttpAgent({
-            keepAlive: poolConfig.keepAlive !== false,
-            maxSockets: poolConfig.maxSockets || 50,
-            maxFreeSockets: poolConfig.maxFreeSockets || 10,
-            timeout: config.timeout || 60000,
-            keepAliveMsecs: poolConfig.keepAliveMsecs || 60000
-        });
 
-        const httpsAgent = new HttpsAgent({
-            keepAlive: poolConfig.keepAlive !== false,
-            maxSockets: poolConfig.maxSockets || 50,
-            maxFreeSockets: poolConfig.maxFreeSockets || 10,
-            timeout: config.timeout || 60000,
-            keepAliveMsecs: poolConfig.keepAliveMsecs || 60000
-        });
-
-        // Create axios instance with connection pooling
-        this.client = axios.create({
+        // Create fetch client instance with connection pooling
+        this.client = new FetchClient({
             baseURL: config.baseURL,
             timeout: config.timeout || 30000,
-            httpAgent,
-            httpsAgent
+            retryConfig: this.retryConfig,
+            connectionPool: {
+                keepAlive: poolConfig.keepAlive !== false,
+                maxSockets: poolConfig.maxSockets || 50,
+                maxFreeSockets: poolConfig.maxFreeSockets || 10,
+                keepAliveMsecs: poolConfig.keepAliveMsecs || 60000
+            }
         });
 
         // Add response interceptor for error handling
-        this.client.interceptors.response.use(
-            (response) => response,
-            async (error) => {
-                return this.handleError(error);
-            }
-        );
+        this.client.addResponseInterceptor(async (response) => {
+            return response;
+        });
     }
 
     /**
      * Make HTTP request with retry logic
      */
     async request<T = unknown>(config: RequestConfig): Promise<T> {
-        return await this.executeWithRetry(async () => {
-            const axiosConfig: AxiosRequestConfig = {
-                method: config.method,
-                url: config.url,
-                headers: config.headers,
-                params: config.params,
-                data: config.data,
-                timeout: config.timeout
-            };
-
-            const response = await this.client.request<T>(axiosConfig);
-            return response.data;
-        });
+        try {
+            return await this.client.request<T>(config);
+        } catch (error) {
+            // Give subclasses a chance to handle the error
+            await this.handleError(error);
+            throw error; // Re-throw if handleError doesn't throw
+        }
     }
 
     /**
@@ -147,18 +126,12 @@ export abstract class BaseAPIClient {
         }
 
         // Check for retryable HTTP status codes
-        if (isAxiosError(error) && error.response) {
+        if (isFetchError(error) && error.response) {
             return this.retryConfig.retryableStatuses.includes(error.response.status);
         }
 
         // Check for retryable network errors
-        if (
-            typeof error === "object" &&
-            error !== null &&
-            "code" in error &&
-            typeof error.code === "string" &&
-            this.retryConfig.retryableErrors
-        ) {
+        if (isFetchError(error) && error.code && this.retryConfig.retryableErrors) {
             return this.retryConfig.retryableErrors.includes(error.code);
         }
 
@@ -200,9 +173,9 @@ export abstract class BaseAPIClient {
 
     /**
      * Handle and normalize errors
+     * Subclasses can override this to provide provider-specific error handling
      */
-    protected async handleError(error: AxiosError): Promise<never> {
-        // Subclasses can override this to provide provider-specific error handling
+    protected async handleError(error: unknown): Promise<never> {
         throw error;
     }
 

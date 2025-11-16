@@ -1,4 +1,4 @@
-import { AxiosError } from "axios";
+import { isFetchError } from "../../../../shared/utils/fetch-client";
 import { BaseAPIClient, BaseAPIClientConfig } from "../../../core/BaseAPIClient";
 
 export interface CodaClientConfig {
@@ -32,8 +32,11 @@ export class CodaClient extends BaseAPIClient {
         this.apiKey = config.apiKey;
 
         // Add request interceptor for auth header
-        this.client.interceptors.request.use((config) => {
-            config.headers.Authorization = `Bearer ${this.apiKey}`;
+        this.client.addRequestInterceptor((config) => {
+            if (!config.headers) {
+                config.headers = {};
+            }
+            config.headers["Authorization"] = `Bearer ${this.apiKey}`;
             return config;
         });
     }
@@ -41,8 +44,8 @@ export class CodaClient extends BaseAPIClient {
     /**
      * Handle Coda-specific errors
      */
-    protected async handleError(error: AxiosError): Promise<never> {
-        if (error.response) {
+    protected async handleError(error: unknown): Promise<never> {
+        if (isFetchError(error) && error.response) {
             const data = error.response.data as { error?: string; message?: string };
 
             // Map common Coda errors
@@ -61,11 +64,11 @@ export class CodaClient extends BaseAPIClient {
             if (data.message) {
                 throw new Error(`Coda API error: ${data.message}`);
             }
-        }
 
-        // Handle rate limiting
-        if (error.response?.status === 429) {
-            throw new Error("Rate limited. Please try again later.");
+            // Handle rate limiting
+            if (error.response.status === 429) {
+                throw new Error("Rate limited. Please try again later.");
+            }
         }
 
         throw error;

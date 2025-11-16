@@ -1,7 +1,6 @@
 import * as fs from "fs/promises";
 import * as os from "os";
 import * as path from "path";
-import axios from "axios";
 import OpenAI from "openai";
 import type { JsonObject } from "@flowmaestro/shared";
 import { interpolateVariables } from "./utils";
@@ -220,27 +219,29 @@ async function executeElevenLabs(
 
     console.log(`[Audio/ElevenLabs] Generating speech for ${text.length} characters`);
 
-    const response = await axios.post(
-        `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
-        {
+    const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+        method: "POST",
+        headers: {
+            Accept: "audio/mpeg",
+            "Content-Type": "application/json",
+            "xi-api-key": apiKey
+        },
+        body: JSON.stringify({
             text,
             model_id: config.model || "eleven_monolingual_v1",
             voice_settings: {
                 stability: config.stability ?? 0.5,
                 similarity_boost: config.similarityBoost ?? 0.75
             }
-        },
-        {
-            headers: {
-                Accept: "audio/mpeg",
-                "Content-Type": "application/json",
-                "xi-api-key": apiKey
-            },
-            responseType: "arraybuffer"
-        }
-    );
+        })
+    });
 
-    const buffer = Buffer.from(response.data);
+    if (!response.ok) {
+        throw new Error(`ElevenLabs API error: HTTP ${response.status}`);
+    }
+
+    const arrayBuffer = await response.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
 
     // Handle output format
     const audioResult: { base64?: string; path?: string } = {};
@@ -278,8 +279,14 @@ async function executeElevenLabs(
 async function getAudioFile(input: string): Promise<{ file: fs.FileHandle; path: string }> {
     if (input.startsWith("http://") || input.startsWith("https://")) {
         // Download from URL to temp file
-        const response = await axios.get(input, { responseType: "arraybuffer" });
-        const buffer = Buffer.from(response.data);
+        const response = await fetch(input);
+
+        if (!response.ok) {
+            throw new Error(`Failed to download audio: HTTP ${response.status}`);
+        }
+
+        const arrayBuffer = await response.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
 
         const ext = path.extname(new URL(input).pathname) || ".mp3";
         const tempPath = path.join(os.tmpdir(), `flowmaestro-audio-${Date.now()}${ext}`);
