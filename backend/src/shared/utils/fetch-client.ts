@@ -2,7 +2,7 @@ import { Agent as HttpAgent } from "http";
 import { Agent as HttpsAgent } from "https";
 
 /**
- * Custom error class for fetch requests that mimics axios error structure
+ * Custom error class for fetch requests
  */
 export class FetchError extends Error {
     public response?: {
