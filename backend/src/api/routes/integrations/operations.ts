@@ -38,12 +38,20 @@ export async function getOperationsHandler(
             }
         });
     } catch (error) {
-        console.error("[API] Error getting operations:", error);
+        const errorMessage = error instanceof Error ? error.message : "Unknown error";
+        const errorStack = error instanceof Error ? error.stack : undefined;
+
+        console.error("[API] Error getting operations:", {
+            provider: request.params.provider,
+            error: errorMessage,
+            stack: errorStack
+        });
 
         reply.code(500).send({
             success: false,
             error: {
-                message: error instanceof Error ? error.message : "Failed to get operations"
+                message: errorMessage,
+                ...(process.env.NODE_ENV === "development" && { stack: errorStack })
             }
         });
     }

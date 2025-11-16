@@ -54,10 +54,17 @@ export class SlackProvider extends BaseProvider {
         const config: OAuthConfig = {
             authUrl: "https://slack.com/oauth/v2/authorize",
             tokenUrl: "https://slack.com/api/oauth.v2.access",
-            scopes: ["chat:write", "channels:read", "files:write", "users:read"],
+            scopes: [
+                "chat:write",
+                "channels:read",
+                "channels:history",
+                "files:write",
+                "users:read",
+                "users:read.email"
+            ],
             clientId: process.env.SLACK_CLIENT_ID || "",
             clientSecret: process.env.SLACK_CLIENT_SECRET || "",
-            redirectUri: `${process.env.API_URL}/api/oauth/slack/callback`,
+            redirectUri: `${process.env.API_URL || "http://localhost:3001"}/api/oauth/slack/callback`,
             refreshable: true
         };
 

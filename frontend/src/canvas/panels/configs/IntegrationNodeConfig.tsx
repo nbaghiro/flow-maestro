@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { ConnectionPicker } from "../../../components/connections/ConnectionPicker";
 import { FormField, FormSection } from "../../../components/FormField";
 import { OutputSettingsSection } from "../../../components/OutputSettingsSection";
@@ -54,6 +54,9 @@ export function IntegrationNodeConfig({ data, onUpdate }: IntegrationNodeConfigP
     }, [operations, operation]);
 
     // Update parent component whenever config changes
+    // Use useRef to track previous values and avoid infinite loops
+    const prevConfigRef = useRef<string>("");
+
     useEffect(() => {
         const config = {
             provider,
@@ -62,8 +65,14 @@ export function IntegrationNodeConfig({ data, onUpdate }: IntegrationNodeConfigP
             parameters,
             outputVariable
         };
-        onUpdate(config);
-    }, [provider, operation, connectionId, parameters, outputVariable, onUpdate]);
+
+        // Serialize config to compare - only update if actually changed
+        const configString = JSON.stringify(config);
+        if (configString !== prevConfigRef.current) {
+            prevConfigRef.current = configString;
+            onUpdate(config);
+        }
+    }, [provider, operation, connectionId, parameters, outputVariable]);
 
     // Handle parameter change
     const handleParameterChange = (paramName: string, value: unknown): void => {

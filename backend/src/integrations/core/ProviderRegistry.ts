@@ -30,10 +30,16 @@ export class ProviderRegistry {
         }
 
         // Load provider
-        const provider = await entry.loader();
-        this.providers.set(name, provider);
-
-        return provider;
+        try {
+            const provider = await entry.loader();
+            this.providers.set(name, provider);
+            return provider;
+        } catch (error) {
+            console.error(`[ProviderRegistry] Failed to load provider ${name}:`, error);
+            throw new Error(
+                `Failed to load provider ${name}: ${error instanceof Error ? error.message : "Unknown error"}`
+            );
+        }
     }
 
     /**

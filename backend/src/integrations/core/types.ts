@@ -212,6 +212,14 @@ export interface OperationSummary {
     description: string;
     category: string;
     inputSchema: JSONSchema;
+    inputSchemaJSON?: JSONSchema;
+    parameters?: Array<{
+        name: string;
+        type: string;
+        description?: string;
+        required: boolean;
+        default?: unknown;
+    }>;
     retryable: boolean;
 }
 
