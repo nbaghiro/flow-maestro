@@ -25,16 +25,25 @@ export type SendMessageParams = z.infer<typeof sendMessageSchema>;
 /**
  * Send Message operation definition
  */
-export const sendMessageOperation: OperationDefinition = {
-    id: "sendMessage",
-    name: "Send Message",
-    description: "Send a message to a Slack channel or direct message",
-    category: "messaging",
-    inputSchema: sendMessageSchema,
-    inputSchemaJSON: toJSONSchema(sendMessageSchema),
-    retryable: true,
-    timeout: 10000
-};
+export const sendMessageOperation: OperationDefinition = (() => {
+    try {
+        return {
+            id: "sendMessage",
+            name: "Send Message",
+            description: "Send a message to a Slack channel or direct message",
+            category: "messaging",
+            inputSchema: sendMessageSchema,
+            inputSchemaJSON: toJSONSchema(sendMessageSchema),
+            retryable: true,
+            timeout: 10000
+        };
+    } catch (error) {
+        console.error("[Slack] Failed to create sendMessageOperation:", error);
+        throw new Error(
+            `Failed to create sendMessage operation: ${error instanceof Error ? error.message : "Unknown error"}`
+        );
+    }
+})();
 
 /**
  * Execute send message operation
