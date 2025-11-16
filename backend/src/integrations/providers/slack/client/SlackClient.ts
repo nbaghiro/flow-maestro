@@ -1,6 +1,7 @@
-import { AxiosError } from "axios";
+import { isFetchError } from "../../../../shared/utils/fetch-client";
 import { BaseAPIClient, BaseAPIClientConfig } from "../../../core/BaseAPIClient";
 import type { OAuth2TokenData } from "../../../../storage/models/Connection";
+import type { RequestConfig } from "../../../core/types";
 
 export interface SlackClientConfig {
     accessToken: string;
@@ -44,8 +45,11 @@ export class SlackClient extends BaseAPIClient {
         this.accessToken = config.accessToken;
 
         // Add request interceptor for auth header
-        this.client.interceptors.request.use((config) => {
-            config.headers.Authorization = `Bearer ${this.accessToken}`;
+        this.client.addRequestInterceptor((config) => {
+            if (!config.headers) {
+                config.headers = {};
+            }
+            config.headers["Authorization"] = `Bearer ${this.accessToken}`;
             config.headers["Content-Type"] = "application/json";
             return config;
         });
@@ -54,8 +58,8 @@ export class SlackClient extends BaseAPIClient {
     /**
      * Override request to handle Slack-specific response format
      */
-    async request<T = unknown>(config: unknown): Promise<T> {
-        const response = await super.request<SlackResponse>(config as never);
+    async request<T = unknown>(config: RequestConfig): Promise<T> {
+        const response = await super.request<SlackResponse>(config);
 
         // Slack wraps responses in { ok: true/false, ... }
         if ("ok" in response && !response.ok) {
@@ -68,8 +72,8 @@ export class SlackClient extends BaseAPIClient {
     /**
      * Handle Slack-specific errors
      */
-    protected async handleError(error: AxiosError): Promise<never> {
-        if (error.response) {
+    protected async handleError(error: unknown): Promise<never> {
+        if (isFetchError(error) && error.response) {
             const data = error.response.data as SlackResponse;
 
             // Map common Slack errors
@@ -88,12 +92,12 @@ export class SlackClient extends BaseAPIClient {
             if (data.error) {
                 throw new Error(`Slack API error: ${data.error}`);
             }
-        }
 
-        // Handle rate limiting
-        if (error.response?.status === 429) {
-            const retryAfter = error.response.headers["retry-after"];
-            throw new Error(`Rate limited. Retry after ${retryAfter || "unknown"} seconds.`);
+            // Handle rate limiting
+            if (error.response.status === 429) {
+                const retryAfter = error.response.headers["retry-after"];
+                throw new Error(`Rate limited. Retry after ${retryAfter || "unknown"} seconds.`);
+            }
         }
 
         throw error;

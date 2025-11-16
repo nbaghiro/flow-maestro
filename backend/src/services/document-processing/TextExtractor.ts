@@ -1,5 +1,4 @@
 import * as fs from "fs/promises";
-import axios from "axios";
 import * as cheerio from "cheerio";
 import mammoth from "mammoth";
 import { PDFParse } from "pdf-parse";
@@ -47,23 +46,39 @@ export class TextExtractor {
      */
     async extractFromURL(url: string): Promise<ExtractedText> {
         try {
-            const response = await axios.get(url, {
-                timeout: 30000, // 30 seconds
-                headers: {
-                    "User-Agent": "Mozilla/5.0 (FlowMaestro Knowledge Base Bot)"
-                },
-                maxRedirects: 5
-            });
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 seconds
 
-            const contentType = response.headers["content-type"] || "";
+            let response: Response;
+            try {
+                response = await fetch(url, {
+                    headers: {
+                        "User-Agent": "Mozilla/5.0 (FlowMaestro Knowledge Base Bot)"
+                    },
+                    redirect: "follow",
+                    signal: controller.signal
+                });
+                clearTimeout(timeoutId);
+            } catch (error) {
+                clearTimeout(timeoutId);
+                throw error;
+            }
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const contentType = response.headers.get("content-type") || "";
 
             if (contentType.includes("text/html")) {
-                return this.extractFromHTML(response.data, url);
+                const htmlContent = await response.text();
+                return this.extractFromHTML(htmlContent, url);
             } else if (contentType.includes("text/plain")) {
+                const textContent = await response.text();
                 return {
-                    content: response.data,
+                    content: textContent,
                     metadata: {
-                        wordCount: this.countWords(response.data),
+                        wordCount: this.countWords(textContent),
                         source: url
                     }
                 };

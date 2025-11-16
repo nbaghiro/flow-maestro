@@ -1,5 +1,4 @@
 import { EventEmitter } from "events";
-import axios from "axios";
 
 // Type stubs for browser APIs not available in Node.js
 type AudioBuffer = unknown;
@@ -52,28 +51,33 @@ export class ElevenLabsTTS extends EventEmitter {
         const voiceId = options.voice || "21m00Tcm4TlvDq8ikWAM"; // Default: Rachel
 
         try {
-            const response = await axios.post(
-                `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
-                {
+            const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+                method: "POST",
+                headers: {
+                    Accept: "audio/mpeg",
+                    "Content-Type": "application/json",
+                    "xi-api-key": apiKey
+                },
+                body: JSON.stringify({
                     text: options.text,
                     model_id: "eleven_monolingual_v1",
                     voice_settings: {
                         stability: options.stability || 0.5,
                         similarity_boost: options.similarity_boost || 0.75
                     }
-                },
-                {
-                    headers: {
-                        Accept: "audio/mpeg",
-                        "Content-Type": "application/json",
-                        "xi-api-key": apiKey
-                    },
-                    responseType: "arraybuffer"
-                }
-            );
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.text().catch(() => "Unknown error");
+                console.error("[ElevenLabsTTS] Synthesis error:", errorData);
+                throw new Error(`ElevenLabs TTS failed: HTTP ${response.status}`);
+            }
+
+            const arrayBuffer = await response.arrayBuffer();
 
             // Convert MP3 to AudioBuffer
-            const audioBuffer = await this.decodeAudioData(response.data);
+            const audioBuffer = await this.decodeAudioData(arrayBuffer);
 
             const audioBufferTyped = audioBuffer as {
                 duration: number;
@@ -82,8 +86,8 @@ export class ElevenLabsTTS extends EventEmitter {
 
             return audioBuffer;
         } catch (error: unknown) {
-            const err = error as { response?: { data?: unknown }; message?: string };
-            console.error("[ElevenLabsTTS] Synthesis error:", err.response?.data || err.message);
+            const err = error as { message?: string };
+            console.error("[ElevenLabsTTS] Synthesis error:", err.message);
             throw new Error(`ElevenLabs TTS failed: ${err.message}`);
         }
     }
@@ -100,25 +104,30 @@ export class ElevenLabsTTS extends EventEmitter {
         const voice = options.voice || "alloy"; // Options: alloy, echo, fable, onyx, nova, shimmer
 
         try {
-            const response = await axios.post(
-                "https://api.openai.com/v1/audio/speech",
-                {
+            const response = await fetch("https://api.openai.com/v1/audio/speech", {
+                method: "POST",
+                headers: {
+                    Authorization: `Bearer ${apiKey}`,
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
                     model: "tts-1",
                     input: options.text,
                     voice,
                     speed: options.speed || 1.0
-                },
-                {
-                    headers: {
-                        Authorization: `Bearer ${apiKey}`,
-                        "Content-Type": "application/json"
-                    },
-                    responseType: "arraybuffer"
-                }
-            );
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.text().catch(() => "Unknown error");
+                console.error("[ElevenLabsTTS] OpenAI TTS error:", errorData);
+                throw new Error(`OpenAI TTS failed: HTTP ${response.status}`);
+            }
+
+            const arrayBuffer = await response.arrayBuffer();
 
             // Convert to AudioBuffer
-            const audioBuffer = await this.decodeAudioData(response.data);
+            const audioBuffer = await this.decodeAudioData(arrayBuffer);
 
             const audioBufferTyped = audioBuffer as {
                 duration: number;
@@ -129,8 +138,8 @@ export class ElevenLabsTTS extends EventEmitter {
 
             return audioBuffer;
         } catch (error: unknown) {
-            const err = error as { response?: { data?: unknown }; message?: string };
-            console.error("[ElevenLabsTTS] OpenAI TTS error:", err.response?.data || err.message);
+            const err = error as { message?: string };
+            console.error("[ElevenLabsTTS] OpenAI TTS error:", err.message);
             throw new Error(`OpenAI TTS failed: ${err.message}`);
         }
     }

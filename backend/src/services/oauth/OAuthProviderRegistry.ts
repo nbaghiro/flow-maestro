@@ -1,5 +1,3 @@
-import axios from "axios";
-
 /**
  * OAuth Provider Configuration
  * Defines the structure for OAuth 2.0 provider configuration
@@ -47,23 +45,34 @@ export const OAUTH_PROVIDERS: Record<string, OAuthProvider> = {
         redirectUri: `${process.env.API_URL || "http://localhost:3000"}/api/oauth/slack/callback`,
         getUserInfo: async (accessToken: string) => {
             try {
-                const response = await axios.post("https://slack.com/api/auth.test", null, {
+                const response = await fetch("https://slack.com/api/auth.test", {
+                    method: "POST",
                     headers: {
                         Authorization: `Bearer ${accessToken}`,
                         "Content-Type": "application/x-www-form-urlencoded"
                     }
                 });
 
-                if (!response.data.ok) {
-                    throw new Error(response.data.error || "Failed to get Slack user info");
+                const data = (await response.json()) as {
+                    ok?: boolean;
+                    error?: string;
+                    team?: string;
+                    team_id?: string;
+                    user?: string;
+                    user_id?: string;
+                    email?: string;
+                };
+
+                if (!data.ok) {
+                    throw new Error(data.error || "Failed to get Slack user info");
                 }
 
                 return {
-                    workspace: response.data.team,
-                    workspaceId: response.data.team_id,
-                    user: response.data.user,
-                    userId: response.data.user_id,
-                    email: response.data.email || `${response.data.user}@slack`
+                    workspace: data.team,
+                    workspaceId: data.team_id,
+                    user: data.user,
+                    userId: data.user_id,
+                    email: data.email || `${data.user}@slack`
                 };
             } catch (error) {
                 console.error("[OAuth] Failed to get Slack user info:", error);
@@ -101,17 +110,24 @@ export const OAUTH_PROVIDERS: Record<string, OAuthProvider> = {
         redirectUri: `${process.env.API_URL || "http://localhost:3000"}/api/oauth/google/callback`,
         getUserInfo: async (accessToken: string) => {
             try {
-                const response = await axios.get("https://www.googleapis.com/oauth2/v2/userinfo", {
+                const response = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
                     headers: {
                         Authorization: `Bearer ${accessToken}`
                     }
                 });
 
+                const data = (await response.json()) as {
+                    email?: string;
+                    name?: string;
+                    picture?: string;
+                    id?: string;
+                };
+
                 return {
-                    email: response.data.email,
-                    name: response.data.name,
-                    picture: response.data.picture,
-                    userId: response.data.id
+                    email: data.email,
+                    name: data.name,
+                    picture: data.picture,
+                    userId: data.id
                 };
             } catch (error) {
                 console.error("[OAuth] Failed to get Google user info:", error);
@@ -143,18 +159,25 @@ export const OAUTH_PROVIDERS: Record<string, OAuthProvider> = {
         },
         getUserInfo: async (accessToken: string) => {
             try {
-                const response = await axios.get("https://api.notion.com/v1/users/me", {
+                const response = await fetch("https://api.notion.com/v1/users/me", {
                     headers: {
                         Authorization: `Bearer ${accessToken}`,
                         "Notion-Version": "2022-06-28"
                     }
                 });
 
+                const data = (await response.json()) as {
+                    workspace_name?: string;
+                    name?: string;
+                    person?: { email?: string };
+                    id?: string;
+                };
+
                 return {
-                    workspace: response.data.workspace_name || "Notion Workspace",
-                    user: response.data.name || "Notion User",
-                    email: response.data.person?.email || "unknown@notion",
-                    userId: response.data.id
+                    workspace: data.workspace_name || "Notion Workspace",
+                    user: data.name || "Notion User",
+                    email: data.person?.email || "unknown@notion",
+                    userId: data.id
                 };
             } catch (error) {
                 console.error("[OAuth] Failed to get Notion user info:", error);

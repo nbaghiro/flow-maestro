@@ -1,6 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import axios from "axios";
 import OpenAI from "openai";
 import type { JsonObject } from "@flowmaestro/shared";
 import { interpolateVariables } from "./utils";
@@ -256,9 +255,15 @@ async function executeAnthropic(
 
     if (imageInput.startsWith("http://") || imageInput.startsWith("https://")) {
         // Download image and convert to base64
-        const response = await axios.get(imageInput, { responseType: "arraybuffer" });
-        const base64 = Buffer.from(response.data).toString("base64");
-        const contentType = response.headers["content-type"] || "image/jpeg";
+        const response = await fetch(imageInput);
+
+        if (!response.ok) {
+            throw new Error(`Failed to download image: HTTP ${response.status}`);
+        }
+
+        const arrayBuffer = await response.arrayBuffer();
+        const base64 = Buffer.from(arrayBuffer).toString("base64");
+        const contentType = response.headers.get("content-type") || "image/jpeg";
 
         imageContent = {
             type: "image" as const,
@@ -364,9 +369,15 @@ async function executeGoogle(config: VisionNodeConfig, context: JsonObject): Pro
 
     if (imageInput.startsWith("http://") || imageInput.startsWith("https://")) {
         // Download image and convert to base64
-        const response = await axios.get(imageInput, { responseType: "arraybuffer" });
-        const base64 = Buffer.from(response.data).toString("base64");
-        const mimeType = response.headers["content-type"] || "image/jpeg";
+        const response = await fetch(imageInput);
+
+        if (!response.ok) {
+            throw new Error(`Failed to download image: HTTP ${response.status}`);
+        }
+
+        const arrayBuffer = await response.arrayBuffer();
+        const base64 = Buffer.from(arrayBuffer).toString("base64");
+        const mimeType = response.headers.get("content-type") || "image/jpeg";
 
         imagePart = {
             inlineData: {
