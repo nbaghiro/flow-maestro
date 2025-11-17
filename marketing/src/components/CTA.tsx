@@ -7,10 +7,7 @@ export const CTA: React.FC = () => {
     const isInView = useInView(ref, { once: true, margin: "-100px" });
 
     return (
-        <section
-            ref={ref}
-            className="relative py-24 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-gray-950 to-black"
-        >
+        <section ref={ref} className="relative py-24 px-4 sm:px-6 lg:px-8">
             <div className="max-w-5xl mx-auto">
                 <motion.div
                     initial={{ opacity: 0, y: 30 }}
@@ -25,10 +22,10 @@ export const CTA: React.FC = () => {
                     <div className="relative z-10 text-center">
                         <h2 className="text-4xl sm:text-5xl font-bold mb-6">
                             Ready to
-                            <span className="gradient-text"> Automate Everything</span>?
+                            <span> Automate Everything</span>?
                         </h2>
 
-                        <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
+                        <p className="text-xl mb-8 max-w-2xl mx-auto">
                             Join thousands of teams building powerful workflows with FlowMaestro.
                             Start for free, no credit card required.
                         </p>
@@ -37,10 +34,7 @@ export const CTA: React.FC = () => {
                         <div className="flex flex-wrap justify-center gap-6 mb-10">
                             {["Free 14-day trial", "No credit card required", "Cancel anytime"].map(
                                 (feature) => (
-                                    <div
-                                        key={feature}
-                                        className="flex items-center gap-2 text-gray-300"
-                                    >
+                                    <div key={feature} className="flex items-center gap-2">
                                         <CheckCircle2 className="w-5 h-5 text-green-400" />
                                         <span>{feature}</span>
                                     </div>

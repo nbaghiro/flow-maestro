@@ -126,7 +126,7 @@ export const WorkflowDemo: React.FC = () => {
     };
 
     return (
-        <section ref={ref} className="relative py-24 px-4 sm:px-6 lg:px-8 bg-black">
+        <section ref={ref} className="relative py-24 px-4 sm:px-6 lg:px-8">
             <div className="max-w-7xl mx-auto">
                 {/* Section Header */}
                 <motion.div

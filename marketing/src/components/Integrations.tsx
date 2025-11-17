@@ -28,10 +28,7 @@ export const Integrations: React.FC = () => {
     const isInView = useInView(ref, { once: true, margin: "-100px" });
 
     return (
-        <section
-            ref={ref}
-            className="relative py-24 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-black to-gray-950 overflow-hidden"
-        >
+        <section ref={ref} className="relative py-24 px-4 sm:px-6 lg:px-8 overflow-hidden">
             {/* Background Decoration */}
             <div className="absolute inset-0 grid-pattern opacity-30"></div>
 

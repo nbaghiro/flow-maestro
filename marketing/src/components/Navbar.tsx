@@ -5,7 +5,7 @@ export const Navbar: React.FC = () => {
 
     useEffect(() => {
         const handleScroll = () => {
-            const triggerOffset = window.innerHeight * 0.82;
+            const triggerOffset = window.innerHeight * 0.835;
             setIsSticky(window.scrollY > triggerOffset);
         };
         window.addEventListener("scroll", handleScroll);

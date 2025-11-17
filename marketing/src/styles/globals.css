@@ -8,7 +8,7 @@
     }
 
     body {
-        @apply bg-black text-white antialiased;
+        @apply bg-[rgba(248,247,247,1)] text-black antialiased;
         font-feature-settings: "rlig" 1, "calt" 1;
     }
 

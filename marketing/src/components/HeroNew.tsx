@@ -16,15 +16,11 @@ export const HeroNew: React.FC = () => {
             </div>
 
             {/*Hero animation*/}
-            <div className="flex items-center justify-between pl-4 pr-10 text-xl">
-                <div className="text-center z-10">
-                    <p className="font-bold text-3xl">PLACEHOLDER</p>
-                    <p>Animation/art here with possible position absolute under texts</p>
-                </div>
+            <div className="flex items-center justify-end pl-4 pr-10 text-xl">
                 <p className="w-[450px] font-semibold z-10">
                     Build visual workflows, deploy intelligent AI agents, and connect them together.
                     FlowMaestro provides durable orchestration for both deterministic processes and
-                    autonomous agents.
+                    autonomous agents without code.
                 </p>
             </div>
 

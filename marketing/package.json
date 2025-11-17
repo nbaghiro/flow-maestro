@@ -16,10 +16,13 @@
         "framer-motion": "^11.0.3",
         "lottie-react": "^2.4.0",
         "lucide-react": "^0.323.0",
+        "p5": "^2.1.1",
         "react": "^18.2.0",
         "react-dom": "^18.2.0",
+        "react-fast-marquee": "^1.6.5",
         "reactflow": "^11.10.4",
-        "tailwind-merge": "^2.2.1"
+        "tailwind-merge": "^2.2.1",
+        "vanta": "^0.5.24"
     },
     "devDependencies": {
         "@types/react": "^18.2.55",

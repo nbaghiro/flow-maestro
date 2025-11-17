@@ -90,10 +90,7 @@ export const UseCases: React.FC = () => {
     const isInView = useInView(ref, { once: true, margin: "-100px" });
 
     return (
-        <section
-            ref={ref}
-            className="relative py-24 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-black to-gray-950"
-        >
+        <section ref={ref} className="relative py-24 px-4 sm:px-6 lg:px-8">
             <div className="max-w-7xl mx-auto">
                 {/* Section Header */}
                 <motion.div
