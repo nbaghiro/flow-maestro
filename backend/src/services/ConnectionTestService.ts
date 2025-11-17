@@ -1,5 +1,4 @@
 import Anthropic from "@anthropic-ai/sdk";
-import axios from "axios";
 import OpenAI from "openai";
 import { getDefaultModelForProvider } from "@flowmaestro/shared";
 import {
@@ -187,26 +186,39 @@ export class ConnectionTestService {
 
             try {
                 // Test with userinfo endpoint
-                const response = await axios.get("https://www.googleapis.com/oauth2/v2/userinfo", {
+                const response = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
                     headers: {
                         Authorization: `Bearer ${data.access_token}`
                     }
                 });
 
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    return {
+                        success: false,
+                        message: "Google OAuth token is invalid or expired",
+                        details: errorData
+                    };
+                }
+
+                const responseData = (await response.json()) as {
+                    email?: string;
+                    verified_email?: boolean;
+                };
+
                 return {
                     success: true,
                     message: "Google OAuth token is valid",
                     details: {
-                        email: response.data.email,
-                        verified: response.data.verified_email
+                        email: responseData.email,
+                        verified: responseData.verified_email
                     }
                 };
             } catch (error: unknown) {
-                const axiosError = error as { response?: { data?: unknown } };
                 return {
                     success: false,
                     message: "Google OAuth token is invalid or expired",
-                    details: axiosError.response?.data
+                    details: error instanceof Error ? { message: error.message } : {}
                 };
             }
         } else {
@@ -214,23 +226,35 @@ export class ConnectionTestService {
 
             try {
                 // Test with a simple API call (e.g., Gemini API)
-                const response = await axios.get(
+                const response = await fetch(
                     `https://generativelanguage.googleapis.com/v1beta/models?key=${data.api_key}`
                 );
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    return {
+                        success: false,
+                        message: "Google API key is invalid",
+                        details: errorData
+                    };
+                }
+
+                const responseData = (await response.json()) as {
+                    models?: unknown[];
+                };
 
                 return {
                     success: true,
                     message: "Google API key is valid",
                     details: {
-                        models_count: response.data.models?.length || 0
+                        models_count: responseData.models?.length || 0
                     }
                 };
             } catch (error: unknown) {
-                const axiosError = error as { response?: { data?: unknown } };
                 return {
                     success: false,
                     message: "Google API key is invalid",
-                    details: axiosError.response?.data
+                    details: error instanceof Error ? { message: error.message } : {}
                 };
             }
         }
@@ -243,38 +267,50 @@ export class ConnectionTestService {
         const data = connection.data as OAuth2TokenData;
 
         try {
-            const response = await axios.post(
-                "https://slack.com/api/auth.test",
-                {},
-                {
-                    headers: {
-                        Authorization: `Bearer ${data.access_token}`
-                    }
+            const response = await fetch("https://slack.com/api/auth.test", {
+                method: "POST",
+                headers: {
+                    Authorization: `Bearer ${data.access_token}`
                 }
-            );
+            });
 
-            if (response.data.ok) {
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                return {
+                    success: false,
+                    message: "Failed to test Slack token",
+                    details: errorData
+                };
+            }
+
+            const responseData = (await response.json()) as {
+                ok?: boolean;
+                error?: string;
+                team?: string;
+                user?: string;
+            };
+
+            if (responseData.ok) {
                 return {
                     success: true,
                     message: "Slack token is valid",
                     details: {
-                        team: response.data.team,
-                        user: response.data.user
+                        team: responseData.team,
+                        user: responseData.user
                     }
                 };
             } else {
                 return {
                     success: false,
-                    message: response.data.error || "Slack token is invalid",
-                    details: response.data
+                    message: responseData.error || "Slack token is invalid",
+                    details: responseData
                 };
             }
         } catch (error: unknown) {
-            const axiosError = error as { response?: { data?: unknown } };
             return {
                 success: false,
                 message: "Failed to test Slack token",
-                details: axiosError.response?.data
+                details: error instanceof Error ? { message: error.message } : {}
             };
         }
     }
@@ -286,27 +322,40 @@ export class ConnectionTestService {
         const data = connection.data as OAuth2TokenData;
 
         try {
-            const response = await axios.get("https://api.notion.com/v1/users/me", {
+            const response = await fetch("https://api.notion.com/v1/users/me", {
                 headers: {
                     Authorization: `Bearer ${data.access_token}`,
                     "Notion-Version": "2022-06-28"
                 }
             });
 
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                return {
+                    success: false,
+                    message: "Notion token is invalid or expired",
+                    details: errorData
+                };
+            }
+
+            const responseData = (await response.json()) as {
+                id?: string;
+                type?: string;
+            };
+
             return {
                 success: true,
                 message: "Notion token is valid",
                 details: {
-                    user_id: response.data.id,
-                    type: response.data.type
+                    user_id: responseData.id,
+                    type: responseData.type
                 }
             };
         } catch (error: unknown) {
-            const axiosError = error as { response?: { data?: unknown } };
             return {
                 success: false,
                 message: "Notion token is invalid or expired",
-                details: axiosError.response?.data
+                details: error instanceof Error ? { message: error.message } : {}
             };
         }
     }
@@ -319,54 +368,80 @@ export class ConnectionTestService {
             const data = connection.data as OAuth2TokenData;
 
             try {
-                const response = await axios.get("https://api.github.com/user", {
+                const response = await fetch("https://api.github.com/user", {
                     headers: {
                         Authorization: `Bearer ${data.access_token}`,
                         Accept: "application/vnd.github.v3+json"
                     }
                 });
 
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    return {
+                        success: false,
+                        message: "GitHub token is invalid or expired",
+                        details: errorData
+                    };
+                }
+
+                const responseData = (await response.json()) as {
+                    login?: string;
+                    id?: string | number;
+                };
+
                 return {
                     success: true,
                     message: "GitHub token is valid",
                     details: {
-                        login: response.data.login,
-                        id: response.data.id
+                        login: responseData.login,
+                        id: responseData.id
                     }
                 };
             } catch (error: unknown) {
-                const axiosError = error as { response?: { data?: unknown } };
                 return {
                     success: false,
                     message: "GitHub token is invalid or expired",
-                    details: axiosError.response?.data
+                    details: error instanceof Error ? { message: error.message } : {}
                 };
             }
         } else {
             const data = connection.data as ApiKeyData;
 
             try {
-                const response = await axios.get("https://api.github.com/user", {
+                const response = await fetch("https://api.github.com/user", {
                     headers: {
                         Authorization: `token ${data.api_key}`,
                         Accept: "application/vnd.github.v3+json"
                     }
                 });
 
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    return {
+                        success: false,
+                        message: "GitHub token is invalid",
+                        details: errorData
+                    };
+                }
+
+                const responseData = (await response.json()) as {
+                    login?: string;
+                    id?: string | number;
+                };
+
                 return {
                     success: true,
                     message: "GitHub token is valid",
                     details: {
-                        login: response.data.login,
-                        id: response.data.id
+                        login: responseData.login,
+                        id: responseData.id
                     }
                 };
             } catch (error: unknown) {
-                const axiosError = error as { response?: { data?: unknown } };
                 return {
                     success: false,
                     message: "GitHub token is invalid",
-                    details: axiosError.response?.data
+                    details: error instanceof Error ? { message: error.message } : {}
                 };
             }
         }
@@ -379,30 +454,44 @@ export class ConnectionTestService {
         const data = connection.data as ApiKeyData;
 
         try {
-            const response = await axios.get("https://coda.io/apis/v1/whoami", {
+            const response = await fetch("https://coda.io/apis/v1/whoami", {
                 headers: {
                     Authorization: `Bearer ${data.api_key}`
                 }
             });
 
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                return {
+                    success: false,
+                    message:
+                        response.status === 401
+                            ? "Coda API token is invalid or expired"
+                            : "Failed to test Coda token",
+                    details: errorData
+                };
+            }
+
+            const responseData = (await response.json()) as {
+                name?: string;
+                type?: string;
+                workspace?: { name?: string };
+            };
+
             return {
                 success: true,
                 message: "Coda API token is valid",
                 details: {
-                    name: response.data.name,
-                    type: response.data.type,
-                    workspace: response.data.workspace?.name
+                    name: responseData.name,
+                    type: responseData.type,
+                    workspace: responseData.workspace?.name
                 }
             };
         } catch (error: unknown) {
-            const axiosError = error as { response?: { data?: unknown; status?: number } };
             return {
                 success: false,
-                message:
-                    axiosError.response?.status === 401
-                        ? "Coda API token is invalid or expired"
-                        : "Failed to test Coda token",
-                details: axiosError.response?.data
+                message: "Failed to test Coda token",
+                details: error instanceof Error ? { message: error.message } : {}
             };
         }
     }

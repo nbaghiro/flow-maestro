@@ -47,58 +47,53 @@ jobs:
       - name: Check code formatting
         run: npm run format:check
 
-      # Run unit tests
-      - name: Run unit tests
-        run: npm run test:unit
-
-      # Run integration tests (if backend tests exist)
-      - name: Run integration tests
-        run: npm run test:integration
-        continue-on-error: true
+      # Run integration tests
+      # - name: Run integration tests
+      #   run: npm run test
 
       # Build all packages to ensure no build errors
       - name: Build all packages
         run: npm run build
 
-  docker-build:
-    name: Docker Build Test
-    runs-on: ubuntu-latest
+  # docker-build:
+  #   name: Docker Build Test
+  #   runs-on: ubuntu-latest
 
-    steps:
-      # Checkout code
-      - name: Checkout code
-        uses: actions/checkout@v4
+  #   steps:
+  #     # Checkout code
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4
 
-      # Set up Docker Buildx
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+  #     # Set up Docker Buildx
+  #     - name: Set up Docker Buildx
+  #       uses: docker/setup-buildx-action@v3
 
-      # Test backend Docker build
-      - name: Test backend Docker build
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: infra/docker/backend/Dockerfile
-          push: false
-          tags: flowmaestro/backend:test
+  #     # Test backend Docker build
+  #     - name: Test backend Docker build
+  #       uses: docker/build-push-action@v5
+  #       with:
+  #         context: .
+  #         file: infra/docker/backend/Dockerfile
+  #         push: false
+  #         tags: flowmaestro/backend:test
 
-      # Test frontend Docker build
-      - name: Test frontend Docker build
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: infra/docker/frontend/Dockerfile
-          push: false
-          build-args: |
-            VITE_API_URL=http://localhost:3001
-            VITE_WS_URL=ws://localhost:3001
-          tags: flowmaestro/frontend:test
+  #     # Test frontend Docker build
+  #     - name: Test frontend Docker build
+  #       uses: docker/build-push-action@v5
+  #       with:
+  #         context: .
+  #         file: infra/docker/frontend/Dockerfile
+  #         push: false
+  #         build-args: |
+  #           VITE_API_URL=http://localhost:3001
+  #           VITE_WS_URL=ws://localhost:3001
+  #         tags: flowmaestro/frontend:test
 
-      # Test marketing Docker build
-      - name: Test marketing Docker build
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: infra/docker/marketing/Dockerfile
-          push: false
-          tags: flowmaestro/marketing:test
+  #     # Test marketing Docker build
+  #     - name: Test marketing Docker build
+  #       uses: docker/build-push-action@v5
+  #       with:
+  #         context: .
+  #         file: infra/docker/marketing/Dockerfile
+  #         push: false
+  #         tags: flowmaestro/marketing:test

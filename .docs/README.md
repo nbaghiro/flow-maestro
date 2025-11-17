@@ -54,23 +54,24 @@ These documents cover the main features of FlowMaestro:
 
 ---
 
-#### [external-connections.md](./external-connections.md)
+#### [integrations-system.md](./integrations-system.md)
 
-**Connections & Integrations** - External service authentication
+**Integration System** - Provider SDK architecture for external services
 
 **Topics covered:**
 
-- Connection methods (API key, OAuth 2.0, MCP)
-- API key authentication for AI providers
-- OAuth 2.0 flow with automatic token refresh
-- Model Context Protocol (MCP) for tool servers
-- Using connections in workflows
-- Using connections in agents
-- Backend implementation (encryption, repositories)
-- Frontend implementation (connection picker, management UI)
+- Provider SDK architecture (dual API + MCP interfaces)
+- Core abstractions (BaseProvider, BaseAPIClient, ExecutionRouter)
+- Provider implementation pattern (operations, client, MCP adapter)
+- Connection pooling and performance optimization
+- Authentication methods (API key, OAuth 2.0, MCP)
+- Direct API execution for workflows
+- MCP tool generation for agents
+- Error handling and retry logic
+- Adding new providers (step-by-step guide)
 - Security (AES-256-GCM encryption, multi-tenancy)
 
-**When to read:** Adding new integrations, working on OAuth, implementing connection security
+**When to read:** Building integrations, adding providers, optimizing API performance, implementing OAuth
 
 ---
 
@@ -209,23 +210,23 @@ iPaaS platform evaluation for replacing custom OAuth implementation
 
 ### By Feature
 
-| Feature       | Document                             | Section                  |
-| ------------- | ------------------------------------ | ------------------------ |
-| Node types    | [workflows.md](./workflows.md)       | Node Types Catalog       |
-| Triggers      | [workflows.md](./workflows.md)       | Workflow Triggers        |
-| AI generation | [workflows.md](./workflows.md)       | AI Workflow Generation   |
-| Memory        | [agents.md](./agents.md)             | Memory Management        |
-| Streaming     | [agents.md](./agents.md)             | Streaming Infrastructure |
-| LLM providers | [agents.md](./agents.md)             | LLM Provider Integration |
-| Tools         | [agents.md](./agents.md)             | Tool Execution System    |
-| RAG           | [agents.md](./agents.md)             | RAG (Knowledge Bases)    |
-| Observability | [agents.md](./agents.md)             | Observability & Tracing  |
-| OAuth         | [integrations.md](./integrations.md) | OAuth 2.0 Integration    |
-| MCP           | [integrations.md](./integrations.md) | Model Context Protocol   |
-| Temporal      | [temporal.md](./temporal.md)         | All sections             |
-| Deployment    | [infra.md](./infra.md)               | All sections             |
-| Voice         | [voicecalls.md](./voicecalls.md)     | All sections             |
-| Real-time     | [websocket.md](./websocket.md)       | All sections             |
+| Feature       | Document                                           | Section                  |
+| ------------- | -------------------------------------------------- | ------------------------ |
+| Node types    | [workflows.md](./workflows.md)                     | Node Types Catalog       |
+| Triggers      | [workflows.md](./workflows.md)                     | Workflow Triggers        |
+| AI generation | [workflows.md](./workflows.md)                     | AI Workflow Generation   |
+| Memory        | [agents.md](./agents.md)                           | Memory Management        |
+| Streaming     | [agents.md](./agents.md)                           | Streaming Infrastructure |
+| LLM providers | [agents.md](./agents.md)                           | LLM Provider Integration |
+| Tools         | [agents.md](./agents.md)                           | Tool Execution System    |
+| RAG           | [agents.md](./agents.md)                           | RAG (Knowledge Bases)    |
+| Observability | [agents.md](./agents.md)                           | Observability & Tracing  |
+| OAuth         | [integrations-system.md](./integrations-system.md) | Authentication Methods   |
+| MCP           | [integrations-system.md](./integrations-system.md) | Authentication Methods   |
+| Temporal      | [temporal.md](./temporal.md)                       | All sections             |
+| Deployment    | [infra.md](./infra.md)                             | All sections             |
+| Voice         | [voicecalls.md](./voicecalls.md)                   | All sections             |
+| Real-time     | [websocket.md](./websocket.md)                     | All sections             |
 
 ### By Role
 
@@ -234,13 +235,13 @@ iPaaS platform evaluation for replacing custom OAuth implementation
 1. [workflows.md](./workflows.md) - Canvas UI, node configuration
 2. [agents.md](./agents.md) - Agent builder UI, streaming client
 3. [websocket.md](./websocket.md) - Real-time updates, event handling
-4. [integrations.md](./integrations.md) - Connection picker, OAuth flow
+4. [integrations-system.md](./integrations-system.md) - Connection picker, OAuth flow
 
 **Backend Developer**:
 
 1. [temporal.md](./temporal.md) - Workflow execution, activity patterns
 2. [agents.md](./agents.md) - LLM integration, tool execution
-3. [integrations.md](./integrations.md) - Connection security, encryption
+3. [integrations-system.md](./integrations-system.md) - Provider SDK, connection pooling, security
 4. [websocket.md](./websocket.md) - Event emission, WebSocket management
 
 **DevOps/Infrastructure**:
@@ -253,7 +254,7 @@ iPaaS platform evaluation for replacing custom OAuth implementation
 
 1. [workflows.md](./workflows.md) - Workflow capabilities, UI patterns
 2. [agents.md](./agents.md) - Agent features, user experience
-3. [integrations.md](./integrations.md) - Supported integrations, connection UX
+3. [integrations-system.md](./integrations-system.md) - Supported integrations, connection UX
 
 ---
 
@@ -284,11 +285,12 @@ iPaaS platform evaluation for replacing custom OAuth implementation
 
 **New Integration:**
 
-1. Read [integrations.md](./integrations.md) → Connection Methods
-2. Choose auth method (API key, OAuth, MCP)
-3. Implement connection testing service
-4. Add provider configuration
-5. Update connection picker UI
+1. Read [integrations-system.md](./integrations-system.md) → Provider Implementation
+2. Create provider directory with operations
+3. Implement provider class extending BaseProvider
+4. Create HTTP client with connection pooling
+5. Implement MCP adapter for agent tools
+6. Add provider to registry
 
 **New LLM Provider:**
 

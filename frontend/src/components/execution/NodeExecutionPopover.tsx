@@ -5,7 +5,8 @@
  */
 
 import * as Popover from "@radix-ui/react-popover";
-import { X, CheckCircle2, XCircle, Clock, AlertCircle } from "lucide-react";
+import { X, CheckCircle2, XCircle, Clock, AlertCircle, GripHorizontal } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
 import { cn } from "../../lib/utils";
 import { NodeExecutionState } from "../../stores/workflowStore";
 
@@ -26,6 +27,55 @@ export function NodeExecutionPopover({
     onOpenChange,
     children
 }: NodeExecutionPopoverProps) {
+    const [size, setSize] = useState({ width: 350, height: 300 });
+    const [isResizing, setIsResizing] = useState(false);
+    const contentRef = useRef<HTMLDivElement>(null);
+    const startPosRef = useRef({ x: 0, y: 0, width: 0, height: 0 });
+
+    // Reset size when popover closes
+    useEffect(() => {
+        if (!open) {
+            setSize({ width: 350, height: 300 });
+        }
+    }, [open]);
+
+    const handleResizeStart = (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsResizing(true);
+        startPosRef.current = {
+            x: e.clientX,
+            y: e.clientY,
+            width: size.width,
+            height: size.height
+        };
+    };
+
+    useEffect(() => {
+        if (!isResizing) return;
+
+        const handleMouseMove = (e: MouseEvent) => {
+            const deltaX = e.clientX - startPosRef.current.x;
+            const deltaY = e.clientY - startPosRef.current.y;
+
+            const newWidth = Math.max(300, Math.min(800, startPosRef.current.width + deltaX));
+            const newHeight = Math.max(200, Math.min(600, startPosRef.current.height + deltaY));
+
+            setSize({ width: newWidth, height: newHeight });
+        };
+
+        const handleMouseUp = () => {
+            setIsResizing(false);
+        };
+
+        document.addEventListener("mousemove", handleMouseMove);
+        document.addEventListener("mouseup", handleMouseUp);
+
+        return () => {
+            document.removeEventListener("mousemove", handleMouseMove);
+            document.removeEventListener("mouseup", handleMouseUp);
+        };
+    }, [isResizing]);
     // Get status info
     const getStatusInfo = () => {
         switch (executionState.status) {
@@ -89,20 +139,26 @@ export function NodeExecutionPopover({
 
             <Popover.Portal>
                 <Popover.Content
+                    ref={contentRef}
                     side="right"
                     sideOffset={32}
                     align="center"
                     collisionPadding={20}
                     avoidCollisions={true}
+                    style={{
+                        width: `${size.width}px`,
+                        height: `${size.height}px`
+                    }}
                     className={cn(
-                        "z-50 w-[350px] rounded-lg border border-border bg-background shadow-xl",
+                        "z-50 rounded-lg border border-border bg-background shadow-xl relative",
                         "data-[state=open]:animate-in data-[state=closed]:animate-out",
                         "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
                         "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
                         "data-[side=bottom]:slide-in-from-top-2",
                         "data-[side=left]:slide-in-from-right-2",
                         "data-[side=right]:slide-in-from-left-2",
-                        "data-[side=top]:slide-in-from-bottom-2"
+                        "data-[side=top]:slide-in-from-bottom-2",
+                        "flex flex-col"
                     )}
                 >
                     {/* Header */}
@@ -128,7 +184,7 @@ export function NodeExecutionPopover({
                     </div>
 
                     {/* Content */}
-                    <div className="max-h-[300px] overflow-y-auto">
+                    <div className="flex-1 overflow-y-auto">
                         {/* Started At */}
                         {executionState.startedAt && (
                             <div className="px-3 py-2 border-b border-border/50">
@@ -155,7 +211,7 @@ export function NodeExecutionPopover({
                         {executionState.output && Object.keys(executionState.output).length > 0 && (
                             <div className="px-3 py-2 border-b border-border/50">
                                 <h5 className="font-medium text-xs mb-1.5">Output</h5>
-                                <div className="bg-muted/50 rounded p-2 max-h-32 overflow-y-auto">
+                                <div className="bg-muted/50 rounded p-2 overflow-y-auto">
                                     <pre className="text-xs font-mono whitespace-pre-wrap">
                                         {JSON.stringify(executionState.output, null, 2)}
                                     </pre>
@@ -167,7 +223,7 @@ export function NodeExecutionPopover({
                         {executionState.input && Object.keys(executionState.input).length > 0 && (
                             <div className="px-3 py-2 border-b border-border/50">
                                 <h5 className="font-medium text-xs mb-1.5">Input</h5>
-                                <div className="bg-muted/50 rounded p-2 max-h-32 overflow-y-auto">
+                                <div className="bg-muted/50 rounded p-2 overflow-y-auto">
                                     <pre className="text-xs font-mono whitespace-pre-wrap">
                                         {JSON.stringify(executionState.input, null, 2)}
                                     </pre>
@@ -212,6 +268,23 @@ export function NodeExecutionPopover({
                                     <p className="text-xs">No execution data available</p>
                                 </div>
                             )}
+                    </div>
+
+                    {/* Bottom spacer for resize handle */}
+                    <div className="h-6 flex-shrink-0 relative">
+                        {/* Resize Handle */}
+                        <div
+                            className={cn(
+                                "absolute bottom-0 right-0 w-6 h-6 cursor-se-resize",
+                                "flex items-center justify-center",
+                                "hover:bg-muted/50 transition-colors rounded-bl-lg",
+                                "group"
+                            )}
+                            onMouseDown={handleResizeStart}
+                            title="Drag to resize"
+                        >
+                            <GripHorizontal className="w-3 h-3 text-muted-foreground rotate-45 group-hover:text-foreground" />
+                        </div>
                     </div>
 
                     {/* Arrow */}

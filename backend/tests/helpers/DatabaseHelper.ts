@@ -5,6 +5,7 @@
 
 import { randomUUID } from "crypto";
 import { Pool, QueryResultRow } from "pg";
+import { DatabaseConnectionRepository } from "../../src/storage/repositories/DatabaseConnectionRepository";
 
 export class DatabaseHelper {
     private pool: Pool;
@@ -86,6 +87,41 @@ export class DatabaseHelper {
     }
 
     /**
+     * Create a test database connection and return connection ID
+     * This creates a connection in the database_connections table for testing database nodes
+     */
+    async createTestDatabaseConnection(
+        userId: string,
+        provider: "postgresql" | "mysql" | "mongodb",
+        connectionDetails: {
+            host?: string;
+            port?: number;
+            database?: string;
+            username?: string;
+            password?: string;
+            connection_string?: string;
+            ssl_enabled?: boolean;
+        }
+    ): Promise<string> {
+        const repository = new DatabaseConnectionRepository();
+        const connection = await repository.create({
+            user_id: userId,
+            name: `Test ${provider} Connection`,
+            provider,
+            host: connectionDetails.host,
+            port: connectionDetails.port,
+            database: connectionDetails.database,
+            username: connectionDetails.username,
+            password: connectionDetails.password,
+            connection_string: connectionDetails.connection_string,
+            ssl_enabled: connectionDetails.ssl_enabled ?? false
+        });
+
+        console.log(`✅ Created test database connection: ${connection.id} (${provider})`);
+        return connection.id;
+    }
+
+    /**
      * Get execution by ID
      */
     async getExecution(executionId: string): Promise<unknown> {
@@ -148,6 +184,11 @@ export class DatabaseHelper {
 
             // Connections
             await this.pool.query("DELETE FROM connections WHERE user_id = $1", [this.testUserId]);
+
+            // Database connections
+            await this.pool.query("DELETE FROM database_connections WHERE user_id = $1", [
+                this.testUserId
+            ]);
 
             // Finally delete the test user
             await this.pool.query("DELETE FROM users WHERE id = $1", [this.testUserId]);

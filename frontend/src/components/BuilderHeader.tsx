@@ -1,8 +1,14 @@
 import { Save, Play, Loader2, CheckCircle, XCircle, Settings } from "lucide-react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { executeTrigger, createTrigger, getTriggers } from "../lib/api";
+import { wsClient } from "../lib/websocket";
+import { useTriggerStore } from "../stores/triggerStore";
 import { useWorkflowStore } from "../stores/workflowStore";
+import type { WorkflowTrigger } from "../types/trigger";
 
 interface BuilderHeaderProps {
+    workflowId?: string;
     workflowName?: string;
     hasUnsavedChanges?: boolean;
     saveStatus?: "idle" | "saving" | "saved" | "error";
@@ -12,6 +18,7 @@ interface BuilderHeaderProps {
 }
 
 export function BuilderHeader({
+    workflowId,
     workflowName = "Untitled Workflow",
     hasUnsavedChanges = false,
     saveStatus = "idle",
@@ -19,12 +26,81 @@ export function BuilderHeader({
     onNameChange,
     onOpenSettings
 }: BuilderHeaderProps) {
-    const { executeWorkflow, isExecuting, executionResult, executionError } = useWorkflowStore();
+    const { startExecution, currentExecution, selectNode } = useWorkflowStore();
+    const { setDrawerOpen } = useTriggerStore();
     const navigate = useNavigate();
+    const [isRunning, setIsRunning] = useState(false);
+    const [runError, setRunError] = useState<string | null>(null);
 
     const handleRun = async () => {
-        // TODO: Collect inputs from input nodes if needed
-        await executeWorkflow();
+        if (!workflowId) {
+            console.error("Cannot run workflow: workflowId is not provided");
+            setRunError("Workflow ID is missing");
+            return;
+        }
+
+        setIsRunning(true);
+        setRunError(null);
+
+        try {
+            // Fetch all triggers for this workflow to check if __run_button__ exists
+            const triggersResponse = await getTriggers(workflowId);
+            let manualTrigger: WorkflowTrigger | undefined;
+
+            if (triggersResponse.success && triggersResponse.data) {
+                // Find existing __run_button__ trigger
+                manualTrigger = triggersResponse.data.find(
+                    (t) => t.trigger_type === "manual" && t.name === "__run_button__"
+                );
+            }
+
+            // If no background trigger exists, create one
+            if (!manualTrigger) {
+                console.log("Creating background manual trigger for Run button");
+                const createResponse = await createTrigger({
+                    workflowId: workflowId,
+                    name: "__run_button__",
+                    triggerType: "manual",
+                    config: {
+                        description: "Auto-created trigger for Run button",
+                        inputs: {}
+                    },
+                    enabled: true
+                });
+
+                if (createResponse.success && createResponse.data) {
+                    manualTrigger = createResponse.data;
+                } else {
+                    throw new Error("Failed to create background trigger");
+                }
+            } else {
+                console.log("Reusing existing __run_button__ trigger:", manualTrigger.id);
+            }
+
+            // Execute trigger with empty inputs
+            const response = await executeTrigger(manualTrigger.id, {});
+
+            if (response.success && response.data) {
+                // Clear any selected node to prevent auto-close
+                selectNode(null);
+
+                // Start execution monitoring in the workflow store
+                startExecution(response.data.executionId, manualTrigger.id);
+
+                // Subscribe to WebSocket events for this execution
+                wsClient.subscribeToExecution(response.data.executionId);
+
+                // Open execution panel automatically
+                // Note: ExecutionPanel will auto-open and switch to execution tab
+                // when currentExecution is set, but we also explicitly open it here
+                setDrawerOpen(true);
+            }
+        } catch (error) {
+            console.error("Failed to execute workflow:", error);
+            setRunError(error instanceof Error ? error.message : String(error));
+        } finally {
+            setIsRunning(false);
+        }
     };
 
     const handleBack = () => {
@@ -68,24 +144,31 @@ export function BuilderHeader({
                     </div>
 
                     {/* Execution Status */}
-                    {isExecuting && (
+                    {currentExecution?.status === "running" && (
                         <div className="flex items-center gap-2 px-3 py-1 bg-blue-50 text-blue-700 rounded-lg text-sm">
                             <Loader2 className="w-4 h-4 animate-spin" />
                             <span>Executing...</span>
                         </div>
                     )}
 
-                    {executionResult && !isExecuting && (
+                    {currentExecution?.status === "completed" && (
                         <div className="flex items-center gap-2 px-3 py-1 bg-green-50 text-green-700 rounded-lg text-sm">
                             <CheckCircle className="w-4 h-4" />
                             <span>Success</span>
                         </div>
                     )}
 
-                    {executionError && !isExecuting && (
+                    {currentExecution?.status === "failed" && (
                         <div className="flex items-center gap-2 px-3 py-1 bg-red-50 text-red-700 rounded-lg text-sm">
                             <XCircle className="w-4 h-4" />
-                            <span>{executionError}</span>
+                            <span>Failed</span>
+                        </div>
+                    )}
+
+                    {runError && !currentExecution && (
+                        <div className="flex items-center gap-2 px-3 py-1 bg-red-50 text-red-700 rounded-lg text-sm">
+                            <XCircle className="w-4 h-4" />
+                            <span>{runError}</span>
                         </div>
                     )}
                 </div>
@@ -125,15 +208,18 @@ export function BuilderHeader({
 
                     <button
                         onClick={handleRun}
-                        disabled={isExecuting}
+                        disabled={isRunning || currentExecution?.status === "running"}
                         className="flex items-center gap-2 px-4 py-1.5 text-sm font-medium text-white bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors shadow-sm"
+                        title={
+                            !workflowId ? "Save workflow first" : "Run workflow with empty inputs"
+                        }
                     >
-                        {isExecuting ? (
+                        {isRunning || currentExecution?.status === "running" ? (
                             <Loader2 className="w-4 h-4 animate-spin" />
                         ) : (
                             <Play className="w-4 h-4" />
                         )}
-                        {isExecuting ? "Running..." : "Run"}
+                        {isRunning || currentExecution?.status === "running" ? "Running..." : "Run"}
                     </button>
                 </div>
             </div>

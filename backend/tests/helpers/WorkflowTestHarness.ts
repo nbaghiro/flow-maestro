@@ -5,6 +5,7 @@
 
 import { Connection, Client, WorkflowFailedError } from "@temporalio/client";
 import { Pool } from "pg";
+import { v4 as uuidv4 } from "uuid";
 
 export interface WorkflowTestResult {
     success: boolean;
@@ -71,7 +72,7 @@ export class WorkflowTestHarness {
                     {
                         workflowDefinition,
                         inputs,
-                        executionId: executionId || `test-exec-${Date.now()}`,
+                        executionId: executionId || uuidv4(),
                         userId: "00000000-0000-0000-0000-000000000001"
                     }
                 ]

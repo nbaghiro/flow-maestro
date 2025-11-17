@@ -83,7 +83,7 @@ export function BaseNode({
     onStatusClick
 }: BaseNodeProps) {
     const nodeId = useNodeId();
-    const { currentExecution } = useWorkflowStore();
+    const { currentExecution, selectedNode } = useWorkflowStore();
     const categoryStyle = categoryConfig[category];
     const [showPopover, setShowPopover] = useState(false);
 
@@ -94,12 +94,19 @@ export function BaseNode({
     const executionState =
         nodeId && currentExecution ? currentExecution.nodeStates.get(nodeId) : null;
 
+    // Close popover when another node is selected
+    useEffect(() => {
+        if (selectedNode && selectedNode !== nodeId && showPopover) {
+            setShowPopover(false);
+        }
+    }, [selectedNode, nodeId, showPopover]);
+
     // Close popover when viewport changes (zoom or pan)
     useEffect(() => {
         if (showPopover) {
             setShowPopover(false);
         }
-    }, [viewport, showPopover]);
+    }, [viewport]);
 
     // Use execution status if available, otherwise use provided status
     const status: NodeStatus = executionState
@@ -156,12 +163,17 @@ export function BaseNode({
                                 statusConfig[status].color
                             )}
                             title={getTooltipText()}
+                            onMouseEnter={() => {
+                                if (!showPopover) {
+                                    setShowPopover(true);
+                                }
+                            }}
                             onClick={(e) => {
                                 e.stopPropagation();
                                 if (onStatusClick) {
                                     onStatusClick();
                                 } else {
-                                    setShowPopover(true);
+                                    setShowPopover(!showPopover);
                                 }
                             }}
                         />

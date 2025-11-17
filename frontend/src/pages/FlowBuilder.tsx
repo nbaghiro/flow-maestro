@@ -378,6 +378,7 @@ export function FlowBuilder() {
         <ReactFlowProvider>
             <div className="h-screen flex flex-col bg-gray-50">
                 <BuilderHeader
+                    workflowId={workflowId}
                     workflowName={workflowName}
                     hasUnsavedChanges={hasUnsavedChanges}
                     saveStatus={saveStatus}

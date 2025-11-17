@@ -120,9 +120,12 @@ export const useWorkflowStore = create<WorkflowStore>((set, get) => ({
     },
 
     deleteNode: (nodeId) => {
+        const { selectedNode } = get();
         set({
             nodes: get().nodes.filter((node) => node.id !== nodeId),
-            edges: get().edges.filter((edge) => edge.source !== nodeId && edge.target !== nodeId)
+            edges: get().edges.filter((edge) => edge.source !== nodeId && edge.target !== nodeId),
+            // Clear selection if the deleted node was selected
+            selectedNode: selectedNode === nodeId ? null : selectedNode
         });
     },
 

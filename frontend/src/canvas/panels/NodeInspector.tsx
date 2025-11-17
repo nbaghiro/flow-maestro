@@ -1,5 +1,5 @@
 import { X } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useWorkflowStore } from "../../stores/workflowStore";
 // AI & ML
 import { AudioNodeConfig } from "./configs/AudioNodeConfig";
@@ -41,22 +41,31 @@ export function NodeInspector() {
         }
     }, [node?.id, node?.data.label]);
 
+    const handleClose = useCallback(() => {
+        selectNode(null);
+    }, [selectNode]);
+
+    const handleUpdate = useCallback(
+        (config: unknown) => {
+            if (!node) return;
+            updateNode(node.id, config as unknown as import("@flowmaestro/shared").JsonObject);
+        },
+        [node, updateNode]
+    );
+
+    const handleNameChange = useCallback(
+        (newName: string) => {
+            if (!node) return;
+            setNodeName(newName);
+            updateNode(node.id, { label: newName });
+        },
+        [node, updateNode]
+    );
+
+    // Early return AFTER all hooks have been called
     if (!node) {
         return null;
     }
-
-    const handleClose = () => {
-        selectNode(null);
-    };
-
-    const handleUpdate = (config: unknown) => {
-        updateNode(node.id, config as unknown as import("@flowmaestro/shared").JsonObject);
-    };
-
-    const handleNameChange = (newName: string) => {
-        setNodeName(newName);
-        updateNode(node.id, { label: newName });
-    };
 
     const renderConfig = () => {
         switch (node.type) {

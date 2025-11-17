@@ -152,8 +152,11 @@ export async function orchestratorWorkflow(input: OrchestratorInput): Promise<Or
 
     console.log(`[Orchestrator] Start nodes: ${startNodes.map(([id]) => id).join(", ")}`);
 
-    // Execution context - stores all node outputs
+    // Execution context - stores all node outputs and includes userId for authorization
     const context: JsonObject = { ...inputs };
+    if (userId) {
+        context.userId = userId;
+    }
     const executed = new Set<string>();
     const skipped = new Set<string>();
     const errors: Record<string, string> = {};

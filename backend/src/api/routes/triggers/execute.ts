@@ -21,7 +21,7 @@ export async function executeTriggerRoute(fastify: FastifyInstance) {
         async (request, reply) => {
             const { id } = request.params as { id: string };
             const body = (request.body || {}) as ExecuteTriggerBody;
-            const userId = (request as unknown as { userId: string }).userId;
+            const userId = request.user.id;
 
             try {
                 const triggerRepo = new TriggerRepository();

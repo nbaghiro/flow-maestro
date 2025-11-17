@@ -111,7 +111,6 @@ npm install sodium-native  # For encryption
 # Install additional dependencies
 npm install livekit-client livekit-server-sdk
 npm install @deepgram/sdk
-npm install axios
 npm install node-web-audio-api  # For AudioContext
 npm install node-webrtc         # For WebRTC
 ```

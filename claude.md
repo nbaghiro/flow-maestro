@@ -29,6 +29,101 @@ This document provides coding standards, architectural context, and best practic
 - **Generic Constraints**: Use proper generic constraints instead of `any`
 - **Compilation Checks**: ALWAYS run TypeScript compiler before committing changes
 
+### HTTP Client Standards
+
+**IMPORTANT**: Always use native `fetch` API for HTTP requests. Never use axios or other HTTP client libraries.
+
+- **Native Fetch**: Use Node.js built-in `fetch` (available since Node 18)
+- **No axios**: The codebase has migrated away from axios - do not add it back
+- **Type Safety**: Always type your fetch responses properly
+- **Error Handling**: Check `response.ok` before parsing response
+- **Timeouts**: Use `AbortController` with `signal` for request timeouts
+- **JSON Parsing**: Use `await response.json()` for JSON responses
+- **FormData**: Let browser/Node.js set Content-Type for FormData (includes boundary)
+
+#### Fetch Examples
+
+```typescript
+// ❌ BAD - Don't use axios
+import axios from "axios";
+const response = await axios.get("/api/data");
+const data = response.data;
+
+// ✅ GOOD - Use native fetch
+const response = await fetch("/api/data");
+if (!response.ok) {
+    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+}
+const data = await response.json();
+
+// ✅ GOOD - POST with JSON body
+const response = await fetch("/api/data", {
+    method: "POST",
+    headers: {
+        "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ name: "example" })
+});
+
+// ✅ GOOD - With timeout using AbortController
+const controller = new AbortController();
+const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+
+try {
+    const response = await fetch("/api/data", {
+        signal: controller.signal
+    });
+    clearTimeout(timeoutId);
+    const data = await response.json();
+} catch (error) {
+    clearTimeout(timeoutId);
+    if (error.name === "AbortError") {
+        throw new Error("Request timeout");
+    }
+    throw error;
+}
+
+// ✅ GOOD - FormData upload (no Content-Type header)
+const formData = new FormData();
+formData.append("file", fileBlob);
+
+const response = await fetch("/api/upload", {
+    method: "POST",
+    body: formData // Don't set Content-Type - browser sets it with boundary
+});
+```
+
+#### Using the FetchClient Utility
+
+For advanced use cases with retry logic and connection pooling, use the `FetchClient` utility:
+
+```typescript
+import { FetchClient } from "../shared/utils/fetch-client";
+
+const client = new FetchClient({
+    baseURL: "https://api.example.com",
+    timeout: 30000,
+    retryConfig: {
+        maxRetries: 3,
+        retryableStatuses: [429, 500, 502, 503],
+        backoffStrategy: "exponential"
+    }
+});
+
+// Add request interceptor (e.g., for auth)
+client.addRequestInterceptor((config) => {
+    if (!config.headers) {
+        config.headers = {};
+    }
+    config.headers["Authorization"] = `Bearer ${token}`;
+    return config;
+});
+
+// Make requests
+const data = await client.get("/endpoint");
+const created = await client.post("/endpoint", { name: "test" });
+```
+
 ### Pre-Commit Type Checking Protocol
 
 **CRITICAL**: Before committing any code changes, you MUST:
@@ -744,3 +839,4 @@ When working on FlowMaestro:
 6. ✅ Use Fastify patterns for backend, not Express patterns
 7. ✅ Use repository pattern for database access with proper multi-tenancy
 8. ✅ Test thoroughly and handle errors gracefully
+9. ✅ Only create markdown files when specifically requested

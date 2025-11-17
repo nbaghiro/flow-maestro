@@ -1,4 +1,3 @@
-import axios, { AxiosRequestConfig, Method } from "axios";
 import type { JsonObject, JsonValue } from "@flowmaestro/shared";
 import { interpolateVariables } from "./utils";
 
@@ -66,42 +65,41 @@ export async function executeHTTPNode(
     }
 
     // Build query params
-    const params: Record<string, string> = {};
+    const queryParams = new URLSearchParams();
     if (config.queryParams) {
         config.queryParams.forEach(({ key, value }) => {
             if (key) {
-                params[key] = interpolateVariables(value, context);
+                queryParams.append(key, interpolateVariables(value, context));
             }
         });
     }
 
+    // Build final URL with query params
+    const finalUrl = queryParams.toString() ? `${url}?${queryParams.toString()}` : url;
+
     // Build request body
-    let data: JsonValue = null;
+    let body: string | undefined;
     if (config.body && ["POST", "PUT", "PATCH"].includes(config.method)) {
         const bodyString = interpolateVariables(config.body, context);
 
         if (config.bodyType === "json") {
             try {
-                data = JSON.parse(bodyString);
+                // Validate JSON
+                JSON.parse(bodyString);
+                body = bodyString;
                 headers["Content-Type"] = "application/json";
             } catch (e) {
                 throw new Error(`Invalid JSON in request body: ${e}`);
             }
         } else {
-            data = bodyString;
+            body = bodyString;
         }
     }
 
-    // Configure axios request
-    const requestConfig: AxiosRequestConfig = {
-        method: config.method as Method,
-        url,
-        headers,
-        params,
-        data,
-        timeout: (config.timeout || 30) * 1000, // Convert to milliseconds
-        validateStatus: () => true // Don't throw on any status code
-    };
+    // Configure fetch request
+    const timeout = (config.timeout || 30) * 1000; // Convert to milliseconds
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
 
     // Execute with retries
     const maxRetries = config.retryCount || 0;
@@ -110,21 +108,49 @@ export async function executeHTTPNode(
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
         try {
             console.log(
-                `[HTTP] ${config.method} ${url} (attempt ${attempt + 1}/${maxRetries + 1})`
+                `[HTTP] ${config.method} ${finalUrl} (attempt ${attempt + 1}/${maxRetries + 1})`
             );
 
-            const response = await axios(requestConfig);
+            const response = await fetch(finalUrl, {
+                method: config.method,
+                headers,
+                body,
+                signal: controller.signal
+            });
+
+            clearTimeout(timeoutId);
+
             const responseTime = Date.now() - startTime;
 
             console.log(
                 `[HTTP] Response: ${response.status} ${response.statusText} (${responseTime}ms)`
             );
 
-            const result = {
+            // Parse response data
+            let data: JsonValue = null;
+            const contentType = response.headers.get("content-type");
+
+            if (contentType?.includes("application/json")) {
+                const text = await response.text();
+                data = text ? JSON.parse(text) : null;
+            } else if (contentType?.includes("text/")) {
+                data = await response.text();
+            } else {
+                // For other types, return as text
+                data = await response.text();
+            }
+
+            // Convert headers to plain object
+            const responseHeaders: Record<string, string> = {};
+            response.headers.forEach((value, key) => {
+                responseHeaders[key] = value;
+            });
+
+            const result: HTTPNodeResult = {
                 status: response.status,
                 statusText: response.statusText,
-                headers: response.headers as Record<string, string>,
-                data: response.data,
+                headers: responseHeaders,
+                data,
                 responseTime
             };
 
@@ -134,6 +160,8 @@ export async function executeHTTPNode(
 
             return result as unknown as JsonObject;
         } catch (error) {
+            clearTimeout(timeoutId);
+
             lastError = error as Error;
             console.error(`[HTTP] Attempt ${attempt + 1} failed:`, error);
 

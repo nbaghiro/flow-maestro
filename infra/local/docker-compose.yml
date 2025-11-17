@@ -1,5 +1,5 @@
 services:
-    # PostgreSQL Database with pgvector extension
+    # PostgreSQL Database with pgvector extension (FlowMaestro main database)
     postgres:
         image: pgvector/pgvector:pg15
         container_name: flowmaestro-postgres
@@ -14,6 +14,27 @@ services:
             - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
         healthcheck:
             test: ["CMD-SHELL", "pg_isready -U flowmaestro"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+        networks:
+            - flowmaestro
+
+    # Test PostgreSQL Database (simulates user's database for testing database nodes)
+    postgres-test:
+        image: postgres:15-alpine
+        container_name: flowmaestro-postgres-test
+        environment:
+            POSTGRES_DB: test_database
+            POSTGRES_USER: test_user
+            POSTGRES_PASSWORD: test_password
+        ports:
+            - "5433:5432"
+        volumes:
+            - postgres_test_data:/var/lib/postgresql/data
+            - ./postgres/init-test-db.sql:/docker-entrypoint-initdb.d/init.sql
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U test_user"]
             interval: 10s
             timeout: 5s
             retries: 5
@@ -106,6 +127,9 @@ volumes:
     postgres_data:
         external: true
         name: flowmaestro_postgres_data
+    postgres_test_data:
+        external: true
+        name: flowmaestro_postgres_test_data
     redis_data:
         external: true
         name: flowmaestro_redis_data

@@ -5,7 +5,7 @@
 
 import { Pool } from "pg";
 import { getGlobalTestPool, getGlobalDbHelper } from "../../../jest.setup";
-import workflowDefinition from "../../fixtures/workflows/02-llm-chained-providers.json";
+import workflowDefinition from "../../fixtures/workflows/01-llm-chained-providers.json";
 import { DatabaseHelper } from "../../helpers/DatabaseHelper";
 import { TestConnectionFactory } from "../../helpers/TestConnectionFactory";
 import { WorkflowTestHarness } from "../../helpers/WorkflowTestHarness";
@@ -77,7 +77,13 @@ describe("LLM Integration: Chained Providers", () => {
         expect(result.outputs.finalResult).toBeDefined();
 
         // Verify structure of combined result
-        const finalResult = result.outputs.finalResult;
+        const finalResult = result.outputs.finalResult as {
+            original: string;
+            refined: string;
+            openai_tokens: number;
+            anthropic_tokens: number;
+            total_tokens: number;
+        };
         expect(finalResult).toHaveProperty("original");
         expect(finalResult).toHaveProperty("refined");
         expect(finalResult).toHaveProperty("openai_tokens");
@@ -124,7 +130,7 @@ describe("LLM Integration: Chained Providers", () => {
         expect(result.success).toBe(true);
         expect(result.outputs.finalResult).toBeDefined();
 
-        const finalResult = result.outputs.finalResult;
+        const finalResult = result.outputs.finalResult as { original: string; refined: string };
 
         // The Anthropic prompt should have received the OpenAI response
         // and refined it, so it should be different

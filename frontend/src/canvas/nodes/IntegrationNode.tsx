@@ -6,18 +6,18 @@ import { BaseNode } from "./BaseNode";
 interface IntegrationNodeData {
     label: string;
     status?: "idle" | "pending" | "running" | "success" | "error";
-    service?: string;
-    action?: string;
+    provider?: string;
+    operation?: string;
 }
 
 function IntegrationNode({ data, selected }: NodeProps<IntegrationNodeData>) {
-    const service = data.service || "slack";
-    const action = data.action || "send_message";
+    const provider = data.provider || "slack";
+    const operation = data.operation || "sendMessage";
 
-    // Format action for display: handle both snake_case and camelCase
-    const formatAction = (actionStr: string): string => {
+    // Format operation for display: handle both snake_case and camelCase
+    const formatOperation = (opStr: string): string => {
         // Replace underscores with spaces
-        let formatted = actionStr.replace(/_/g, " ");
+        let formatted = opStr.replace(/_/g, " ");
         // Add spaces before capital letters (camelCase to space case)
         formatted = formatted.replace(/([A-Z])/g, " $1");
         // Capitalize first letter and trim
@@ -34,12 +34,12 @@ function IntegrationNode({ data, selected }: NodeProps<IntegrationNodeData>) {
         >
             <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">Service:</span>
-                    <span className="text-xs font-medium capitalize">{service}</span>
+                    <span className="text-xs text-muted-foreground">Provider:</span>
+                    <span className="text-xs font-medium capitalize">{provider}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">Action:</span>
-                    <span className="text-xs font-medium">{formatAction(action)}</span>
+                    <span className="text-xs text-muted-foreground">Operation:</span>
+                    <span className="text-xs font-medium">{formatOperation(operation)}</span>
                 </div>
             </div>
         </BaseNode>

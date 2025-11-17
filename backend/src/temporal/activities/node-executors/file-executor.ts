@@ -1,6 +1,5 @@
 import * as fs from "fs/promises";
 import * as path from "path";
-import axios from "axios";
 import * as pdf from "pdf-parse";
 import type { JsonObject } from "@flowmaestro/shared";
 import { interpolateVariables } from "./utils";
@@ -74,11 +73,17 @@ async function readFile(
     if (config.fileSource === "url") {
         // Download file from URL
         console.log(`[FileOps] Downloading from URL: ${filePath}`);
-        const response = await axios.get(filePath, { responseType: "text" });
+        const response = await fetch(filePath);
+
+        if (!response.ok) {
+            throw new Error(`Failed to download file: HTTP ${response.status}`);
+        }
+
+        const content = await response.text();
         return {
-            content: response.data,
+            content: content,
             metadata: {
-                size: response.data.length
+                size: content.length
             }
         } as unknown as JsonObject;
     } else {
@@ -133,15 +138,28 @@ async function parsePDF(
         const url = interpolateVariables(config.filePath || "", context);
         console.log(`[FileOps] Downloading PDF from: ${url}`);
 
-        const response = await axios.get(url, {
-            responseType: "arraybuffer",
-            timeout: 30000,
-            headers: {
-                "User-Agent": "FlowMaestro/1.0"
-            }
-        });
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000);
 
-        buffer = Buffer.from(response.data);
+        try {
+            const response = await fetch(url, {
+                headers: {
+                    "User-Agent": "FlowMaestro/1.0"
+                },
+                signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+
+            if (!response.ok) {
+                throw new Error(`Failed to download PDF: HTTP ${response.status}`);
+            }
+
+            const arrayBuffer = await response.arrayBuffer();
+            buffer = Buffer.from(arrayBuffer);
+        } catch (error) {
+            clearTimeout(timeoutId);
+            throw error;
+        }
     } else if (config.fileSource === "path") {
         // Read from local path
         const filePath = interpolateVariables(config.filePath || "", context);

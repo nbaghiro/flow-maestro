@@ -35,7 +35,7 @@
             "type": "database",
             "name": "Fetch from Database",
             "config": {
-                "provider": "postgresql",
+                "databaseType": "postgresql",
                 "operation": "query",
                 "host": "localhost",
                 "port": 5432,
