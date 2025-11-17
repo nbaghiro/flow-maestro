@@ -34,7 +34,7 @@ export const Navbar: React.FC = () => {
                 </div>
             </div>
             {/*Waiting list button*/}
-            <div className="h-full flex items-center border border-black/20 pr-3 pl-3 rounded-md bg-[rgba(245,245,245,1)] cursor-pointer">
+            <div className="h-full flex items-center border border-black/20 pr-3 pl-3 rounded-md bg-[rgba(248,247,247,1)] cursor-pointer">
                 <p>Join Waitlist</p>
             </div>
         </div>

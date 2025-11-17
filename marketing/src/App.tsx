@@ -1,4 +1,5 @@
 import React from "react";
+import { BackgroundNoise } from "./components/animations/BackgroundNoise";
 import { CTA } from "./components/CTA";
 import { Features } from "./components/Features";
 import { Footer } from "./components/Footer";
@@ -12,7 +13,8 @@ import { WorkflowDemo } from "./components/WorkflowDemo";
 
 const App: React.FC = () => {
     return (
-        <div className="min-h-screen bg-[rgba(245,245,245,1)] text-black">
+        <div className="min-h-screen bg-[rgba(248,247,247,1)] text-black">
+            <BackgroundNoise />
             <Navbar />
             <HeroNew />
             <IndustriesShowcase />

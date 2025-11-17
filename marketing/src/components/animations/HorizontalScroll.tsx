@@ -17,12 +17,12 @@ export const HorizontalScroll: React.FC = () => {
     return (
         <section ref={ref} className="relative h-[300vh]">
             <div className="sticky top-0 h-screen flex items-center overflow-hidden">
-                <motion.div style={{ x }} className="flex gap-8 bg-[rgba(245,245,245,1)]">
+                <motion.div style={{ x }} className="flex gap-8 bg-[rgba(248,247,247,1)]">
                     {/*Cards*/}
                     {workflows.map((card: WorkflowCard) => (
                         <div
                             key={card.id}
-                            className="w-[1100px] h-[650px] flex flex-col bg-white border border-gray-200 rounded-[30px]"
+                            className="w-[1100px] h-[650px] flex flex-col bg-white border border-gray-200 rounded-[30px] shadow-[0px_2px_5px_rgba(0,0,0,0.1)]"
                         >
                             {/*Image*/}
                             <div className="relative flex h-[75%]">
