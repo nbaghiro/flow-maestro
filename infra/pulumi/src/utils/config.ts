@@ -31,10 +31,10 @@ export interface InfrastructureConfig {
     redisMemorySizeGb: number;
     redisTier: "BASIC" | "STANDARD_HA";
 
-    // Secrets (required)
-    dbPassword: string;
-    jwtSecret: string;
-    encryptionKey: string;
+    // Secrets (required) - these are Output<string> because they're secrets
+    dbPassword: pulumi.Output<string>;
+    jwtSecret: pulumi.Output<string>;
+    encryptionKey: pulumi.Output<string>;
 
     // Temporal Configuration (self-hosted)
     temporalNamespace: string;

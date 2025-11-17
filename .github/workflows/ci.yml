@@ -64,7 +64,7 @@ jobs:
   #     - name: Checkout code
   #       uses: actions/checkout@v4
 
-  #     # Set up Docker Buildx
+  #     # Set up Docker Buildx for multi-platform builds
   #     - name: Set up Docker Buildx
   #       uses: docker/setup-buildx-action@v3
 
@@ -74,8 +74,11 @@ jobs:
   #       with:
   #         context: .
   #         file: infra/docker/backend/Dockerfile
+  #         platforms: linux/amd64
   #         push: false
   #         tags: flowmaestro/backend:test
+  #         cache-from: type=gha
+  #         cache-to: type=gha,mode=max
 
   #     # Test frontend Docker build
   #     - name: Test frontend Docker build
@@ -83,11 +86,14 @@ jobs:
   #       with:
   #         context: .
   #         file: infra/docker/frontend/Dockerfile
+  #         platforms: linux/amd64
   #         push: false
   #         build-args: |
-  #           VITE_API_URL=http://localhost:3001
-  #           VITE_WS_URL=ws://localhost:3001
+  #           VITE_API_URL=https://api.example.com
+  #           VITE_WS_URL=https://api.example.com
   #         tags: flowmaestro/frontend:test
+  #         cache-from: type=gha
+  #         cache-to: type=gha,mode=max
 
   #     # Test marketing Docker build
   #     - name: Test marketing Docker build
@@ -95,5 +101,8 @@ jobs:
   #       with:
   #         context: .
   #         file: infra/docker/marketing/Dockerfile
+  #         platforms: linux/amd64
   #         push: false
   #         tags: flowmaestro/marketing:test
+  #         cache-from: type=gha
+  #         cache-to: type=gha,mode=max

@@ -5,10 +5,10 @@ metadata:
   namespace: flowmaestro
 spec:
   domains:
-    - api.DOMAIN
-    - app.DOMAIN
-    - www.DOMAIN
-    - DOMAIN
+    - api.flowmaestro.ai
+    - app.flowmaestro.ai
+    - www.flowmaestro.ai
+    - flowmaestro.ai
 
 ---
 apiVersion: networking.k8s.io/v1
@@ -28,13 +28,10 @@ metadata:
 
     # Redirect HTTP to HTTPS
     kubernetes.io/ingress.allow-http: "true"
-
-    # Frontend policy for SSL redirect
-    ingress.gcp.kubernetes.io/pre-shared-cert: "flowmaestro-cert"
 spec:
   rules:
     # API server
-    - host: api.DOMAIN
+    - host: api.flowmaestro.ai
       http:
         paths:
           - path: /*
@@ -46,7 +43,7 @@ spec:
                   number: 3001
 
     # Frontend app (served from Kubernetes)
-    - host: app.DOMAIN
+    - host: app.flowmaestro.ai
       http:
         paths:
           - path: /*
@@ -58,7 +55,7 @@ spec:
                   number: 80
 
     # Marketing site (www subdomain)
-    - host: www.DOMAIN
+    - host: www.flowmaestro.ai
       http:
         paths:
           - path: /*
@@ -70,7 +67,7 @@ spec:
                   number: 80
 
     # Marketing site (root domain)
-    - host: DOMAIN
+    - host: flowmaestro.ai
       http:
         paths:
           - path: /*

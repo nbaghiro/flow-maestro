@@ -21,7 +21,7 @@ spec:
       serviceAccountName: flowmaestro-sa
       containers:
         - name: marketing
-          image: REGION-docker.pkg.dev/PROJECT_ID/flowmaestro/marketing:latest
+          image: us-central1-docker.pkg.dev/flowmaestro-prod/flowmaestro/marketing:latest
           imagePullPolicy: Always
           ports:
             - name: http

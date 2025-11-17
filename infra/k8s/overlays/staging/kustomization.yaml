@@ -19,9 +19,9 @@ patchesStrategicMerge:
 
 # Image overrides
 images:
-  - name: REGION-docker.pkg.dev/PROJECT_ID/flowmaestro/backend
+  - name: us-central1-docker.pkg.dev/flowmaestro-prod/flowmaestro/backend
     newTag: staging
-  - name: REGION-docker.pkg.dev/PROJECT_ID/flowmaestro/frontend
+  - name: us-central1-docker.pkg.dev/flowmaestro-prod/flowmaestro/frontend
     newTag: staging
-  - name: REGION-docker.pkg.dev/PROJECT_ID/flowmaestro/marketing
+  - name: us-central1-docker.pkg.dev/flowmaestro-prod/flowmaestro/marketing
     newTag: staging

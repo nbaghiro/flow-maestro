@@ -1,7 +1,14 @@
 # Multi-stage build for backend
-FROM node:20-alpine AS builder
+FROM node:20-slim AS builder
 
 WORKDIR /app
+
+# Install build dependencies for native modules
+RUN apt-get update && apt-get install -y \
+    python3 \
+    make \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
 
 # Copy root package files
 COPY package*.json ./
@@ -10,8 +17,9 @@ COPY package*.json ./
 COPY backend/package*.json ./backend/
 COPY shared/package*.json ./shared/
 
-# Install dependencies for both workspaces
-RUN npm ci --workspace=backend --workspace=shared
+# Install dependencies for both workspaces (skip scripts to avoid husky)
+RUN npm ci --workspace=backend --workspace=shared --ignore-scripts && \
+    npm rebuild --workspace=backend --workspace=shared
 
 # Copy source code
 COPY shared/ ./shared/
@@ -25,7 +33,7 @@ RUN npm run build --workspace=shared
 RUN npm run build --workspace=backend
 
 # Production image
-FROM node:20-alpine
+FROM node:20-slim
 
 WORKDIR /app
 
@@ -36,18 +44,23 @@ COPY package*.json ./
 COPY backend/package*.json ./backend/
 COPY shared/package*.json ./shared/
 
-# Install production dependencies only
-RUN npm ci --workspace=backend --workspace=shared --omit=dev
-
-# Copy built files from builder stage
+# Copy built files from builder stage first (before npm install)
 COPY --from=builder /app/backend/dist ./backend/dist
 COPY --from=builder /app/shared/dist ./shared/dist
+
+# Fix shared package.json to point to dist instead of src for production
+RUN sed -i 's|"main": "src/index.ts"|"main": "dist/index.js"|g' ./shared/package.json && \
+    sed -i 's|"types": "src/index.ts"|"types": "dist/index.d.ts"|g' ./shared/package.json && \
+    sed -i 's|"\.": "\./src/index\.ts"|".": "./dist/index.js"|g' ./shared/package.json
+
+# Install production dependencies only (skip prepare scripts like husky)
+RUN npm ci --workspace=backend --workspace=shared --omit=dev --ignore-scripts
 
 # Copy migrations
 COPY backend/migrations ./backend/migrations
 
 # Create non-root user
-RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001
+RUN groupadd -g 1001 nodejs && useradd -r -u 1001 -g nodejs nodejs
 
 # Change ownership
 RUN chown -R nodejs:nodejs /app

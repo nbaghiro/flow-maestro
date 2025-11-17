@@ -72,7 +72,9 @@ spec:
             - name: TEMPORAL_CLI_ADDRESS
               value: "temporal-service:7233"
             - name: BIND_ON_IP
-              value: "0.0.0.0"
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
             - name: NUM_HISTORY_SHARDS
               value: "512"
             - name: SKIP_SCHEMA_SETUP
@@ -158,6 +160,8 @@ spec:
               value: "temporal-service:7233"
             - name: TEMPORAL_CORS_ORIGINS
               value: "http://localhost:3000"
+            - name: TEMPORAL_UI_PORT
+              value: "8080"
           resources:
             requests:
               cpu: 100m
@@ -180,8 +184,7 @@ spec:
             periodSeconds: 5
             timeoutSeconds: 2
           securityContext:
-            runAsNonRoot: true
-            runAsUser: 1000
+            runAsNonRoot: false
             allowPrivilegeEscalation: false
       restartPolicy: Always
 

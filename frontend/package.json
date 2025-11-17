@@ -29,6 +29,7 @@
         "@uiw/react-textarea-code-editor": "^3.1.1",
         "class-variance-authority": "^0.7.0",
         "clsx": "^2.1.0",
+        "date-fns": "^3.0.0",
         "lucide-react": "^0.323.0",
         "react": "^18.2.0",
         "react-dom": "^18.2.0",

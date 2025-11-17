@@ -18,8 +18,8 @@ on:
 
 env:
   GCP_REGION: us-central1
-  GKE_CLUSTER: flowmaestro-cluster
-  ARTIFACT_REGISTRY: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/flowmaestro
+  GKE_CLUSTER: flowmaestro-prod-cluster
+  ARTIFACT_REGISTRY: us-central1-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/flowmaestro-images
   IMAGE_TAG: ${{ github.event.inputs.image_tag || github.sha }}
 
 jobs:
@@ -36,6 +36,13 @@ jobs:
       # Checkout code
       - name: Checkout code
         uses: actions/checkout@v4
+
+      # Setup Node.js (needed for building apps inside Docker)
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: "npm"
 
       # Authenticate to Google Cloud using Workload Identity Federation
       - name: Authenticate to Google Cloud
@@ -60,7 +67,7 @@ jobs:
             --region=${{ env.GCP_REGION }} \
             --project=${{ vars.GCP_PROJECT_ID }}
 
-      # Set up Docker Buildx for better caching
+      # Set up Docker Buildx for multi-platform builds
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -70,6 +77,7 @@ jobs:
         with:
           context: .
           file: infra/docker/backend/Dockerfile
+          platforms: linux/amd64
           push: true
           tags: |
             ${{ env.ARTIFACT_REGISTRY }}/backend:${{ env.IMAGE_TAG }}
@@ -83,6 +91,7 @@ jobs:
         with:
           context: .
           file: infra/docker/frontend/Dockerfile
+          platforms: linux/amd64
           push: true
           build-args: |
             VITE_API_URL=${{ vars.VITE_API_URL }}
@@ -99,6 +108,7 @@ jobs:
         with:
           context: .
           file: infra/docker/marketing/Dockerfile
+          platforms: linux/amd64
           push: true
           tags: |
             ${{ env.ARTIFACT_REGISTRY }}/marketing:${{ env.IMAGE_TAG }}
@@ -117,9 +127,9 @@ jobs:
         working-directory: infra/k8s/overlays/${{ github.event.inputs.environment }}
         run: |
           kustomize edit set image \
-            REGION-docker.pkg.dev/PROJECT_ID/flowmaestro/backend=${{ env.ARTIFACT_REGISTRY }}/backend:${{ env.IMAGE_TAG }} \
-            REGION-docker.pkg.dev/PROJECT_ID/flowmaestro/frontend=${{ env.ARTIFACT_REGISTRY }}/frontend:${{ env.IMAGE_TAG }} \
-            REGION-docker.pkg.dev/PROJECT_ID/flowmaestro/marketing=${{ env.ARTIFACT_REGISTRY }}/marketing:${{ env.IMAGE_TAG }}
+            us-central1-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/flowmaestro-images/backend=${{ env.ARTIFACT_REGISTRY }}/backend:${{ env.IMAGE_TAG }} \
+            us-central1-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/flowmaestro-images/frontend=${{ env.ARTIFACT_REGISTRY }}/frontend:${{ env.IMAGE_TAG }} \
+            us-central1-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/flowmaestro-images/marketing=${{ env.ARTIFACT_REGISTRY }}/marketing:${{ env.IMAGE_TAG }}
 
       # Deploy to GKE
       - name: Deploy to GKE

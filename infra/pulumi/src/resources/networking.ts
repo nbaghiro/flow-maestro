@@ -1,5 +1,5 @@
 import * as gcp from "@pulumi/gcp";
-import { infrastructureConfig, resourceName } from "./config";
+import { infrastructureConfig, resourceName } from "../utils/config";
 
 // Create VPC Network
 export const network = new gcp.compute.Network(resourceName("network"), {

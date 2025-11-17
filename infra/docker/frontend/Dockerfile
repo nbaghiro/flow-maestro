@@ -10,13 +10,14 @@ COPY package*.json ./
 COPY frontend/package*.json ./frontend/
 COPY shared/package*.json ./shared/
 
-# Install dependencies for both workspaces
-RUN npm ci --workspace=frontend --workspace=shared
+# Install dependencies for both workspaces (skip scripts to avoid husky)
+RUN npm ci --workspace=frontend --workspace=shared --ignore-scripts && \
+    npm rebuild --workspace=frontend --workspace=shared
 
 # Copy source code
 COPY shared/ ./shared/
 COPY frontend/ ./frontend/
-COPY tsconfig.json ./
+COPY tsconfig.base.json ./
 
 # Build arguments for API URL
 ARG VITE_API_URL

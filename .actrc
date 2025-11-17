@@ -1,0 +1,2 @@
+# Use medium runner image for better compatibility
+-P ubuntu-latest=catthehacker/ubuntu:act-latest

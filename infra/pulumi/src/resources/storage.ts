@@ -1,5 +1,5 @@
 import * as gcp from "@pulumi/gcp";
-import { infrastructureConfig, resourceName, resourceLabels } from "./config";
+import { infrastructureConfig, resourceName, resourceLabels } from "../utils/config";
 
 // Note: Frontend and marketing are served from Kubernetes, not Cloud Storage
 // This file creates buckets for user-uploaded files and assets
@@ -22,7 +22,7 @@ export const uploadsBucket = new gcp.storage.Bucket(resourceName("uploads"), {
             }
         }
     ],
-    corsRules: [
+    cors: [
         {
             origins: [
                 `https://api.${infrastructureConfig.domain}`,

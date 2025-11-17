@@ -1,6 +1,6 @@
 import * as gcp from "@pulumi/gcp";
 import * as pulumi from "@pulumi/pulumi";
-import { infrastructureConfig, resourceName } from "./config";
+import { infrastructureConfig, resourceName } from "../utils/config";
 
 // Create notification channel for alerts (email)
 export const emailNotificationChannel = new gcp.monitoring.NotificationChannel(
@@ -23,17 +23,17 @@ export const apiErrorRateAlert = new gcp.monitoring.AlertPolicy(resourceName("ap
         {
             displayName: "Error rate > 5%",
             conditionThreshold: {
-                filter: pulumi.interpolate`resource.type="k8s_container" AND resource.labels.namespace_name="flowmaestro" AND resource.labels.container_name="api-server"`,
+                filter: pulumi.interpolate`resource.type="k8s_container" AND resource.labels.namespace_name="flowmaestro" AND resource.labels.container_name="api" AND metric.type="kubernetes.io/container/restart_count"`,
                 aggregations: [
                     {
                         alignmentPeriod: "300s",
-                        perSeriesAligner: "ALIGN_RATE",
+                        perSeriesAligner: "ALIGN_DELTA",
                         crossSeriesReducer: "REDUCE_SUM",
                         groupByFields: ["resource.namespace_name"]
                     }
                 ],
                 comparison: "COMPARISON_GT",
-                thresholdValue: 0.05,
+                thresholdValue: 3,
                 duration: "300s"
             }
         }
@@ -53,7 +53,7 @@ export const dbCpuAlert = new gcp.monitoring.AlertPolicy(resourceName("db-cpu"),
         {
             displayName: "CPU utilization > 80%",
             conditionThreshold: {
-                filter: pulumi.interpolate`resource.type="cloudsql_database" AND resource.labels.database_id="${infrastructureConfig.project}:${resourceName("db")}"`,
+                filter: pulumi.interpolate`resource.type="cloudsql_database" AND resource.labels.database_id="${infrastructureConfig.project}:${resourceName("db")}" AND metric.type="cloudsql.googleapis.com/database/cpu/utilization"`,
                 aggregations: [
                     {
                         alignmentPeriod: "300s",
@@ -78,7 +78,7 @@ export const redisMemoryAlert = new gcp.monitoring.AlertPolicy(resourceName("red
         {
             displayName: "Memory utilization > 90%",
             conditionThreshold: {
-                filter: pulumi.interpolate`resource.type="redis_instance" AND resource.labels.instance_id="${resourceName("redis")}"`,
+                filter: pulumi.interpolate`resource.type="redis_instance" AND resource.labels.instance_id="${resourceName("redis")}" AND metric.type="redis.googleapis.com/stats/memory/usage_ratio"`,
                 aggregations: [
                     {
                         alignmentPeriod: "300s",
@@ -149,13 +149,13 @@ export const dashboard = new gcp.monitoring.Dashboard(resourceName("dashboard"),
                     width: 6,
                     height: 4,
                     widget: {
-                        title: "API Server Request Rate",
+                        title: "API Server CPU Usage",
                         xyChart: {
                             dataSets: [
                                 {
                                     timeSeriesQuery: {
                                         timeSeriesFilter: {
-                                            filter: 'resource.type="k8s_container" AND resource.labels.namespace_name="flowmaestro" AND resource.labels.container_name="api-server"',
+                                            filter: 'resource.type="k8s_container" AND resource.labels.namespace_name="flowmaestro" AND resource.labels.container_name="api" AND metric.type="kubernetes.io/container/cpu/core_usage_time"',
                                             aggregation: {
                                                 alignmentPeriod: "60s",
                                                 perSeriesAligner: "ALIGN_RATE",
@@ -220,13 +220,13 @@ export const dashboard = new gcp.monitoring.Dashboard(resourceName("dashboard"),
                     xPos: 6,
                     yPos: 4,
                     widget: {
-                        title: "GKE CPU Utilization",
+                        title: "GKE Memory Utilization",
                         xyChart: {
                             dataSets: [
                                 {
                                     timeSeriesQuery: {
                                         timeSeriesFilter: {
-                                            filter: 'resource.type="k8s_container" AND resource.labels.namespace_name="flowmaestro"',
+                                            filter: 'resource.type="k8s_container" AND resource.labels.namespace_name="flowmaestro" AND metric.type="kubernetes.io/container/memory/used_bytes"',
                                             aggregation: {
                                                 alignmentPeriod: "60s",
                                                 perSeriesAligner: "ALIGN_MEAN",

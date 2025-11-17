@@ -11,7 +11,7 @@ data:
   LOG_LEVEL: "info"
 
   # CORS configuration
-  CORS_ORIGIN: "https://app.DOMAIN"
+  CORS_ORIGIN: "https://app.flowmaestro.ai"
 
   # Temporal worker configuration
   TEMPORAL_TASK_QUEUE: "flowmaestro-orchestrator"

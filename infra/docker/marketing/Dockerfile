@@ -9,8 +9,9 @@ COPY package*.json ./
 # Copy workspace package files
 COPY marketing/package*.json ./marketing/
 
-# Install dependencies
-RUN npm ci --workspace=marketing
+# Install dependencies (skip scripts to avoid husky)
+RUN npm ci --workspace=marketing --ignore-scripts && \
+    npm rebuild --workspace=marketing
 
 # Copy source code
 COPY marketing/ ./marketing/

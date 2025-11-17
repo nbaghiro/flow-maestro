@@ -1,0 +1,14 @@
+config:
+  gcp:project: flowmaestro-prod
+  gcp:region: us-central1
+  flowmaestro-infrastructure:domain: flowmaestro.ai
+  flowmaestro-infrastructure:dbPassword:
+    secure: AAABAHtYRT55ED4guAzxbccnxkw4M6S2lGFWXPC2EoeX2c05Bc6tgLHrThzQYc7I99d2wg5jq+WTFP685386CQX9wgpXFSuiFALccg==
+  flowmaestro-infrastructure:jwtSecret:
+    secure: AAABAMgRMr1oT9aozil50NE56TU3GiL9zroL0wsVSN1KFIksVp1h3wck7gRFGEb4s7jmdTpCDtta83e7ea8HlAnQVnouWU4CqTChbdWStu1vpf+FLRX+yeBmkhxqgziXIqzLsxu7yT3GyxyyZpL9ob2gpSMyWg3gKw==
+  flowmaestro-infrastructure:encryptionKey:
+    secure: AAABAIs7j19ykCx7Ly/DM8rP/tWOpjx7lOik9xRlorHTSwIt/dLH+sKpWR+WS+81yidojn2R+xL+zXg13wjACUOIuiJ9oK/DGJHkpw==
+  flowmaestro-infrastructure:dbTier: db-custom-2-7680
+  flowmaestro-infrastructure:dbHighAvailability: "true"
+  flowmaestro-infrastructure:redisMemorySizeGb: "5"
+  flowmaestro-infrastructure:redisTier: STANDARD_HA

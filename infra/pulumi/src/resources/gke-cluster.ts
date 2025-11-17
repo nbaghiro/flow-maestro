@@ -1,6 +1,6 @@
 import * as gcp from "@pulumi/gcp";
 import * as pulumi from "@pulumi/pulumi";
-import { infrastructureConfig, resourceName, resourceLabels } from "./config";
+import { infrastructureConfig, resourceName, resourceLabels } from "../utils/config";
 import { network, subnet } from "./networking";
 
 // Create GKE Autopilot cluster
@@ -80,11 +80,7 @@ export const cluster = new gcp.container.Cluster(resourceName("cluster"), {
         evaluationMode: "DISABLED" // Set to "PROJECT_SINGLETON_POLICY_ENFORCE" for stricter security
     },
 
-    // Network policy
-    networkPolicy: {
-        enabled: true,
-        provider: "PROVIDER_UNSPECIFIED" // Autopilot manages this
-    },
+    // Note: Network policy is not configurable in Autopilot mode - it's automatically managed
 
     // Security posture
     securityPostureConfig: {
@@ -115,13 +111,18 @@ new gcp.projects.IAMMember(resourceName("k8s-sa-secrets"), {
 });
 
 // Allow Kubernetes service account to impersonate GCP service account
-new gcp.serviceaccount.IAMBinding(resourceName("k8s-sa-workload-identity"), {
-    serviceAccountId: k8sServiceAccount.name,
-    role: "roles/iam.workloadIdentityUser",
-    members: [
-        pulumi.interpolate`serviceAccount:${infrastructureConfig.project}.svc.id.goog[flowmaestro/flowmaestro-sa]`
-    ]
-});
+// This binding requires the GKE cluster to exist first (creates the workload identity pool)
+new gcp.serviceaccount.IAMBinding(
+    resourceName("k8s-sa-workload-identity"),
+    {
+        serviceAccountId: k8sServiceAccount.name,
+        role: "roles/iam.workloadIdentityUser",
+        members: [
+            pulumi.interpolate`serviceAccount:${infrastructureConfig.project}.svc.id.goog[flowmaestro/flowmaestro-sa]`
+        ]
+    },
+    { dependsOn: [cluster] }
+);
 
 // Get kubeconfig for the cluster
 export const kubeconfig = pulumi

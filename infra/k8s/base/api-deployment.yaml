@@ -21,7 +21,7 @@ spec:
       serviceAccountName: flowmaestro-sa
       containers:
         - name: api-server
-          image: REGION-docker.pkg.dev/PROJECT_ID/flowmaestro/backend:latest
+          image: us-central1-docker.pkg.dev/flowmaestro-prod/flowmaestro/backend:latest
           imagePullPolicy: Always
           ports:
             - name: http
@@ -94,17 +94,11 @@ spec:
                   name: redis-credentials
                   key: port
 
-            # Temporal configuration (from secret)
+            # Temporal configuration
             - name: TEMPORAL_ADDRESS
-              valueFrom:
-                secretKeyRef:
-                  name: temporal-credentials
-                  key: address
+              value: "temporal-service:7233"
             - name: TEMPORAL_NAMESPACE
-              valueFrom:
-                secretKeyRef:
-                  name: temporal-credentials
-                  key: namespace
+              value: "default"
 
             # Application secrets (from secret)
             - name: JWT_SECRET

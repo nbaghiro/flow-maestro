@@ -21,7 +21,7 @@ spec:
       serviceAccountName: flowmaestro-sa
       containers:
         - name: frontend
-          image: REGION-docker.pkg.dev/PROJECT_ID/flowmaestro/frontend:latest
+          image: us-central1-docker.pkg.dev/flowmaestro-prod/flowmaestro/frontend:latest
           imagePullPolicy: Always
           ports:
             - name: http

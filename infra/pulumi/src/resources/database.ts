@@ -1,6 +1,6 @@
 import * as gcp from "@pulumi/gcp";
 import * as pulumi from "@pulumi/pulumi";
-import { infrastructureConfig, resourceName, resourceLabels } from "./config";
+import { infrastructureConfig, resourceName, resourceLabels } from "../utils/config";
 import { network, privateVpcConnection } from "./networking";
 
 // Create Cloud SQL PostgreSQL instance
@@ -21,13 +21,9 @@ export const database = new gcp.sql.DatabaseInstance(
 
             availabilityType: infrastructureConfig.dbHighAvailability ? "REGIONAL" : "ZONAL",
 
-            // Database flags for extensions and configuration
-            databaseFlags: [
-                {
-                    name: "cloudsql.enable_pgvector",
-                    value: "on"
-                }
-            ],
+            // Note: pgvector extension can be enabled via SQL after database creation
+            // No database flags needed for PostgreSQL 15+
+            // Run: CREATE EXTENSION IF NOT EXISTS vector;
 
             ipConfiguration: {
                 ipv4Enabled: false,

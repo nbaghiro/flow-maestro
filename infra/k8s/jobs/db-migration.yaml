@@ -20,7 +20,7 @@ spec:
       restartPolicy: OnFailure
       containers:
         - name: db-migration
-          image: REGION-docker.pkg.dev/PROJECT_ID/flowmaestro/backend:latest
+          image: us-central1-docker.pkg.dev/flowmaestro-prod/flowmaestro/backend:latest
           imagePullPolicy: Always
           command:
             - sh

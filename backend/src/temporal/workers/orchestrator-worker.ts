@@ -33,10 +33,37 @@ async function run() {
         console.warn("⚠️  Workflow events will not be published");
     }
 
-    // Connect to Temporal
-    const connection = await NativeConnection.connect({
-        address: process.env.TEMPORAL_ADDRESS || "localhost:7233"
-    });
+    // Connect to Temporal with retry logic for DNS resolution
+    let connection;
+    const maxRetries = 10;
+    const baseDelay = 1000; // 1 second
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+            console.log(`Attempting to connect to Temporal (attempt ${attempt}/${maxRetries})...`);
+            connection = await NativeConnection.connect({
+                address: process.env.TEMPORAL_ADDRESS || "localhost:7233"
+            });
+            console.log("✅ Connected to Temporal successfully");
+            break;
+        } catch (error) {
+            if (attempt === maxRetries) {
+                console.error("❌ Failed to connect to Temporal after max retries");
+                throw error;
+            }
+            const delay = baseDelay * Math.pow(2, attempt - 1);
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            console.warn(
+                `⚠️  Failed to connect (attempt ${attempt}/${maxRetries}): ${errorMessage}`
+            );
+            console.log(`   Retrying in ${delay}ms...`);
+            await new Promise((resolve) => setTimeout(resolve, delay));
+        }
+    }
+
+    if (!connection) {
+        throw new Error("Failed to establish Temporal connection");
+    }
 
     // Resolve workflows path - use absolute path
     // When running with tsx (dev), use .ts; when built, use .js

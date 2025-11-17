@@ -1,5 +1,5 @@
 import * as gcp from "@pulumi/gcp";
-import { infrastructureConfig, resourceName, resourceLabels } from "./config";
+import { infrastructureConfig, resourceName, resourceLabels } from "../utils/config";
 import { network, privateVpcConnection } from "./networking";
 
 // Create Memorystore Redis instance
