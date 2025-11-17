@@ -117,7 +117,7 @@ export const Footer: React.FC = () => {
                     {/* Social */}
                     <div className="flex justify-center">
                         <div>
-                            <h3 className="font-semibold text-white mb-4">Social</h3>
+                            <h3 className="font-semibold text-white mb-4">Connect</h3>
                             <ul className="space-y-2 text-gray-400 text-sm">
                                 <li>
                                     <a href="#" className="hover:text-white transition-colors">

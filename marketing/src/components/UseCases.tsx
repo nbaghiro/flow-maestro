@@ -101,7 +101,7 @@ export const UseCases: React.FC = () => {
                 >
                     <h2 className="text-4xl sm:text-5xl font-bold mb-4">
                         Choose Your
-                        <span className="gradient-text"> Execution Model</span>
+                        <span className="gradient-text">Execution Model</span>
                     </h2>
                     <p className="text-xl text-gray-400 max-w-2xl mx-auto">
                         Deterministic workflows, autonomous agents, or both working together. You

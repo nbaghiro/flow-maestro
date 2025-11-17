@@ -2,7 +2,7 @@ import React from "react";
 
 export const HowItWorks: React.FC = () => {
     return (
-        <section className="flex flex-col px-7">
+        <section className="flex flex-col px-7 mb-[100px]">
             {/*Title*/}
             <div className="h-[300px] flex justify-between">
                 <div className="text-8xl">
@@ -30,7 +30,7 @@ export const HowItWorks: React.FC = () => {
                             <p></p>
                         </div>
                         <div className="flex-1 border-b-[1.5px] border-black border-dashed" />
-                        <div className="bg-black rounded-full w-6 h-6 text-white flex items-center justify-center">
+                        <div className="bg-black rounded-full w-6 h-6 text-white flex items-center justify-center ml-2">
                             <p>1</p>
                         </div>
                     </div>
@@ -40,7 +40,7 @@ export const HowItWorks: React.FC = () => {
                         <div className="bg-white w-[320px] h-[200px] rounded-lg ml-4">
                             <p></p>
                         </div>
-                        <div className="flex-1 border-b-[1.5px] border-black border-dashed" />
+                        <div className="flex-1 border-b-[1.5px] border-black border-dashed ml-2" />
                         <div className="bg-black rounded-full w-6 h-6 text-white flex items-center justify-center">
                             <p>2</p>
                         </div>
@@ -51,7 +51,7 @@ export const HowItWorks: React.FC = () => {
                         <div className="bg-white w-[320px] h-[200px] rounded-lg mr-4">
                             <p></p>
                         </div>
-                        <div className="flex-1 border-b-[1.5px] border-black border-dashed" />
+                        <div className="flex-1 border-b-[1.5px] border-black border-dashed mr-2" />
                         <div className="bg-black rounded-full w-6 h-6 text-white flex items-center justify-center">
                             <p>3</p>
                         </div>
@@ -62,7 +62,7 @@ export const HowItWorks: React.FC = () => {
                         <div className="bg-white w-[320px] h-[200px] rounded-lg ml-4">
                             <p></p>
                         </div>
-                        <div className="flex-1 border-b-[1.5px] border-black border-dashed" />
+                        <div className="flex-1 border-b-[1.5px] border-black border-dashed ml-2" />
                         <div className="bg-black rounded-full w-6 h-6 text-white flex items-center justify-center">
                             <p>4</p>
                         </div>

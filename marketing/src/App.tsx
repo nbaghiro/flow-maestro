@@ -7,8 +7,7 @@ import { IndustriesShowcase } from "./components/IndustriesShowcase";
 import { Integrations } from "./components/Integrations";
 import { Navbar } from "./components/Navbar";
 import { SocialProof } from "./components/SocialProof";
-import { UseCases } from "./components/UseCases";
-import { WorkflowDemo } from "./components/WorkflowDemo";
+import { UseCasesNew } from "./components/UseCasesNew";
 
 const App: React.FC = () => {
     return (
@@ -18,8 +17,7 @@ const App: React.FC = () => {
             <HeroNew />
             <IndustriesShowcase />
             <HowItWorks />
-            <UseCases />
-            <WorkflowDemo />
+            <UseCasesNew />
             <Integrations />
             <SocialProof />
             <Footer />
