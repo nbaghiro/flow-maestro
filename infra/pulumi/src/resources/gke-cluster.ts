@@ -2,6 +2,7 @@ import * as gcp from "@pulumi/gcp";
 import * as pulumi from "@pulumi/pulumi";
 import { infrastructureConfig, resourceName, resourceLabels } from "../utils/config";
 import { network, subnet } from "./networking";
+import { knowledgeDocsBucket } from "./storage";
 
 // Create GKE Autopilot cluster
 export const cluster = new gcp.container.Cluster(resourceName("cluster"), {
@@ -109,6 +110,17 @@ new gcp.projects.IAMMember(resourceName("k8s-sa-secrets"), {
     role: "roles/secretmanager.secretAccessor",
     member: pulumi.interpolate`serviceAccount:${k8sServiceAccount.email}`
 });
+
+// Grant Storage Object Admin role on knowledge docs bucket
+new gcp.storage.BucketIAMMember(
+    resourceName("k8s-sa-knowledge-docs-storage"),
+    {
+        bucket: knowledgeDocsBucket.name,
+        role: "roles/storage.objectAdmin",
+        member: pulumi.interpolate`serviceAccount:${k8sServiceAccount.email}`
+    },
+    { dependsOn: [knowledgeDocsBucket] }
+);
 
 // Allow Kubernetes service account to impersonate GCP service account
 // This binding requires the GKE cluster to exist first (creates the workload identity pool)

@@ -54,10 +54,56 @@ export const artifactsBucket = new gcp.storage.Bucket(resourceName("artifacts"),
     labels: resourceLabels()
 });
 
+// Create bucket for knowledge base documents
+export const knowledgeDocsBucket = new gcp.storage.Bucket(resourceName("knowledge-docs"), {
+    name: `${resourceName("knowledge-docs")}-${infrastructureConfig.project}`,
+    location: infrastructureConfig.region,
+    uniformBucketLevelAccess: true,
+    publicAccessPrevention: "enforced",
+    versioning: {
+        enabled: true // Enable versioning for document recovery
+    },
+    lifecycleRules: [
+        {
+            action: {
+                type: "Delete"
+            },
+            condition: {
+                // Keep last 5 versions of each file
+                numNewerVersions: 5
+            }
+        },
+        {
+            action: {
+                type: "Delete"
+            },
+            condition: {
+                // Delete temporary files after 7 days
+                age: 7,
+                matchesPrefixes: ["temp/"]
+            }
+        }
+    ],
+    cors: [
+        {
+            origins: [
+                `https://api.${infrastructureConfig.domain}`,
+                `https://app.${infrastructureConfig.domain}`
+            ],
+            methods: ["GET", "POST", "PUT", "DELETE"],
+            responseHeaders: ["Content-Type", "Content-Length"],
+            maxAgeSeconds: 3600
+        }
+    ],
+    labels: resourceLabels()
+});
+
 // Export storage outputs
 export const storageOutputs = {
     uploadsBucketName: uploadsBucket.name,
     uploadsBucketUrl: uploadsBucket.url,
     artifactsBucketName: artifactsBucket.name,
-    artifactsBucketUrl: artifactsBucket.url
+    artifactsBucketUrl: artifactsBucket.url,
+    knowledgeDocsBucketName: knowledgeDocsBucket.name,
+    knowledgeDocsBucketUrl: knowledgeDocsBucket.url
 };

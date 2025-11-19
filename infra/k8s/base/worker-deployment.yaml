@@ -125,6 +125,18 @@ spec:
                   key: google-api-key
                   optional: true
 
+            # Google Cloud Storage configuration (from configmap)
+            - name: GCS_BUCKET_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: gcs-config
+                  key: GCS_BUCKET_NAME
+            - name: GCS_PROJECT_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: gcs-config
+                  key: GCS_PROJECT_ID
+
           # Mount Temporal certificates
           volumeMounts:
             - name: temporal-certs

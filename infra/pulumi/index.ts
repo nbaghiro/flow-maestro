@@ -59,6 +59,8 @@ export const outputs = {
     uploadsBucketUrl: storageOutputs.uploadsBucketUrl,
     artifactsBucketName: storageOutputs.artifactsBucketName,
     artifactsBucketUrl: storageOutputs.artifactsBucketUrl,
+    knowledgeDocsBucketName: storageOutputs.knowledgeDocsBucketName,
+    knowledgeDocsBucketUrl: storageOutputs.knowledgeDocsBucketUrl,
 
     // Monitoring
     dashboardId: monitoringOutputs.dashboardId,
@@ -150,6 +152,12 @@ Next Steps:
        --from-literal=ANTHROPIC_API_KEY='<from-config>' \\
        --from-literal=GOOGLE_API_KEY='<from-config>'
 
+   # GCS configuration
+   $ kubectl create configmap gcs-config \\
+       --namespace=flowmaestro \\
+       --from-literal=GCS_BUCKET_NAME=${storageOutputs.knowledgeDocsBucketName} \\
+       --from-literal=GCS_PROJECT_ID=${infrastructureConfig.project}
+
 5. Deploy Temporal server:
    $ kubectl apply -f infra/k8s/jobs/temporal-schema-migration.yaml
    $ kubectl wait --for=condition=complete job/temporal-schema-migration -n flowmaestro --timeout=5m
@@ -195,6 +203,11 @@ Temporal Databases:
 Redis:
   Host: ${redisOutputs.host}
   Port: ${redisOutputs.port}
+
+Google Cloud Storage:
+  Knowledge Docs Bucket: ${storageOutputs.knowledgeDocsBucketName}
+  Uploads Bucket: ${storageOutputs.uploadsBucketName}
+  Artifacts Bucket: ${storageOutputs.artifactsBucketName}
 
 Load Balancer IP: ${staticIp.address}
 `
