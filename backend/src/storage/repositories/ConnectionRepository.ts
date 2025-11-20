@@ -365,7 +365,7 @@ export class ConnectionRepository {
     }
 
     /**
-     * Get connections that need token refresh
+     * Get connections that need token refresh (for a specific user)
      */
     async findExpiringSoon(userId: string): Promise<ConnectionSummary[]> {
         // Get all OAuth connections
@@ -376,6 +376,38 @@ export class ConnectionRepository {
 
         // Filter to those expiring within 5 minutes
         return connections.filter((conn) => this.isExpired(conn));
+    }
+
+    /**
+     * Get ALL connections that need token refresh (across all users)
+     * Used by the automatic credential refresh scheduler
+     *
+     * @param bufferMs - Time buffer in milliseconds (default: 10 minutes)
+     * @returns Connections with user_id included for tracking
+     */
+    async findAllExpiringSoon(
+        bufferMs: number = 10 * 60 * 1000
+    ): Promise<Array<ConnectionSummary & { user_id: string }>> {
+        const expiryThreshold = Date.now() + bufferMs;
+
+        const query = `
+            SELECT * FROM flowmaestro.connections
+            WHERE connection_method = 'oauth2'
+            AND status = 'active'
+            AND (metadata->>'expires_at')::bigint > 0
+            AND (metadata->>'expires_at')::bigint < $1
+            ORDER BY (metadata->>'expires_at')::bigint ASC
+        `;
+
+        const result = await db.query(query, [expiryThreshold]);
+
+        return result.rows.map((row) => {
+            const summary = this.mapToSummary(row as ConnectionRow);
+            return {
+                ...summary,
+                user_id: (row as ConnectionRow).user_id
+            };
+        });
     }
 
     /**

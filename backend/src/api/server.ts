@@ -3,6 +3,7 @@ import jwt from "@fastify/jwt";
 import multipart from "@fastify/multipart";
 import websocket from "@fastify/websocket";
 import Fastify from "fastify";
+import { credentialRefreshScheduler } from "../services/oauth/CredentialRefreshScheduler";
 import { analyticsScheduler } from "../shared/analytics/analytics-scheduler";
 import { config } from "../shared/config";
 import { redisEventBus } from "../shared/events/RedisEventBus";
@@ -87,6 +88,10 @@ export async function buildServer() {
     await analyticsScheduler.start();
     fastify.log.info("Analytics scheduler started");
 
+    // Start credential refresh scheduler for automatic OAuth token refresh
+    credentialRefreshScheduler.start();
+    fastify.log.info("Credential refresh scheduler started");
+
     // Register RequestContext middleware (runs on every request)
     fastify.addHook("onRequest", requestContextMiddleware);
 
@@ -157,6 +162,9 @@ export async function startServer() {
 
             // Stop analytics scheduler
             analyticsScheduler.stop();
+
+            // Stop credential refresh scheduler
+            credentialRefreshScheduler.stop();
 
             // Flush spans before shutdown
             const spanService = getSpanService();
