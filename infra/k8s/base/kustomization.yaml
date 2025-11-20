@@ -7,11 +7,21 @@ resources:
   - namespace.yaml
   - configmap.yaml
   - temporal-configmap.yaml
+  # External Secrets - managed by External Secrets Operator
+  - external-secrets/secret-store.yaml
+  - external-secrets/app-secrets.yaml
+  - external-secrets/db-credentials.yaml
+  - external-secrets/redis-credentials.yaml
+  - external-secrets/temporal-db-credentials.yaml
+  - external-secrets/llm-api-keys.yaml
+  - external-secrets/oauth-secrets.yaml
+  # Deployments
   - api-deployment.yaml
   - worker-deployment.yaml
   - frontend-deployment.yaml
   - marketing-deployment.yaml
   - temporal-deployment.yaml
+  # Services and Networking
   - services.yaml
   - ingress.yaml
 

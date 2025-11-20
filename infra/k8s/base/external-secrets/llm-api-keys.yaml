@@ -1,0 +1,30 @@
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata:
+  name: llm-api-keys
+  namespace: flowmaestro
+spec:
+  refreshInterval: 5m
+
+  secretStoreRef:
+    name: gcp-secret-manager
+    kind: ClusterSecretStore
+
+  target:
+    name: llm-api-keys
+    creationPolicy: Owner
+    template:
+      type: Opaque
+
+  data:
+    - secretKey: OPENAI_API_KEY
+      remoteRef:
+        key: flowmaestro-app-openai-api-key
+
+    - secretKey: ANTHROPIC_API_KEY
+      remoteRef:
+        key: flowmaestro-app-anthropic-api-key
+
+    - secretKey: GOOGLE_API_KEY
+      remoteRef:
+        key: flowmaestro-app-google-api-key

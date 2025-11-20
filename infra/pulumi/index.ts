@@ -5,10 +5,12 @@ import {
     temporalDatabaseConnectionString,
     temporalVisibilityDatabaseConnectionString
 } from "./src/resources/database";
+import { esoOutputs } from "./src/resources/external-secrets-operator";
 import { clusterOutputs } from "./src/resources/gke-cluster";
 import { monitoringOutputs } from "./src/resources/monitoring";
 import { networkOutputs, staticIp } from "./src/resources/networking";
 import { redisOutputs } from "./src/resources/redis";
+import { secretOutputs } from "./src/resources/secrets";
 import { storageOutputs } from "./src/resources/storage";
 import { infrastructureConfig } from "./src/utils/config";
 
@@ -64,6 +66,17 @@ export const outputs = {
 
     // Monitoring
     dashboardId: monitoringOutputs.dashboardId,
+
+    // Secrets Management
+    secretsDbPasswordId: secretOutputs.dbPasswordSecretId,
+    secretsJwtSecretId: secretOutputs.jwtSecretSecretId,
+    secretsEncryptionKeyId: secretOutputs.encryptionKeySecretId,
+    secretsAppSecretIds: secretOutputs.appSecretIds,
+
+    // External Secrets Operator
+    esoNamespace: esoOutputs.namespace,
+    esoServiceAccountName: esoOutputs.serviceAccountName,
+    esoGcpServiceAccount: esoOutputs.gcpServiceAccountEmail,
 
     // Temporal Configuration (self-hosted)
     temporalNamespace: infrastructureConfig.temporalNamespace,

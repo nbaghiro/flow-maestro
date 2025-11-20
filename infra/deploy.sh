@@ -6,6 +6,16 @@
 
 set -e  # Exit on any error
 
+# Determine repository root (works whether script is run from repo root or infra/)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ "$SCRIPT_DIR" == */infra ]]; then
+    REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+else
+    REPO_ROOT="$SCRIPT_DIR"
+fi
+
+PULUMI_DIR="$REPO_ROOT/infra/pulumi"
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -87,18 +97,143 @@ check_prerequisites() {
     print_success "All prerequisites are installed"
 }
 
+# Detect existing Pulumi stacks
+detect_existing_stacks() {
+    # Save current directory
+    local original_dir=$(pwd)
+
+    # Check if Pulumi directory exists
+    if [ ! -d "$PULUMI_DIR" ]; then
+        return 1
+    fi
+
+    cd "$PULUMI_DIR" || return 1
+
+    # Get list of stacks
+    EXISTING_STACKS=$(pulumi stack ls --json 2>/dev/null | python3 -c "
+import sys, json
+try:
+    stacks = json.load(sys.stdin)
+    for stack in stacks:
+        print(stack['name'])
+except:
+    pass
+" 2>/dev/null)
+
+    # Return to original directory
+    cd "$original_dir"
+
+    if [ -n "$EXISTING_STACKS" ]; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+# Load config from existing stack
+load_stack_config() {
+    local stack_name=$1
+    local original_dir=$(pwd)
+
+    cd "$PULUMI_DIR" || return 1
+
+    # Select the stack
+    pulumi stack select "$stack_name" &>/dev/null
+
+    # Load configuration
+    DOMAIN=$(pulumi config get domain 2>/dev/null || echo "")
+    GCP_PROJECT=$(pulumi config get gcp:project 2>/dev/null || echo "")
+    GCP_REGION=$(pulumi config get gcp:region 2>/dev/null || echo "us-central1")
+    DB_PASSWORD=$(pulumi config get dbPassword --show-secrets 2>/dev/null || echo "")
+    JWT_SECRET=$(pulumi config get jwtSecret --show-secrets 2>/dev/null || echo "")
+    ENCRYPTION_KEY=$(pulumi config get encryptionKey --show-secrets 2>/dev/null || echo "")
+
+    # Determine environment from stack name
+    case "$stack_name" in
+        *prod*)
+            ENVIRONMENT="prod"
+            ;;
+        *staging*)
+            ENVIRONMENT="staging"
+            ;;
+        *dev*)
+            ENVIRONMENT="dev"
+            ;;
+        *)
+            ENVIRONMENT="prod"
+            ;;
+    esac
+
+    cd "$original_dir"
+    return 0
+}
+
 # Gather configuration
 gather_config() {
     print_header "Configuration"
 
+    # Try to detect existing stacks
+    if detect_existing_stacks; then
+        echo "Detected existing Pulumi stacks:"
+        echo ""
+
+        local i=1
+        declare -a stack_array
+
+        while IFS= read -r stack; do
+            echo "  $i) $stack"
+            stack_array[$i]=$stack
+            ((i++))
+        done <<< "$EXISTING_STACKS"
+
+        echo "  $i) Create new deployment"
+        echo ""
+
+        read -p "Select stack (1-$i): " STACK_CHOICE
+
+        if [ "$STACK_CHOICE" -ge 1 ] && [ "$STACK_CHOICE" -lt "$i" ]; then
+            # Use existing stack
+            SELECTED_STACK="${stack_array[$STACK_CHOICE]}"
+            print_info "Using existing stack: $SELECTED_STACK"
+
+            load_stack_config "$SELECTED_STACK"
+
+            print_header "Loaded Configuration"
+            echo "Stack:          $SELECTED_STACK"
+            echo "Project ID:     $GCP_PROJECT"
+            echo "Environment:    $ENVIRONMENT"
+            echo "Domain:         $DOMAIN"
+            echo "Region:         $GCP_REGION"
+            echo ""
+
+            if confirm "Use this configuration for redeployment?"; then
+                # Secrets already loaded from stack
+                REGISTRY="$GCP_REGION-docker.pkg.dev/$GCP_PROJECT/flowmaestro-images"
+                # Remember the selected stack name for Pulumi
+                PULUMI_STACK="$SELECTED_STACK"
+                return 0
+            else
+                print_info "Let's configure manually..."
+            fi
+        fi
+    fi
+
+    # Manual configuration (new deployment or user chose to configure manually)
     echo "Please provide the following configuration details:"
     echo ""
 
-    # Project ID
-    read -p "GCP Project ID: " GCP_PROJECT
-    if [ -z "$GCP_PROJECT" ]; then
-        print_error "Project ID cannot be empty"
-        exit 1
+    # Auto-detect current gcloud project
+    CURRENT_PROJECT=$(gcloud config get-value project 2>/dev/null || echo "")
+
+    if [ -n "$CURRENT_PROJECT" ]; then
+        read -p "GCP Project ID [$CURRENT_PROJECT]: " GCP_PROJECT
+        GCP_PROJECT=${GCP_PROJECT:-$CURRENT_PROJECT}
+    else
+        read -p "GCP Project ID: " GCP_PROJECT
+        if [ -z "$GCP_PROJECT" ]; then
+            print_error "Project ID cannot be empty"
+            exit 1
+        fi
     fi
 
     # Environment
@@ -171,7 +306,11 @@ authenticate_gcp() {
     print_header "GCP Authentication"
 
     print_info "Checking gcloud authentication..."
-    if ! gcloud auth list --filter=status:ACTIVE --format="value(account)" | grep -q .; then
+
+    # Check if already authenticated
+    CURRENT_ACCOUNT=$(gcloud auth list --filter=status:ACTIVE --format="value(account)" 2>/dev/null | head -1)
+
+    if [ -z "$CURRENT_ACCOUNT" ]; then
         print_warn "Not authenticated with gcloud"
         if confirm "Authenticate now?"; then
             gcloud auth login
@@ -179,12 +318,34 @@ authenticate_gcp() {
             print_error "Authentication required to continue"
             exit 1
         fi
+    else
+        print_success "Already authenticated as: $CURRENT_ACCOUNT"
     fi
 
-    print_info "Setting project to $GCP_PROJECT..."
-    gcloud config set project "$GCP_PROJECT"
+    # Check current project
+    CURRENT_PROJECT=$(gcloud config get-value project 2>/dev/null)
 
-    print_success "Authenticated and project set"
+    if [ "$CURRENT_PROJECT" != "$GCP_PROJECT" ]; then
+        print_info "Switching project from '$CURRENT_PROJECT' to '$GCP_PROJECT'..."
+        if gcloud config set project "$GCP_PROJECT" --quiet 2>/dev/null; then
+            print_success "Project set to $GCP_PROJECT"
+        else
+            print_error "Failed to set project to '$GCP_PROJECT'"
+            echo "Please run: gcloud config set project $GCP_PROJECT"
+            exit 1
+        fi
+    else
+        print_success "Already using project: $GCP_PROJECT"
+    fi
+
+    # Verify project access with a simple API call (Container API is needed anyway)
+    print_info "Verifying project access..."
+    if gcloud container clusters list --project="$GCP_PROJECT" --limit=1 &>/dev/null; then
+        print_success "Project access verified"
+    else
+        print_warn "Could not verify project access (this might be okay)"
+        print_info "If deployment fails, run: gcloud auth application-default login"
+    fi
 }
 
 # Enable required GCP APIs
@@ -214,38 +375,48 @@ enable_apis() {
 configure_pulumi() {
     print_header "Configuring Pulumi"
 
-    cd infra/pulumi 2>/dev/null || true
+    local original_dir=$(pwd)
+    cd "$PULUMI_DIR" || exit 1
 
-    # Create or select stack
-    local stack_name="$ENVIRONMENT"
-    print_info "Creating/selecting Pulumi stack: $stack_name"
+    # Use PULUMI_STACK if set (from existing stack selection), otherwise use ENVIRONMENT
+    local stack_name="${PULUMI_STACK:-$ENVIRONMENT}"
+    print_info "Using Pulumi stack: $stack_name"
 
-    if pulumi stack ls | grep -q "$stack_name"; then
+    # Select the stack (it should already exist if PULUMI_STACK is set)
+    if pulumi stack ls 2>/dev/null | grep -q "^${stack_name}[ *]"; then
+        print_info "Selecting existing stack: $stack_name"
         pulumi stack select "$stack_name"
     else
+        print_info "Creating new stack: $stack_name"
         pulumi stack init "$stack_name"
     fi
 
-    # Set configuration
-    print_info "Setting Pulumi configuration..."
-    pulumi config set gcp:project "$GCP_PROJECT"
-    pulumi config set gcp:region "$GCP_REGION"
-    pulumi config set environment "$ENVIRONMENT"
-    pulumi config set domain "$DOMAIN"
-    pulumi config set --secret dbPassword "$DB_PASSWORD"
-    pulumi config set --secret jwtSecret "$JWT_SECRET"
-    pulumi config set --secret encryptionKey "$ENCRYPTION_KEY"
+    # Only set configuration if this is NOT an existing stack redeployment
+    if [ -z "$PULUMI_STACK" ]; then
+        # Set configuration for new deployments
+        print_info "Setting Pulumi configuration..."
+        pulumi config set gcp:project "$GCP_PROJECT"
+        pulumi config set gcp:region "$GCP_REGION"
+        pulumi config set environment "$ENVIRONMENT"
+        pulumi config set domain "$DOMAIN"
+        pulumi config set --secret dbPassword "$DB_PASSWORD"
+        pulumi config set --secret jwtSecret "$JWT_SECRET"
+        pulumi config set --secret encryptionKey "$ENCRYPTION_KEY"
+        print_success "Pulumi configured"
+    else
+        print_info "Using existing stack configuration (no changes)"
+        print_success "Stack selected"
+    fi
 
-    print_success "Pulumi configured"
-
-    cd ../..
+    cd "$original_dir"
 }
 
 # Deploy infrastructure with Pulumi
 deploy_infrastructure() {
     print_header "Deploying Infrastructure with Pulumi"
 
-    cd infra/pulumi 2>/dev/null || true
+    local original_dir=$(pwd)
+    cd "$PULUMI_DIR" || exit 1
 
     print_info "Running Pulumi preview..."
     pulumi preview
@@ -261,20 +432,21 @@ deploy_infrastructure() {
 
     print_success "Infrastructure deployed"
 
-    cd ../..
+    cd "$original_dir"
 }
 
 # Get infrastructure outputs
 get_infrastructure_outputs() {
     print_header "Retrieving Infrastructure Outputs"
 
-    cd infra/pulumi 2>/dev/null || true
+    local original_dir=$(pwd)
+    cd "$PULUMI_DIR" || exit 1
 
     LOAD_BALANCER_IP=$(pulumi stack output loadBalancerIp)
 
     print_info "Load Balancer IP: $LOAD_BALANCER_IP"
 
-    cd ../..
+    cd "$original_dir"
 }
 
 # Configure DNS
@@ -299,6 +471,9 @@ configure_dns() {
 # Build and push Docker images
 build_and_push_images() {
     print_header "Building and Pushing Docker Images"
+
+    local original_dir=$(pwd)
+    cd "$REPO_ROOT" || exit 1
 
     # Configure Docker authentication
     print_info "Configuring Docker authentication for Artifact Registry..."
@@ -337,6 +512,8 @@ build_and_push_images() {
 
         print_success "$image image built and pushed"
     done
+
+    cd "$original_dir"
 }
 
 # Configure kubectl
@@ -356,7 +533,7 @@ configure_kubectl() {
 update_k8s_manifests() {
     print_header "Updating Kubernetes Manifests"
 
-    local overlay_dir="infra/k8s/overlays/$ENVIRONMENT"
+    local overlay_dir="$REPO_ROOT/infra/k8s/overlays/$ENVIRONMENT"
 
     # Create overlay directory if it doesn't exist
     mkdir -p "$overlay_dir"
@@ -403,52 +580,76 @@ EOF
     print_success "Manifests updated"
 }
 
-# Create Kubernetes secrets
-create_k8s_secrets() {
-    print_header "Creating Kubernetes Secrets"
+# Verify External Secrets Operator
+verify_eso() {
+    print_header "Verifying External Secrets Operator"
 
     # Create namespace
     print_info "Creating flowmaestro namespace..."
     kubectl create namespace flowmaestro --dry-run=client -o yaml | kubectl apply -f -
 
-    # Get database connection details from Pulumi
-    cd infra/pulumi 2>/dev/null || true
-    DB_HOST=$(pulumi stack output dbHost)
-    DB_NAME=$(pulumi stack output dbName)
-    DB_USER=$(pulumi stack output dbUser)
-    REDIS_HOST=$(pulumi stack output redisHost)
-    cd ../..
+    # Check if ESO is installed
+    print_info "Checking if External Secrets Operator is installed..."
+    if ! kubectl get namespace external-secrets-system &>/dev/null; then
+        print_error "External Secrets Operator namespace not found"
+        echo ""
+        echo "ESO should have been installed by Pulumi. Please check:"
+        echo "  1. cd infra/pulumi && pulumi up"
+        echo "  2. Verify ESO installation: kubectl get pods -n external-secrets-system"
+        exit 1
+    fi
 
-    # Create app-secrets
-    print_info "Creating app-secrets..."
-    kubectl create secret generic app-secrets \
-        --namespace=flowmaestro \
-        --from-literal=DATABASE_URL="postgresql://$DB_USER:$DB_PASSWORD@$DB_HOST:5432/$DB_NAME" \
-        --from-literal=REDIS_URL="redis://$REDIS_HOST:6379" \
-        --from-literal=JWT_SECRET="$JWT_SECRET" \
-        --from-literal=ENCRYPTION_KEY="$ENCRYPTION_KEY" \
-        --dry-run=client -o yaml | kubectl apply -f -
+    # Wait for ESO to be ready
+    print_info "Waiting for ESO pods to be ready..."
+    kubectl wait --for=condition=ready pod \
+        -l app.kubernetes.io/name=external-secrets \
+        -n external-secrets-system \
+        --timeout=2m || {
+        print_warn "ESO pods not ready yet. This may cause ExternalSecret sync issues."
+        echo "Check status with: kubectl get pods -n external-secrets-system"
+    }
 
-    # Create temporal-db-credentials
-    cd infra/pulumi 2>/dev/null || true
-    TEMPORAL_DB_HOST=$(pulumi stack output temporalDbHost)
-    TEMPORAL_DB_NAME=$(pulumi stack output temporalDbName)
-    TEMPORAL_DB_USER=$(pulumi stack output temporalDbUser)
-    TEMPORAL_VISIBILITY_DB=$(pulumi stack output temporalVisibilityDbName)
-    cd ../..
+    # Check ClusterSecretStore
+    print_info "Checking ClusterSecretStore configuration..."
+    if kubectl get clustersecretstore gcp-secret-manager &>/dev/null; then
+        print_success "ClusterSecretStore 'gcp-secret-manager' found"
+    else
+        print_warn "ClusterSecretStore not found yet - it will be created when K8s manifests are applied"
+    fi
 
-    print_info "Creating temporal-db-credentials..."
-    kubectl create secret generic temporal-db-credentials \
-        --namespace=flowmaestro \
-        --from-literal=host="$TEMPORAL_DB_HOST" \
-        --from-literal=port="5432" \
-        --from-literal=user="$TEMPORAL_DB_USER" \
-        --from-literal=password="$DB_PASSWORD" \
-        --from-literal=database="$TEMPORAL_DB_NAME" \
-        --from-literal=visibility-database="$TEMPORAL_VISIBILITY_DB" \
-        --dry-run=client -o yaml | kubectl apply -f -
+    # Check that secrets exist in GCP Secret Manager
+    print_info "Verifying secrets in GCP Secret Manager..."
 
-    print_success "Secrets created"
+    local missing_secrets=()
+    local required_secrets=(
+        "flowmaestro-jwt-secret"
+        "flowmaestro-encryption-key"
+        "flowmaestro-db-config"
+        "flowmaestro-redis-config"
+        "flowmaestro-temporal-db-config"
+    )
+
+    for secret in "${required_secrets[@]}"; do
+        if ! gcloud secrets describe "$secret" --project="$GCP_PROJECT" &>/dev/null; then
+            missing_secrets+=("$secret")
+        fi
+    done
+
+    if [ ${#missing_secrets[@]} -ne 0 ]; then
+        print_error "Missing required secrets in GCP Secret Manager:"
+        for secret in "${missing_secrets[@]}"; do
+            echo "  - $secret"
+        done
+        echo ""
+        echo "Please run the setup script first:"
+        echo "  ./infra/scripts/setup-secrets-gcp.sh"
+        exit 1
+    fi
+
+    print_success "All required secrets found in GCP Secret Manager"
+
+    print_info "ESO will automatically sync secrets from GCP Secret Manager to K8s Secrets"
+    print_info "This happens within 5 minutes after ExternalSecret resources are created"
 }
 
 # Run database migrations
@@ -456,19 +657,41 @@ run_migrations() {
     print_header "Running Database Migrations"
 
     if confirm "Run database migrations now?"; then
-        cd infra/pulumi 2>/dev/null || true
+        local original_dir=$(pwd)
+
+        # Get database connection details from Pulumi
+        cd "$PULUMI_DIR" || exit 1
         DB_HOST=$(pulumi stack output dbHost)
         DB_NAME=$(pulumi stack output dbName)
         DB_USER=$(pulumi stack output dbUser)
-        cd ../..
+        cd "$original_dir"
+
+        # Fetch DB password from GCP Secret Manager
+        print_info "Fetching database password from GCP Secret Manager..."
+        DB_CONFIG=$(gcloud secrets versions access latest \
+            --secret="flowmaestro-db-config" \
+            --project="$GCP_PROJECT" 2>/dev/null)
+
+        if [ -z "$DB_CONFIG" ]; then
+            print_error "Failed to fetch database config from Secret Manager"
+            print_warn "Make sure secrets were created with: ./infra/scripts/setup-secrets-gcp.sh"
+            return 1
+        fi
+
+        DB_PASSWORD=$(echo "$DB_CONFIG" | python3 -c "import sys, json; data=json.load(sys.stdin); print(data.get('db_password', ''))")
+
+        if [ -z "$DB_PASSWORD" ]; then
+            print_error "Database password not found in secret"
+            return 1
+        fi
 
         print_info "Building backend..."
         npm run build --workspace=backend
 
         print_info "Running migrations..."
-        cd backend
+        cd "$REPO_ROOT/backend" || exit 1
         DATABASE_URL="postgresql://$DB_USER:$DB_PASSWORD@$DB_HOST:5432/$DB_NAME" npm run db:migrate
-        cd ..
+        cd "$original_dir"
 
         print_success "Migrations completed"
     else
@@ -481,7 +704,7 @@ deploy_to_k8s() {
     print_header "Deploying to Kubernetes"
 
     print_info "Applying Kubernetes manifests..."
-    kubectl apply -k "infra/k8s/overlays/$ENVIRONMENT"
+    kubectl apply -k "$REPO_ROOT/infra/k8s/overlays/$ENVIRONMENT"
 
     print_success "Manifests applied"
 }
@@ -551,11 +774,20 @@ final_instructions() {
     echo "  View logs:          kubectl logs -n flowmaestro -l app=flowmaestro --tail=100 -f"
     echo "  Check ingress:      kubectl get ingress -n flowmaestro"
     echo "  Check SSL cert:     kubectl describe managedcertificate flowmaestro-cert -n flowmaestro"
+    echo "  Check ESO sync:     kubectl get externalsecrets -n flowmaestro"
+    echo "  Check secrets:      kubectl get secrets -n flowmaestro"
+    echo ""
+    echo "Secrets Management:"
+    echo "  Update secrets:     ./infra/scripts/setup-secrets-gcp.sh"
+    echo "  Local dev sync:     ./infra/scripts/sync-secrets-local.sh"
+    echo "  ESO syncs automatically every 5 minutes from GCP Secret Manager"
+    echo "  After updating secrets in GCP, restart pods to pick up changes"
     echo ""
     print_warn "Remember:"
     echo "  - SSL certificate provisioning can take 15-60 minutes"
     echo "  - Ensure DNS records are properly configured"
     echo "  - Monitor pod logs for any startup issues"
+    echo "  - Secrets are managed via External Secrets Operator (ESO)"
     echo ""
 }
 
@@ -574,7 +806,7 @@ main() {
     build_and_push_images
     configure_kubectl
     update_k8s_manifests
-    create_k8s_secrets
+    verify_eso
     run_migrations
     deploy_to_k8s
     wait_for_pods
