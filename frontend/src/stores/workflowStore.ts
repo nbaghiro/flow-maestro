@@ -5,6 +5,9 @@ import { getErrorMessage } from "@flowmaestro/shared";
 import { executeWorkflow as executeWorkflowAPI, generateWorkflow } from "../lib/api";
 import { convertToReactFlowFormat } from "../lib/workflow-layout";
 
+const INITIAL_NODE_WIDTH = 260;
+const INITIAL_NODE_HEIGHT = 140;
+
 export type NodeExecutionStatus = "idle" | "pending" | "running" | "success" | "error" | "skipped";
 
 export interface NodeExecutionState {
@@ -91,7 +94,17 @@ export const useWorkflowStore = create<WorkflowStore>((set, get) => ({
     executionError: null,
     currentExecution: null,
 
-    setNodes: (nodes) => set({ nodes }),
+    setNodes: (nodes) =>
+        set({
+            nodes: nodes.map((node) => ({
+                ...node,
+                style: {
+                    width: node?.style?.width ?? INITIAL_NODE_WIDTH,
+                    height: node?.style?.height ?? INITIAL_NODE_HEIGHT,
+                    ...(node.style || {})
+                }
+            }))
+        }),
     setEdges: (edges) => set({ edges }),
 
     setAIMetadata: (aiGenerated, aiPrompt) => set({ aiGenerated, aiPrompt }),
@@ -109,7 +122,16 @@ export const useWorkflowStore = create<WorkflowStore>((set, get) => ({
     },
 
     addNode: (node) => {
-        set({ nodes: [...get().nodes, node] });
+        const sizedNode = {
+            ...node,
+            style: {
+                width: node?.style?.width ?? INITIAL_NODE_WIDTH,
+                height: node?.style?.height ?? INITIAL_NODE_HEIGHT,
+                ...node.style
+            }
+        };
+
+        set({ nodes: [...get().nodes, sizedNode] });
     },
 
     updateNode: (nodeId, data) => {

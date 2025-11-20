@@ -138,7 +138,7 @@ export function BaseNode({
         const alphaX = e.clientX - startPos.x;
         const alphaY = e.clientY - startPos.y;
 
-        const newWidth = Math.max(200, startWidth + alphaX);
+        const newWidth = Math.max(260, startWidth + alphaX);
         const newHeight = Math.max(120, startHeight + alphaY);
 
         const el = document.querySelector(`[data-id="${nodeId}"]`) as HTMLElement;
@@ -223,7 +223,7 @@ export function BaseNode({
     return (
         <div
             className={cn(
-                "h-full flex flex-col bg-white rounded-lg transition-all duration-200 min-w-[240px] overflow-hidden",
+                "h-full flex flex-col bg-white rounded-lg transition-all duration-200 min-w-[260px] overflow-hidden",
                 "border-2 border-border",
                 categoryStyle.borderColor,
                 `node-${category}-category`,
