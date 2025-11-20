@@ -1,5 +1,20 @@
 name: Deploy to GKE
 
+# This workflow deploys FlowMaestro to Google Kubernetes Engine (GKE).
+#
+# SECRETS MANAGEMENT:
+# This workflow does NOT create or manage K8s secrets directly. Instead, it relies on:
+# 1. External Secrets Operator (ESO) installed in the cluster via Pulumi
+# 2. GCP Secret Manager as the single source of truth for all secrets
+# 3. ExternalSecret resources that automatically sync secrets from GCP to K8s
+#
+# To update secrets:
+# 1. Run: ./infra/scripts/setup-secrets-gcp.sh (updates GCP Secret Manager)
+# 2. ESO automatically syncs changes to K8s within 5 minutes
+# 3. Restart pods to pick up new secret values: kubectl rollout restart deployment/api-server -n flowmaestro
+#
+# This workflow verifies that all ExternalSecrets are synced before deploying.
+
 on:
   workflow_dispatch:
     inputs:
@@ -115,6 +130,49 @@ jobs:
             ${{ env.ARTIFACT_REGISTRY }}/marketing:latest
           cache-from: type=registry,ref=${{ env.ARTIFACT_REGISTRY }}/marketing:latest
           cache-to: type=inline
+
+      # Verify External Secrets are synced
+      - name: Verify External Secrets are ready
+        run: |
+          echo "Checking External Secrets Operator status..."
+          kubectl get pods -n external-secrets-system
+
+          echo ""
+          echo "Verifying all ExternalSecrets are synced..."
+
+          # Check that all ExternalSecrets are in Ready state
+          EXTERNAL_SECRETS=$(kubectl get externalsecret -n flowmaestro -o jsonpath='{.items[*].metadata.name}')
+
+          for es in $EXTERNAL_SECRETS; do
+            echo "Checking ExternalSecret: $es"
+            STATUS=$(kubectl get externalsecret $es -n flowmaestro -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}')
+
+            if [ "$STATUS" != "True" ]; then
+              echo "❌ ExternalSecret $es is not ready!"
+              kubectl get externalsecret $es -n flowmaestro -o yaml
+              exit 1
+            else
+              echo "✅ ExternalSecret $es is ready"
+            fi
+          done
+
+          echo ""
+          echo "Verifying all K8s secrets exist..."
+
+          # Verify that the K8s secrets exist
+          REQUIRED_SECRETS="app-secrets"
+
+          for secret in $REQUIRED_SECRETS; do
+            if kubectl get secret $secret -n flowmaestro &> /dev/null; then
+              echo "✅ Secret $secret exists"
+            else
+              echo "❌ Secret $secret is missing!"
+              exit 1
+            fi
+          done
+
+          echo ""
+          echo "✅ All secrets are ready for deployment"
 
       # Install kustomize
       - name: Install kustomize

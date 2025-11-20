@@ -57,6 +57,9 @@ cd flowmaestro
 # Install dependencies
 npm install
 
+# Setup secrets (pulls from GCP Secret Manager)
+./infra/scripts/sync-secrets-local.sh
+
 # Start infrastructure (Docker Compose)
 npm run docker:up
 
@@ -74,6 +77,87 @@ Access the application:
 - **Temporal UI**: http://localhost:8088
 
 See [Deployment Guide](./.docs/deployment-guide.md) for production setup.
+
+## Secrets Management
+
+FlowMaestro uses a centralized secrets management system with **GCP Secret Manager** as the single source of truth for all environments.
+
+### Local Development
+
+For local development, use the sync script to set up your environment:
+
+```bash
+# Create backend/.env with developer secrets from GCP
+./infra/scripts/sync-secrets-local.sh
+```
+
+This script:
+
+- Uses **local defaults** for system secrets (database, JWT, encryption)
+- Pulls **developer secrets** from GCP (LLM API keys, OAuth credentials)
+- Creates `backend/.env` with all required variables
+- Uses your current `gcloud` default project
+- Safe to re-run anytime to sync latest secrets
+
+**Why this approach?**
+
+- System secrets (JWT, encryption keys) are auto-generated and safe to use defaults locally
+- Developer secrets (API keys, OAuth) are valuable and should be centrally managed
+- Simpler local setup - no need to configure databases or generate secure keys
+
+### Production (GKE)
+
+In production, secrets are managed through the **External Secrets Operator (ESO)**:
+
+1. **GCP Secret Manager**: Single source of truth for all secrets
+2. **External Secrets Operator**: Automatically syncs secrets from GCP to Kubernetes
+3. **K8s Secrets**: Created and updated automatically by ESO (every 5 minutes)
+4. **Application Pods**: Mount secrets as environment variables
+
+#### Updating Production Secrets
+
+```bash
+# Update secrets in GCP Secret Manager
+./infra/scripts/setup-secrets-gcp.sh
+
+# ESO automatically syncs within 5 minutes
+# Restart pods to pick up new values:
+kubectl rollout restart deployment/api-server -n flowmaestro
+kubectl rollout restart deployment/temporal-worker -n flowmaestro
+```
+
+#### Secret Types
+
+The system manages these secret categories:
+
+- **System Secrets**: JWT tokens, encryption keys
+- **Database**: PostgreSQL and Temporal database credentials
+- **Cache**: Redis connection details
+- **LLM APIs**: OpenAI, Anthropic, Google AI keys
+- **OAuth**: Slack, Google, Notion client credentials
+
+### Helper Scripts
+
+Located in `infra/scripts/`:
+
+- **`sync-secrets-local.sh`**: Set up local development environment
+    - Uses local defaults for system secrets (database, JWT, encryption)
+    - Pulls developer secrets (LLM keys, OAuth) from GCP Secret Manager
+    - Creates `backend/.env` automatically
+
+- **`setup-secrets-gcp.sh`**: Create/update all secrets in GCP Secret Manager
+    - For initial production setup or secret rotation
+    - Auto-detects existing secrets and shows them as defaults
+    - Supports generating new values (type "generate" when prompted)
+    - Used for both system and developer secrets in production
+
+Both scripts:
+
+- Use your current `gcloud` default project
+- Include validation and error handling
+- Safe to re-run anytime
+
+See [infra/scripts/README.md](./infra/scripts/README.md) for detailed documentation.
 
 ## Documentation
 
@@ -153,13 +237,14 @@ Contributions are welcome! Please read our development guidelines in [CLAUDE.md]
 
 1. Fork and clone the repository
 2. Install dependencies: `npm install`
-3. Start infrastructure: `npm run docker:up`
-4. Run migrations: `npm run db:migrate`
-5. Start dev servers: `npm run dev`
-6. Create a feature branch
-7. Make your changes and add tests
-8. Run `npm run typecheck` and `npm run lint:fix`
-9. Submit a pull request
+3. Setup secrets: `./infra/scripts/sync-secrets-local.sh`
+4. Start infrastructure: `npm run docker:up`
+5. Run migrations: `npm run db:migrate`
+6. Start dev servers: `npm run dev`
+7. Create a feature branch
+8. Make your changes and add tests
+9. Run `npm run typecheck` and `npm run lint:fix`
+10. Submit a pull request
 
 ## Support
 
