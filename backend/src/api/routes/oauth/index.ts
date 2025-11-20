@@ -1,9 +1,15 @@
 import { FastifyInstance } from "fastify";
+import { authMiddleware } from "../../middleware/auth";
 import { authorizeRoute } from "./authorize";
 import { callbackRoute } from "./callback";
 import { listProvidersRoute } from "./list-providers";
 import { refreshRoute } from "./refresh";
 import { revokeRoute } from "./revoke";
+import {
+    getSchedulerStatus,
+    triggerSchedulerRefresh,
+    resetCircuitBreaker
+} from "./scheduler-status";
 
 /**
  * OAuth Routes
@@ -17,6 +23,9 @@ import { revokeRoute } from "./revoke";
  * - GET  /oauth/:provider/callback             - OAuth callback handler (generic!)
  * - POST /oauth/:provider/refresh/:credentialId - Manually refresh token
  * - POST /oauth/:provider/revoke/:credentialId  - Revoke token and delete credential
+ * - GET  /oauth/scheduler/status               - Get scheduler status (admin)
+ * - POST /oauth/scheduler/refresh              - Trigger manual refresh (admin)
+ * - POST /oauth/scheduler/reset-circuit        - Reset circuit breaker (admin)
  */
 export async function oauthRoutes(fastify: FastifyInstance) {
     await listProvidersRoute(fastify);
@@ -24,4 +33,17 @@ export async function oauthRoutes(fastify: FastifyInstance) {
     await callbackRoute(fastify);
     await refreshRoute(fastify);
     await revokeRoute(fastify);
+
+    // Admin endpoints for scheduler monitoring
+    fastify.get("/oauth/scheduler/status", { preHandler: [authMiddleware] }, getSchedulerStatus);
+    fastify.post(
+        "/oauth/scheduler/refresh",
+        { preHandler: [authMiddleware] },
+        triggerSchedulerRefresh
+    );
+    fastify.post(
+        "/oauth/scheduler/reset-circuit",
+        { preHandler: [authMiddleware] },
+        resetCircuitBreaker
+    );
 }

@@ -538,9 +538,47 @@ providers/newprovider/
 
 **Automatic token refresh:**
 
-- Tokens refreshed 5 minutes before expiry
-- Handled transparently in HTTP interceptor
-- Workflows/agents never see expired tokens
+- Background scheduler runs every 5 minutes
+- Proactively refreshes tokens expiring within 10 minutes
+- On-demand refresh during execution (5-minute buffer)
+- Handled transparently - workflows/agents never see expired tokens
+- Graceful error handling with connection status updates
+
+**Token Refresh Architecture:**
+
+FlowMaestro implements a two-layer token refresh strategy:
+
+1. **Background Scheduler** (`CredentialRefreshScheduler`)
+    - Runs every 5 minutes automatically
+    - Scans all OAuth connections across all users
+    - Refreshes tokens expiring within 10 minutes
+    - Prevents auth failures before they happen
+    - Logs refresh successes and failures
+
+2. **On-Demand Refresh** (`TokenRefreshService.getAccessToken()`)
+    - Checked before every API call
+    - Refreshes if token expires within 5 minutes
+    - Updates database with new tokens
+    - Transparent to calling code
+
+**Implementation:**
+
+```typescript
+// Background scheduler (started on server boot)
+credentialRefreshScheduler.start();
+// Checks every 5 minutes, refreshes tokens expiring within 10 minutes
+
+// On-demand refresh (used by operations)
+const accessToken = await getAccessToken(connectionId);
+// Automatically refreshes if needed, returns valid token
+```
+
+**Admin Endpoints:**
+
+```http
+GET  /api/oauth/scheduler/status     # Check scheduler status
+POST /api/oauth/scheduler/refresh    # Trigger manual refresh cycle
+```
 
 **Environment variables:**
 
@@ -751,9 +789,11 @@ POST /api/connections/test               # Test before saving
 ```http
 GET /api/oauth/:provider/authorize       # Get auth URL
 GET /api/oauth/:provider/callback        # OAuth callback
-POST /api/oauth/:provider/refresh        # Refresh token
+POST /api/oauth/:provider/refresh        # Refresh token (manual)
 POST /api/oauth/:provider/revoke         # Revoke token
 GET /api/oauth/providers                 # List OAuth providers
+GET /api/oauth/scheduler/status          # Get refresh scheduler status
+POST /api/oauth/scheduler/refresh        # Trigger manual refresh cycle
 ```
 
 ### MCP Endpoints
