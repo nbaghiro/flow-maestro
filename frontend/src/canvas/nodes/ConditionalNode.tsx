@@ -34,12 +34,10 @@ function ConditionalNode({ data, selected }: NodeProps<ConditionalNodeData>) {
         const displayRight = rightValue || "value2";
 
         return (
-            <div className="text-xs font-mono bg-muted px-2.5 py-1.5 rounded border border-border">
-                <span className="truncate inline-block max-w-[80px] align-bottom">
-                    {displayLeft}
-                </span>{" "}
-                <span className="text-primary font-semibold">{operator}</span>{" "}
-                <span className="truncate inline-block max-w-[80px] align-bottom">
+            <div className="flex items-center gap-2 text-xs font-mono bg-muted px-2.5 py-1.5 rounded border border-border">
+                <span className="break-words">{displayLeft}</span>
+                <span className="text-primary font-semibold whitespace-nowrap">{operator}</span>
+                <span className="flex-1 break-words overflow-hidden overflow-hidden whitespace-nowrap text-ellipsis">
                     {displayRight}
                 </span>
             </div>
@@ -83,8 +81,9 @@ function ConditionalNode({ data, selected }: NodeProps<ConditionalNodeData>) {
                 </>
             }
         >
-            <div className="space-y-2">
-                {renderCondition()}
+            <div className="flex flex-col h-full">
+                <div className="flex-1 overflow-auto">{renderCondition()}</div>
+
                 <div className="flex justify-between text-xs pt-1">
                     <div className="flex items-center gap-1 text-green-600">
                         <CheckCircle2 className="w-3 h-3" />

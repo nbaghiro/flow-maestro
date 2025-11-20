@@ -45,7 +45,7 @@ function TransformNode({ data, selected }: NodeProps<TransformNodeData>) {
             category="data"
             selected={selected}
         >
-            <div className="space-y-2">
+            <div className="flex h-full flex-col space-y-2">
                 <div className="flex items-center justify-between">
                     <span className="text-xs text-muted-foreground">Operation:</span>
                     <span className="text-xs font-semibold">{getOperationLabel()}</span>
@@ -53,18 +53,18 @@ function TransformNode({ data, selected }: NodeProps<TransformNodeData>) {
                 {inputData && (
                     <div className="flex items-center justify-between">
                         <span className="text-xs text-muted-foreground">Input:</span>
-                        <span className="text-xs font-mono bg-muted px-1.5 py-0.5 rounded truncate max-w-[140px]">
+                        <span className="text-xs font-mono bg-muted px-1.5 py-0.5 rounded break-words whitespace-pre-wrap">
                             {inputData}
                         </span>
                     </div>
                 )}
                 {expression && (
-                    <div className="text-xs font-mono bg-muted px-2.5 py-1.5 rounded border border-border line-clamp-2">
+                    <div className="flex-1 overflow-hidden mb-2 text-xs font-mono bg-muted px-2.5 py-1.5 rounded border border-border break-words whitespace-pre-wrap">
                         {expression}
                     </div>
                 )}
                 {!inputData && !expression && (
-                    <div className="text-xs text-muted-foreground italic text-center py-1">
+                    <div className="flex-1 text-xs text-muted-foreground italic text-center py-1">
                         Not configured
                     </div>
                 )}

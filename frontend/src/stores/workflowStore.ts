@@ -64,6 +64,7 @@ interface WorkflowStore {
     onEdgesChange: (changes: EdgeChange[]) => void;
     addNode: (node: Node) => void;
     updateNode: (nodeId: string, data: JsonObject) => void;
+    updateNodeStyle: (nodeId: string, style: React.CSSProperties) => void;
     deleteNode: (nodeId: string) => void;
     selectNode: (nodeId: string | null) => void;
     setAIMetadata: (aiGenerated: boolean, aiPrompt: string | null) => void;
@@ -115,6 +116,14 @@ export const useWorkflowStore = create<WorkflowStore>((set, get) => ({
         set({
             nodes: get().nodes.map((node) =>
                 node.id === nodeId ? { ...node, data: { ...node.data, ...data } } : node
+            )
+        });
+    },
+
+    updateNodeStyle: (nodeId, style) => {
+        set({
+            nodes: get().nodes.map((node) =>
+                node.id === nodeId ? { ...node, style: { ...(node.style || {}), ...style } } : node
             )
         });
     },

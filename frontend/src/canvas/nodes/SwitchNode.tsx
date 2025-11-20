@@ -42,7 +42,7 @@ function SwitchNode({ data, selected }: NodeProps<SwitchNodeData>) {
                 </>
             }
         >
-            <div className="space-y-2">
+            <div className="flex flex-col h-full justify-between">
                 <div className="text-xs font-mono bg-muted px-2.5 py-1.5 rounded border border-border truncate">
                     {variable}
                 </div>
