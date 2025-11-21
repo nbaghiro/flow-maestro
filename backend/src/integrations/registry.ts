@@ -56,11 +56,24 @@ const airtableEntry: ProviderRegistryEntry = {
     }
 };
 
+// Register HubSpot provider
+const hubspotEntry: ProviderRegistryEntry = {
+    name: "hubspot",
+    displayName: "HubSpot",
+    authMethod: "oauth2",
+    category: "crm",
+    loader: async () => {
+        const { HubspotProvider } = await import("./providers/hubspot/HubspotProvider");
+        return new HubspotProvider();
+    }
+};
+
 // Register all providers
 providerRegistry.register(slackEntry);
 providerRegistry.register(codaEntry);
 providerRegistry.register(notionEntry);
 providerRegistry.register(airtableEntry);
+providerRegistry.register(hubspotEntry);
 
 // Export for use in application
 export { providerRegistry };

@@ -1,0 +1,97 @@
+import { z } from "zod";
+import { toJSONSchema } from "../../../../core/schema-utils";
+import type { OperationDefinition, OperationResult } from "../../../../core/types";
+import type { HubspotClient } from "../../client/HubspotClient";
+import type { HubspotContact, HubspotSearchRequest, HubspotListResponse } from "../types";
+
+/**
+ * Search Contacts Parameters
+ */
+export const searchContactsSchema = z.object({
+    filterGroups: z
+        .array(
+            z.object({
+                filters: z.array(
+                    z.object({
+                        propertyName: z.string(),
+                        operator: z.enum([
+                            "EQ",
+                            "NEQ",
+                            "LT",
+                            "LTE",
+                            "GT",
+                            "GTE",
+                            "CONTAINS",
+                            "NOT_CONTAINS"
+                        ]),
+                        value: z.union([z.string(), z.number(), z.boolean()])
+                    })
+                )
+            })
+        )
+        .optional(),
+    sorts: z
+        .array(
+            z.object({
+                propertyName: z.string(),
+                direction: z.enum(["ASCENDING", "DESCENDING"])
+            })
+        )
+        .optional(),
+    properties: z.array(z.string()).optional(),
+    limit: z.number().min(1).max(100).optional().default(10),
+    after: z.string().optional()
+});
+
+export type SearchContactsParams = z.infer<typeof searchContactsSchema>;
+
+/**
+ * Operation Definition
+ */
+export const searchContactsOperation: OperationDefinition = {
+    id: "searchContacts",
+    name: "Search Contacts",
+    description: "Search contacts with filters and sorting",
+    category: "crm",
+    inputSchema: searchContactsSchema,
+    inputSchemaJSON: toJSONSchema(searchContactsSchema),
+    retryable: true,
+    timeout: 10000
+};
+
+/**
+ * Execute Search Contacts
+ */
+export async function executeSearchContacts(
+    client: HubspotClient,
+    params: SearchContactsParams
+): Promise<OperationResult> {
+    try {
+        const searchRequest: HubspotSearchRequest = {
+            filterGroups: params.filterGroups,
+            sorts: params.sorts,
+            properties: params.properties,
+            limit: params.limit,
+            after: params.after
+        };
+
+        const response = await client.post<HubspotListResponse<HubspotContact>>(
+            "/crm/v3/objects/contacts/search",
+            searchRequest
+        );
+
+        return {
+            success: true,
+            data: response
+        };
+    } catch (error) {
+        return {
+            success: false,
+            error: {
+                type: "server_error",
+                message: error instanceof Error ? error.message : "Failed to search contacts",
+                retryable: false
+            }
+        };
+    }
+}

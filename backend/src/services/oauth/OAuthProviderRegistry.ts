@@ -240,6 +240,89 @@ export const OAUTH_PROVIDERS: Record<string, OAuthProvider> = {
             }
         },
         refreshable: true
+    },
+
+    hubspot: {
+        name: "hubspot",
+        displayName: "HubSpot",
+        authUrl: "https://app.hubspot.com/oauth/authorize",
+        tokenUrl: "https://api.hubapi.com/oauth/v1/token",
+        scopes: [
+            // CRM Objects
+            "crm.objects.contacts.read",
+            "crm.objects.contacts.write",
+            "crm.objects.companies.read",
+            "crm.objects.companies.write",
+            "crm.objects.deals.read",
+            "crm.objects.deals.write",
+            "crm.objects.tickets.read",
+            "crm.objects.tickets.write",
+            "crm.objects.quotes.read",
+            "crm.objects.quotes.write",
+            "crm.objects.line_items.read",
+            "crm.objects.line_items.write",
+            // Engagements
+            "crm.objects.meetings.read",
+            "crm.objects.meetings.write",
+            "crm.objects.tasks.read",
+            "crm.objects.tasks.write",
+            "crm.objects.notes.read",
+            "crm.objects.notes.write",
+            "crm.objects.calls.read",
+            "crm.objects.calls.write",
+            "crm.objects.emails.read",
+            "crm.objects.emails.write",
+            // Schema & Lists
+            "crm.schemas.contacts.read",
+            "crm.schemas.companies.read",
+            "crm.schemas.deals.read",
+            "crm.lists.read",
+            "crm.lists.write",
+            // Marketing
+            "content",
+            "forms",
+            "automation",
+            // Files & Communication
+            "files",
+            "conversations.read",
+            "conversations.write"
+        ],
+        clientId: process.env.HUBSPOT_CLIENT_ID || "",
+        clientSecret: process.env.HUBSPOT_CLIENT_SECRET || "",
+        redirectUri: `${process.env.API_URL || "http://localhost:3000"}/api/oauth/hubspot/callback`,
+        getUserInfo: async (accessToken: string) => {
+            try {
+                const response = await fetch(
+                    "https://api.hubapi.com/account-info/v3/api-usage/daily",
+                    {
+                        headers: {
+                            Authorization: `Bearer ${accessToken}`
+                        }
+                    }
+                );
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = (await response.json()) as {
+                    portalId?: number;
+                    timeZone?: string;
+                };
+
+                return {
+                    portalId: data.portalId || "unknown",
+                    timeZone: data.timeZone || "UTC"
+                };
+            } catch (error) {
+                console.error("[OAuth] Failed to get HubSpot account info:", error);
+                return {
+                    portalId: "unknown",
+                    timeZone: "UTC"
+                };
+            }
+        },
+        refreshable: true
     }
 };
 

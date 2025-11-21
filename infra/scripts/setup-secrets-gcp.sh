@@ -7,9 +7,38 @@
 # - gcloud CLI installed and authenticated
 # - Secret Manager Admin role on the GCP project
 #
-# Usage: ./infra/scripts/setup-secrets-gcp.sh
+# Usage:
+#   ./infra/scripts/setup-secrets-gcp.sh              # Only prompt for non-existing secrets
+#   ./infra/scripts/setup-secrets-gcp.sh --prompt-all # Prompt for all secrets
+#   ./infra/scripts/setup-secrets-gcp.sh -a           # Prompt for all secrets (short form)
 
 set -e
+
+# Parse command line arguments
+PROMPT_ALL=false
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --prompt-all|-a)
+            PROMPT_ALL=true
+            shift
+            ;;
+        --help|-h)
+            echo "Usage: ./infra/scripts/setup-secrets-gcp.sh [OPTIONS]"
+            echo ""
+            echo "Options:"
+            echo "  --prompt-all, -a    Prompt for all secrets, including existing ones"
+            echo "  --help, -h          Show this help message"
+            echo ""
+            echo "By default, only prompts for secrets that don't exist in GCP Secret Manager"
+            exit 0
+            ;;
+        *)
+            print_error "Unknown option: $1"
+            echo "Use --help for usage information"
+            exit 1
+            ;;
+    esac
+done
 
 # Colors
 RED='\033[0;31m'
@@ -188,53 +217,60 @@ create_or_update_json_secret() {
 
 print_header "Detecting Existing Secrets"
 
-# Try to detect existing secrets from K8s
-print_info "Checking for existing secrets in Kubernetes..."
+# Function to get existing secret from GCP Secret Manager
+get_existing_gcp_secret() {
+    local secret_name=$1
+    gcloud secrets versions access latest --secret="${secret_name}" --project="${GCP_PROJECT}" 2>/dev/null || echo ""
+}
 
-# Try new ESO format first (JWT_SECRET, ENCRYPTION_KEY)
-EXISTING_JWT=$(get_k8s_secret_value "app-secrets" "JWT_SECRET")
-EXISTING_ENCRYPTION=$(get_k8s_secret_value "app-secrets" "ENCRYPTION_KEY")
-EXISTING_DATABASE_URL=$(get_k8s_secret_value "app-secrets" "DATABASE_URL")
-EXISTING_REDIS_URL=$(get_k8s_secret_value "app-secrets" "REDIS_URL")
+# Function to parse JSON field from GCP secret
+get_gcp_json_field() {
+    local secret_name=$1
+    local field=$2
+    local json=$(get_existing_gcp_secret "$secret_name")
+    if [ -n "$json" ]; then
+        echo "$json" | python3 -c "import sys, json; data=json.load(sys.stdin); print(data.get('$field', ''))" 2>/dev/null || echo ""
+    else
+        echo ""
+    fi
+}
 
-# Fall back to old manual format (jwt-secret, encryption-key)
-if [ -z "$EXISTING_JWT" ]; then
-    EXISTING_JWT=$(get_k8s_secret_value "app-secrets" "jwt-secret")
-fi
-if [ -z "$EXISTING_ENCRYPTION" ]; then
-    EXISTING_ENCRYPTION=$(get_k8s_secret_value "app-secrets" "encryption-key")
-fi
+# Try to detect existing secrets from GCP Secret Manager (source of truth)
+print_info "Checking for existing secrets in GCP Secret Manager..."
 
-# Check old db-credentials secret
-if [ -z "$EXISTING_DATABASE_URL" ]; then
-    EXISTING_DB_HOST=$(get_k8s_secret_value "db-credentials" "host")
-    EXISTING_DB_PORT=$(get_k8s_secret_value "db-credentials" "port")
-    EXISTING_DB_NAME=$(get_k8s_secret_value "db-credentials" "database")
-    EXISTING_DB_USER=$(get_k8s_secret_value "db-credentials" "user")
-    EXISTING_DB_PASSWORD=$(get_k8s_secret_value "db-credentials" "password")
-fi
+# Check for existing secrets
+EXISTING_JWT=$(get_existing_gcp_secret "flowmaestro-jwt-secret")
+EXISTING_ENCRYPTION=$(get_existing_gcp_secret "flowmaestro-encryption-key")
 
-# Check old redis-credentials secret
-if [ -z "$EXISTING_REDIS_URL" ]; then
-    EXISTING_REDIS_HOST=$(get_k8s_secret_value "redis-credentials" "host")
-    EXISTING_REDIS_PORT=$(get_k8s_secret_value "redis-credentials" "port")
-fi
+# Check database config (JSON secret)
+EXISTING_DB_HOST=$(get_gcp_json_field "flowmaestro-db-config" "db_host")
+EXISTING_DB_PORT=$(get_gcp_json_field "flowmaestro-db-config" "db_port")
+EXISTING_DB_NAME=$(get_gcp_json_field "flowmaestro-db-config" "db_name")
+EXISTING_DB_USER=$(get_gcp_json_field "flowmaestro-db-config" "db_user")
+EXISTING_DB_PASSWORD=$(get_gcp_json_field "flowmaestro-db-config" "db_password")
 
-# Parse connection URLs
-if [ -n "$EXISTING_DATABASE_URL" ]; then
-    EXISTING_DB_USER=$(parse_connection_url "$EXISTING_DATABASE_URL" "user")
-    EXISTING_DB_PASSWORD=$(parse_connection_url "$EXISTING_DATABASE_URL" "password")
-    EXISTING_DB_HOST=$(parse_connection_url "$EXISTING_DATABASE_URL" "host")
-    EXISTING_DB_PORT=$(parse_connection_url "$EXISTING_DATABASE_URL" "port")
-    EXISTING_DB_NAME=$(parse_connection_url "$EXISTING_DATABASE_URL" "database")
-fi
+# Check Redis config (JSON secret)
+EXISTING_REDIS_HOST=$(get_gcp_json_field "flowmaestro-redis-config" "redis_host")
+EXISTING_REDIS_PORT=$(get_gcp_json_field "flowmaestro-redis-config" "redis_port")
 
-if [ -n "$EXISTING_REDIS_URL" ]; then
-    EXISTING_REDIS_HOST=$(parse_connection_url "$EXISTING_REDIS_URL" "host")
-    EXISTING_REDIS_PORT=$(parse_connection_url "$EXISTING_REDIS_URL" "port")
-fi
+# Check LLM API keys
+EXISTING_OPENAI_KEY=$(get_existing_gcp_secret "flowmaestro-app-openai-api-key")
+EXISTING_ANTHROPIC_KEY=$(get_existing_gcp_secret "flowmaestro-app-anthropic-api-key")
+EXISTING_GOOGLE_KEY=$(get_existing_gcp_secret "flowmaestro-app-google-api-key")
 
-# Try to get from Pulumi outputs as fallback
+# Check OAuth secrets
+EXISTING_SLACK_CLIENT_ID=$(get_existing_gcp_secret "flowmaestro-app-slack-client-id")
+EXISTING_SLACK_CLIENT_SECRET=$(get_existing_gcp_secret "flowmaestro-app-slack-client-secret")
+EXISTING_GOOGLE_CLIENT_ID=$(get_existing_gcp_secret "flowmaestro-app-google-client-id")
+EXISTING_GOOGLE_CLIENT_SECRET=$(get_existing_gcp_secret "flowmaestro-app-google-client-secret")
+EXISTING_NOTION_CLIENT_ID=$(get_existing_gcp_secret "flowmaestro-app-notion-client-id")
+EXISTING_NOTION_CLIENT_SECRET=$(get_existing_gcp_secret "flowmaestro-app-notion-client-secret")
+EXISTING_AIRTABLE_CLIENT_ID=$(get_existing_gcp_secret "flowmaestro-app-airtable-client-id")
+EXISTING_AIRTABLE_CLIENT_SECRET=$(get_existing_gcp_secret "flowmaestro-app-airtable-client-secret")
+EXISTING_HUBSPOT_CLIENT_ID=$(get_existing_gcp_secret "flowmaestro-app-hubspot-client-id")
+EXISTING_HUBSPOT_CLIENT_SECRET=$(get_existing_gcp_secret "flowmaestro-app-hubspot-client-secret")
+
+# Try to get from Pulumi outputs as fallback for infrastructure values
 if [ -z "$EXISTING_DB_HOST" ]; then
     EXISTING_DB_HOST=$(get_pulumi_output "dbHost")
 fi
@@ -243,15 +279,44 @@ if [ -z "$EXISTING_REDIS_HOST" ]; then
 fi
 
 # Show what was found
-if [ -n "$EXISTING_JWT" ] || [ -n "$EXISTING_ENCRYPTION" ] || [ -n "$EXISTING_DB_HOST" ]; then
-    print_success "Found existing secrets!"
+FOUND_COUNT=0
+[ -n "$EXISTING_JWT" ] && ((FOUND_COUNT++))
+[ -n "$EXISTING_ENCRYPTION" ] && ((FOUND_COUNT++))
+[ -n "$EXISTING_DB_HOST" ] && ((FOUND_COUNT++))
+[ -n "$EXISTING_OPENAI_KEY" ] && ((FOUND_COUNT++))
+[ -n "$EXISTING_ANTHROPIC_KEY" ] && ((FOUND_COUNT++))
+[ -n "$EXISTING_GOOGLE_KEY" ] && ((FOUND_COUNT++))
+[ -n "$EXISTING_SLACK_CLIENT_ID" ] && ((FOUND_COUNT++))
+[ -n "$EXISTING_GOOGLE_CLIENT_ID" ] && ((FOUND_COUNT++))
+[ -n "$EXISTING_NOTION_CLIENT_ID" ] && ((FOUND_COUNT++))
+[ -n "$EXISTING_AIRTABLE_CLIENT_ID" ] && ((FOUND_COUNT++))
+[ -n "$EXISTING_HUBSPOT_CLIENT_ID" ] && ((FOUND_COUNT++))
+
+if [ $FOUND_COUNT -gt 0 ]; then
+    print_success "Found $FOUND_COUNT existing secret(s)!"
     [ -n "$EXISTING_JWT" ] && print_info "  - JWT Secret: $(mask_secret "$EXISTING_JWT")"
     [ -n "$EXISTING_ENCRYPTION" ] && print_info "  - Encryption Key: $(mask_secret "$EXISTING_ENCRYPTION")"
     [ -n "$EXISTING_DB_HOST" ] && print_info "  - Database Host: $EXISTING_DB_HOST"
     [ -n "$EXISTING_REDIS_HOST" ] && print_info "  - Redis Host: $EXISTING_REDIS_HOST"
+    [ -n "$EXISTING_OPENAI_KEY" ] && print_info "  - OpenAI API Key: $(mask_secret "$EXISTING_OPENAI_KEY")"
+    [ -n "$EXISTING_ANTHROPIC_KEY" ] && print_info "  - Anthropic API Key: $(mask_secret "$EXISTING_ANTHROPIC_KEY")"
+    [ -n "$EXISTING_GOOGLE_KEY" ] && print_info "  - Google API Key: $(mask_secret "$EXISTING_GOOGLE_KEY")"
+    [ -n "$EXISTING_SLACK_CLIENT_ID" ] && print_info "  - Slack OAuth: configured"
+    [ -n "$EXISTING_GOOGLE_CLIENT_ID" ] && print_info "  - Google OAuth: configured"
+    [ -n "$EXISTING_NOTION_CLIENT_ID" ] && print_info "  - Notion OAuth: configured"
+    [ -n "$EXISTING_AIRTABLE_CLIENT_ID" ] && print_info "  - Airtable OAuth: configured"
+    [ -n "$EXISTING_HUBSPOT_CLIENT_ID" ] && print_info "  - HubSpot OAuth: configured"
     echo ""
+    if [ "$PROMPT_ALL" = false ]; then
+        print_info "Mode: Only prompting for NON-EXISTING secrets"
+        print_info "Use --prompt-all or -a to prompt for all secrets"
+        echo ""
+    else
+        print_warn "Mode: Prompting for ALL secrets (--prompt-all enabled)"
+        echo ""
+    fi
 else
-    print_warn "No existing secrets found - will prompt for new values"
+    print_warn "No existing secrets found - will prompt for all values"
     echo ""
 fi
 
@@ -261,7 +326,10 @@ print_header "Interactive Secret Setup"
 print_info "Core Application Secrets"
 
 # JWT Secret
-if [ -n "$EXISTING_JWT" ]; then
+if [ -n "$EXISTING_JWT" ] && [ "$PROMPT_ALL" = false ]; then
+    print_info "JWT Secret: already exists ($(mask_secret "$EXISTING_JWT"))"
+    JWT_SECRET="$EXISTING_JWT"
+elif [ -n "$EXISTING_JWT" ]; then
     prompt_with_existing "JWT Secret (leave empty to keep current, or type 'generate' for new)" "$EXISTING_JWT" "JWT_SECRET"
     if [ "$JWT_SECRET" = "generate" ]; then
         JWT_SECRET=$(openssl rand -base64 64 | tr -d "=+/" | cut -c1-64)
@@ -276,7 +344,10 @@ else
 fi
 
 # Encryption Key
-if [ -n "$EXISTING_ENCRYPTION" ]; then
+if [ -n "$EXISTING_ENCRYPTION" ] && [ "$PROMPT_ALL" = false ]; then
+    print_info "Encryption Key: already exists ($(mask_secret "$EXISTING_ENCRYPTION"))"
+    ENCRYPTION_KEY="$EXISTING_ENCRYPTION"
+elif [ -n "$EXISTING_ENCRYPTION" ]; then
     prompt_with_existing "Encryption Key (leave empty to keep current, or type 'generate' for new)" "$EXISTING_ENCRYPTION" "ENCRYPTION_KEY"
     if [ "$ENCRYPTION_KEY" = "generate" ]; then
         ENCRYPTION_KEY=$(openssl rand -hex 32)
@@ -295,7 +366,10 @@ echo ""
 print_info "Database Configuration"
 
 # Database Host
-if [ -n "$EXISTING_DB_HOST" ]; then
+if [ -n "$EXISTING_DB_HOST" ] && [ "$PROMPT_ALL" = false ]; then
+    print_info "Database Host: $EXISTING_DB_HOST (using existing)"
+    DB_HOST="$EXISTING_DB_HOST"
+elif [ -n "$EXISTING_DB_HOST" ]; then
     read -p "Database Host [current: $EXISTING_DB_HOST]: " DB_HOST
     DB_HOST=${DB_HOST:-$EXISTING_DB_HOST}
 else
@@ -310,19 +384,37 @@ else
 fi
 
 # Database Port
-read -p "Database Port [${EXISTING_DB_PORT:-5432}]: " DB_PORT
-DB_PORT=${DB_PORT:-${EXISTING_DB_PORT:-5432}}
+if [ -n "$EXISTING_DB_PORT" ] && [ "$PROMPT_ALL" = false ]; then
+    print_info "Database Port: $EXISTING_DB_PORT (using existing)"
+    DB_PORT="$EXISTING_DB_PORT"
+else
+    read -p "Database Port [${EXISTING_DB_PORT:-5432}]: " DB_PORT
+    DB_PORT=${DB_PORT:-${EXISTING_DB_PORT:-5432}}
+fi
 
 # Database Name
-read -p "Database Name [${EXISTING_DB_NAME:-flowmaestro}]: " DB_NAME
-DB_NAME=${DB_NAME:-${EXISTING_DB_NAME:-flowmaestro}}
+if [ -n "$EXISTING_DB_NAME" ] && [ "$PROMPT_ALL" = false ]; then
+    print_info "Database Name: $EXISTING_DB_NAME (using existing)"
+    DB_NAME="$EXISTING_DB_NAME"
+else
+    read -p "Database Name [${EXISTING_DB_NAME:-flowmaestro}]: " DB_NAME
+    DB_NAME=${DB_NAME:-${EXISTING_DB_NAME:-flowmaestro}}
+fi
 
 # Database User
-read -p "Database User [${EXISTING_DB_USER:-flowmaestro}]: " DB_USER
-DB_USER=${DB_USER:-${EXISTING_DB_USER:-flowmaestro}}
+if [ -n "$EXISTING_DB_USER" ] && [ "$PROMPT_ALL" = false ]; then
+    print_info "Database User: $EXISTING_DB_USER (using existing)"
+    DB_USER="$EXISTING_DB_USER"
+else
+    read -p "Database User [${EXISTING_DB_USER:-flowmaestro}]: " DB_USER
+    DB_USER=${DB_USER:-${EXISTING_DB_USER:-flowmaestro}}
+fi
 
 # Database Password
-if [ -n "$EXISTING_DB_PASSWORD" ]; then
+if [ -n "$EXISTING_DB_PASSWORD" ] && [ "$PROMPT_ALL" = false ]; then
+    print_info "Database Password: $(mask_secret "$EXISTING_DB_PASSWORD") (using existing)"
+    DB_PASSWORD="$EXISTING_DB_PASSWORD"
+elif [ -n "$EXISTING_DB_PASSWORD" ]; then
     prompt_with_existing "Database Password (leave empty to keep current, or type 'generate' for new)" "$EXISTING_DB_PASSWORD" "DB_PASSWORD"
     if [ "$DB_PASSWORD" = "generate" ]; then
         DB_PASSWORD=$(openssl rand -base64 32 | tr -d "=+/" | cut -c1-32)
@@ -353,7 +445,10 @@ echo ""
 print_info "Redis Configuration"
 
 # Redis Host
-if [ -n "$EXISTING_REDIS_HOST" ]; then
+if [ -n "$EXISTING_REDIS_HOST" ] && [ "$PROMPT_ALL" = false ]; then
+    print_info "Redis Host: $EXISTING_REDIS_HOST (using existing)"
+    REDIS_HOST="$EXISTING_REDIS_HOST"
+elif [ -n "$EXISTING_REDIS_HOST" ]; then
     read -p "Redis Host [current: $EXISTING_REDIS_HOST]: " REDIS_HOST
     REDIS_HOST=${REDIS_HOST:-$EXISTING_REDIS_HOST}
 else
@@ -368,8 +463,13 @@ else
 fi
 
 # Redis Port
-read -p "Redis Port [${EXISTING_REDIS_PORT:-6379}]: " REDIS_PORT
-REDIS_PORT=${REDIS_PORT:-${EXISTING_REDIS_PORT:-6379}}
+if [ -n "$EXISTING_REDIS_PORT" ] && [ "$PROMPT_ALL" = false ]; then
+    print_info "Redis Port: $EXISTING_REDIS_PORT (using existing)"
+    REDIS_PORT="$EXISTING_REDIS_PORT"
+else
+    read -p "Redis Port [${EXISTING_REDIS_PORT:-6379}]: " REDIS_PORT
+    REDIS_PORT=${REDIS_PORT:-${EXISTING_REDIS_PORT:-6379}}
+fi
 
 REDIS_CONFIG_JSON=$(cat <<EOF
 {
@@ -418,25 +518,110 @@ EOF
 # LLM API Keys (optional)
 echo ""
 print_info "LLM API Keys (optional - press Enter to skip)"
-read -p "OpenAI API Key: " OPENAI_API_KEY
-read -p "Anthropic API Key: " ANTHROPIC_API_KEY
-read -p "Google API Key: " GOOGLE_API_KEY
+
+# OpenAI API Key
+if [ -n "$EXISTING_OPENAI_KEY" ] && [ "$PROMPT_ALL" = false ]; then
+    print_info "OpenAI API Key: already exists ($(mask_secret "$EXISTING_OPENAI_KEY"))"
+    OPENAI_API_KEY="$EXISTING_OPENAI_KEY"
+elif [ -n "$EXISTING_OPENAI_KEY" ]; then
+    prompt_with_existing "OpenAI API Key" "$EXISTING_OPENAI_KEY" "OPENAI_API_KEY"
+else
+    read -p "OpenAI API Key: " OPENAI_API_KEY
+fi
+
+# Anthropic API Key
+if [ -n "$EXISTING_ANTHROPIC_KEY" ] && [ "$PROMPT_ALL" = false ]; then
+    print_info "Anthropic API Key: already exists ($(mask_secret "$EXISTING_ANTHROPIC_KEY"))"
+    ANTHROPIC_API_KEY="$EXISTING_ANTHROPIC_KEY"
+elif [ -n "$EXISTING_ANTHROPIC_KEY" ]; then
+    prompt_with_existing "Anthropic API Key" "$EXISTING_ANTHROPIC_KEY" "ANTHROPIC_API_KEY"
+else
+    read -p "Anthropic API Key: " ANTHROPIC_API_KEY
+fi
+
+# Google API Key
+if [ -n "$EXISTING_GOOGLE_KEY" ] && [ "$PROMPT_ALL" = false ]; then
+    print_info "Google API Key: already exists ($(mask_secret "$EXISTING_GOOGLE_KEY"))"
+    GOOGLE_API_KEY="$EXISTING_GOOGLE_KEY"
+elif [ -n "$EXISTING_GOOGLE_KEY" ]; then
+    prompt_with_existing "Google API Key" "$EXISTING_GOOGLE_KEY" "GOOGLE_API_KEY"
+else
+    read -p "Google API Key: " GOOGLE_API_KEY
+fi
 
 # OAuth Secrets (optional)
 echo ""
 print_info "OAuth Secrets (optional - press Enter to skip)"
-read -p "Slack Client ID: " SLACK_CLIENT_ID
-read -p "Slack Client Secret: " -s SLACK_CLIENT_SECRET
-echo
-read -p "Google OAuth Client ID: " GOOGLE_CLIENT_ID
-read -p "Google OAuth Client Secret: " -s GOOGLE_CLIENT_SECRET
-echo
-read -p "Notion Client ID: " NOTION_CLIENT_ID
-read -p "Notion Client Secret: " -s NOTION_CLIENT_SECRET
-echo
-read -p "Airtable Client ID: " AIRTABLE_CLIENT_ID
-read -p "Airtable Client Secret: " -s AIRTABLE_CLIENT_SECRET
-echo
+
+# Slack OAuth
+if [ -n "$EXISTING_SLACK_CLIENT_ID" ] && [ "$PROMPT_ALL" = false ]; then
+    print_info "Slack OAuth: already configured"
+    SLACK_CLIENT_ID="$EXISTING_SLACK_CLIENT_ID"
+    SLACK_CLIENT_SECRET="$EXISTING_SLACK_CLIENT_SECRET"
+elif [ -n "$EXISTING_SLACK_CLIENT_ID" ]; then
+    prompt_with_existing "Slack Client ID" "$EXISTING_SLACK_CLIENT_ID" "SLACK_CLIENT_ID"
+    prompt_with_existing "Slack Client Secret" "$EXISTING_SLACK_CLIENT_SECRET" "SLACK_CLIENT_SECRET"
+else
+    read -p "Slack Client ID: " SLACK_CLIENT_ID
+    read -p "Slack Client Secret: " -s SLACK_CLIENT_SECRET
+    echo
+fi
+
+# Google OAuth
+if [ -n "$EXISTING_GOOGLE_CLIENT_ID" ] && [ "$PROMPT_ALL" = false ]; then
+    print_info "Google OAuth: already configured"
+    GOOGLE_CLIENT_ID="$EXISTING_GOOGLE_CLIENT_ID"
+    GOOGLE_CLIENT_SECRET="$EXISTING_GOOGLE_CLIENT_SECRET"
+elif [ -n "$EXISTING_GOOGLE_CLIENT_ID" ]; then
+    prompt_with_existing "Google OAuth Client ID" "$EXISTING_GOOGLE_CLIENT_ID" "GOOGLE_CLIENT_ID"
+    prompt_with_existing "Google OAuth Client Secret" "$EXISTING_GOOGLE_CLIENT_SECRET" "GOOGLE_CLIENT_SECRET"
+else
+    read -p "Google OAuth Client ID: " GOOGLE_CLIENT_ID
+    read -p "Google OAuth Client Secret: " -s GOOGLE_CLIENT_SECRET
+    echo
+fi
+
+# Notion OAuth
+if [ -n "$EXISTING_NOTION_CLIENT_ID" ] && [ "$PROMPT_ALL" = false ]; then
+    print_info "Notion OAuth: already configured"
+    NOTION_CLIENT_ID="$EXISTING_NOTION_CLIENT_ID"
+    NOTION_CLIENT_SECRET="$EXISTING_NOTION_CLIENT_SECRET"
+elif [ -n "$EXISTING_NOTION_CLIENT_ID" ]; then
+    prompt_with_existing "Notion Client ID" "$EXISTING_NOTION_CLIENT_ID" "NOTION_CLIENT_ID"
+    prompt_with_existing "Notion Client Secret" "$EXISTING_NOTION_CLIENT_SECRET" "NOTION_CLIENT_SECRET"
+else
+    read -p "Notion Client ID: " NOTION_CLIENT_ID
+    read -p "Notion Client Secret: " -s NOTION_CLIENT_SECRET
+    echo
+fi
+
+# Airtable OAuth
+if [ -n "$EXISTING_AIRTABLE_CLIENT_ID" ] && [ "$PROMPT_ALL" = false ]; then
+    print_info "Airtable OAuth: already configured"
+    AIRTABLE_CLIENT_ID="$EXISTING_AIRTABLE_CLIENT_ID"
+    AIRTABLE_CLIENT_SECRET="$EXISTING_AIRTABLE_CLIENT_SECRET"
+elif [ -n "$EXISTING_AIRTABLE_CLIENT_ID" ]; then
+    prompt_with_existing "Airtable Client ID" "$EXISTING_AIRTABLE_CLIENT_ID" "AIRTABLE_CLIENT_ID"
+    prompt_with_existing "Airtable Client Secret" "$EXISTING_AIRTABLE_CLIENT_SECRET" "AIRTABLE_CLIENT_SECRET"
+else
+    read -p "Airtable Client ID: " AIRTABLE_CLIENT_ID
+    read -p "Airtable Client Secret: " -s AIRTABLE_CLIENT_SECRET
+    echo
+fi
+
+# HubSpot OAuth
+if [ -n "$EXISTING_HUBSPOT_CLIENT_ID" ] && [ "$PROMPT_ALL" = false ]; then
+    print_info "HubSpot OAuth: already configured"
+    HUBSPOT_CLIENT_ID="$EXISTING_HUBSPOT_CLIENT_ID"
+    HUBSPOT_CLIENT_SECRET="$EXISTING_HUBSPOT_CLIENT_SECRET"
+elif [ -n "$EXISTING_HUBSPOT_CLIENT_ID" ]; then
+    prompt_with_existing "HubSpot Client ID" "$EXISTING_HUBSPOT_CLIENT_ID" "HUBSPOT_CLIENT_ID"
+    prompt_with_existing "HubSpot Client Secret" "$EXISTING_HUBSPOT_CLIENT_SECRET" "HUBSPOT_CLIENT_SECRET"
+else
+    read -p "HubSpot Client ID: " HUBSPOT_CLIENT_ID
+    read -p "HubSpot Client Secret: " -s HUBSPOT_CLIENT_SECRET
+    echo
+fi
 
 print_header "Creating/Updating Secrets in GCP Secret Manager"
 
@@ -462,6 +647,8 @@ create_or_update_secret "flowmaestro-app-notion-client-id" "$NOTION_CLIENT_ID"
 create_or_update_secret "flowmaestro-app-notion-client-secret" "$NOTION_CLIENT_SECRET"
 create_or_update_secret "flowmaestro-app-airtable-client-id" "$AIRTABLE_CLIENT_ID"
 create_or_update_secret "flowmaestro-app-airtable-client-secret" "$AIRTABLE_CLIENT_SECRET"
+create_or_update_secret "flowmaestro-app-hubspot-client-id" "$HUBSPOT_CLIENT_ID"
+create_or_update_secret "flowmaestro-app-hubspot-client-secret" "$HUBSPOT_CLIENT_SECRET"
 
 print_header "Setup Complete!"
 print_success "All secrets have been created/updated in ${GCP_PROJECT}"

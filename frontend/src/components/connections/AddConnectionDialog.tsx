@@ -14,7 +14,7 @@ type Step = "method" | "provider" | "configure";
 
 const providersByMethod: Record<ConnectionMethod, string[]> = {
     api_key: ["openai", "anthropic", "google", "github", "cohere", "custom"],
-    oauth2: ["slack", "google", "notion", "airtable", "github"],
+    oauth2: ["slack", "google", "notion", "airtable", "hubspot", "github"],
     mcp: ["filesystem", "postgres", "mongodb", "github", "custom"],
     basic_auth: ["custom"],
     custom: ["custom"]
@@ -29,6 +29,7 @@ const providerLabels: Record<string, string> = {
     github: "GitHub",
     notion: "Notion",
     airtable: "Airtable",
+    hubspot: "HubSpot",
     filesystem: "Filesystem MCP",
     postgres: "PostgreSQL MCP",
     mongodb: "MongoDB MCP",

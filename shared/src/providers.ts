@@ -247,11 +247,10 @@ export const ALL_PROVIDERS: MCPProvider[] = [
     {
         provider: "hubspot",
         displayName: "HubSpot",
-        description: "Manage contacts and deals",
+        description: "Manage contacts, companies, deals, and more",
         logoUrl: "https://cdn.simpleicons.org/hubspot/FF7A59",
         category: "CRM & Sales",
-        methods: ["api_key", "oauth2"],
-        comingSoon: true,
+        methods: ["oauth2"],
         mcpServerUrl: "https://mcp.pipedream.com/app/hubspot",
         mcpAuthType: "oauth2"
     },

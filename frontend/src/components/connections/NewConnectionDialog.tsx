@@ -266,14 +266,8 @@ export function NewConnectionDialog({
                         <div className="flex-1 max-w-[120px] border-t-2 border-dotted border-gray-300" />
 
                         {/* Provider Icon */}
-                        <div className="w-16 h-16 flex items-center justify-center shadow-md">
-                            {providerIcon || (
-                                <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
-                                    <span className="text-2xl font-bold text-white">
-                                        {providerDisplayName.substring(0, 2).toUpperCase()}
-                                    </span>
-                                </div>
-                            )}
+                        <div className="w-16 h-16 rounded-lg flex items-center justify-center shadow-md bg-white p-3">
+                            {providerIcon}
                         </div>
                     </div>
 

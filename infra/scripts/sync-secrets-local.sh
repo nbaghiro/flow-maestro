@@ -145,6 +145,8 @@ NOTION_CLIENT_ID=$(get_secret "flowmaestro-app-notion-client-id" "")
 NOTION_CLIENT_SECRET=$(get_secret "flowmaestro-app-notion-client-secret" "")
 AIRTABLE_CLIENT_ID=$(get_secret "flowmaestro-app-airtable-client-id" "")
 AIRTABLE_CLIENT_SECRET=$(get_secret "flowmaestro-app-airtable-client-secret" "")
+HUBSPOT_CLIENT_ID=$(get_secret "flowmaestro-app-hubspot-client-id" "")
+HUBSPOT_CLIENT_SECRET=$(get_secret "flowmaestro-app-hubspot-client-secret" "")
 
 print_success "Developer secrets fetched successfully"
 
@@ -276,6 +278,19 @@ else
     echo "# Airtable" >> "$BACKEND_ENV_FILE"
     echo "AIRTABLE_CLIENT_ID=" >> "$BACKEND_ENV_FILE"
     echo "AIRTABLE_CLIENT_SECRET=" >> "$BACKEND_ENV_FILE"
+    echo "" >> "$BACKEND_ENV_FILE"
+fi
+
+# HubSpot OAuth
+if [ -n "$HUBSPOT_CLIENT_ID" ] || [ -n "$HUBSPOT_CLIENT_SECRET" ]; then
+    echo "# HubSpot" >> "$BACKEND_ENV_FILE"
+    echo "HUBSPOT_CLIENT_ID=${HUBSPOT_CLIENT_ID}" >> "$BACKEND_ENV_FILE"
+    echo "HUBSPOT_CLIENT_SECRET=${HUBSPOT_CLIENT_SECRET}" >> "$BACKEND_ENV_FILE"
+    echo "" >> "$BACKEND_ENV_FILE"
+else
+    echo "# HubSpot" >> "$BACKEND_ENV_FILE"
+    echo "HUBSPOT_CLIENT_ID=" >> "$BACKEND_ENV_FILE"
+    echo "HUBSPOT_CLIENT_SECRET=" >> "$BACKEND_ENV_FILE"
     echo "" >> "$BACKEND_ENV_FILE"
 fi
 

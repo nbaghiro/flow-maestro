@@ -43,6 +43,8 @@ const providerIcons: Record<string, string> = {
     slack: "💬",
     github: "🐙",
     notion: "📝",
+    airtable: "📊",
+    hubspot: "🧲",
     default: "🔌"
 };
 
