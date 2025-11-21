@@ -77,6 +77,7 @@ interface WorkflowStore {
     addExecutionLog: (log: Omit<ExecutionLog, "id">) => void;
     updateVariable: (key: string, value: JsonValue) => void;
     clearExecution: () => void;
+    resetWorkflow: () => void;
 }
 
 export const useWorkflowStore = create<WorkflowStore>((set, get) => ({
@@ -345,5 +346,20 @@ export const useWorkflowStore = create<WorkflowStore>((set, get) => ({
     clearExecution: () => {
         console.log("[Workflow] Clearing execution state");
         set({ currentExecution: null });
+    },
+
+    resetWorkflow: () => {
+        console.log("[Workflow] Resetting workflow state");
+        set({
+            nodes: [],
+            edges: [],
+            selectedNode: null,
+            aiGenerated: false,
+            aiPrompt: null,
+            isExecuting: false,
+            executionResult: null,
+            executionError: null,
+            currentExecution: null
+        });
     }
 }));
