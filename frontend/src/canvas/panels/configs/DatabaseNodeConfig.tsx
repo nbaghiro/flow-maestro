@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { CodeInput } from "../../../components/CodeInput";
 import { Dialog } from "../../../components/common/Dialog";
+import { Select } from "../../../components/common/Select";
 import { FormField, FormSection } from "../../../components/FormField";
 import { OutputSettingsSection } from "../../../components/OutputSettingsSection";
 import {
@@ -167,33 +168,20 @@ export function DatabaseNodeConfig({ data, onUpdate }: DatabaseNodeConfigProps) 
         <div>
             <FormSection title="Database">
                 <FormField label="Type">
-                    <select
-                        value={databaseType}
-                        onChange={(e) => setDatabaseType(e.target.value)}
-                        className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                    >
-                        {databases.map((db) => (
-                            <option key={db.value} value={db.value}>
-                                {db.label}
-                            </option>
-                        ))}
-                    </select>
+                    <Select value={databaseType} onChange={setDatabaseType} options={databases} />
                 </FormField>
 
                 <FormField label="Database Connection" description="Select a saved connection">
                     <div className="space-y-2">
-                        <select
+                        <Select
                             value={databaseConnectionId}
-                            onChange={(e) => setDatabaseConnectionId(e.target.value)}
-                            className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                        >
-                            <option value="">Select a connection...</option>
-                            {databaseConnections.map((conn) => (
-                                <option key={conn.id} value={conn.id}>
-                                    {conn.name} ({conn.provider})
-                                </option>
-                            ))}
-                        </select>
+                            onChange={setDatabaseConnectionId}
+                            placeholder="Select a connection..."
+                            options={databaseConnections.map((conn) => ({
+                                value: conn.id,
+                                label: `${conn.name} (${conn.provider})`
+                            }))}
+                        />
                         <button
                             type="button"
                             onClick={() => setShowConnectionDialog(true)}
@@ -209,10 +197,9 @@ export function DatabaseNodeConfig({ data, onUpdate }: DatabaseNodeConfigProps) 
                         label="Table Helper"
                         description="Select a table to insert into query"
                     >
-                        <select
+                        <Select
                             value=""
-                            onChange={(e) => {
-                                const selectedTable = e.target.value;
+                            onChange={(selectedTable) => {
                                 if (selectedTable) {
                                     // Insert table name into query
                                     if (!query) {
@@ -223,15 +210,12 @@ export function DatabaseNodeConfig({ data, onUpdate }: DatabaseNodeConfigProps) 
                                     }
                                 }
                             }}
-                            className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                        >
-                            <option value="">Insert table name...</option>
-                            {tables.map((table) => (
-                                <option key={table.fullName} value={table.fullName}>
-                                    {table.fullName}
-                                </option>
-                            ))}
-                        </select>
+                            placeholder="Insert table name..."
+                            options={tables.map((table) => ({
+                                value: table.fullName,
+                                label: table.fullName
+                            }))}
+                        />
                         {isLoadingTables && (
                             <p className="text-xs text-muted-foreground mt-1">Loading tables...</p>
                         )}
@@ -241,17 +225,7 @@ export function DatabaseNodeConfig({ data, onUpdate }: DatabaseNodeConfigProps) 
 
             <FormSection title="Operation">
                 <FormField label="Type">
-                    <select
-                        value={operation}
-                        onChange={(e) => setOperation(e.target.value)}
-                        className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                    >
-                        {operations.map((op) => (
-                            <option key={op.value} value={op.value}>
-                                {op.label}
-                            </option>
-                        ))}
-                    </select>
+                    <Select value={operation} onChange={setOperation} options={operations} />
                 </FormField>
 
                 <FormField
@@ -303,17 +277,11 @@ export function DatabaseNodeConfig({ data, onUpdate }: DatabaseNodeConfigProps) 
             {operation === "query" && (
                 <FormSection title="Result Format">
                     <FormField label="Return Format">
-                        <select
+                        <Select
                             value={returnFormat}
-                            onChange={(e) => setReturnFormat(e.target.value)}
-                            className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                        >
-                            {returnFormats.map((fmt) => (
-                                <option key={fmt.value} value={fmt.value}>
-                                    {fmt.label}
-                                </option>
-                            ))}
-                        </select>
+                            onChange={setReturnFormat}
+                            options={returnFormats}
+                        />
                     </FormField>
                 </FormSection>
             )}
@@ -356,20 +324,20 @@ export function DatabaseNodeConfig({ data, onUpdate }: DatabaseNodeConfigProps) 
 
                     <div>
                         <label className="block text-sm font-medium mb-1">Provider</label>
-                        <select
+                        <Select
                             value={connectionForm.provider}
-                            onChange={(e) =>
+                            onChange={(value) =>
                                 setConnectionForm({
                                     ...connectionForm,
-                                    provider: e.target.value as "postgresql" | "mysql" | "mongodb"
+                                    provider: value as "postgresql" | "mysql" | "mongodb"
                                 })
                             }
-                            className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                        >
-                            <option value="postgresql">PostgreSQL</option>
-                            <option value="mysql">MySQL</option>
-                            <option value="mongodb">MongoDB</option>
-                        </select>
+                            options={[
+                                { value: "postgresql", label: "PostgreSQL" },
+                                { value: "mysql", label: "MySQL" },
+                                { value: "mongodb", label: "MongoDB" }
+                            ]}
+                        />
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">

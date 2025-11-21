@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { CodeInput } from "../../../components/CodeInput";
+import { Select } from "../../../components/common/Select";
 import { FormField, FormSection } from "../../../components/FormField";
 import { OutputSettingsSection } from "../../../components/OutputSettingsSection";
 
@@ -46,17 +47,7 @@ export function WaitNodeConfig({ data, onUpdate }: WaitNodeConfigProps) {
         <div>
             <FormSection title="Wait Type">
                 <FormField label="Type">
-                    <select
-                        value={waitType}
-                        onChange={(e) => setWaitType(e.target.value)}
-                        className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                    >
-                        {waitTypes.map((type) => (
-                            <option key={type.value} value={type.value}>
-                                {type.label}
-                            </option>
-                        ))}
-                    </select>
+                    <Select value={waitType} onChange={setWaitType} options={waitTypes} />
                 </FormField>
             </FormSection>
 
@@ -72,17 +63,12 @@ export function WaitNodeConfig({ data, onUpdate }: WaitNodeConfigProps) {
                                 max={365}
                                 className="flex-1 px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                             />
-                            <select
+                            <Select
                                 value={unit}
-                                onChange={(e) => setUnit(e.target.value)}
-                                className="w-32 px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                            >
-                                {timeUnits.map((u) => (
-                                    <option key={u.value} value={u.value}>
-                                        {u.label}
-                                    </option>
-                                ))}
-                            </select>
+                                onChange={setUnit}
+                                options={timeUnits}
+                                className="w-32"
+                            />
                         </div>
                     </FormField>
 

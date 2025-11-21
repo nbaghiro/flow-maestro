@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Select } from "../../../components/common/Select";
 import { FormField, FormSection } from "../../../components/FormField";
 
 interface VariableNodeConfigProps {
@@ -47,17 +48,7 @@ export function VariableNodeConfig({ data, onUpdate }: VariableNodeConfigProps) 
         <div>
             <FormSection title="Operation">
                 <FormField label="Type">
-                    <select
-                        value={operation}
-                        onChange={(e) => setOperation(e.target.value)}
-                        className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                    >
-                        {operations.map((op) => (
-                            <option key={op.value} value={op.value}>
-                                {op.label}
-                            </option>
-                        ))}
-                    </select>
+                    <Select value={operation} onChange={setOperation} options={operations} />
                 </FormField>
             </FormSection>
 
@@ -73,34 +64,14 @@ export function VariableNodeConfig({ data, onUpdate }: VariableNodeConfigProps) 
                 </FormField>
 
                 <FormField label="Scope">
-                    <select
-                        value={scope}
-                        onChange={(e) => setScope(e.target.value)}
-                        className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                    >
-                        {scopes.map((s) => (
-                            <option key={s.value} value={s.value}>
-                                {s.label}
-                            </option>
-                        ))}
-                    </select>
+                    <Select value={scope} onChange={setScope} options={scopes} />
                 </FormField>
             </FormSection>
 
             {operation === "set" && (
                 <FormSection title="Value">
                     <FormField label="Value Type">
-                        <select
-                            value={valueType}
-                            onChange={(e) => setValueType(e.target.value)}
-                            className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                        >
-                            {valueTypes.map((type) => (
-                                <option key={type.value} value={type.value}>
-                                    {type.label}
-                                </option>
-                            ))}
-                        </select>
+                        <Select value={valueType} onChange={setValueType} options={valueTypes} />
                     </FormField>
 
                     <FormField

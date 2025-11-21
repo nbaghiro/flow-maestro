@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Select } from "../../../components/common/Select";
 import { FormField, FormSection } from "../../../components/FormField";
 import { Slider } from "../../../components/Slider";
 
@@ -95,31 +96,11 @@ export function VoiceListenNodeConfig({ data, onUpdate }: VoiceListenNodeConfigP
 
             <FormSection title="Speech Recognition">
                 <FormField label="STT Provider">
-                    <select
-                        value={sttProvider}
-                        onChange={(e) => setSttProvider(e.target.value)}
-                        className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                    >
-                        {sttProviders.map((provider) => (
-                            <option key={provider.value} value={provider.value}>
-                                {provider.label}
-                            </option>
-                        ))}
-                    </select>
+                    <Select value={sttProvider} onChange={setSttProvider} options={sttProviders} />
                 </FormField>
 
                 <FormField label="Language">
-                    <select
-                        value={language}
-                        onChange={(e) => setLanguage(e.target.value)}
-                        className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                    >
-                        {languages.map((lang) => (
-                            <option key={lang.value} value={lang.value}>
-                                {lang.label}
-                            </option>
-                        ))}
-                    </select>
+                    <Select value={language} onChange={setLanguage} options={languages} />
                     <p className="text-xs text-muted-foreground mt-1">
                         Language for speech recognition
                     </p>

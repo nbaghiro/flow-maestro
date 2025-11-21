@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { CodeInput } from "../../../components/CodeInput";
+import { Select } from "../../../components/common/Select";
 import { FormField, FormSection } from "../../../components/FormField";
 import { OutputSettingsSection } from "../../../components/OutputSettingsSection";
 
@@ -87,17 +88,7 @@ export function TransformNodeConfig({ data, onUpdate }: TransformNodeConfigProps
         <div>
             <FormSection title="Operation">
                 <FormField label="Transform Type">
-                    <select
-                        value={operation}
-                        onChange={(e) => setOperation(e.target.value)}
-                        className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                    >
-                        {operations.map((op) => (
-                            <option key={op.value} value={op.value}>
-                                {op.label}
-                            </option>
-                        ))}
-                    </select>
+                    <Select value={operation} onChange={setOperation} options={operations} />
                 </FormField>
 
                 <div className="px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg">

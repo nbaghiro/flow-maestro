@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Select } from "../../../components/common/Select";
 import { FormField, FormSection } from "../../../components/FormField";
 import { Slider } from "../../../components/Slider";
 
@@ -78,33 +79,21 @@ export function VoiceGreetNodeConfig({ data, onUpdate }: VoiceGreetNodeConfigPro
 
             <FormSection title="Voice Settings">
                 <FormField label="Voice Provider">
-                    <select
+                    <Select
                         value={voiceProvider}
-                        onChange={(e) => handleProviderChange(e.target.value)}
-                        className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                    >
-                        {voiceProviders.map((provider) => (
-                            <option key={provider.value} value={provider.value}>
-                                {provider.label}
-                            </option>
-                        ))}
-                    </select>
+                        onChange={handleProviderChange}
+                        options={voiceProviders}
+                    />
                 </FormField>
 
                 <FormField label="Voice">
-                    <select
+                    <Select
                         value={voice}
-                        onChange={(e) => setVoice(e.target.value)}
-                        className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                    >
-                        {(
+                        onChange={setVoice}
+                        options={
                             voicesByProvider[voiceProvider as keyof typeof voicesByProvider] || []
-                        ).map((v) => (
-                            <option key={v.value} value={v.value}>
-                                {v.label}
-                            </option>
-                        ))}
-                    </select>
+                        }
+                    />
                 </FormField>
 
                 <FormField label="Speed">

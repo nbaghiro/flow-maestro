@@ -10,6 +10,7 @@ import { ThreadChat } from "../components/agents/ThreadChat";
 import { ThreadList } from "../components/agents/ThreadList";
 import { ToolsList } from "../components/agents/ToolsList";
 import { ConfirmDialog } from "../components/common/ConfirmDialog";
+import { Select } from "../components/common/Select";
 import { cn } from "../lib/utils";
 import { useAgentStore } from "../stores/agentStore";
 import { useConnectionStore } from "../stores/connectionStore";
@@ -362,11 +363,10 @@ export function AgentBuilder() {
                                         <label className="block text-sm font-medium text-foreground mb-2">
                                             AI Model Selection
                                         </label>
-                                        <select
+                                        <Select
                                             value={`${provider}:${model}`}
-                                            onChange={(e) => {
-                                                const [newProvider, newModel] =
-                                                    e.target.value.split(":");
+                                            onChange={(value) => {
+                                                const [newProvider, newModel] = value.split(":");
                                                 setProvider(
                                                     newProvider as
                                                         | "openai"
@@ -376,54 +376,25 @@ export function AgentBuilder() {
                                                 );
                                                 setModel(newModel);
                                             }}
-                                            className={cn(
-                                                "w-full px-3 py-2 rounded-lg",
-                                                "bg-background border border-border",
-                                                "text-foreground",
-                                                "focus:outline-none focus:ring-2 focus:ring-primary"
-                                            )}
-                                        >
-                                            <optgroup label="OpenAI">
-                                                {getModelsForProvider("openai").map((m) => (
-                                                    <option
-                                                        key={`openai:${m.value}`}
-                                                        value={`openai:${m.value}`}
-                                                    >
-                                                        {m.label}
-                                                    </option>
-                                                ))}
-                                            </optgroup>
-                                            <optgroup label="Anthropic">
-                                                {getModelsForProvider("anthropic").map((m) => (
-                                                    <option
-                                                        key={`anthropic:${m.value}`}
-                                                        value={`anthropic:${m.value}`}
-                                                    >
-                                                        {m.label}
-                                                    </option>
-                                                ))}
-                                            </optgroup>
-                                            <optgroup label="Google">
-                                                {getModelsForProvider("google").map((m) => (
-                                                    <option
-                                                        key={`google:${m.value}`}
-                                                        value={`google:${m.value}`}
-                                                    >
-                                                        {m.label}
-                                                    </option>
-                                                ))}
-                                            </optgroup>
-                                            <optgroup label="Cohere">
-                                                {getModelsForProvider("cohere").map((m) => (
-                                                    <option
-                                                        key={`cohere:${m.value}`}
-                                                        value={`cohere:${m.value}`}
-                                                    >
-                                                        {m.label}
-                                                    </option>
-                                                ))}
-                                            </optgroup>
-                                        </select>
+                                            options={[
+                                                ...getModelsForProvider("openai").map((m) => ({
+                                                    value: `openai:${m.value}`,
+                                                    label: `OpenAI - ${m.label}`
+                                                })),
+                                                ...getModelsForProvider("anthropic").map((m) => ({
+                                                    value: `anthropic:${m.value}`,
+                                                    label: `Anthropic - ${m.label}`
+                                                })),
+                                                ...getModelsForProvider("google").map((m) => ({
+                                                    value: `google:${m.value}`,
+                                                    label: `Google - ${m.label}`
+                                                })),
+                                                ...getModelsForProvider("cohere").map((m) => ({
+                                                    value: `cohere:${m.value}`,
+                                                    label: `Cohere - ${m.label}`
+                                                }))
+                                            ]}
+                                        />
                                     </div>
 
                                     {/* Instructions */}
@@ -615,23 +586,15 @@ export function AgentBuilder() {
                                     <label className="block text-sm font-medium text-foreground mb-2">
                                         API Connection (optional)
                                     </label>
-                                    <select
+                                    <Select
                                         value={connectionId}
-                                        onChange={(e) => setConnectionId(e.target.value)}
-                                        className={cn(
-                                            "w-full px-3 py-2 rounded-lg",
-                                            "bg-background border border-border",
-                                            "text-foreground",
-                                            "focus:outline-none focus:ring-2 focus:ring-primary"
-                                        )}
-                                    >
-                                        <option value="">Use environment variables</option>
-                                        {llmConnections.map((conn) => (
-                                            <option key={conn.id} value={conn.id}>
-                                                {conn.name}
-                                            </option>
-                                        ))}
-                                    </select>
+                                        onChange={setConnectionId}
+                                        placeholder="Use environment variables"
+                                        options={llmConnections.map((conn) => ({
+                                            value: conn.id,
+                                            label: conn.name
+                                        }))}
+                                    />
                                 </div>
 
                                 {/* Advanced Settings */}

@@ -1,5 +1,6 @@
 import { X, Plus } from "lucide-react";
 import { useState, useEffect } from "react";
+import { Select } from "../../../components/common/Select";
 import { FormField, FormSection } from "../../../components/FormField";
 import { Slider } from "../../../components/Slider";
 
@@ -209,17 +210,7 @@ export function VoiceMenuNodeConfig({ data, onUpdate }: VoiceMenuNodeConfigProps
 
             <FormSection title="Input Settings">
                 <FormField label="Input Method">
-                    <select
-                        value={inputMethod}
-                        onChange={(e) => setInputMethod(e.target.value)}
-                        className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                    >
-                        {inputMethods.map((method) => (
-                            <option key={method.value} value={method.value}>
-                                {method.label}
-                            </option>
-                        ))}
-                    </select>
+                    <Select value={inputMethod} onChange={setInputMethod} options={inputMethods} />
                     <p className="text-xs text-muted-foreground mt-1">
                         How users can select options (voice, keypad, or both)
                     </p>

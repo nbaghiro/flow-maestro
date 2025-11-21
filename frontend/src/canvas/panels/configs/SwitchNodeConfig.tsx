@@ -1,5 +1,6 @@
 import { Plus, Trash2 } from "lucide-react";
 import { useState, useEffect } from "react";
+import { Select } from "../../../components/common/Select";
 import { FormField, FormSection } from "../../../components/FormField";
 import { OutputSettingsSection } from "../../../components/OutputSettingsSection";
 
@@ -68,17 +69,7 @@ export function SwitchNodeConfig({ data, onUpdate }: SwitchNodeConfigProps) {
                 </FormField>
 
                 <FormField label="Match Type">
-                    <select
-                        value={matchType}
-                        onChange={(e) => setMatchType(e.target.value)}
-                        className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                    >
-                        {matchTypes.map((type) => (
-                            <option key={type.value} value={type.value}>
-                                {type.label}
-                            </option>
-                        ))}
-                    </select>
+                    <Select value={matchType} onChange={setMatchType} options={matchTypes} />
                 </FormField>
             </FormSection>
 

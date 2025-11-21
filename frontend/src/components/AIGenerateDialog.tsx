@@ -12,6 +12,7 @@ import {
     getDefaultModelForProvider
 } from "@flowmaestro/shared";
 import { useConnectionStore } from "../stores/connectionStore";
+import { Select } from "./common/Select";
 
 interface AIGenerateDialogProps {
     open: boolean;
@@ -196,18 +197,15 @@ export function AIGenerateDialog({ open, onOpenChange, onGenerate }: AIGenerateD
                                     </p>
                                 </div>
                             ) : (
-                                <select
+                                <Select
                                     value={selectedConnectionId}
-                                    onChange={(e) => setSelectedConnectionId(e.target.value)}
-                                    className="w-full pl-3 pr-10 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                                    onChange={setSelectedConnectionId}
+                                    options={llmConnections.map((conn) => ({
+                                        value: conn.id,
+                                        label: `${conn.name} (${conn.provider})`
+                                    }))}
                                     disabled={isGenerating}
-                                >
-                                    {llmConnections.map((conn) => (
-                                        <option key={conn.id} value={conn.id}>
-                                            {conn.name} ({conn.provider})
-                                        </option>
-                                    ))}
-                                </select>
+                                />
                             )}
                             <p className="text-xs text-muted-foreground mt-1">
                                 This connection will be used to generate the workflow structure
@@ -218,18 +216,12 @@ export function AIGenerateDialog({ open, onOpenChange, onGenerate }: AIGenerateD
                         {selectedConnection && availableModels.length > 0 && (
                             <div>
                                 <label className="block text-sm font-medium mb-1.5">Model</label>
-                                <select
+                                <Select
                                     value={selectedModel}
-                                    onChange={(e) => setSelectedModel(e.target.value)}
-                                    className="w-full pl-3 pr-10 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                                    onChange={setSelectedModel}
+                                    options={availableModels}
                                     disabled={isGenerating}
-                                >
-                                    {availableModels.map((model) => (
-                                        <option key={model.value} value={model.value}>
-                                            {model.label}
-                                        </option>
-                                    ))}
-                                </select>
+                                />
                                 <p className="text-xs text-muted-foreground mt-1">
                                     Select the model to use for generating the workflow
                                 </p>

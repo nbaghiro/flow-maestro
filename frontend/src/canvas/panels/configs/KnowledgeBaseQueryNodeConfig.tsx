@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
+import { Select } from "../../../components/common/Select";
 import { FormField, FormSection } from "../../../components/FormField";
 import { OutputSettingsSection } from "../../../components/OutputSettingsSection";
 
@@ -76,18 +77,17 @@ export function KnowledgeBaseQueryNodeConfig({
                             Loading knowledge bases...
                         </div>
                     ) : kbData && kbData.length > 0 ? (
-                        <select
+                        <Select
                             value={knowledgeBaseId}
-                            onChange={(e) => setKnowledgeBaseId(e.target.value)}
-                            className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                        >
-                            <option value="">Select a knowledge base...</option>
-                            {kbData.map((kb) => (
-                                <option key={kb.id} value={kb.id}>
-                                    {kb.name}
-                                </option>
-                            ))}
-                        </select>
+                            onChange={setKnowledgeBaseId}
+                            options={[
+                                { value: "", label: "Select a knowledge base..." },
+                                ...kbData.map((kb) => ({
+                                    value: kb.id,
+                                    label: kb.name
+                                }))
+                            ]}
+                        />
                     ) : (
                         <div className="space-y-2">
                             <div className="text-sm text-muted-foreground">

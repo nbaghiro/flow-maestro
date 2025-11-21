@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { CodeInput } from "../../../components/CodeInput";
+import { Select } from "../../../components/common/Select";
 import { FormField, FormSection } from "../../../components/FormField";
 import { OutputSettingsSection } from "../../../components/OutputSettingsSection";
 
@@ -67,17 +68,7 @@ return result`;
         <div>
             <FormSection title="Language">
                 <FormField label="Programming Language">
-                    <select
-                        value={language}
-                        onChange={(e) => setLanguage(e.target.value)}
-                        className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                    >
-                        {languages.map((lang) => (
-                            <option key={lang.value} value={lang.value}>
-                                {lang.label}
-                            </option>
-                        ))}
-                    </select>
+                    <Select value={language} onChange={setLanguage} options={languages} />
                 </FormField>
             </FormSection>
 
