@@ -19,15 +19,17 @@ export function VoiceHangupNode(props: NodeProps) {
             selected={props.selected}
             hasOutputHandle={false}
         >
-            {farewellMessage && (
-                <div className="px-3 py-2 text-xs text-muted-foreground border-t border-border">
-                    <div className="truncate">
-                        {farewellMessage.length > 40
-                            ? `${farewellMessage.substring(0, 40)}...`
-                            : farewellMessage}
+            <div className="flex flex-col h-full">
+                {farewellMessage && (
+                    <div className="flex-1 overflow-auto px-3 py-2 text-xs text-muted-foreground border-t border-border">
+                        <div className="truncate">
+                            {farewellMessage.length > 40
+                                ? `${farewellMessage.substring(0, 40)}...`
+                                : farewellMessage}
+                        </div>
                     </div>
-                </div>
-            )}
+                )}
+            </div>
         </BaseNode>
     );
 }

@@ -46,6 +46,7 @@ export function FlowBuilder() {
                 name: string;
                 position: { x: number; y: number };
                 config: Record<string, unknown>;
+                style?: React.CSSProperties;
                 onError?: unknown;
             } = {
                 id: node.id,
@@ -59,6 +60,11 @@ export function FlowBuilder() {
                     y: node.position.y
                 }
             };
+
+            // Include style if it exists (for node dimensions)
+            if (node.style) {
+                nodeData.style = node.style;
+            }
 
             // Only include onError if it exists and has a strategy
             if (onError && typeof onError === "object" && "strategy" in onError) {
@@ -110,6 +116,7 @@ export function FlowBuilder() {
                 name: string;
                 config: Record<string, unknown>;
                 position: { x: number; y: number };
+                style?: React.CSSProperties;
                 onError?: unknown;
             } = {
                 type: node.type || "default",
@@ -117,6 +124,11 @@ export function FlowBuilder() {
                 config: config,
                 position: node.position
             };
+
+            // Include style if it exists (for node dimensions)
+            if (node.style) {
+                nodeData.style = node.style;
+            }
 
             // Only add onError if it exists and has a strategy
             if (onError && typeof onError === "object" && "strategy" in onError) {
@@ -183,7 +195,13 @@ export function FlowBuilder() {
                         const flowNodes = Object.entries(nodesObj).map(
                             ([id, node]: [string, unknown]) => {
                                 const nodeData = node as Record<string, unknown>;
-                                return {
+                                const flowNode: {
+                                    id: string;
+                                    type: string;
+                                    position: { x: number; y: number };
+                                    style?: React.CSSProperties;
+                                    data: Record<string, unknown>;
+                                } = {
                                     id,
                                     type: (nodeData.type as string) || "default",
                                     position: (nodeData.position as { x: number; y: number }) || {
@@ -196,6 +214,13 @@ export function FlowBuilder() {
                                         onError: nodeData.onError
                                     }
                                 };
+
+                                // Include style if it exists (for node dimensions)
+                                if (nodeData.style) {
+                                    flowNode.style = nodeData.style as React.CSSProperties;
+                                }
+
+                                return flowNode;
                             }
                         );
 
@@ -246,6 +271,7 @@ export function FlowBuilder() {
                     name: string;
                     config: Record<string, unknown>;
                     position: { x: number; y: number };
+                    style?: React.CSSProperties;
                     onError?: unknown;
                 } = {
                     type: node.type || "default",
@@ -253,6 +279,11 @@ export function FlowBuilder() {
                     config: config,
                     position: node.position
                 };
+
+                // Include style if it exists (for node dimensions)
+                if (node.style) {
+                    nodeData.style = node.style;
+                }
 
                 // Only add onError if it exists and has a strategy
                 if (onError && (onError as { strategy?: string }).strategy) {

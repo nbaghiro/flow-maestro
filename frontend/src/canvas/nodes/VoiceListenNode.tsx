@@ -14,10 +14,12 @@ export function VoiceListenNode(props: NodeProps) {
 
     return (
         <BaseNode icon={Ear} label="Listen" category="voice" selected={props.selected}>
-            <div className="px-3 py-2 text-xs text-muted-foreground border-t border-border">
-                <div className="flex items-center justify-between">
-                    <span>Max: {maxDuration}s</span>
-                    <span className="truncate ml-2">→ {outputVariable}</span>
+            <div className="flex flex-col h-full">
+                <div className="flex-1 overflow-auto px-3 py-2 text-xs text-muted-foreground border-t border-border">
+                    <div className="flex items-center justify-between">
+                        <span>Max: {maxDuration}s</span>
+                        <span className="truncate ml-2">→ {outputVariable}</span>
+                    </div>
                 </div>
             </div>
         </BaseNode>

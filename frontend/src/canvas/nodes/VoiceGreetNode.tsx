@@ -18,9 +18,11 @@ export function VoiceGreetNode(props: NodeProps) {
             category="voice"
             selected={props.selected}
         >
-            <div className="px-3 py-2 text-xs text-muted-foreground border-t border-border">
-                <div className="truncate">
-                    {message.length > 40 ? `${message.substring(0, 40)}...` : message}
+            <div className="flex flex-col h-full">
+                <div className="flex-1 overflow-auto px-3 py-2 text-xs text-muted-foreground border-t border-border">
+                    <div className="truncate">
+                        {message.length > 40 ? `${message.substring(0, 40)}...` : message}
+                    </div>
                 </div>
             </div>
         </BaseNode>

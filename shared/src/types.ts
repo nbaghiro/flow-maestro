@@ -90,6 +90,7 @@ export interface WorkflowNode {
     name: string;
     config: JsonObject;
     position: { x: number; y: number };
+    style?: JsonObject; // React Flow node styles (width, height, etc.)
     onError?: ErrorHandlingConfig;
 }
 

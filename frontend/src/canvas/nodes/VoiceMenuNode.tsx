@@ -45,12 +45,14 @@ export function VoiceMenuNode(props: NodeProps) {
                 </>
             }
         >
-            <div className="px-3 py-2 text-xs text-muted-foreground border-t border-border">
-                <div className="truncate mb-1">
-                    {prompt.length > 40 ? `${prompt.substring(0, 40)}...` : prompt}
-                </div>
-                <div className="text-[10px] opacity-70">
-                    {options.length} option{options.length !== 1 ? "s" : ""}
+            <div className="flex flex-col h-full">
+                <div className="flex-1 overflow-auto px-3 py-2 text-xs text-muted-foreground border-t border-border">
+                    <div className="truncate mb-1">
+                        {prompt.length > 40 ? `${prompt.substring(0, 40)}...` : prompt}
+                    </div>
+                    <div className="text-[10px] opacity-70">
+                        {options.length} option{options.length !== 1 ? "s" : ""}
+                    </div>
                 </div>
             </div>
         </BaseNode>
