@@ -7,6 +7,7 @@ import { Play, CheckCircle2, XCircle, Clock, StopCircle, Filter, ChevronDown } f
 import { useState, useEffect, useRef } from "react";
 import { cn } from "../../lib/utils";
 import { useWorkflowStore } from "../../stores/workflowStore";
+import { Select } from "../common/Select";
 
 interface ExecutionTabProps {
     workflowId: string;
@@ -186,32 +187,33 @@ export function ExecutionTab({ workflowId: _workflowId }: ExecutionTabProps) {
                 <div className="p-3 border-b bg-muted/10 flex gap-3">
                     <div className="flex-1">
                         <label className="text-xs text-muted-foreground mb-1 block">Level</label>
-                        <select
+                        <Select
                             value={logLevelFilter}
-                            onChange={(e) => setLogLevelFilter(e.target.value as LogLevel)}
-                            className="w-full px-2 py-1 text-xs border border-border rounded bg-background"
-                        >
-                            <option value="all">All Levels</option>
-                            <option value="info">Info</option>
-                            <option value="debug">Debug</option>
-                            <option value="warn">Warning</option>
-                            <option value="error">Error</option>
-                        </select>
+                            onChange={(value) => setLogLevelFilter(value as LogLevel)}
+                            options={[
+                                { value: "all", label: "All Levels" },
+                                { value: "info", label: "Info" },
+                                { value: "debug", label: "Debug" },
+                                { value: "warn", label: "Warning" },
+                                { value: "error", label: "Error" }
+                            ]}
+                        />
                     </div>
                     <div className="flex-1">
                         <label className="text-xs text-muted-foreground mb-1 block">Node</label>
-                        <select
+                        <Select
                             value={nodeFilter}
-                            onChange={(e) => setNodeFilter(e.target.value)}
-                            className="w-full px-2 py-1 text-xs border border-border rounded bg-background"
-                        >
-                            <option value="all">All Nodes</option>
-                            {uniqueNodes.map((nodeId) => (
-                                <option key={nodeId} value={nodeId}>
-                                    {nodeId}
-                                </option>
-                            ))}
-                        </select>
+                            onChange={setNodeFilter}
+                            options={[
+                                { value: "all", label: "All Nodes" },
+                                ...uniqueNodes
+                                    .filter((id): id is string => !!id)
+                                    .map((nodeId) => ({
+                                        value: nodeId,
+                                        label: nodeId
+                                    }))
+                            ]}
+                        />
                     </div>
                 </div>
             )}

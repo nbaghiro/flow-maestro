@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Select } from "../../../components/common/Select";
 import { FormField, FormSection } from "../../../components/FormField";
 
 interface VoiceHangupNodeConfigProps {
@@ -59,17 +60,7 @@ export function VoiceHangupNodeConfig({ data, onUpdate }: VoiceHangupNodeConfigP
 
             <FormSection title="Hangup Reason">
                 <FormField label="Reason">
-                    <select
-                        value={reason}
-                        onChange={(e) => setReason(e.target.value)}
-                        className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                    >
-                        {hangupReasons.map((r) => (
-                            <option key={r.value} value={r.value}>
-                                {r.label}
-                            </option>
-                        ))}
-                    </select>
+                    <Select value={reason} onChange={setReason} options={hangupReasons} />
                     <p className="text-xs text-muted-foreground mt-1">
                         Reason code for logging and analytics
                     </p>

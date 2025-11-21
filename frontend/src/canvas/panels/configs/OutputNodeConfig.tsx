@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Select } from "../../../components/common/Select";
 import { FormField, FormSection } from "../../../components/FormField";
 
 interface OutputNodeConfigProps {
@@ -45,17 +46,7 @@ export function OutputNodeConfig({ data, onUpdate }: OutputNodeConfigProps) {
                 </FormField>
 
                 <FormField label="Format">
-                    <select
-                        value={format}
-                        onChange={(e) => setFormat(e.target.value)}
-                        className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                    >
-                        {formats.map((fmt) => (
-                            <option key={fmt.value} value={fmt.value}>
-                                {fmt.label}
-                            </option>
-                        ))}
-                    </select>
+                    <Select value={format} onChange={setFormat} options={formats} />
                 </FormField>
 
                 <FormField label="Description" description="Optional description for this output">

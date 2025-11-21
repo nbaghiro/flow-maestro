@@ -6,6 +6,7 @@
 import { X, Calendar, Webhook, Play, Phone } from "lucide-react";
 import { useState } from "react";
 import { createTrigger } from "../../lib/api";
+import { Select } from "../common/Select";
 import type { TriggerType, CreateTriggerInput } from "../../types/trigger";
 
 interface CreateTriggerDialogProps {
@@ -394,11 +395,11 @@ export function CreateTriggerDialog({ workflowId, onClose, onSuccess }: CreateTr
                                     <label className="block text-sm font-medium mb-1.5">
                                         HTTP Method
                                     </label>
-                                    <select
+                                    <Select
                                         value={webhookMethod}
-                                        onChange={(e) =>
+                                        onChange={(value) =>
                                             setWebhookMethod(
-                                                e.target.value as
+                                                value as
                                                     | "GET"
                                                     | "POST"
                                                     | "PUT"
@@ -407,41 +408,37 @@ export function CreateTriggerDialog({ workflowId, onClose, onSuccess }: CreateTr
                                                     | "ANY"
                                             )
                                         }
-                                        className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                                         disabled={loading}
-                                    >
-                                        <option value="POST">POST</option>
-                                        <option value="GET">GET</option>
-                                        <option value="PUT">PUT</option>
-                                        <option value="DELETE">DELETE</option>
-                                        <option value="PATCH">PATCH</option>
-                                        <option value="ANY">ANY (all methods)</option>
-                                    </select>
+                                        options={[
+                                            { value: "POST", label: "POST" },
+                                            { value: "GET", label: "GET" },
+                                            { value: "PUT", label: "PUT" },
+                                            { value: "DELETE", label: "DELETE" },
+                                            { value: "PATCH", label: "PATCH" },
+                                            { value: "ANY", label: "ANY (all methods)" }
+                                        ]}
+                                    />
                                 </div>
 
                                 <div>
                                     <label className="block text-sm font-medium mb-1.5">
                                         Authentication
                                     </label>
-                                    <select
+                                    <Select
                                         value={authType}
-                                        onChange={(e) =>
+                                        onChange={(value) =>
                                             setAuthType(
-                                                e.target.value as
-                                                    | "none"
-                                                    | "hmac"
-                                                    | "bearer"
-                                                    | "api_key"
+                                                value as "none" | "hmac" | "bearer" | "api_key"
                                             )
                                         }
-                                        className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                                         disabled={loading}
-                                    >
-                                        <option value="none">None</option>
-                                        <option value="hmac">HMAC Signature</option>
-                                        <option value="bearer">Bearer Token</option>
-                                        <option value="api_key">API Key</option>
-                                    </select>
+                                        options={[
+                                            { value: "none", label: "None" },
+                                            { value: "hmac", label: "HMAC Signature" },
+                                            { value: "bearer", label: "Bearer Token" },
+                                            { value: "api_key", label: "API Key" }
+                                        ]}
+                                    />
                                     <p className="text-xs text-muted-foreground mt-1">
                                         A unique webhook URL and secret will be generated after
                                         creation
@@ -512,45 +509,44 @@ export function CreateTriggerDialog({ workflowId, onClose, onSuccess }: CreateTr
                                         <label className="block text-sm font-medium mb-1.5">
                                             Language
                                         </label>
-                                        <select
+                                        <Select
                                             value={language}
-                                            onChange={(e) => setLanguage(e.target.value)}
-                                            className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                                            onChange={setLanguage}
                                             disabled={loading}
-                                        >
-                                            <option value="en-US">English (US)</option>
-                                            <option value="en-GB">English (UK)</option>
-                                            <option value="es-ES">Spanish (Spain)</option>
-                                            <option value="es-MX">Spanish (Mexico)</option>
-                                            <option value="fr-FR">French</option>
-                                            <option value="de-DE">German</option>
-                                            <option value="it-IT">Italian</option>
-                                            <option value="pt-BR">Portuguese (Brazil)</option>
-                                            <option value="ja-JP">Japanese</option>
-                                            <option value="ko-KR">Korean</option>
-                                            <option value="zh-CN">Chinese (Simplified)</option>
-                                        </select>
+                                            options={[
+                                                { value: "en-US", label: "English (US)" },
+                                                { value: "en-GB", label: "English (UK)" },
+                                                { value: "es-ES", label: "Spanish (Spain)" },
+                                                { value: "es-MX", label: "Spanish (Mexico)" },
+                                                { value: "fr-FR", label: "French" },
+                                                { value: "de-DE", label: "German" },
+                                                { value: "it-IT", label: "Italian" },
+                                                { value: "pt-BR", label: "Portuguese (Brazil)" },
+                                                { value: "ja-JP", label: "Japanese" },
+                                                { value: "ko-KR", label: "Korean" },
+                                                { value: "zh-CN", label: "Chinese (Simplified)" }
+                                            ]}
+                                        />
                                     </div>
 
                                     <div>
                                         <label className="block text-sm font-medium mb-1.5">
                                             Voice Provider
                                         </label>
-                                        <select
+                                        <Select
                                             value={voiceProvider}
-                                            onChange={(e) =>
-                                                setVoiceProvider(
-                                                    e.target.value as "elevenlabs" | "openai"
-                                                )
+                                            onChange={(value) =>
+                                                setVoiceProvider(value as "elevenlabs" | "openai")
                                             }
-                                            className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                                             disabled={loading}
-                                        >
-                                            <option value="elevenlabs">
-                                                ElevenLabs (High Quality)
-                                            </option>
-                                            <option value="openai">OpenAI TTS</option>
-                                        </select>
+                                            options={[
+                                                {
+                                                    value: "elevenlabs",
+                                                    label: "ElevenLabs (High Quality)"
+                                                },
+                                                { value: "openai", label: "OpenAI TTS" }
+                                            ]}
+                                        />
                                     </div>
                                 </div>
 

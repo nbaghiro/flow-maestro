@@ -6,6 +6,7 @@
 import * as Dialog from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
 import { useState } from "react";
+import { Select } from "./common/Select";
 
 interface VariableDialogProps {
     open: boolean;
@@ -124,18 +125,18 @@ export function VariableDialog({
                         {/* Value Type */}
                         <div>
                             <label className="block text-sm font-medium mb-1.5">Value Type</label>
-                            <select
+                            <Select
                                 value={valueType}
-                                onChange={(e) => {
-                                    setValueType(e.target.value as "string" | "number" | "boolean");
+                                onChange={(value) => {
+                                    setValueType(value as "string" | "number" | "boolean");
                                     setInitialValue("");
                                 }}
-                                className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                            >
-                                <option value="string">Text (String)</option>
-                                <option value="number">Number</option>
-                                <option value="boolean">Boolean (true/false)</option>
-                            </select>
+                                options={[
+                                    { value: "string", label: "Text (String)" },
+                                    { value: "number", label: "Number" },
+                                    { value: "boolean", label: "Boolean (true/false)" }
+                                ]}
+                            />
                         </div>
 
                         {/* Initial Value */}
@@ -144,14 +145,14 @@ export function VariableDialog({
                                 Initial Value
                             </label>
                             {valueType === "boolean" ? (
-                                <select
+                                <Select
                                     value={initialValue}
-                                    onChange={(e) => setInitialValue(e.target.value)}
-                                    className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                                >
-                                    <option value="true">true</option>
-                                    <option value="false">false</option>
-                                </select>
+                                    onChange={setInitialValue}
+                                    options={[
+                                        { value: "true", label: "true" },
+                                        { value: "false", label: "false" }
+                                    ]}
+                                />
                             ) : (
                                 <input
                                     type={valueType === "number" ? "number" : "text"}

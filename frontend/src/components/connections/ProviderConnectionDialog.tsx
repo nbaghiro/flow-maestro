@@ -2,6 +2,7 @@ import { X, Search, Plus, Check } from "lucide-react";
 import { useState, useEffect } from "react";
 import { ALL_PROVIDERS, type Provider } from "../../lib/providers";
 import { useConnectionStore } from "../../stores/connectionStore";
+import { Select } from "../common/Select";
 import { NewConnectionDialog } from "./NewConnectionDialog";
 import type { Connection } from "../../lib/api";
 
@@ -26,6 +27,7 @@ export function ProviderConnectionDialog({
 }: ProviderConnectionDialogProps) {
     const [view, setView] = useState<DialogView>("provider-list");
     const [searchQuery, setSearchQuery] = useState("");
+    const [selectedCategory, setSelectedCategory] = useState<string>("all");
     const [currentProvider, setCurrentProvider] = useState<Provider | null>(null);
     const { connections, loading, fetchConnections } = useConnectionStore();
 
@@ -34,17 +36,22 @@ export function ProviderConnectionDialog({
             fetchConnections();
             setView("provider-list");
             setSearchQuery("");
+            setSelectedCategory("all");
         }
     }, [isOpen, fetchConnections]);
 
-    // Filter providers based on search query (include all providers, even coming soon)
+    // Filter providers based on search query and category (include all providers, even coming soon)
     const filteredProviders = ALL_PROVIDERS.filter((provider) => {
         const query = searchQuery.toLowerCase();
-        return (
+        const matchesSearch =
             provider.displayName.toLowerCase().includes(query) ||
             provider.description.toLowerCase().includes(query) ||
-            provider.category.toLowerCase().includes(query)
-        );
+            provider.category.toLowerCase().includes(query);
+
+        const matchesCategory =
+            selectedCategory === "all" || provider.category === selectedCategory;
+
+        return matchesSearch && matchesCategory;
     });
 
     // Group providers by category
@@ -165,16 +172,33 @@ export function ProviderConnectionDialog({
                     <div className="flex-1 overflow-y-auto">
                         {view === "provider-list" && (
                             <>
-                                {/* Search */}
+                                {/* Search and Filter Bar */}
                                 <div className="p-6 pb-4">
-                                    <div className="relative">
-                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                                        <input
-                                            type="text"
-                                            placeholder="Search providers..."
-                                            value={searchQuery}
-                                            onChange={(e) => setSearchQuery(e.target.value)}
-                                            className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                                    <div className="flex flex-col sm:flex-row gap-3">
+                                        {/* Search Input */}
+                                        <div className="relative sm:flex-1">
+                                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                            <input
+                                                type="text"
+                                                placeholder="Search providers..."
+                                                value={searchQuery}
+                                                onChange={(e) => setSearchQuery(e.target.value)}
+                                                className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                                            />
+                                        </div>
+
+                                        {/* Category Dropdown */}
+                                        <Select
+                                            value={selectedCategory}
+                                            onChange={setSelectedCategory}
+                                            options={[
+                                                { value: "all", label: "All Categories" },
+                                                ...sortedCategories.map((category) => ({
+                                                    value: category,
+                                                    label: category
+                                                }))
+                                            ]}
+                                            className="sm:w-[240px] sm:flex-shrink-0"
                                         />
                                     </div>
                                 </div>

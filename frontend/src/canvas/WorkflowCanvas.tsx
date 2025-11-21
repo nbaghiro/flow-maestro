@@ -67,6 +67,7 @@ interface WorkflowCanvasProps {
 export function WorkflowCanvas({ onInit: onInitProp }: WorkflowCanvasProps) {
     const reactFlowWrapper = useRef<HTMLDivElement>(null);
     const reactFlowInstance = useRef<ReactFlowInstance | null>(null);
+    const isDragging = useRef(false);
 
     const { nodes, edges, onNodesChange, onEdgesChange, addNode, selectNode } = useWorkflowStore();
 
@@ -79,9 +80,30 @@ export function WorkflowCanvas({ onInit: onInitProp }: WorkflowCanvasProps) {
         [edges]
     );
 
+    const onNodeDragStart = useCallback(() => {
+        // Reset flag at start of any potential drag
+        isDragging.current = false;
+    }, []);
+
+    const onNodeDrag = useCallback(() => {
+        // This only fires during actual dragging, not on clicks
+        isDragging.current = true;
+    }, []);
+
+    const onNodeDragStop = useCallback(() => {
+        // Keep the flag set briefly to ensure onClick sees it
+        // Reset after 100ms to prevent blocking subsequent clicks
+        setTimeout(() => {
+            isDragging.current = false;
+        }, 100);
+    }, []);
+
     const onNodeClick = useCallback(
         (_event: React.MouseEvent, node: { id: string }) => {
-            selectNode(node.id);
+            // Only select node if it wasn't actually dragged
+            if (!isDragging.current) {
+                selectNode(node.id);
+            }
         },
         [selectNode]
     );
@@ -144,6 +166,9 @@ export function WorkflowCanvas({ onInit: onInitProp }: WorkflowCanvasProps) {
                 onEdgesChange={onEdgesChange}
                 onConnect={onConnect}
                 onNodeClick={onNodeClick}
+                onNodeDragStart={onNodeDragStart}
+                onNodeDrag={onNodeDrag}
+                onNodeDragStop={onNodeDragStop}
                 onPaneClick={onPaneClick}
                 onInit={onInit}
                 onDrop={onDrop}

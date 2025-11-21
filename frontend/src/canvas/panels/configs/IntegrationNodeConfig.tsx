@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
+import { Select } from "../../../components/common/Select";
 import { ProviderConnectionDialog } from "../../../components/connections/ProviderConnectionDialog";
 import { FormField, FormSection } from "../../../components/FormField";
 import { OutputSettingsSection } from "../../../components/OutputSettingsSection";
@@ -100,16 +101,14 @@ export function IntegrationNodeConfig({ data, onUpdate }: IntegrationNodeConfigP
         if (param.type === "boolean") {
             return (
                 <FormField key={param.name} label={param.name} description={param.description}>
-                    <select
+                    <Select
                         value={value ? "true" : "false"}
-                        onChange={(e) =>
-                            handleParameterChange(param.name, e.target.value === "true")
-                        }
-                        className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                    >
-                        <option value="false">False</option>
-                        <option value="true">True</option>
-                    </select>
+                        onChange={(val) => handleParameterChange(param.name, val === "true")}
+                        options={[
+                            { value: "false", label: "False" },
+                            { value: "true", label: "True" }
+                        ]}
+                    />
                 </FormField>
             );
         }
@@ -228,23 +227,22 @@ export function IntegrationNodeConfig({ data, onUpdate }: IntegrationNodeConfigP
                     <p className="text-sm text-muted-foreground">Loading operations...</p>
                 ) : (
                     <FormField label="Action Type">
-                        <select
+                        <Select
                             value={operation}
-                            onChange={(e) => {
-                                setOperation(e.target.value);
+                            onChange={(val) => {
+                                setOperation(val);
                                 setParameters({});
                             }}
-                            className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                        >
-                            {operations.length === 0 && (
-                                <option value="">No operations available</option>
-                            )}
-                            {operations.map((op) => (
-                                <option key={op.id} value={op.id}>
-                                    {op.name}
-                                </option>
-                            ))}
-                        </select>
+                            placeholder={
+                                operations.length === 0
+                                    ? "No operations available"
+                                    : "Select an operation..."
+                            }
+                            options={operations.map((op) => ({
+                                value: op.id,
+                                label: op.name
+                            }))}
+                        />
                         {selectedOperation?.description && (
                             <p className="mt-1 text-xs text-muted-foreground">
                                 {selectedOperation.description}

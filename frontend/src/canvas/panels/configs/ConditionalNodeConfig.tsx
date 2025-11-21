@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { CodeInput } from "../../../components/CodeInput";
+import { Select } from "../../../components/common/Select";
 import { FormField, FormSection } from "../../../components/FormField";
 import { OutputSettingsSection } from "../../../components/OutputSettingsSection";
 
@@ -49,17 +50,11 @@ export function ConditionalNodeConfig({ data, onUpdate }: ConditionalNodeConfigP
         <div>
             <FormSection title="Condition Type">
                 <FormField label="Type">
-                    <select
+                    <Select
                         value={conditionType}
-                        onChange={(e) => setConditionType(e.target.value)}
-                        className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                    >
-                        {conditionTypes.map((type) => (
-                            <option key={type.value} value={type.value}>
-                                {type.label}
-                            </option>
-                        ))}
-                    </select>
+                        onChange={setConditionType}
+                        options={conditionTypes}
+                    />
                 </FormField>
             </FormSection>
 
@@ -79,17 +74,7 @@ export function ConditionalNodeConfig({ data, onUpdate }: ConditionalNodeConfigP
                     </FormField>
 
                     <FormField label="Operator">
-                        <select
-                            value={operator}
-                            onChange={(e) => setOperator(e.target.value)}
-                            className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                        >
-                            {operators.map((op) => (
-                                <option key={op.value} value={op.value}>
-                                    {op.label}
-                                </option>
-                            ))}
-                        </select>
+                        <Select value={operator} onChange={setOperator} options={operators} />
                     </FormField>
 
                     <FormField

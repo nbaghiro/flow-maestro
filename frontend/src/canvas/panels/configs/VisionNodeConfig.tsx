@@ -4,6 +4,7 @@ import {
     LLM_MODELS_BY_PROVIDER,
     getDefaultModelForProvider
 } from "@flowmaestro/shared";
+import { Select } from "../../../components/common/Select";
 import { FormField, FormSection } from "../../../components/FormField";
 import { OutputSettingsSection } from "../../../components/OutputSettingsSection";
 import { Slider } from "../../../components/Slider";
@@ -56,49 +57,29 @@ export function VisionNodeConfig({ data, onUpdate }: VisionNodeConfigProps) {
         <div>
             <FormSection title="Operation">
                 <FormField label="Type">
-                    <select
-                        value={operation}
-                        onChange={(e) => setOperation(e.target.value)}
-                        className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                    >
-                        {operations.map((op) => (
-                            <option key={op.value} value={op.value}>
-                                {op.label}
-                            </option>
-                        ))}
-                    </select>
+                    <Select value={operation} onChange={setOperation} options={operations} />
                 </FormField>
             </FormSection>
 
             <FormSection title="Model Configuration">
                 <FormField label="Provider">
-                    <select
+                    <Select
                         value={provider}
-                        onChange={(e) => handleProviderChange(e.target.value)}
-                        className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                    >
-                        {LLM_PROVIDERS.map((p) => (
-                            <option key={p.value} value={p.value}>
-                                {p.label}
-                            </option>
-                        ))}
-                    </select>
+                        onChange={handleProviderChange}
+                        options={LLM_PROVIDERS}
+                    />
                 </FormField>
 
                 <FormField label="Model">
-                    <select
+                    <Select
                         value={model}
-                        onChange={(e) => setModel(e.target.value)}
-                        className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                    >
-                        {LLM_MODELS_BY_PROVIDER[
-                            provider as keyof typeof LLM_MODELS_BY_PROVIDER
-                        ]?.map((m) => (
-                            <option key={m.value} value={m.value}>
-                                {m.label}
-                            </option>
-                        ))}
-                    </select>
+                        onChange={setModel}
+                        options={
+                            LLM_MODELS_BY_PROVIDER[
+                                provider as keyof typeof LLM_MODELS_BY_PROVIDER
+                            ] || []
+                        }
+                    />
                 </FormField>
             </FormSection>
 

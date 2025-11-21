@@ -1,5 +1,6 @@
 import { Plus, Trash2 } from "lucide-react";
 import { useState, useEffect } from "react";
+import { Select } from "../../../components/common/Select";
 import { FormField, FormSection } from "../../../components/FormField";
 import { OutputSettingsSection } from "../../../components/OutputSettingsSection";
 
@@ -111,17 +112,7 @@ export function HTTPNodeConfig({ data, onUpdate }: HTTPNodeConfigProps) {
         <div>
             <FormSection title="Request">
                 <FormField label="Method">
-                    <select
-                        value={method}
-                        onChange={(e) => setMethod(e.target.value)}
-                        className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                    >
-                        {methods.map((m) => (
-                            <option key={m.value} value={m.value}>
-                                {m.label}
-                            </option>
-                        ))}
-                    </select>
+                    <Select value={method} onChange={setMethod} options={methods} />
                 </FormField>
 
                 <FormField label="URL" description="Supports ${variableName} interpolation">
@@ -209,17 +200,7 @@ export function HTTPNodeConfig({ data, onUpdate }: HTTPNodeConfigProps) {
 
             <FormSection title="Authentication">
                 <FormField label="Auth Type">
-                    <select
-                        value={authType}
-                        onChange={(e) => setAuthType(e.target.value)}
-                        className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                    >
-                        {authTypes.map((type) => (
-                            <option key={type.value} value={type.value}>
-                                {type.label}
-                            </option>
-                        ))}
-                    </select>
+                    <Select value={authType} onChange={setAuthType} options={authTypes} />
                 </FormField>
 
                 {authType !== "none" && (
@@ -249,17 +230,7 @@ export function HTTPNodeConfig({ data, onUpdate }: HTTPNodeConfigProps) {
             {["POST", "PUT", "PATCH"].includes(method) && (
                 <FormSection title="Request Body">
                     <FormField label="Body Type">
-                        <select
-                            value={bodyType}
-                            onChange={(e) => setBodyType(e.target.value)}
-                            className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                        >
-                            {bodyTypes.map((type) => (
-                                <option key={type.value} value={type.value}>
-                                    {type.label}
-                                </option>
-                            ))}
-                        </select>
+                        <Select value={bodyType} onChange={setBodyType} options={bodyTypes} />
                     </FormField>
 
                     <FormField label="Body">

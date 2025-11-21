@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { CodeInput } from "../../../components/CodeInput";
+import { Select } from "../../../components/common/Select";
 import { FormField, FormSection } from "../../../components/FormField";
 import { OutputSettingsSection } from "../../../components/OutputSettingsSection";
 import { VariableDialog } from "../../../components/VariableDialog";
@@ -78,17 +79,7 @@ export function LoopNodeConfig({ data, onUpdate }: LoopNodeConfigProps) {
         <div>
             <FormSection title="Loop Type">
                 <FormField label="Type">
-                    <select
-                        value={loopType}
-                        onChange={(e) => setLoopType(e.target.value)}
-                        className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                    >
-                        {loopTypes.map((type) => (
-                            <option key={type.value} value={type.value}>
-                                {type.label}
-                            </option>
-                        ))}
-                    </select>
+                    <Select value={loopType} onChange={setLoopType} options={loopTypes} />
                 </FormField>
             </FormSection>
 
