@@ -434,6 +434,9 @@ echo
 read -p "Notion Client ID: " NOTION_CLIENT_ID
 read -p "Notion Client Secret: " -s NOTION_CLIENT_SECRET
 echo
+read -p "Airtable Client ID: " AIRTABLE_CLIENT_ID
+read -p "Airtable Client Secret: " -s AIRTABLE_CLIENT_SECRET
+echo
 
 print_header "Creating/Updating Secrets in GCP Secret Manager"
 
@@ -457,6 +460,8 @@ create_or_update_secret "flowmaestro-app-google-client-id" "$GOOGLE_CLIENT_ID"
 create_or_update_secret "flowmaestro-app-google-client-secret" "$GOOGLE_CLIENT_SECRET"
 create_or_update_secret "flowmaestro-app-notion-client-id" "$NOTION_CLIENT_ID"
 create_or_update_secret "flowmaestro-app-notion-client-secret" "$NOTION_CLIENT_SECRET"
+create_or_update_secret "flowmaestro-app-airtable-client-id" "$AIRTABLE_CLIENT_ID"
+create_or_update_secret "flowmaestro-app-airtable-client-secret" "$AIRTABLE_CLIENT_SECRET"
 
 print_header "Setup Complete!"
 print_success "All secrets have been created/updated in ${GCP_PROJECT}"

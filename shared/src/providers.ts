@@ -132,11 +132,10 @@ export const ALL_PROVIDERS: MCPProvider[] = [
     {
         provider: "airtable",
         displayName: "Airtable",
-        description: "Manage records in Airtable bases",
+        description: "Manage records, bases, and collaborate in Airtable",
         logoUrl: "https://logo.clearbit.com/airtable.com",
         category: "Productivity",
-        methods: ["api_key"],
-        comingSoon: true,
+        methods: ["oauth2"],
         mcpServerUrl: "https://mcp.pipedream.com/app/airtable",
         mcpAuthType: "oauth2"
     },

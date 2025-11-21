@@ -143,6 +143,8 @@ GOOGLE_CLIENT_ID=$(get_secret "flowmaestro-app-google-client-id" "")
 GOOGLE_CLIENT_SECRET=$(get_secret "flowmaestro-app-google-client-secret" "")
 NOTION_CLIENT_ID=$(get_secret "flowmaestro-app-notion-client-id" "")
 NOTION_CLIENT_SECRET=$(get_secret "flowmaestro-app-notion-client-secret" "")
+AIRTABLE_CLIENT_ID=$(get_secret "flowmaestro-app-airtable-client-id" "")
+AIRTABLE_CLIENT_SECRET=$(get_secret "flowmaestro-app-airtable-client-secret" "")
 
 print_success "Developer secrets fetched successfully"
 
@@ -261,6 +263,19 @@ else
     echo "# Notion" >> "$BACKEND_ENV_FILE"
     echo "NOTION_CLIENT_ID=" >> "$BACKEND_ENV_FILE"
     echo "NOTION_CLIENT_SECRET=" >> "$BACKEND_ENV_FILE"
+    echo "" >> "$BACKEND_ENV_FILE"
+fi
+
+# Airtable OAuth
+if [ -n "$AIRTABLE_CLIENT_ID" ] || [ -n "$AIRTABLE_CLIENT_SECRET" ]; then
+    echo "# Airtable" >> "$BACKEND_ENV_FILE"
+    echo "AIRTABLE_CLIENT_ID=${AIRTABLE_CLIENT_ID}" >> "$BACKEND_ENV_FILE"
+    echo "AIRTABLE_CLIENT_SECRET=${AIRTABLE_CLIENT_SECRET}" >> "$BACKEND_ENV_FILE"
+    echo "" >> "$BACKEND_ENV_FILE"
+else
+    echo "# Airtable" >> "$BACKEND_ENV_FILE"
+    echo "AIRTABLE_CLIENT_ID=" >> "$BACKEND_ENV_FILE"
+    echo "AIRTABLE_CLIENT_SECRET=" >> "$BACKEND_ENV_FILE"
     echo "" >> "$BACKEND_ENV_FILE"
 fi
 

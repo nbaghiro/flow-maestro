@@ -18,6 +18,7 @@ export interface OAuthProvider {
     getUserInfo?: (accessToken: string) => Promise<unknown>;
     revokeUrl?: string;
     refreshable?: boolean;
+    pkceEnabled?: boolean; // Enable PKCE (Proof Key for Code Exchange)
 }
 
 /**
@@ -185,6 +186,56 @@ export const OAUTH_PROVIDERS: Record<string, OAuthProvider> = {
                     workspace: "Notion Workspace",
                     user: "Notion User",
                     email: "unknown@notion"
+                };
+            }
+        },
+        refreshable: true
+    },
+
+    airtable: {
+        name: "airtable",
+        displayName: "Airtable",
+        authUrl: "https://airtable.com/oauth2/v1/authorize",
+        tokenUrl: "https://airtable.com/oauth2/v1/token",
+        scopes: [
+            "data.records:read",
+            "data.records:write",
+            "schema.bases:read",
+            "schema.bases:write",
+            "data.recordComments:read",
+            "data.recordComments:write",
+            "webhook:manage"
+        ],
+        clientId: process.env.AIRTABLE_CLIENT_ID || "",
+        clientSecret: process.env.AIRTABLE_CLIENT_SECRET || "",
+        redirectUri: `${process.env.API_URL || "http://localhost:3000"}/api/oauth/airtable/callback`,
+        pkceEnabled: true, // Airtable requires PKCE for enhanced security
+        getUserInfo: async (accessToken: string) => {
+            try {
+                const response = await fetch("https://api.airtable.com/v0/meta/whoami", {
+                    headers: {
+                        Authorization: `Bearer ${accessToken}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = (await response.json()) as {
+                    id?: string;
+                    scopes?: string[];
+                };
+
+                return {
+                    userId: data.id || "unknown",
+                    scopes: data.scopes || []
+                };
+            } catch (error) {
+                console.error("[OAuth] Failed to get Airtable user info:", error);
+                return {
+                    userId: "unknown",
+                    scopes: []
                 };
             }
         },

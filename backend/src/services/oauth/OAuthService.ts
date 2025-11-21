@@ -1,5 +1,6 @@
 import { randomBytes } from "crypto";
 import { getOAuthProvider, OAuthProvider } from "./OAuthProviderRegistry";
+import { generatePKCEPair } from "./utils/pkce";
 
 /**
  * OAuth state token data
@@ -7,6 +8,7 @@ import { getOAuthProvider, OAuthProvider } from "./OAuthProviderRegistry";
 interface StateTokenData {
     userId: string;
     expiresAt: number;
+    codeVerifier?: string; // PKCE code verifier
 }
 
 /**
@@ -57,8 +59,18 @@ export class OAuthService {
     generateAuthUrl(provider: string, userId: string): string {
         const config = getOAuthProvider(provider);
 
-        // Generate CSRF state token
-        const state = this.generateStateToken(userId);
+        // Generate PKCE parameters if provider supports it
+        let codeVerifier: string | undefined;
+        let codeChallenge: string | undefined;
+
+        if (config.pkceEnabled) {
+            const pkce = generatePKCEPair();
+            codeVerifier = pkce.codeVerifier;
+            codeChallenge = pkce.codeChallenge;
+        }
+
+        // Generate CSRF state token (store code_verifier if using PKCE)
+        const state = this.generateStateToken(userId, codeVerifier);
 
         // Build authorization URL with parameters
         const params = new URLSearchParams({
@@ -68,6 +80,12 @@ export class OAuthService {
             state,
             ...config.authParams
         });
+
+        // Add PKCE challenge if enabled
+        if (codeChallenge) {
+            params.set("code_challenge", codeChallenge);
+            params.set("code_challenge_method", "S256");
+        }
 
         // Add scopes if provider uses them
         if (config.scopes && config.scopes.length > 0) {
@@ -100,8 +118,8 @@ export class OAuthService {
         console.log(`[OAuth] Exchanging code for token: ${provider}`);
 
         try {
-            // Exchange code for token
-            const tokenData = await this.performTokenExchange(config, code);
+            // Exchange code for token (with PKCE verifier if applicable)
+            const tokenData = await this.performTokenExchange(config, code, stateData.codeVerifier);
 
             console.log(`[OAuth] Token exchange successful for ${provider}`);
 
@@ -243,26 +261,39 @@ export class OAuthService {
     /**
      * Perform token exchange (handles provider-specific quirks)
      */
-    private async performTokenExchange(config: OAuthProvider, code: string): Promise<OAuthToken> {
+    private async performTokenExchange(
+        config: OAuthProvider,
+        code: string,
+        codeVerifier?: string
+    ): Promise<OAuthToken> {
         const params: Record<string, string> = {
             client_id: config.clientId,
-            client_secret: config.clientSecret,
             code,
             redirect_uri: config.redirectUri,
             grant_type: "authorization_code",
             ...(config.tokenParams || {})
         };
 
+        // PKCE flow: use code_verifier instead of client_secret
+        if (codeVerifier) {
+            params.code_verifier = codeVerifier;
+            // Note: For PKCE, client_secret is still sent but via Basic Auth header (see below)
+        } else {
+            // Non-PKCE flow: include client_secret in body
+            params.client_secret = config.clientSecret;
+        }
+
         // Notion requires Basic Auth instead of client_id/client_secret in body
         const isNotion = config.name === "notion";
+        const usesBasicAuth = isNotion || config.pkceEnabled;
 
         const headers: Record<string, string> = {
             "Content-Type": "application/x-www-form-urlencoded",
             Accept: "application/json"
         };
 
-        if (isNotion) {
-            // Notion uses Basic Auth
+        if (usesBasicAuth) {
+            // Notion and PKCE-enabled providers (like Airtable) use Basic Auth
             const credentials = Buffer.from(`${config.clientId}:${config.clientSecret}`).toString(
                 "base64"
             );
@@ -291,12 +322,13 @@ export class OAuthService {
     /**
      * Generate a secure state token for CSRF protection
      */
-    private generateStateToken(userId: string): string {
+    private generateStateToken(userId: string, codeVerifier?: string): string {
         const state = randomBytes(32).toString("hex");
 
         this.stateStore.set(state, {
             userId,
-            expiresAt: Date.now() + 5 * 60 * 1000 // 5 minutes expiry
+            expiresAt: Date.now() + 5 * 60 * 1000, // 5 minutes expiry
+            codeVerifier // Store PKCE verifier if using PKCE
         });
 
         // Cleanup expired states periodically

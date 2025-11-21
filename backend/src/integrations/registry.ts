@@ -44,10 +44,23 @@ const notionEntry: ProviderRegistryEntry = {
     }
 };
 
+// Register Airtable provider
+const airtableEntry: ProviderRegistryEntry = {
+    name: "airtable",
+    displayName: "Airtable",
+    authMethod: "oauth2",
+    category: "productivity",
+    loader: async () => {
+        const { AirtableProvider } = await import("./providers/airtable/AirtableProvider");
+        return new AirtableProvider();
+    }
+};
+
 // Register all providers
 providerRegistry.register(slackEntry);
 providerRegistry.register(codaEntry);
 providerRegistry.register(notionEntry);
+providerRegistry.register(airtableEntry);
 
 // Export for use in application
 export { providerRegistry };
