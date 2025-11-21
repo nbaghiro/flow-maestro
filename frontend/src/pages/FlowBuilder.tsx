@@ -24,7 +24,8 @@ export function FlowBuilder() {
     const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
     const [lastSavedState, setLastSavedState] = useState<string>("");
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-    const { selectedNode, nodes, edges, aiGenerated, aiPrompt, setAIMetadata } = useWorkflowStore();
+    const { selectedNode, nodes, edges, aiGenerated, aiPrompt, setAIMetadata, resetWorkflow } =
+        useWorkflowStore();
 
     useEffect(() => {
         if (workflowId) {
@@ -160,6 +161,9 @@ export function FlowBuilder() {
         if (!workflowId) return;
 
         try {
+            // Reset the workflow store before loading new workflow
+            resetWorkflow();
+
             const response = await getWorkflow(workflowId);
 
             if (response.success && response.data) {

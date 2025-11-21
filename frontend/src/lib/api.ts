@@ -323,6 +323,59 @@ export interface WorkflowDefinition {
 /**
  * Create a new workflow
  */
+/**
+ * Creates a default workflow structure with Input -> LLM -> Output nodes
+ */
+function createDefaultWorkflowDefinition(name: string): WorkflowDefinition {
+    const inputNodeId = "node-input-1";
+    const llmNodeId = "node-llm-1";
+    const outputNodeId = "node-output-1";
+
+    return {
+        name,
+        nodes: {
+            [inputNodeId]: {
+                type: "input",
+                name: "Input",
+                config: {
+                    inputVariable: "userInput"
+                },
+                position: { x: 100, y: 200 }
+            },
+            [llmNodeId]: {
+                type: "llm",
+                name: "LLM",
+                config: {
+                    prompt: "{{userInput}}",
+                    outputVariable: "llmResponse"
+                },
+                position: { x: 400, y: 200 }
+            },
+            [outputNodeId]: {
+                type: "output",
+                name: "Output",
+                config: {
+                    outputVariable: "llmResponse"
+                },
+                position: { x: 700, y: 200 }
+            }
+        },
+        edges: [
+            {
+                id: "edge-1",
+                source: inputNodeId,
+                target: llmNodeId
+            },
+            {
+                id: "edge-2",
+                source: llmNodeId,
+                target: outputNodeId
+            }
+        ],
+        entryPoint: inputNodeId
+    };
+}
+
 export async function createWorkflow(
     name: string,
     description?: string,
@@ -330,12 +383,8 @@ export async function createWorkflow(
 ) {
     const token = getAuthToken();
 
-    const workflowDefinition: WorkflowDefinition = definition || {
-        name,
-        nodes: {},
-        edges: [],
-        entryPoint: ""
-    };
+    const workflowDefinition: WorkflowDefinition =
+        definition || createDefaultWorkflowDefinition(name);
 
     const requestBody = {
         name,
