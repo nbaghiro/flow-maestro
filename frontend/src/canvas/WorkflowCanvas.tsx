@@ -60,7 +60,11 @@ const nodeTypes = {
     voice_hangup: VoiceHangupNode
 };
 
-export function WorkflowCanvas() {
+interface WorkflowCanvasProps {
+    onInit?: (instance: ReactFlowInstance) => void;
+}
+
+export function WorkflowCanvas({ onInit: onInitProp }: WorkflowCanvasProps) {
     const reactFlowWrapper = useRef<HTMLDivElement>(null);
     const reactFlowInstance = useRef<ReactFlowInstance | null>(null);
 
@@ -86,9 +90,15 @@ export function WorkflowCanvas() {
         selectNode(null);
     }, [selectNode]);
 
-    const onInit = useCallback((instance: ReactFlowInstance) => {
-        reactFlowInstance.current = instance;
-    }, []);
+    const onInit = useCallback(
+        (instance: ReactFlowInstance) => {
+            reactFlowInstance.current = instance;
+            if (onInitProp) {
+                onInitProp(instance);
+            }
+        },
+        [onInitProp]
+    );
 
     const onDragOver = useCallback((event: React.DragEvent) => {
         event.preventDefault();

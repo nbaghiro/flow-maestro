@@ -1,7 +1,7 @@
 import { Loader2 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams } from "react-router-dom";
-import { ReactFlowProvider } from "reactflow";
+import { ReactFlowProvider, useReactFlow, Node } from "reactflow";
 import { NodeInspector } from "../canvas/panels/NodeInspector";
 import { NodeLibrary } from "../canvas/panels/NodeLibrary";
 import { WorkflowCanvas } from "../canvas/WorkflowCanvas";
@@ -10,9 +10,17 @@ import { BuilderHeader } from "../components/BuilderHeader";
 import { ExecutionPanel } from "../components/ExecutionPanel";
 import { WorkflowSettingsDialog } from "../components/WorkflowSettingsDialog";
 import { getWorkflow, updateWorkflow } from "../lib/api";
+import { generateId } from "../lib/utils";
 import { useWorkflowStore } from "../stores/workflowStore";
 
 type SaveStatus = "idle" | "saving" | "saved" | "error";
+
+interface CopiedNode {
+    type: string;
+    data: Record<string, unknown>;
+    style?: React.CSSProperties;
+    position: { x: number; y: number };
+}
 
 export function FlowBuilder() {
     const { workflowId } = useParams<{ workflowId: string }>();
@@ -24,8 +32,20 @@ export function FlowBuilder() {
     const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
     const [lastSavedState, setLastSavedState] = useState<string>("");
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-    const { selectedNode, nodes, edges, aiGenerated, aiPrompt, setAIMetadata, resetWorkflow } =
-        useWorkflowStore();
+    const [copiedNode, setCopiedNode] = useState<CopiedNode | null>(null);
+    const reactFlowInstanceRef = useRef<ReturnType<typeof useReactFlow> | null>(null);
+    const {
+        selectedNode,
+        nodes,
+        edges,
+        aiGenerated,
+        aiPrompt,
+        setAIMetadata,
+        resetWorkflow,
+        deleteNode,
+        addNode,
+        selectNode
+    } = useWorkflowStore();
 
     useEffect(() => {
         if (workflowId) {
@@ -253,7 +273,7 @@ export function FlowBuilder() {
         }
     }, [isLoading, nodes, edges, workflowName]);
 
-    const handleSave = async () => {
+    const handleSave = useCallback(async () => {
         if (!workflowId) return;
 
         setSaveStatus("saving");
@@ -372,7 +392,215 @@ export function FlowBuilder() {
                 setSaveStatus("idle");
             }, 3000);
         }
-    };
+    }, [workflowId, nodes, edges, workflowName, workflowDescription, aiGenerated, aiPrompt]);
+
+    // Helper: Duplicate selected node
+    const handleDuplicateNode = useCallback(() => {
+        if (!selectedNode) return;
+
+        const node = nodes.find((n) => n.id === selectedNode);
+        if (!node) return;
+
+        const newNode: Node = {
+            id: generateId(),
+            type: node.type,
+            position: {
+                x: node.position.x + 20,
+                y: node.position.y + 20
+            },
+            data: { ...node.data },
+            style: node.style ? { ...node.style } : undefined
+        };
+
+        addNode(newNode);
+        selectNode(newNode.id);
+    }, [selectedNode, nodes, addNode, selectNode]);
+
+    // Helper: Copy selected node
+    const handleCopyNode = useCallback(() => {
+        if (!selectedNode) {
+            console.log("Copy: No node selected");
+            return;
+        }
+
+        const node = nodes.find((n) => n.id === selectedNode);
+        if (!node) {
+            console.log("Copy: Node not found");
+            return;
+        }
+
+        const copied = {
+            type: node.type || "default",
+            data: { ...node.data },
+            style: node.style ? { ...node.style } : undefined,
+            position: node.position
+        };
+
+        console.log("Node copied:", copied);
+        setCopiedNode(copied);
+    }, [selectedNode, nodes]);
+
+    // Helper: Paste copied node
+    const handlePasteNode = useCallback(() => {
+        if (!copiedNode) return;
+
+        // Position with offset like duplicate (20px down and right)
+        const newNode: Node = {
+            id: generateId(),
+            type: copiedNode.type,
+            position: {
+                x: copiedNode.position.x + 20,
+                y: copiedNode.position.y + 20
+            },
+            data: { ...copiedNode.data },
+            style: copiedNode.style
+        };
+
+        addNode(newNode);
+        selectNode(newNode.id);
+    }, [copiedNode, addNode, selectNode]);
+
+    // Helper: Delete selected node
+    const handleDeleteNode = useCallback(() => {
+        if (!selectedNode) return;
+        deleteNode(selectedNode);
+    }, [selectedNode, deleteNode]);
+
+    // Helper: Select all nodes
+    const handleSelectAll = useCallback(() => {
+        // React Flow handles multi-selection natively, but we can't trigger it programmatically
+        // For now, this is a placeholder - React Flow doesn't expose a selectAll API
+        console.log("Select all - not implemented (React Flow limitation)");
+    }, []);
+
+    // Helper: Deselect all nodes
+    const handleDeselectAll = useCallback(() => {
+        selectNode(null);
+    }, [selectNode]);
+
+    // Helper: Fit view
+    const handleFitView = useCallback(() => {
+        if (reactFlowInstanceRef.current) {
+            reactFlowInstanceRef.current.fitView({ padding: 0.2 });
+        }
+    }, []);
+
+    // Keyboard shortcuts handler
+    useEffect(() => {
+        const handleKeyDown = (event: KeyboardEvent) => {
+            // Ignore shortcuts when typing in input fields
+            const target = event.target as HTMLElement;
+            if (
+                target.tagName === "INPUT" ||
+                target.tagName === "TEXTAREA" ||
+                target.isContentEditable
+            ) {
+                // Exception: Allow Cmd+S to save even when in input
+                if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "s") {
+                    event.preventDefault();
+                    handleSave();
+                }
+                return;
+            }
+
+            const key = event.key.toLowerCase();
+
+            // Cmd+S (Mac) or Ctrl+S (Windows/Linux) - Save
+            if ((event.metaKey || event.ctrlKey) && key === "s") {
+                event.preventDefault();
+                handleSave();
+                return;
+            }
+
+            // Cmd+Enter - Run workflow
+            if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+                event.preventDefault();
+                const runButton = document.querySelector(
+                    '[data-action="run"]'
+                ) as HTMLButtonElement;
+                if (runButton) runButton.click();
+                return;
+            }
+
+            // Cmd+, - Open settings
+            if ((event.metaKey || event.ctrlKey) && event.key === ",") {
+                event.preventDefault();
+                console.log("Opening settings via Cmd+,");
+                setIsSettingsOpen(true);
+                return;
+            }
+
+            // Delete/Backspace - Delete node
+            if (event.key === "Delete" || event.key === "Backspace") {
+                event.preventDefault();
+                handleDeleteNode();
+                return;
+            }
+
+            // Cmd+D - Duplicate node
+            if ((event.metaKey || event.ctrlKey) && key === "d") {
+                event.preventDefault();
+                handleDuplicateNode();
+                return;
+            }
+
+            // Cmd+C - Copy node
+            if ((event.metaKey || event.ctrlKey) && key === "c") {
+                event.preventDefault();
+                console.log("Copy shortcut triggered, selectedNode:", selectedNode);
+                handleCopyNode();
+                return;
+            }
+
+            // Cmd+V - Paste node
+            if ((event.metaKey || event.ctrlKey) && key === "v") {
+                event.preventDefault();
+                console.log("Paste shortcut triggered, copiedNode:", copiedNode);
+                handlePasteNode();
+                return;
+            }
+
+            // Cmd+A - Select all nodes
+            if ((event.metaKey || event.ctrlKey) && key === "a") {
+                event.preventDefault();
+                handleSelectAll();
+                return;
+            }
+
+            // Escape - Deselect all
+            if (event.key === "Escape") {
+                event.preventDefault();
+                handleDeselectAll();
+                return;
+            }
+
+            // Cmd+0 - Fit view
+            if ((event.metaKey || event.ctrlKey) && key === "0") {
+                event.preventDefault();
+                handleFitView();
+                return;
+            }
+        };
+
+        // Add event listener
+        document.addEventListener("keydown", handleKeyDown);
+
+        // Cleanup
+        return () => {
+            document.removeEventListener("keydown", handleKeyDown);
+        };
+    }, [
+        handleSave,
+        handleDeleteNode,
+        handleDuplicateNode,
+        handleCopyNode,
+        handlePasteNode,
+        handleSelectAll,
+        handleDeselectAll,
+        handleFitView,
+        selectedNode,
+        copiedNode
+    ]);
 
     const handleNameChange = (name: string) => {
         setWorkflowName(name);
@@ -438,7 +666,9 @@ export function FlowBuilder() {
                         onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
                     />
                     <div className="flex-1">
-                        <WorkflowCanvas />
+                        <WorkflowCanvas
+                            onInit={(instance) => (reactFlowInstanceRef.current = instance)}
+                        />
                     </div>
                     {selectedNode && <NodeInspector />}
 

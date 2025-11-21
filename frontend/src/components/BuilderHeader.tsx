@@ -5,6 +5,7 @@ import { executeTrigger, createTrigger, getTriggers } from "../lib/api";
 import { wsClient } from "../lib/websocket";
 import { useTriggerStore } from "../stores/triggerStore";
 import { useWorkflowStore } from "../stores/workflowStore";
+import { Tooltip } from "./Tooltip";
 import type { WorkflowTrigger } from "../types/trigger";
 
 interface BuilderHeaderProps {
@@ -175,52 +176,63 @@ export function BuilderHeader({
 
                 {/* Right: Action Buttons */}
                 <div className="flex items-center gap-2">
-                    <button
-                        onClick={onOpenSettings}
-                        className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted border border-border rounded-lg transition-colors"
-                        title="Workflow Settings"
-                    >
-                        <Settings className="w-4 h-4" />
-                    </button>
+                    <Tooltip content="Workflow settings (⌘,)">
+                        <button
+                            onClick={onOpenSettings}
+                            className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted border border-border rounded-lg transition-colors"
+                        >
+                            <Settings className="w-4 h-4" />
+                        </button>
+                    </Tooltip>
 
-                    <button
-                        onClick={onSave}
-                        disabled={saveStatus === "saving"}
-                        className="flex items-center gap-2 px-4 py-1.5 text-sm font-medium text-foreground hover:bg-muted border border-border rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        {saveStatus === "saving" ? (
-                            <>
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                                Saving...
-                            </>
-                        ) : saveStatus === "saved" ? (
-                            <>
-                                <CheckCircle className="w-4 h-4 text-green-600" />
-                                Saved
-                            </>
-                        ) : (
-                            <>
-                                <Save className="w-4 h-4" />
-                                Save
-                            </>
-                        )}
-                    </button>
+                    <Tooltip content="Save workflow (⌘S / Ctrl+S)">
+                        <button
+                            onClick={onSave}
+                            disabled={saveStatus === "saving"}
+                            className="flex items-center gap-2 px-4 py-1.5 text-sm font-medium text-foreground hover:bg-muted border border-border rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {saveStatus === "saving" ? (
+                                <>
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                    Saving...
+                                </>
+                            ) : saveStatus === "saved" ? (
+                                <>
+                                    <CheckCircle className="w-4 h-4 text-green-600" />
+                                    Saved
+                                </>
+                            ) : (
+                                <>
+                                    <Save className="w-4 h-4" />
+                                    Save
+                                </>
+                            )}
+                        </button>
+                    </Tooltip>
 
-                    <button
-                        onClick={handleRun}
-                        disabled={isRunning || currentExecution?.status === "running"}
-                        className="flex items-center gap-2 px-4 py-1.5 text-sm font-medium text-white bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors shadow-sm"
-                        title={
-                            !workflowId ? "Save workflow first" : "Run workflow with empty inputs"
+                    <Tooltip
+                        content={
+                            !workflowId
+                                ? "Save workflow first"
+                                : "Run workflow (⌘Enter / Ctrl+Enter)"
                         }
                     >
-                        {isRunning || currentExecution?.status === "running" ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                            <Play className="w-4 h-4" />
-                        )}
-                        {isRunning || currentExecution?.status === "running" ? "Running..." : "Run"}
-                    </button>
+                        <button
+                            onClick={handleRun}
+                            disabled={isRunning || currentExecution?.status === "running"}
+                            className="flex items-center gap-2 px-4 py-1.5 text-sm font-medium text-white bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors shadow-sm"
+                            data-action="run"
+                        >
+                            {isRunning || currentExecution?.status === "running" ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                                <Play className="w-4 h-4" />
+                            )}
+                            {isRunning || currentExecution?.status === "running"
+                                ? "Running..."
+                                : "Run"}
+                        </button>
+                    </Tooltip>
                 </div>
             </div>
         </header>
