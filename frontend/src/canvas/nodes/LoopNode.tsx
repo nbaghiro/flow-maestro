@@ -96,12 +96,12 @@ function LoopNode({ data, selected }: NodeProps<LoopNodeData>) {
             category="logic"
             selected={selected}
         >
-            <div className="space-y-2">
+            <div className="flex flex-col h-full">
                 <div className="flex items-center justify-between pb-2 border-b border-border">
                     <span className="text-xs text-muted-foreground">Type:</span>
                     <span className="text-xs font-semibold">{getLoopTypeLabel()}</span>
                 </div>
-                {renderLoopDetails()}
+                <div className="flex-1 overflow-auto pt-2 space-y-2">{renderLoopDetails()}</div>
             </div>
         </BaseNode>
     );

@@ -98,6 +98,7 @@ export function BaseNode({
     const [startWidth, setStartWidth] = useState<number | null>(null);
     const [startHeight, setStartHeight] = useState<number | null>(null);
     const [showResizeTip, setShowResizeTip] = useState(false);
+    const [didResize, setDidResize] = useState(false);
 
     useEffect(() => {
         if (!nodeId) return;
@@ -125,6 +126,7 @@ export function BaseNode({
         const styleHeight = parseFloat(nodeEl?.style.height || "120");
 
         setIsResizing(true);
+        setDidResize(false); // Reset drag flag
         setStartPos({ x: e.clientX, y: e.clientY });
         setStartWidth(styletWidth);
         setStartHeight(styleHeight);
@@ -137,6 +139,11 @@ export function BaseNode({
 
         const alphaX = e.clientX - startPos.x;
         const alphaY = e.clientY - startPos.y;
+
+        // If mouse moved more than 3 pixels, consider it a drag
+        if (Math.abs(alphaX) > 3 || Math.abs(alphaY) > 3) {
+            setDidResize(true);
+        }
 
         const newWidth = Math.max(260, startWidth + alphaX);
         const newHeight = Math.max(120, startHeight + alphaY);
@@ -295,6 +302,13 @@ export function BaseNode({
                 onMouseDown={(e) => {
                     onResizeMouseDown(e);
                     setShowResizeTip(false);
+                }}
+                onClick={(e) => {
+                    // Prevent node selection if user just resized
+                    if (didResize) {
+                        e.stopPropagation();
+                        setDidResize(false);
+                    }
                 }}
                 className="
                     nodrag

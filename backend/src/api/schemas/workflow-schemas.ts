@@ -9,6 +9,7 @@ export const workflowNodeSchema = z.object({
         x: z.number(),
         y: z.number()
     }),
+    style: z.record(z.any()).optional(), // React Flow node styles (width, height, etc.)
     onError: z
         .object({
             strategy: z.enum(["continue", "fallback", "goto", "fail"]),
