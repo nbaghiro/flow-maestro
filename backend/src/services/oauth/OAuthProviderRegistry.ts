@@ -160,6 +160,8 @@ export const OAUTH_PROVIDERS: Record<string, OAuthProvider> = {
         },
         getUserInfo: async (accessToken: string) => {
             try {
+                // Notion OAuth returns workspace info in the token response
+                // We need to get the bot user info which has workspace details
                 const response = await fetch("https://api.notion.com/v1/users/me", {
                     headers: {
                         Authorization: `Bearer ${accessToken}`,
@@ -167,17 +169,58 @@ export const OAUTH_PROVIDERS: Record<string, OAuthProvider> = {
                     }
                 });
 
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
                 const data = (await response.json()) as {
-                    workspace_name?: string;
-                    name?: string;
-                    person?: { email?: string };
+                    object?: string;
                     id?: string;
+                    type?: string;
+                    name?: string;
+                    avatar_url?: string | null;
+                    bot?: {
+                        owner?: {
+                            type?: string;
+                            workspace?: boolean | { id?: string; name?: string };
+                            user?: {
+                                object?: string;
+                                id?: string;
+                                name?: string;
+                                avatar_url?: string;
+                                type?: string;
+                                person?: { email?: string };
+                            };
+                        };
+                        workspace_name?: string;
+                    };
+                    workspace_name?: string;
                 };
 
+                console.log("[OAuth] Notion user info response:", JSON.stringify(data, null, 2));
+
+                // Extract workspace name and user info
+                let workspaceName = "Notion Workspace";
+                let userName = "Notion User";
+                let userEmail = "unknown@notion";
+
+                if (data.bot?.workspace_name) {
+                    workspaceName = data.bot.workspace_name;
+                } else if (data.workspace_name) {
+                    workspaceName = data.workspace_name;
+                }
+
+                if (data.bot?.owner?.user) {
+                    userName = data.bot.owner.user.name || userName;
+                    userEmail = data.bot.owner.user.person?.email || userEmail;
+                } else if (data.name) {
+                    userName = data.name;
+                }
+
                 return {
-                    workspace: data.workspace_name || "Notion Workspace",
-                    user: data.name || "Notion User",
-                    email: data.person?.email || "unknown@notion",
+                    workspace: workspaceName,
+                    user: userName,
+                    email: userEmail,
                     userId: data.id
                 };
             } catch (error) {

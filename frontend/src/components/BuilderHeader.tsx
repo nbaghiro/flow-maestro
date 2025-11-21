@@ -176,7 +176,7 @@ export function BuilderHeader({
 
                 {/* Right: Action Buttons */}
                 <div className="flex items-center gap-2">
-                    <Tooltip content="Workflow settings (⌘,)">
+                    <Tooltip content="Workflow settings (⌘,)" position="bottom">
                         <button
                             onClick={onOpenSettings}
                             className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted border border-border rounded-lg transition-colors"
@@ -185,7 +185,7 @@ export function BuilderHeader({
                         </button>
                     </Tooltip>
 
-                    <Tooltip content="Save workflow (⌘S / Ctrl+S)">
+                    <Tooltip content="Save workflow (⌘S / Ctrl+S)" position="bottom">
                         <button
                             onClick={onSave}
                             disabled={saveStatus === "saving"}
@@ -216,6 +216,7 @@ export function BuilderHeader({
                                 ? "Save workflow first"
                                 : "Run workflow (⌘Enter / Ctrl+Enter)"
                         }
+                        position="bottom"
                     >
                         <button
                             onClick={handleRun}

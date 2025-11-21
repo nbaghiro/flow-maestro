@@ -212,6 +212,13 @@ export function ConnectionPicker({
                         }}
                         provider={provider}
                         providerDisplayName={providerInfo.displayName}
+                        providerIcon={
+                            <img
+                                src={providerInfo.logoUrl}
+                                alt={providerInfo.displayName}
+                                className="w-10 h-10 object-contain"
+                            />
+                        }
                         onSuccess={() => {
                             setIsAddDialogOpen(false);
                             fetchConnections({ provider });

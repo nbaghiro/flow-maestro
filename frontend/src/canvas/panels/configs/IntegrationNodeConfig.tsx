@@ -1,15 +1,16 @@
 import { useQuery } from "@tanstack/react-query";
+import { Plus } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
-import { ConnectionPicker } from "../../../components/connections/ConnectionPicker";
+import { ProviderConnectionDialog } from "../../../components/connections/ProviderConnectionDialog";
 import { FormField, FormSection } from "../../../components/FormField";
 import { OutputSettingsSection } from "../../../components/OutputSettingsSection";
 import {
-    getIntegrationProviders,
     getProviderOperations,
-    type ProviderSummary,
     type OperationSummary,
     type OperationParameter
 } from "../../../lib/api";
+import { ALL_PROVIDERS } from "../../../lib/providers";
+import { useConnectionStore } from "../../../stores/connectionStore";
 
 interface IntegrationNodeConfigProps {
     data: Record<string, unknown>;
@@ -28,12 +29,18 @@ export function IntegrationNodeConfig({ data, onUpdate }: IntegrationNodeConfigP
         (data.parameters as Record<string, unknown>) || {}
     );
     const [outputVariable, setOutputVariable] = useState((data.outputVariable as string) || "");
+    const [isProviderDialogOpen, setIsProviderDialogOpen] = useState(false);
 
-    // Load available providers
-    const { data: providersData, isLoading: providersLoading } = useQuery({
-        queryKey: ["integration-providers"],
-        queryFn: getIntegrationProviders
-    });
+    const { connections, fetchConnections } = useConnectionStore();
+
+    // Fetch connections on mount and when provider changes
+    useEffect(() => {
+        if (provider) {
+            fetchConnections({ provider });
+        } else {
+            fetchConnections();
+        }
+    }, [provider, fetchConnections]);
 
     // Load operations for selected provider
     const { data: operationsData, isLoading: operationsLoading } = useQuery({
@@ -42,9 +49,12 @@ export function IntegrationNodeConfig({ data, onUpdate }: IntegrationNodeConfigP
         enabled: !!provider
     });
 
-    const providers: ProviderSummary[] = providersData?.data || [];
     const operations: OperationSummary[] = operationsData?.data?.operations || [];
     const selectedOperation = operations.find((op) => op.id === operation);
+
+    // Get selected connection info
+    const selectedConnection = connections.find((conn) => conn.id === connectionId);
+    const providerInfo = ALL_PROVIDERS.find((p) => p.provider === provider);
 
     // Set default operation when provider changes
     useEffect(() => {
@@ -160,46 +170,57 @@ export function IntegrationNodeConfig({ data, onUpdate }: IntegrationNodeConfigP
         );
     };
 
-    if (providersLoading) {
-        return (
-            <div className="flex items-center justify-center p-8">
-                <p className="text-sm text-muted-foreground">Loading providers...</p>
-            </div>
-        );
-    }
-
     return (
         <>
             <FormSection title="Provider">
                 <FormField label="Integration Provider">
-                    <select
-                        value={provider}
-                        onChange={(e) => {
-                            setProvider(e.target.value);
-                            setOperation("");
-                            setParameters({});
-                        }}
-                        className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                    >
-                        <option value="">Select a provider</option>
-                        {providers.map((p) => (
-                            <option key={p.name} value={p.name}>
-                                {p.displayName}
-                            </option>
-                        ))}
-                    </select>
-                </FormField>
+                    {provider && selectedConnection ? (
+                        <button
+                            type="button"
+                            onClick={() => setIsProviderDialogOpen(true)}
+                            className="w-full flex items-start gap-3 p-3 text-left border-2 border-gray-200 rounded-lg hover:border-gray-300 hover:bg-gray-50 transition-all"
+                        >
+                            {/* Provider Icon */}
+                            <div className="flex-shrink-0 w-10 h-10 flex items-center justify-center">
+                                {providerInfo?.logoUrl ? (
+                                    <img
+                                        src={providerInfo.logoUrl}
+                                        alt={providerInfo.displayName}
+                                        className="w-10 h-10 object-contain"
+                                    />
+                                ) : (
+                                    <div className="w-10 h-10 bg-gray-200 rounded" />
+                                )}
+                            </div>
 
-                {provider && (
-                    <ConnectionPicker
-                        provider={provider}
-                        value={connectionId}
-                        onChange={(id) => setConnectionId(id || "")}
-                        label="Connection"
-                        description={`Select your ${providers.find((p) => p.name === provider)?.displayName || provider} connection`}
-                        required
-                    />
-                )}
+                            {/* Connection Info */}
+                            <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1">
+                                    <h3 className="font-medium text-sm text-gray-900">
+                                        {providerInfo?.displayName || provider}
+                                    </h3>
+                                </div>
+                                <p className="text-xs text-gray-600 truncate">
+                                    {selectedConnection.name}
+                                </p>
+                                {selectedConnection.metadata?.account_info?.email && (
+                                    <p className="text-xs text-gray-500 truncate">
+                                        {selectedConnection.metadata.account_info.email}
+                                    </p>
+                                )}
+                            </div>
+                        </button>
+                    ) : (
+                        <button
+                            type="button"
+                            onClick={() => setIsProviderDialogOpen(true)}
+                            className="w-full flex items-center justify-center gap-2 p-4 text-sm font-medium text-gray-700 bg-white border-2 border-dashed border-gray-300 rounded-lg hover:border-gray-400 hover:bg-gray-50 transition-all"
+                        >
+                            <Plus className="w-4 h-4" />
+                            Select or Add Connection
+                        </button>
+                    )}
+                </FormField>
             </FormSection>
 
             <FormSection title="Operation">
@@ -247,6 +268,20 @@ export function IntegrationNodeConfig({ data, onUpdate }: IntegrationNodeConfigP
                     onChange={setOutputVariable}
                 />
             </FormSection>
+
+            {/* Provider Connection Dialog */}
+            <ProviderConnectionDialog
+                isOpen={isProviderDialogOpen}
+                onClose={() => setIsProviderDialogOpen(false)}
+                selectedConnectionId={connectionId}
+                onSelect={(newProvider, newConnectionId) => {
+                    setProvider(newProvider);
+                    setConnectionId(newConnectionId);
+                    setOperation("");
+                    setParameters({});
+                    setIsProviderDialogOpen(false);
+                }}
+            />
         </>
     );
 }
