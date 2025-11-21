@@ -317,25 +317,41 @@ export function FlowBuilder() {
             const inputNode = nodes.find((n) => n.type === "input");
             const entryPoint = inputNode?.id || (nodes.length > 0 ? nodes[0].id : "");
 
-            // Don't save if there are no nodes
-            if (!entryPoint || nodes.length === 0) {
-                console.error("Cannot save workflow with no nodes");
-                setSaveStatus("error");
-                setTimeout(() => setSaveStatus("idle"), 3000);
-                return;
-            }
-
-            const workflowDefinition = {
+            const workflowDefinition: {
+                name: string;
+                nodes: Record<string, unknown>;
+                edges: Array<{
+                    id: string;
+                    source: string;
+                    target: string;
+                    sourceHandle?: string;
+                }>;
+                entryPoint?: string;
+            } = {
                 name: workflowName,
                 nodes: nodesMap,
-                edges: edges.map((edge) => ({
-                    id: edge.id,
-                    source: edge.source,
-                    target: edge.target,
-                    sourceHandle: edge.sourceHandle
-                })),
-                entryPoint
+                edges: edges.map((edge) => {
+                    const edgeData: {
+                        id: string;
+                        source: string;
+                        target: string;
+                        sourceHandle?: string;
+                    } = {
+                        id: edge.id,
+                        source: edge.source,
+                        target: edge.target
+                    };
+                    if (edge.sourceHandle) {
+                        edgeData.sourceHandle = edge.sourceHandle;
+                    }
+                    return edgeData;
+                })
             };
+
+            // Only include entryPoint if workflow has nodes
+            if (entryPoint) {
+                workflowDefinition.entryPoint = entryPoint;
+            }
 
             console.log("Saving workflow:", {
                 name: workflowName,

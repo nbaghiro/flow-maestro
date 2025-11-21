@@ -11,8 +11,8 @@ interface IntegrationNodeData {
 }
 
 function IntegrationNode({ data, selected }: NodeProps<IntegrationNodeData>) {
-    const provider = data.provider || "slack";
-    const operation = data.operation || "sendMessage";
+    const provider = data.provider;
+    const operation = data.operation;
 
     // Format operation for display: handle both snake_case and camelCase
     const formatOperation = (opStr: string): string => {
@@ -35,11 +35,13 @@ function IntegrationNode({ data, selected }: NodeProps<IntegrationNodeData>) {
             <div className="space-y-2">
                 <div className="flex items-center justify-between">
                     <span className="text-xs text-muted-foreground">Provider:</span>
-                    <span className="text-xs font-medium capitalize">{provider}</span>
+                    <span className="text-xs font-medium capitalize">{provider || "—"}</span>
                 </div>
                 <div className="flex items-center justify-between">
                     <span className="text-xs text-muted-foreground">Operation:</span>
-                    <span className="text-xs font-medium">{formatOperation(operation)}</span>
+                    <span className="text-xs font-medium">
+                        {operation ? formatOperation(operation) : "—"}
+                    </span>
                 </div>
             </div>
         </BaseNode>

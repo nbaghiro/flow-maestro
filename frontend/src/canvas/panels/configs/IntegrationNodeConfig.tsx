@@ -21,7 +21,7 @@ interface IntegrationNodeConfigProps {
  * Loads providers and operations dynamically from the backend
  */
 export function IntegrationNodeConfig({ data, onUpdate }: IntegrationNodeConfigProps) {
-    const [provider, setProvider] = useState((data.provider as string) || "slack");
+    const [provider, setProvider] = useState((data.provider as string) || "");
     const [operation, setOperation] = useState((data.operation as string) || "");
     const [connectionId, setConnectionId] = useState((data.connectionId as string) || "");
     const [parameters, setParameters] = useState<Record<string, unknown>>(
@@ -169,7 +169,7 @@ export function IntegrationNodeConfig({ data, onUpdate }: IntegrationNodeConfigP
     }
 
     return (
-        <div>
+        <>
             <FormSection title="Provider">
                 <FormField label="Integration Provider">
                     <select
@@ -181,6 +181,7 @@ export function IntegrationNodeConfig({ data, onUpdate }: IntegrationNodeConfigP
                         }}
                         className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                     >
+                        <option value="">Select a provider</option>
                         {providers.map((p) => (
                             <option key={p.name} value={p.name}>
                                 {p.displayName}
@@ -189,14 +190,16 @@ export function IntegrationNodeConfig({ data, onUpdate }: IntegrationNodeConfigP
                     </select>
                 </FormField>
 
-                <ConnectionPicker
-                    provider={provider}
-                    value={connectionId}
-                    onChange={(id) => setConnectionId(id || "")}
-                    label="Connection"
-                    description={`Select your ${providers.find((p) => p.name === provider)?.displayName || provider} connection`}
-                    required
-                />
+                {provider && (
+                    <ConnectionPicker
+                        provider={provider}
+                        value={connectionId}
+                        onChange={(id) => setConnectionId(id || "")}
+                        label="Connection"
+                        description={`Select your ${providers.find((p) => p.name === provider)?.displayName || provider} connection`}
+                        required
+                    />
+                )}
             </FormSection>
 
             <FormSection title="Operation">
@@ -244,6 +247,6 @@ export function IntegrationNodeConfig({ data, onUpdate }: IntegrationNodeConfigP
                     onChange={setOutputVariable}
                 />
             </FormSection>
-        </div>
+        </>
     );
 }

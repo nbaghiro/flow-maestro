@@ -221,9 +221,12 @@ export function NewConnectionDialog({
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
+        <div className="fixed inset-0 !m-0 z-50 flex items-center justify-center">
             {/* Backdrop */}
-            <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={handleClose} />
+            <div
+                className="absolute inset-0 !m-0 bg-black/50 backdrop-blur-sm"
+                onClick={handleClose}
+            />
 
             {/* Dialog */}
             <div className="relative bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 animate-in fade-in zoom-in-95 duration-200">

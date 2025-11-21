@@ -1,9 +1,10 @@
 import { Plus, Key, AlertCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { ConnectionMethod } from "../../lib/api";
+import { ALL_PROVIDERS } from "../../lib/providers";
 import { cn } from "../../lib/utils";
 import { useConnectionStore } from "../../stores/connectionStore";
-import { AddConnectionDialog } from "./AddConnectionDialog";
+import { NewConnectionDialog } from "./NewConnectionDialog";
 
 interface ConnectionPickerProps {
     provider: string;
@@ -129,13 +130,20 @@ export function ConnectionPicker({
                         className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 dark:bg-gray-800 dark:text-white"
                     >
                         <option value="">Select a connection</option>
-                        {providerConnections.map((conn) => (
-                            <option key={conn.id} value={conn.id}>
-                                {conn.name}
-                                {conn.metadata?.account_info?.email &&
-                                    ` (${conn.metadata.account_info.email})`}
-                            </option>
-                        ))}
+                        {providerConnections.map((conn) => {
+                            // Clean up connection name by removing "unknown@" pattern
+                            const cleanName = conn.name.replace(/\s*-?\s*unknown@\w+/gi, "").trim();
+                            const displayName = cleanName || conn.name;
+
+                            return (
+                                <option key={conn.id} value={conn.id}>
+                                    {displayName}
+                                    {conn.metadata?.account_info?.email &&
+                                        !conn.metadata.account_info.email.includes("unknown") &&
+                                        ` (${conn.metadata.account_info.email})`}
+                                </option>
+                            );
+                        })}
                     </select>
 
                     {/* Show method badge for selected connection */}
@@ -191,17 +199,30 @@ export function ConnectionPicker({
                 </div>
             )}
 
-            <AddConnectionDialog
-                isOpen={isAddDialogOpen}
-                onClose={() => {
-                    setIsAddDialogOpen(false);
-                    fetchConnections({ provider });
-                }}
-                onSuccess={() => {
-                    setIsAddDialogOpen(false);
-                    fetchConnections({ provider });
-                }}
-            />
+            {(() => {
+                const providerInfo = ALL_PROVIDERS.find((p) => p.provider === provider);
+                if (!providerInfo) return null;
+
+                return (
+                    <NewConnectionDialog
+                        isOpen={isAddDialogOpen}
+                        onClose={() => {
+                            setIsAddDialogOpen(false);
+                            fetchConnections({ provider });
+                        }}
+                        provider={provider}
+                        providerDisplayName={providerInfo.displayName}
+                        onSuccess={() => {
+                            setIsAddDialogOpen(false);
+                            fetchConnections({ provider });
+                        }}
+                        supportsOAuth={providerInfo.methods.includes("oauth2")}
+                        supportsApiKey={providerInfo.methods.includes("api_key")}
+                        supportsMCP={providerInfo.methods.includes("mcp")}
+                        mcpServerUrl={providerInfo.mcpServerUrl}
+                    />
+                );
+            })()}
         </div>
     );
 }
