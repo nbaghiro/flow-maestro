@@ -11,8 +11,8 @@ import { ExecutionPanel } from "../components/ExecutionPanel";
 import { WorkflowSettingsDialog } from "../components/WorkflowSettingsDialog";
 import { getWorkflow, updateWorkflow } from "../lib/api";
 import { generateId } from "../lib/utils";
+import { useHistoryStore } from "../stores/historyStore";
 import { useWorkflowStore } from "../stores/workflowStore";
-import { useHistoryStore } from "@/stores/historyStore";
 
 type SaveStatus = "idle" | "saving" | "saved" | "error";
 
@@ -574,22 +574,25 @@ export function FlowBuilder() {
 
             // Cmd+Z - Undo
             if ((event.metaKey || event.ctrlKey) && key === "z" && !event.shiftKey) {
+                console.log("UNDO KEY PRESSED");
                 event.preventDefault();
-                if (canUndo) undo();
+                if (canUndo()) undo();
                 return;
             }
 
             // Cmd+Shift+Z (Mac) - Redo
-            if ((event.metaKey || event.ctrlKey) && event.shiftKey && "z") {
+            if ((event.metaKey || event.ctrlKey) && event.shiftKey && key === "z") {
+                console.log("REDO KEY PRESSED");
                 event.preventDefault();
-                if (canRedo) redo();
+                if (canRedo()) redo();
                 return;
             }
 
             // Ctrl+Y (Windows/linux) - Redo
             if ((event.metaKey || event.ctrlKey) && key === "y") {
+                console.log("REDO KEY PRESSED Winodws");
                 event.preventDefault();
-                if (canRedo) redo();
+                if (canRedo()) redo();
                 return;
             }
 
