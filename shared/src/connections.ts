@@ -115,6 +115,35 @@ export interface TelnyxConnectionData {
 }
 
 /**
+ * Database connection data (PostgreSQL, MySQL, MongoDB, etc.)
+ */
+export interface DatabaseConnectionData {
+    // Option 1: Connection string (simplest)
+    connection_string?: string;
+
+    // Option 2: Individual credentials (more flexible)
+    host?: string;
+    port?: number;
+    database?: string;
+    username?: string;
+    password?: string;
+
+    // SSL/TLS configuration
+    ssl_enabled?: boolean;
+    ssl_cert?: string;
+    ssl_key?: string;
+    ssl_ca?: string;
+
+    // Connection options
+    connection_timeout?: number;
+    pool_size?: number;
+    max_connections?: number;
+
+    // Provider-specific options stored as JSON
+    options?: Record<string, unknown>;
+}
+
+/**
  * Union of all connection data types
  */
 export type ConnectionData =
@@ -123,7 +152,8 @@ export type ConnectionData =
     | BasicAuthData
     | CustomHeaderData
     | MCPConnectionData
-    | TelnyxConnectionData;
+    | TelnyxConnectionData
+    | DatabaseConnectionData;
 
 /**
  * Connection metadata (non-sensitive)
@@ -213,4 +243,15 @@ export function isBasicAuthData(data: ConnectionData): data is BasicAuthData {
  */
 export function isTelnyxConnectionData(data: ConnectionData): data is TelnyxConnectionData {
     return "api_key" in data && ("sip_connection_id" in data || "messaging_profile_id" in data);
+}
+
+/**
+ * Type guard to check if connection data is Database
+ */
+export function isDatabaseConnectionData(data: ConnectionData): data is DatabaseConnectionData {
+    return (
+        "connection_string" in data ||
+        ("host" in data && "database" in data) ||
+        ("username" in data && "database" in data)
+    );
 }

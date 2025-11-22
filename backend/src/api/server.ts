@@ -16,7 +16,6 @@ import { agentRoutes } from "./routes/agents";
 import { analyticsRoutes } from "./routes/analytics";
 import { authRoutes } from "./routes/auth";
 import { connectionRoutes } from "./routes/connections";
-import { databaseConnectionRoutes } from "./routes/database-connections";
 import { executionRoutes } from "./routes/executions";
 import { integrationRoutes } from "./routes/integrations";
 import { knowledgeBaseRoutes } from "./routes/knowledge-bases";
@@ -120,7 +119,6 @@ export async function buildServer() {
     await fastify.register(workflowRoutes, { prefix: "/api/workflows" });
     await fastify.register(executionRoutes, { prefix: "/api/executions" });
     await fastify.register(connectionRoutes, { prefix: "/api/connections" });
-    await fastify.register(databaseConnectionRoutes, { prefix: "/api/database-connections" });
     await fastify.register(integrationRoutes, { prefix: "/api/integrations" });
     await fastify.register(oauthRoutes, { prefix: "/api/oauth" });
     await fastify.register(nodeRoutes, { prefix: "/api/nodes" });

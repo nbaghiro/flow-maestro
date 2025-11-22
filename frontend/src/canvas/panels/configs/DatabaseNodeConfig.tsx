@@ -1,16 +1,12 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Plus } from "lucide-react";
 import { useState, useEffect } from "react";
 import { CodeInput } from "../../../components/CodeInput";
-import { Dialog } from "../../../components/common/Dialog";
 import { Select } from "../../../components/common/Select";
+import { ProviderConnectionDialog } from "../../../components/connections/ProviderConnectionDialog";
 import { FormField, FormSection } from "../../../components/FormField";
 import { OutputSettingsSection } from "../../../components/OutputSettingsSection";
-import {
-    getDatabaseConnections,
-    listDatabaseConnectionTables,
-    createDatabaseConnection,
-    type CreateDatabaseConnectionInput
-} from "../../../lib/api";
+import { ALL_PROVIDERS } from "../../../lib/providers";
+import { useConnectionStore } from "../../../stores/connectionStore";
 
 interface DatabaseNodeConfigProps {
     data: Record<string, unknown>;
@@ -18,17 +14,11 @@ interface DatabaseNodeConfigProps {
 }
 
 const operations = [
-    { value: "query", label: "Query" },
-    { value: "insert", label: "Insert" },
-    { value: "update", label: "Update" },
-    { value: "delete", label: "Delete" }
-];
-
-const databases = [
-    { value: "postgresql", label: "PostgreSQL" },
-    { value: "mysql", label: "MySQL" },
-    { value: "mongodb", label: "MongoDB" },
-    { value: "redis", label: "Redis" }
+    { value: "query", label: "Execute Query" },
+    { value: "insert", label: "Insert Row" },
+    { value: "update", label: "Update Rows" },
+    { value: "delete", label: "Delete Rows" },
+    { value: "listTables", label: "List Tables" }
 ];
 
 const returnFormats = [
@@ -38,118 +28,112 @@ const returnFormats = [
 ];
 
 export function DatabaseNodeConfig({ data, onUpdate }: DatabaseNodeConfigProps) {
-    const queryClient = useQueryClient();
-    const [operation, setOperation] = useState((data.operation as string) || "query");
-    const [databaseType, setDatabaseType] = useState((data.databaseType as string) || "postgresql");
-    const [databaseConnectionId, setDatabaseConnectionId] = useState(
-        (data.databaseConnectionId as string) || ""
-    );
-    const [query, setQuery] = useState((data.query as string) || "");
-    const [parameters, setParameters] = useState((data.parameters as string) || "");
-    const [returnFormat, setReturnFormat] = useState((data.returnFormat as string) || "array");
+    const [connectionId, setConnectionId] = useState((data.connectionId as string) || "");
+    const [provider, setProvider] = useState((data.provider as string) || "");
+    const [operation, setOperation] = useState((data.operation as string) || "");
     const [outputVariable, setOutputVariable] = useState((data.outputVariable as string) || "");
+    const [isProviderDialogOpen, setIsProviderDialogOpen] = useState(false);
 
-    // Dialog state for creating new connection
-    const [showConnectionDialog, setShowConnectionDialog] = useState(false);
-    const [connectionForm, setConnectionForm] = useState<CreateDatabaseConnectionInput>({
-        name: "",
-        provider: databaseType as "postgresql" | "mysql" | "mongodb",
-        host: "localhost",
-        port: 5432,
-        database: "",
-        username: "",
-        password: "",
-        ssl_enabled: false
-    });
+    // Operation-specific parameters
+    const [query, setQuery] = useState(
+        ((data.parameters as Record<string, unknown>)?.query as string) || ""
+    );
+    const [parameters, setParameters] = useState(
+        JSON.stringify((data.parameters as Record<string, unknown>)?.parameters || [], null, 2)
+    );
+    const [returnFormat, setReturnFormat] = useState(
+        ((data.parameters as Record<string, unknown>)?.returnFormat as string) || "array"
+    );
 
-    // Fetch database connections (includes test databases)
-    const { data: connectionsData } = useQuery({
-        queryKey: ["database-connections", databaseType],
-        queryFn: () =>
-            getDatabaseConnections({
-                provider: databaseType as "postgresql" | "mysql" | "mongodb"
-            })
-    });
+    const { connections, fetchConnections } = useConnectionStore();
 
-    const databaseConnections = connectionsData?.data || [];
+    // Fetch connections on mount
+    useEffect(() => {
+        fetchConnections();
+    }, [fetchConnections]);
 
-    // Fetch tables for selected connection
-    const { data: tablesData, isLoading: isLoadingTables } = useQuery({
-        queryKey: ["database-connection-tables", databaseConnectionId],
-        queryFn: () => listDatabaseConnectionTables(databaseConnectionId),
-        enabled:
-            !!databaseConnectionId && (databaseType === "postgresql" || databaseType === "mysql")
-    });
+    // Get selected connection and provider info
+    const selectedConnection = connections.find((conn) => conn.id === connectionId);
+    const providerInfo = ALL_PROVIDERS.find((p) => p.provider === provider);
 
-    const tables = tablesData?.data || [];
+    // Handle connection selection from dialog
+    const handleConnectionSelect = (selectedProvider: string, selectedConnectionId: string) => {
+        setProvider(selectedProvider);
+        setConnectionId(selectedConnectionId);
+        setIsProviderDialogOpen(false);
+    };
 
-    // Mutation for creating database connection
-    const createConnectionMutation = useMutation({
-        mutationFn: createDatabaseConnection,
-        onSuccess: (response) => {
-            queryClient.invalidateQueries({ queryKey: ["database-connections"] });
-            setDatabaseConnectionId(response.data.id);
-            setShowConnectionDialog(false);
-            // Reset form
-            setConnectionForm({
-                name: "",
-                provider: databaseType as "postgresql" | "mysql" | "mongodb",
-                host: "localhost",
-                port: 5432,
-                database: "",
-                username: "",
-                password: "",
-                ssl_enabled: false
-            });
+    useEffect(() => {
+        // Parse parameters JSON
+        let parsedParams: unknown[] = [];
+        if (parameters) {
+            try {
+                parsedParams = JSON.parse(parameters);
+            } catch (e) {
+                // Invalid JSON, will be caught during execution
+                console.error("Error parsing parameters:", e);
+            }
         }
-    });
 
-    useEffect(() => {
-        onUpdate({
+        // Build config based on operation
+        const config: Record<string, unknown> = {
+            connectionId,
+            provider,
             operation,
-            databaseType,
-            databaseConnectionId,
-            query,
-            parameters,
-            returnFormat,
-            outputVariable
-        });
-    }, [
-        operation,
-        databaseType,
-        databaseConnectionId,
-        query,
-        parameters,
-        returnFormat,
-        outputVariable
-    ]);
+            outputVariable,
+            parameters: {
+                nodeId: data.id
+            }
+        };
 
-    // Update connection form provider when database type changes
-    useEffect(() => {
-        setConnectionForm((prev) => ({
-            ...prev,
-            provider: databaseType as "postgresql" | "mysql" | "mongodb",
-            port: databaseType === "postgresql" ? 5432 : databaseType === "mysql" ? 3306 : 27017
-        }));
-    }, [databaseType]);
+        // Add operation-specific parameters
+        if (operation === "query") {
+            config.parameters = {
+                ...(config.parameters as Record<string, unknown>),
+                query,
+                parameters: parsedParams,
+                returnFormat,
+                outputVariable
+            };
+        } else if (operation === "insert") {
+            config.parameters = {
+                ...(config.parameters as Record<string, unknown>),
+                table: (data.parameters as Record<string, unknown>)?.table || "",
+                data: {},
+                returning: [],
+                outputVariable
+            };
+        } else if (operation === "update") {
+            config.parameters = {
+                ...(config.parameters as Record<string, unknown>),
+                table: (data.parameters as Record<string, unknown>)?.table || "",
+                data: {},
+                where: "",
+                whereParameters: [],
+                returning: [],
+                outputVariable
+            };
+        } else if (operation === "delete") {
+            config.parameters = {
+                ...(config.parameters as Record<string, unknown>),
+                table: (data.parameters as Record<string, unknown>)?.table || "",
+                where: "",
+                whereParameters: [],
+                returning: [],
+                outputVariable
+            };
+        } else if (operation === "listTables") {
+            config.parameters = {
+                ...(config.parameters as Record<string, unknown>),
+                schema: "public",
+                outputVariable
+            };
+        }
+
+        onUpdate(config);
+    }, [connectionId, provider, operation, query, parameters, returnFormat, outputVariable]);
 
     const getQueryPlaceholder = () => {
-        if (databaseType === "mongodb") {
-            switch (operation) {
-                case "query":
-                    return '{ "age": { "$gt": 18 } }';
-                case "insert":
-                    return '{ "name": "${userName}", "email": "${email}" }';
-                case "update":
-                    return '{ "$set": { "status": "active" } }';
-                case "delete":
-                    return '{ "id": "${userId}" }';
-            }
-        } else if (databaseType === "redis") {
-            return operation === "query" ? "GET ${key}" : "SET ${key} ${value}";
-        }
-
-        // SQL databases
         switch (operation) {
             case "query":
                 return "SELECT * FROM users WHERE age > $1";
@@ -165,62 +149,56 @@ export function DatabaseNodeConfig({ data, onUpdate }: DatabaseNodeConfigProps) 
     };
 
     return (
-        <div>
+        <>
             <FormSection title="Database">
-                <FormField label="Type">
-                    <Select value={databaseType} onChange={setDatabaseType} options={databases} />
-                </FormField>
-
-                <FormField label="Database Connection" description="Select a saved connection">
-                    <div className="space-y-2">
-                        <Select
-                            value={databaseConnectionId}
-                            onChange={setDatabaseConnectionId}
-                            placeholder="Select a connection..."
-                            options={databaseConnections.map((conn) => ({
-                                value: conn.id,
-                                label: `${conn.name} (${conn.provider})`
-                            }))}
-                        />
+                <FormField label="Database Connection">
+                    {provider && selectedConnection ? (
                         <button
                             type="button"
-                            onClick={() => setShowConnectionDialog(true)}
-                            className="w-full px-3 py-2 text-sm text-muted-foreground border border-dashed border-border rounded-lg hover:border-primary hover:text-primary transition-colors"
+                            onClick={() => setIsProviderDialogOpen(true)}
+                            className="w-full flex items-start gap-3 p-3 text-left border-2 border-gray-200 rounded-lg hover:border-gray-300 hover:bg-gray-50 transition-all"
                         >
-                            + New Database Connection
-                        </button>
-                    </div>
-                </FormField>
+                            {/* Provider Icon */}
+                            <div className="flex-shrink-0 w-10 h-10 flex items-center justify-center">
+                                {providerInfo?.logoUrl ? (
+                                    <img
+                                        src={providerInfo.logoUrl}
+                                        alt={providerInfo.displayName}
+                                        className="w-10 h-10 object-contain"
+                                    />
+                                ) : (
+                                    <div className="w-10 h-10 bg-gray-200 rounded" />
+                                )}
+                            </div>
 
-                {databaseConnectionId && tables.length > 0 && (
-                    <FormField
-                        label="Table Helper"
-                        description="Select a table to insert into query"
-                    >
-                        <Select
-                            value=""
-                            onChange={(selectedTable) => {
-                                if (selectedTable) {
-                                    // Insert table name into query
-                                    if (!query) {
-                                        setQuery(`SELECT * FROM ${selectedTable}`);
-                                    } else {
-                                        // Append to existing query
-                                        setQuery((prev) => `${prev}\n-- FROM ${selectedTable}`);
-                                    }
-                                }
-                            }}
-                            placeholder="Insert table name..."
-                            options={tables.map((table) => ({
-                                value: table.fullName,
-                                label: table.fullName
-                            }))}
-                        />
-                        {isLoadingTables && (
-                            <p className="text-xs text-muted-foreground mt-1">Loading tables...</p>
-                        )}
-                    </FormField>
-                )}
+                            {/* Connection Info */}
+                            <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1">
+                                    <h3 className="font-medium text-sm text-gray-900">
+                                        {providerInfo?.displayName || provider}
+                                    </h3>
+                                </div>
+                                <p className="text-xs text-gray-600 truncate">
+                                    {selectedConnection.name}
+                                </p>
+                                {selectedConnection.metadata?.account_info?.email && (
+                                    <p className="text-xs text-gray-500 truncate">
+                                        {selectedConnection.metadata.account_info.email}
+                                    </p>
+                                )}
+                            </div>
+                        </button>
+                    ) : (
+                        <button
+                            type="button"
+                            onClick={() => setIsProviderDialogOpen(true)}
+                            className="w-full flex items-center justify-center gap-2 p-4 text-sm font-medium text-gray-700 bg-white border-2 border-dashed border-gray-300 rounded-lg hover:border-gray-400 hover:bg-gray-50 transition-all"
+                        >
+                            <Plus className="w-4 h-4" />
+                            Select or Add Connection
+                        </button>
+                    )}
+                </FormField>
             </FormSection>
 
             <FormSection title="Operation">
@@ -228,63 +206,68 @@ export function DatabaseNodeConfig({ data, onUpdate }: DatabaseNodeConfigProps) 
                     <Select value={operation} onChange={setOperation} options={operations} />
                 </FormField>
 
-                <FormField
-                    label={
-                        databaseType === "mongodb"
-                            ? "Query Object"
-                            : databaseType === "redis"
-                              ? "Command"
-                              : "SQL Query"
-                    }
-                    description="Use $1, $2, etc. for parameterized queries (SQL)"
-                >
-                    <CodeInput
-                        value={query}
-                        onChange={setQuery}
-                        language={
-                            databaseType === "mongodb" || databaseType === "redis"
-                                ? "javascript"
-                                : "sql"
-                        }
-                        placeholder={getQueryPlaceholder()}
-                        rows={6}
-                    />
-                </FormField>
+                {operation === "query" && (
+                    <>
+                        <FormField
+                            label="SQL Query"
+                            description="Use $1, $2, etc. for parameterized queries"
+                        >
+                            <CodeInput
+                                value={query}
+                                onChange={setQuery}
+                                language="sql"
+                                placeholder={getQueryPlaceholder()}
+                                rows={6}
+                            />
+                        </FormField>
+
+                        <FormField
+                            label="Query Parameters"
+                            description="JSON array of parameter values"
+                        >
+                            <textarea
+                                value={parameters}
+                                onChange={(e) => setParameters(e.target.value)}
+                                placeholder='["value1", "value2"]'
+                                rows={4}
+                                className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none font-mono"
+                            />
+                        </FormField>
+
+                        <FormField label="Return Format">
+                            <Select
+                                value={returnFormat}
+                                onChange={setReturnFormat}
+                                options={returnFormats}
+                            />
+                        </FormField>
+
+                        <div className="px-3 py-2 bg-yellow-50 border border-yellow-200 rounded-lg">
+                            <p className="text-xs text-yellow-800">
+                                <strong>Security:</strong> Always use parameterized queries ($1, $2)
+                                to prevent SQL injection attacks.
+                            </p>
+                        </div>
+                    </>
+                )}
+
+                {operation === "listTables" && (
+                    <div className="px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg">
+                        <p className="text-sm text-blue-800">
+                            This operation will list all tables in the database.
+                        </p>
+                    </div>
+                )}
+
+                {(operation === "insert" || operation === "update" || operation === "delete") && (
+                    <div className="px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg">
+                        <p className="text-sm text-blue-800">
+                            For {operation} operations, please use the Query operation with a custom
+                            SQL statement.
+                        </p>
+                    </div>
+                )}
             </FormSection>
-
-            <FormSection title="Parameters">
-                <FormField
-                    label="Query Parameters"
-                    description="JSON array of parameter values, supports ${variableName}"
-                >
-                    <textarea
-                        value={parameters}
-                        onChange={(e) => setParameters(e.target.value)}
-                        placeholder='["${userId}", "${email}"]'
-                        rows={4}
-                        className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none font-mono"
-                    />
-                </FormField>
-
-                <div className="px-3 py-2 bg-yellow-50 border border-yellow-200 rounded-lg">
-                    <p className="text-xs text-yellow-800">
-                        <strong>Security:</strong> Always use parameterized queries to prevent SQL
-                        injection attacks.
-                    </p>
-                </div>
-            </FormSection>
-
-            {operation === "query" && (
-                <FormSection title="Result Format">
-                    <FormField label="Return Format">
-                        <Select
-                            value={returnFormat}
-                            onChange={setReturnFormat}
-                            options={returnFormats}
-                        />
-                    </FormField>
-                </FormSection>
-            )}
 
             <FormSection title="Output Settings">
                 <OutputSettingsSection
@@ -295,172 +278,14 @@ export function DatabaseNodeConfig({ data, onUpdate }: DatabaseNodeConfigProps) 
                 />
             </FormSection>
 
-            {/* Create Connection Dialog */}
-            <Dialog
-                isOpen={showConnectionDialog}
-                onClose={() => setShowConnectionDialog(false)}
-                title="New Database Connection"
-            >
-                <form
-                    onSubmit={(e) => {
-                        e.preventDefault();
-                        createConnectionMutation.mutate(connectionForm);
-                    }}
-                    className="space-y-4"
-                >
-                    <div>
-                        <label className="block text-sm font-medium mb-1">Connection Name</label>
-                        <input
-                            type="text"
-                            value={connectionForm.name}
-                            onChange={(e) =>
-                                setConnectionForm({ ...connectionForm, name: e.target.value })
-                            }
-                            placeholder="My Database"
-                            required
-                            className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                        />
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium mb-1">Provider</label>
-                        <Select
-                            value={connectionForm.provider}
-                            onChange={(value) =>
-                                setConnectionForm({
-                                    ...connectionForm,
-                                    provider: value as "postgresql" | "mysql" | "mongodb"
-                                })
-                            }
-                            options={[
-                                { value: "postgresql", label: "PostgreSQL" },
-                                { value: "mysql", label: "MySQL" },
-                                { value: "mongodb", label: "MongoDB" }
-                            ]}
-                        />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                        <div>
-                            <label className="block text-sm font-medium mb-1">Host</label>
-                            <input
-                                type="text"
-                                value={connectionForm.host}
-                                onChange={(e) =>
-                                    setConnectionForm({ ...connectionForm, host: e.target.value })
-                                }
-                                placeholder="localhost"
-                                required
-                                className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium mb-1">Port</label>
-                            <input
-                                type="number"
-                                value={connectionForm.port}
-                                onChange={(e) =>
-                                    setConnectionForm({
-                                        ...connectionForm,
-                                        port: parseInt(e.target.value)
-                                    })
-                                }
-                                placeholder="5432"
-                                required
-                                className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                            />
-                        </div>
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium mb-1">Database Name</label>
-                        <input
-                            type="text"
-                            value={connectionForm.database}
-                            onChange={(e) =>
-                                setConnectionForm({ ...connectionForm, database: e.target.value })
-                            }
-                            placeholder="my_database"
-                            required
-                            className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                        />
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium mb-1">Username</label>
-                        <input
-                            type="text"
-                            value={connectionForm.username}
-                            onChange={(e) =>
-                                setConnectionForm({ ...connectionForm, username: e.target.value })
-                            }
-                            placeholder="db_user"
-                            required
-                            className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                        />
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium mb-1">Password</label>
-                        <input
-                            type="password"
-                            value={connectionForm.password}
-                            onChange={(e) =>
-                                setConnectionForm({ ...connectionForm, password: e.target.value })
-                            }
-                            placeholder="••••••••"
-                            required
-                            className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                        />
-                    </div>
-
-                    <div className="flex items-center">
-                        <input
-                            type="checkbox"
-                            id="ssl_enabled"
-                            checked={connectionForm.ssl_enabled}
-                            onChange={(e) =>
-                                setConnectionForm({
-                                    ...connectionForm,
-                                    ssl_enabled: e.target.checked
-                                })
-                            }
-                            className="mr-2"
-                        />
-                        <label htmlFor="ssl_enabled" className="text-sm">
-                            Enable SSL
-                        </label>
-                    </div>
-
-                    <div className="flex justify-end gap-2 pt-4">
-                        <button
-                            type="button"
-                            onClick={() => setShowConnectionDialog(false)}
-                            className="px-4 py-2 text-sm border border-border rounded-lg hover:bg-gray-50"
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            type="submit"
-                            disabled={createConnectionMutation.isPending}
-                            className="px-4 py-2 text-sm bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50"
-                        >
-                            {createConnectionMutation.isPending
-                                ? "Creating..."
-                                : "Create Connection"}
-                        </button>
-                    </div>
-
-                    {createConnectionMutation.isError && (
-                        <div className="px-3 py-2 bg-red-50 border border-red-200 rounded-lg">
-                            <p className="text-sm text-red-800">
-                                Failed to create connection. Please check your credentials and try
-                                again.
-                            </p>
-                        </div>
-                    )}
-                </form>
-            </Dialog>
-        </div>
+            {/* Provider Connection Dialog */}
+            <ProviderConnectionDialog
+                isOpen={isProviderDialogOpen}
+                onClose={() => setIsProviderDialogOpen(false)}
+                selectedConnectionId={connectionId}
+                defaultCategory="Databases"
+                onSelect={handleConnectionSelect}
+            />
+        </>
     );
 }

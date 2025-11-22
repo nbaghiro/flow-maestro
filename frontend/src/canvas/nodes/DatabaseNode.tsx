@@ -7,12 +7,30 @@ interface DatabaseNodeData {
     label: string;
     status?: "idle" | "pending" | "running" | "success" | "error";
     operation?: string;
-    dbType?: string;
+    provider?: string;
 }
 
 function DatabaseNode({ data, selected }: NodeProps<DatabaseNodeData>) {
-    const operation = data.operation || "query";
-    const dbType = data.dbType || "postgresql";
+    const provider = data.provider;
+    const operation = data.operation;
+
+    // Format provider name for display (PostgreSQL, MySQL, MongoDB)
+    const formatProvider = (providerStr: string): string => {
+        const providerMap: Record<string, string> = {
+            postgresql: "PostgreSQL",
+            mysql: "MySQL",
+            mongodb: "MongoDB"
+        };
+        return providerMap[providerStr.toLowerCase()] || providerStr;
+    };
+
+    // Format operation for display
+    const formatOperation = (opStr: string): string => {
+        // Replace underscores with spaces
+        const formatted = opStr.replace(/_/g, " ");
+        // Capitalize first letter
+        return formatted.charAt(0).toUpperCase() + formatted.slice(1);
+    };
 
     return (
         <BaseNode
@@ -25,11 +43,15 @@ function DatabaseNode({ data, selected }: NodeProps<DatabaseNodeData>) {
             <div className="space-y-2">
                 <div className="flex items-center justify-between">
                     <span className="text-xs text-muted-foreground">Type:</span>
-                    <span className="text-xs font-medium capitalize">{dbType}</span>
+                    <span className="text-xs font-medium">
+                        {provider ? formatProvider(provider) : "—"}
+                    </span>
                 </div>
                 <div className="flex items-center justify-between">
                     <span className="text-xs text-muted-foreground">Operation:</span>
-                    <span className="text-xs font-medium capitalize">{operation}</span>
+                    <span className="text-xs font-medium">
+                        {operation ? formatOperation(operation) : "—"}
+                    </span>
                 </div>
             </div>
         </BaseNode>

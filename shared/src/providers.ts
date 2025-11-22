@@ -1478,8 +1478,7 @@ export const ALL_PROVIDERS: MCPProvider[] = [
         description: "Relational database",
         logoUrl: getBrandLogo("postgrespro.com"),
         category: "Databases",
-        methods: ["api_key"],
-        comingSoon: true
+        methods: ["api_key"]
     },
     {
         provider: "mysql",

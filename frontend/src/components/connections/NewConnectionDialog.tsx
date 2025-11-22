@@ -18,7 +18,7 @@ interface NewConnectionDialogProps {
     mcpServerUrl?: string;
 }
 
-type DialogStep = "method-selection" | "api-key-form" | "mcp-form";
+type DialogStep = "method-selection" | "api-key-form" | "mcp-form" | "database-form";
 
 /**
  * New Connection Dialog with StackAI-style design
@@ -51,8 +51,22 @@ export function NewConnectionDialog({
     const [error, setError] = useState<string | null>(null);
     const [oauthInitiated, setOauthInitiated] = useState<boolean>(false);
 
+    // Database connection state
+    const [dbConnectionString, setDbConnectionString] = useState<string>("");
+    const [dbHost, setDbHost] = useState<string>("localhost");
+    const [dbPort, setDbPort] = useState<string>("5432");
+    const [dbDatabase, setDbDatabase] = useState<string>("");
+    const [dbUsername, setDbUsername] = useState<string>("");
+    const [dbPassword, setDbPassword] = useState<string>("");
+    const [dbSslEnabled, setDbSslEnabled] = useState<boolean>(false);
+    const [showDbPassword, setShowDbPassword] = useState<boolean>(false);
+    const [useConnectionString, setUseConnectionString] = useState<boolean>(false);
+
     const { initiateOAuth, loading: oauthLoading } = useOAuth();
     const { addConnection } = useConnectionStore();
+
+    // Check if provider is a database
+    const isDatabaseProvider = ["postgresql", "mysql", "mongodb"].includes(provider.toLowerCase());
 
     const handleReset = () => {
         setStep("method-selection");
@@ -64,6 +78,17 @@ export function NewConnectionDialog({
         setError(null);
         setIsSubmitting(false);
         setOauthInitiated(false);
+
+        // Reset database fields
+        setDbConnectionString("");
+        setDbHost("localhost");
+        setDbPort("5432");
+        setDbDatabase("");
+        setDbUsername("");
+        setDbPassword("");
+        setDbSslEnabled(false);
+        setShowDbPassword(false);
+        setUseConnectionString(false);
     };
 
     const handleClose = () => {
@@ -108,6 +133,12 @@ export function NewConnectionDialog({
 
         if (oauthInitiated) return;
 
+        // Database providers always go to database form
+        if (isDatabaseProvider) {
+            handleDatabaseSelect();
+            return;
+        }
+
         const methodCount =
             (supportsOAuth ? 1 : 0) + (supportsApiKey ? 1 : 0) + (supportsMCP ? 1 : 0);
 
@@ -129,7 +160,7 @@ export function NewConnectionDialog({
         }
 
         return;
-    }, [isOpen, supportsOAuth, supportsApiKey, supportsMCP, oauthInitiated]);
+    }, [isOpen, supportsOAuth, supportsApiKey, supportsMCP, oauthInitiated, isDatabaseProvider]);
 
     const handleApiKeySelect = () => {
         setStep("api-key-form");
@@ -137,6 +168,18 @@ export function NewConnectionDialog({
 
     const handleMCPSelect = () => {
         setStep("mcp-form");
+    };
+
+    const handleDatabaseSelect = () => {
+        // Set default port based on provider
+        if (provider === "postgresql") {
+            setDbPort("5432");
+        } else if (provider === "mysql") {
+            setDbPort("3306");
+        } else if (provider === "mongodb") {
+            setDbPort("27017");
+        }
+        setStep("database-form");
     };
 
     const handleBackToMethodSelection = () => {
@@ -218,6 +261,70 @@ export function NewConnectionDialog({
         }
     };
 
+    const handleDatabaseSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+
+        if (!connectionName.trim()) {
+            setError("Connection name is required");
+            return;
+        }
+
+        // Validate based on connection method
+        if (useConnectionString) {
+            if (!dbConnectionString.trim()) {
+                setError("Connection string is required");
+                return;
+            }
+        } else {
+            if (!dbHost.trim()) {
+                setError("Host is required");
+                return;
+            }
+            if (!dbDatabase.trim()) {
+                setError("Database name is required");
+                return;
+            }
+            if (!dbUsername.trim()) {
+                setError("Username is required");
+                return;
+            }
+        }
+
+        setIsSubmitting(true);
+        setError(null);
+
+        try {
+            const data: JsonObject = {
+                ssl_enabled: dbSslEnabled
+            };
+
+            if (useConnectionString) {
+                data.connection_string = dbConnectionString;
+            } else {
+                data.host = dbHost;
+                data.port = parseInt(dbPort) || 5432;
+                data.database = dbDatabase;
+                data.username = dbUsername;
+                data.password = dbPassword;
+            }
+
+            const input: CreateConnectionInput = {
+                name: connectionName,
+                connection_method: "api_key",
+                provider,
+                data
+            };
+
+            await addConnection(input);
+            if (onSuccess) onSuccess();
+            handleClose();
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "Failed to create database connection");
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
     if (!isOpen) return null;
 
     return (
@@ -238,6 +345,16 @@ export function NewConnectionDialog({
                                 onClick={handleBackToMethodSelection}
                                 className="text-gray-600 hover:text-gray-900 transition-colors"
                                 type="button"
+                            >
+                                <ArrowLeft className="w-5 h-5" />
+                            </button>
+                        )}
+                        {step === "database-form" && (
+                            <button
+                                onClick={handleClose}
+                                className="text-gray-600 hover:text-gray-900 transition-colors"
+                                type="button"
+                                title="Back to provider selection"
                             >
                                 <ArrowLeft className="w-5 h-5" />
                             </button>
@@ -533,6 +650,211 @@ export function NewConnectionDialog({
                                     className="px-6 py-2 text-sm font-medium text-white bg-purple-600 rounded-md hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                 >
                                     {isSubmitting ? "Creating..." : "Create MCP connection"}
+                                </button>
+                            </div>
+                        </form>
+                    )}
+
+                    {/* Database Form */}
+                    {step === "database-form" && (
+                        <form onSubmit={handleDatabaseSubmit} className="space-y-4">
+                            {/* Connection Name */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Connection Name <span className="text-red-500">*</span>
+                                </label>
+                                <p className="text-xs text-gray-500 mb-2">
+                                    Give your database connection a friendly name
+                                </p>
+                                <input
+                                    type="text"
+                                    value={connectionName}
+                                    onChange={(e) => setConnectionName(e.target.value)}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
+                                    placeholder={`${providerDisplayName} Connection`}
+                                    required
+                                />
+                            </div>
+
+                            {/* Connection Method Toggle */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Connection Method
+                                </label>
+                                <div className="flex gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setUseConnectionString(false)}
+                                        className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                                            !useConnectionString
+                                                ? "bg-black text-white"
+                                                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                                        }`}
+                                    >
+                                        Individual Fields
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setUseConnectionString(true)}
+                                        className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                                            useConnectionString
+                                                ? "bg-black text-white"
+                                                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                                        }`}
+                                    >
+                                        Connection String
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Connection String (if selected) */}
+                            {useConnectionString ? (
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Connection String <span className="text-red-500">*</span>
+                                    </label>
+                                    <p className="text-xs text-gray-500 mb-2">
+                                        Full database connection URL
+                                    </p>
+                                    <input
+                                        type="text"
+                                        value={dbConnectionString}
+                                        onChange={(e) => setDbConnectionString(e.target.value)}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors font-mono text-sm"
+                                        placeholder={
+                                            provider === "postgresql"
+                                                ? "postgresql://user:password@localhost:5432/dbname"
+                                                : provider === "mysql"
+                                                  ? "mysql://user:password@localhost:3306/dbname"
+                                                  : "mongodb://user:password@localhost:27017/dbname"
+                                        }
+                                        required
+                                    />
+                                </div>
+                            ) : (
+                                <>
+                                    {/* Host and Port */}
+                                    <div className="grid grid-cols-3 gap-3">
+                                        <div className="col-span-2">
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                Host <span className="text-red-500">*</span>
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={dbHost}
+                                                onChange={(e) => setDbHost(e.target.value)}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
+                                                placeholder="localhost"
+                                                required
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                Port <span className="text-red-500">*</span>
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={dbPort}
+                                                onChange={(e) => setDbPort(e.target.value)}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
+                                                placeholder="5432"
+                                                required
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Database Name */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            Database Name <span className="text-red-500">*</span>
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={dbDatabase}
+                                            onChange={(e) => setDbDatabase(e.target.value)}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
+                                            placeholder="my_database"
+                                            required
+                                        />
+                                    </div>
+
+                                    {/* Username */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            Username <span className="text-red-500">*</span>
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={dbUsername}
+                                            onChange={(e) => setDbUsername(e.target.value)}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
+                                            placeholder="db_user"
+                                            required
+                                        />
+                                    </div>
+
+                                    {/* Password */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            Password{" "}
+                                            <span className="text-gray-400">(Optional)</span>
+                                        </label>
+                                        <div className="relative">
+                                            <input
+                                                type={showDbPassword ? "text" : "password"}
+                                                value={dbPassword}
+                                                onChange={(e) => setDbPassword(e.target.value)}
+                                                className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
+                                                placeholder="Enter database password"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowDbPassword(!showDbPassword)}
+                                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                                            >
+                                                {showDbPassword ? (
+                                                    <EyeOff className="w-4 h-4" />
+                                                ) : (
+                                                    <Eye className="w-4 h-4" />
+                                                )}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+
+                            {/* SSL Enabled */}
+                            <div className="flex items-center gap-2">
+                                <input
+                                    type="checkbox"
+                                    id="ssl-enabled"
+                                    checked={dbSslEnabled}
+                                    onChange={(e) => setDbSslEnabled(e.target.checked)}
+                                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                />
+                                <label
+                                    htmlFor="ssl-enabled"
+                                    className="text-sm font-medium text-gray-700"
+                                >
+                                    Enable SSL/TLS
+                                </label>
+                            </div>
+
+                            {/* Error Message */}
+                            {error && (
+                                <div className="p-3 bg-red-50 border border-red-200 rounded-md">
+                                    <p className="text-sm text-red-800">{error}</p>
+                                </div>
+                            )}
+
+                            {/* Submit Button */}
+                            <div className="flex justify-end pt-2">
+                                <button
+                                    type="submit"
+                                    disabled={isSubmitting}
+                                    className="px-6 py-2 text-sm font-medium text-white bg-black rounded-md hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                >
+                                    {isSubmitting ? "Creating..." : "Create connection"}
                                 </button>
                             </div>
                         </form>

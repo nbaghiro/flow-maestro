@@ -10,6 +10,8 @@ interface ProviderConnectionDialogProps {
     isOpen: boolean;
     onClose: () => void;
     selectedConnectionId?: string;
+    defaultCategory?: string;
+    excludeCategories?: string[];
     onSelect: (provider: string, connectionId: string) => void;
 }
 
@@ -23,11 +25,13 @@ export function ProviderConnectionDialog({
     isOpen,
     onClose,
     selectedConnectionId,
+    defaultCategory,
+    excludeCategories = [],
     onSelect
 }: ProviderConnectionDialogProps) {
     const [view, setView] = useState<DialogView>("provider-list");
     const [searchQuery, setSearchQuery] = useState("");
-    const [selectedCategory, setSelectedCategory] = useState<string>("all");
+    const [selectedCategory, setSelectedCategory] = useState<string>(defaultCategory || "all");
     const [currentProvider, setCurrentProvider] = useState<Provider | null>(null);
     const { connections, loading, fetchConnections } = useConnectionStore();
 
@@ -36,9 +40,9 @@ export function ProviderConnectionDialog({
             fetchConnections();
             setView("provider-list");
             setSearchQuery("");
-            setSelectedCategory("all");
+            setSelectedCategory(defaultCategory || "all");
         }
-    }, [isOpen, fetchConnections]);
+    }, [isOpen, defaultCategory, fetchConnections]);
 
     // Filter providers based on search query and category (include all providers, even coming soon)
     const filteredProviders = ALL_PROVIDERS.filter((provider) => {
@@ -51,7 +55,9 @@ export function ProviderConnectionDialog({
         const matchesCategory =
             selectedCategory === "all" || provider.category === selectedCategory;
 
-        return matchesSearch && matchesCategory;
+        const notExcluded = !excludeCategories.includes(provider.category);
+
+        return matchesSearch && matchesCategory && notExcluded;
     });
 
     // Group providers by category
@@ -68,7 +74,9 @@ export function ProviderConnectionDialog({
         "Social Media"
     ];
 
-    const categories = Array.from(new Set(filteredProviders.map((p) => p.category)));
+    const categories = Array.from(new Set(filteredProviders.map((p) => p.category))).filter(
+        (cat) => !excludeCategories.includes(cat)
+    );
     const sortedCategories = categories.sort((a, b) => {
         const indexA = categoryOrder.indexOf(a);
         const indexB = categoryOrder.indexOf(b);
@@ -192,7 +200,9 @@ export function ProviderConnectionDialog({
                                             value={selectedCategory}
                                             onChange={setSelectedCategory}
                                             options={[
-                                                { value: "all", label: "All Categories" },
+                                                ...(defaultCategory
+                                                    ? []
+                                                    : [{ value: "all", label: "All Categories" }]),
                                                 ...sortedCategories.map((category) => ({
                                                     value: category,
                                                     label: category
