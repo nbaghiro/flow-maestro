@@ -12,6 +12,7 @@ import { WorkflowSettingsDialog } from "../components/WorkflowSettingsDialog";
 import { getWorkflow, updateWorkflow } from "../lib/api";
 import { generateId } from "../lib/utils";
 import { useWorkflowStore } from "../stores/workflowStore";
+import { useHistoryStore } from "@/stores/historyStore";
 
 type SaveStatus = "idle" | "saving" | "saved" | "error";
 
@@ -46,6 +47,31 @@ export function FlowBuilder() {
         addNode,
         selectNode
     } = useWorkflowStore();
+
+    // Access undo/redo actions and flags from the global history store.
+    // clear() resets the entire undo/redo stack (called on unmount + page refresh).
+    const { undo, redo, canUndo, canRedo, clear } = useHistoryStore();
+
+    // Clear history when exiting the FlowBuilder page (component unmount).
+    // This ensures each workflow starts with a fresh undo/redo stack.
+    useEffect(() => {
+        return () => {
+            clear();
+        };
+    }, []);
+
+    // Clear history on browser refresh (Cmd + R, F5, or closing tab).
+    useEffect(() => {
+        const handleBeforeUnload = () => {
+            clear();
+        };
+
+        window.addEventListener("beforeunload", handleBeforeUnload);
+
+        return () => {
+            window.removeEventListener("beforeunload", handleBeforeUnload);
+        };
+    }, []);
 
     useEffect(() => {
         if (workflowId) {
@@ -543,6 +569,27 @@ export function FlowBuilder() {
                 event.preventDefault();
                 console.log("Opening settings via Cmd+,");
                 setIsSettingsOpen(true);
+                return;
+            }
+
+            // Cmd+Z - Undo
+            if ((event.metaKey || event.ctrlKey) && key === "z" && !event.shiftKey) {
+                event.preventDefault();
+                if (canUndo) undo();
+                return;
+            }
+
+            // Cmd+Shift+Z (Mac) - Redo
+            if ((event.metaKey || event.ctrlKey) && event.shiftKey && "z") {
+                event.preventDefault();
+                if (canRedo) redo();
+                return;
+            }
+
+            // Ctrl+Y (Windows/linux) - Redo
+            if ((event.metaKey || event.ctrlKey) && key === "y") {
+                event.preventDefault();
+                if (canRedo) redo();
                 return;
             }
 
