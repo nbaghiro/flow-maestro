@@ -1,14 +1,13 @@
+import { Plus } from "lucide-react";
 import { useState, useEffect } from "react";
-import {
-    LLM_PROVIDERS,
-    LLM_MODELS_BY_PROVIDER,
-    getDefaultModelForProvider
-} from "@flowmaestro/shared";
+import { LLM_MODELS_BY_PROVIDER, getDefaultModelForProvider } from "@flowmaestro/shared";
 import { Select } from "../../../components/common/Select";
-import { ConnectionPicker } from "../../../components/connections/ConnectionPicker";
+import { ProviderConnectionDialog } from "../../../components/connections/ProviderConnectionDialog";
 import { FormField, FormSection } from "../../../components/FormField";
 import { OutputSettingsSection } from "../../../components/OutputSettingsSection";
 import { Slider } from "../../../components/Slider";
+import { ALL_PROVIDERS } from "../../../lib/providers";
+import { useConnectionStore } from "../../../stores/connectionStore";
 
 interface LLMNodeConfigProps {
     data: Record<string, unknown>;
@@ -16,19 +15,29 @@ interface LLMNodeConfigProps {
 }
 
 export function LLMNodeConfig({ data, onUpdate }: LLMNodeConfigProps) {
-    const [provider, setProvider] = useState((data.provider as string) || "openai");
+    const [provider, setProvider] = useState((data.provider as string) || "");
     const [model, setModel] = useState(
         (data.model as string) || getDefaultModelForProvider((data.provider as string) || "openai")
     );
-    const [connectionId, setConnectionId] = useState<string | null>(
-        (data.connectionId as string) || null
-    );
+    const [connectionId, setConnectionId] = useState<string>((data.connectionId as string) || "");
     const [systemPrompt, setSystemPrompt] = useState((data.systemPrompt as string) || "");
     const [prompt, setPrompt] = useState((data.prompt as string) || "");
     const [temperature, setTemperature] = useState((data.temperature as number) || 0.7);
     const [maxTokens, setMaxTokens] = useState((data.maxTokens as number) || 1000);
     const [topP, setTopP] = useState((data.topP as number) || 1);
     const [outputVariable, setOutputVariable] = useState((data.outputVariable as string) || "");
+    const [isProviderDialogOpen, setIsProviderDialogOpen] = useState(false);
+
+    const { connections, fetchConnections } = useConnectionStore();
+
+    // Fetch connections on mount
+    useEffect(() => {
+        fetchConnections();
+    }, [fetchConnections]);
+
+    // Get selected connection and provider info
+    const selectedConnection = connections.find((conn) => conn.id === connectionId);
+    const providerInfo = ALL_PROVIDERS.find((p) => p.provider === provider);
 
     useEffect(() => {
         onUpdate({
@@ -54,49 +63,84 @@ export function LLMNodeConfig({ data, onUpdate }: LLMNodeConfigProps) {
         outputVariable
     ]);
 
-    const handleProviderChange = (newProvider: string) => {
-        setProvider(newProvider);
+    // Handle connection selection from dialog
+    const handleConnectionSelect = (selectedProvider: string, selectedConnectionId: string) => {
+        setProvider(selectedProvider);
+        setConnectionId(selectedConnectionId);
+        setIsProviderDialogOpen(false);
+
         // Set default model for new provider
-        const defaultModel = getDefaultModelForProvider(newProvider);
+        const defaultModel = getDefaultModelForProvider(selectedProvider);
         if (defaultModel) {
             setModel(defaultModel);
         }
-        // Reset connection since it's provider-specific
-        setConnectionId(null);
     };
 
     return (
-        <div>
+        <>
             <FormSection title="Model Configuration">
-                <FormField label="Provider">
-                    <Select
-                        value={provider}
-                        onChange={handleProviderChange}
-                        options={LLM_PROVIDERS}
-                    />
+                <FormField label="LLM Provider Connection">
+                    {provider && selectedConnection ? (
+                        <button
+                            type="button"
+                            onClick={() => setIsProviderDialogOpen(true)}
+                            className="w-full flex items-start gap-3 p-3 text-left border-2 border-gray-200 rounded-lg hover:border-gray-300 hover:bg-gray-50 transition-all"
+                        >
+                            {/* Provider Icon */}
+                            <div className="flex-shrink-0 w-10 h-10 flex items-center justify-center">
+                                {providerInfo?.logoUrl ? (
+                                    <img
+                                        src={providerInfo.logoUrl}
+                                        alt={providerInfo.displayName}
+                                        className="w-10 h-10 object-contain"
+                                    />
+                                ) : (
+                                    <div className="w-10 h-10 bg-gray-200 rounded" />
+                                )}
+                            </div>
+
+                            {/* Connection Info */}
+                            <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1">
+                                    <h3 className="font-medium text-sm text-gray-900">
+                                        {providerInfo?.displayName || provider}
+                                    </h3>
+                                </div>
+                                <p className="text-xs text-gray-600 truncate">
+                                    {selectedConnection.name}
+                                </p>
+                                {selectedConnection.metadata?.account_info?.email && (
+                                    <p className="text-xs text-gray-500 truncate">
+                                        {selectedConnection.metadata.account_info.email}
+                                    </p>
+                                )}
+                            </div>
+                        </button>
+                    ) : (
+                        <button
+                            type="button"
+                            onClick={() => setIsProviderDialogOpen(true)}
+                            className="w-full flex items-center justify-center gap-2 p-4 text-sm font-medium text-gray-700 bg-white border-2 border-dashed border-gray-300 rounded-lg hover:border-gray-400 hover:bg-gray-50 transition-all"
+                        >
+                            <Plus className="w-4 h-4" />
+                            Select or Add Connection
+                        </button>
+                    )}
                 </FormField>
 
-                <FormField label="Model">
-                    <Select
-                        value={model}
-                        onChange={setModel}
-                        options={
-                            LLM_MODELS_BY_PROVIDER[
-                                provider as keyof typeof LLM_MODELS_BY_PROVIDER
-                            ] || []
-                        }
-                    />
-                </FormField>
-
-                <ConnectionPicker
-                    provider={provider}
-                    value={connectionId}
-                    onChange={setConnectionId}
-                    label="API Connection"
-                    description="Select the API connection to use for authentication"
-                    required
-                    allowedMethods={["api_key", "oauth2"]}
-                />
+                {provider && (
+                    <FormField label="Model">
+                        <Select
+                            value={model}
+                            onChange={setModel}
+                            options={
+                                LLM_MODELS_BY_PROVIDER[
+                                    provider as keyof typeof LLM_MODELS_BY_PROVIDER
+                                ] || []
+                            }
+                        />
+                    </FormField>
+                )}
             </FormSection>
 
             <FormSection title="Prompts">
@@ -165,6 +209,15 @@ export function LLMNodeConfig({ data, onUpdate }: LLMNodeConfigProps) {
                     onChange={setOutputVariable}
                 />
             </FormSection>
-        </div>
+
+            {/* Provider Connection Dialog */}
+            <ProviderConnectionDialog
+                isOpen={isProviderDialogOpen}
+                onClose={() => setIsProviderDialogOpen(false)}
+                selectedConnectionId={connectionId}
+                defaultCategory="AI & ML"
+                onSelect={handleConnectionSelect}
+            />
+        </>
     );
 }

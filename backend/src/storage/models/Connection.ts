@@ -15,14 +15,18 @@ import type {
     MCPTool,
     MCPConnectionData,
     TelnyxConnectionData,
+    DatabaseConnectionData,
     ConnectionData,
     ConnectionMetadata,
-    ConnectionCapabilities,
+    ConnectionCapabilities
+} from "@flowmaestro/shared";
+import {
     isMCPConnectionData,
     isOAuth2TokenData,
     isApiKeyData,
     isBasicAuthData,
-    isTelnyxConnectionData
+    isTelnyxConnectionData,
+    isDatabaseConnectionData
 } from "@flowmaestro/shared";
 
 // Re-export for convenience
@@ -38,6 +42,7 @@ export type {
     MCPTool,
     MCPConnectionData,
     TelnyxConnectionData,
+    DatabaseConnectionData,
     ConnectionData,
     ConnectionMetadata,
     ConnectionCapabilities
@@ -48,7 +53,8 @@ export {
     isOAuth2TokenData,
     isApiKeyData,
     isBasicAuthData,
-    isTelnyxConnectionData
+    isTelnyxConnectionData,
+    isDatabaseConnectionData
 };
 
 /**

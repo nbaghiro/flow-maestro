@@ -68,12 +68,25 @@ const hubspotEntry: ProviderRegistryEntry = {
     }
 };
 
+// Register PostgreSQL provider
+const postgresqlEntry: ProviderRegistryEntry = {
+    name: "postgresql",
+    displayName: "PostgreSQL",
+    authMethod: "api_key",
+    category: "database",
+    loader: async () => {
+        const { PostgresqlProvider } = await import("./providers/postgresql/PostgresqlProvider");
+        return new PostgresqlProvider();
+    }
+};
+
 // Register all providers
 providerRegistry.register(slackEntry);
 providerRegistry.register(codaEntry);
 providerRegistry.register(notionEntry);
 providerRegistry.register(airtableEntry);
 providerRegistry.register(hubspotEntry);
+providerRegistry.register(postgresqlEntry);
 
 // Export for use in application
 export { providerRegistry };

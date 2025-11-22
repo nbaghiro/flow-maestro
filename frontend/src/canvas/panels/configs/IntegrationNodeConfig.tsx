@@ -272,6 +272,7 @@ export function IntegrationNodeConfig({ data, onUpdate }: IntegrationNodeConfigP
                 isOpen={isProviderDialogOpen}
                 onClose={() => setIsProviderDialogOpen(false)}
                 selectedConnectionId={connectionId}
+                excludeCategories={["AI & ML"]}
                 onSelect={(newProvider, newConnectionId) => {
                     setProvider(newProvider);
                     setConnectionId(newConnectionId);
