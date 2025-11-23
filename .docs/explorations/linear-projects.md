@@ -86,28 +86,67 @@ Everything related to the workflow builder, node types, and workflow execution. 
 
 ### Tickets
 
-#### Missing Node Types
+#### Node Implementation & Testing (HIGH PRIORITY)
 
-- [ ] Implement Email node (provider exists, needs operations + executor)
-- [ ] Implement SMS/Twilio node (provider + executor)
-- [ ] Implement Data Validation node (JSON schema, regex, custom rules)
-- [ ] Implement Webhook Sender node (HTTP POST with retry)
-- [ ] Implement Scheduled Task node (cron trigger integration)
-- [ ] Implement File Upload node (S3/MinIO integration)
-- [ ] Implement CSV Parser node
-- [ ] Implement XML Parser node
-- [ ] Implement Markdown Renderer node
-- [ ] Implement Math/Calculator node
-- [ ] Implement Random/UUID Generator node
-- [ ] Implement Delay/Throttle node
-- [ ] Implement Merge node (combine multiple inputs)
-- [ ] Implement Split node (broadcast to multiple outputs)
-- [ ] Implement Filter node (array filtering)
-- [ ] Implement Map node (array transformation)
-- [ ] Implement Reduce node (array aggregation)
-- [ ] Implement Sort node
-- [ ] Implement Deduplicate node
-- [ ] Implement Cache node (Redis-backed)
+**Core Nodes:**
+
+- [ ] Complete Input node implementation (executor validation, error handling, UI)
+- [ ] Complete Output node implementation (executor validation, formatting, UI)
+- [ ] Complete Variable node implementation (set/get/update operations, scope handling)
+- [ ] Complete Echo node implementation (passthrough logic, testing)
+- [ ] Complete Wait node implementation (delay functionality, async handling)
+
+**Control Flow Nodes:**
+
+- [ ] Complete Conditional node implementation (if/else logic, expression evaluation)
+- [ ] Complete Switch node implementation (multiple cases, default handling)
+- [ ] Complete Loop node implementation (iteration, break conditions, batch processing)
+
+**Data Processing Nodes:**
+
+- [ ] Complete Transform node implementation (data mapping, transformations)
+- [ ] Complete Code node implementation (JavaScript execution, sandboxing, error handling)
+- [ ] Complete JSON Transform node implementation (JSON manipulation, validation)
+
+**AI/ML Nodes:**
+
+- [ ] Complete LLM node implementation (OpenAI/Anthropic, streaming, token management)
+- [ ] Complete Vision node implementation (image analysis, multiple providers)
+- [ ] Complete Audio node implementation (audio processing, transcription)
+- [ ] Complete Embeddings node implementation (vector generation, multiple models)
+
+**Integration Nodes:**
+
+- [ ] Complete HTTP node implementation (REST API calls, auth, retries)
+- [ ] Complete Integration node implementation (generic provider integration, error handling)
+- [ ] Complete Database node implementation (SQL queries, connection pooling, transactions)
+- [ ] Complete File Operations node implementation (read/write/delete, S3/MinIO integration)
+
+**Knowledge Base Nodes:**
+
+- [ ] Complete KB Query node implementation (RAG/semantic search, relevance tuning)
+
+**Voice Nodes:**
+
+- [ ] Complete Voice Greet node implementation (TTS greeting, voice selection)
+- [ ] Complete Voice Listen node implementation (STT input, interruption handling)
+- [ ] Complete Voice Menu node implementation (IVR menu, DTMF support)
+- [ ] Complete Voice Hangup node implementation (call termination, cleanup)
+
+**Partially Implemented:**
+
+- [ ] Complete User Input node implementation (backend support, validation, UI)
+
+#### Node Testing Infrastructure
+
+- [ ] Create automated test suite for all node executors
+- [ ] Add unit tests for each node executor
+- [ ] Add integration tests for node execution in workflows
+- [ ] Create test fixtures and mock data for each node type
+- [ ] Add error handling tests for each node
+- [ ] Test edge cases (null values, missing config, invalid inputs)
+- [ ] Add performance tests for expensive nodes (LLM, Vision, etc.)
+- [ ] Create visual regression tests for node UI components
 
 #### Node Improvements
 
@@ -818,7 +857,7 @@ Comprehensive documentation for users, developers, and administrators. Help peop
 ### Total Tickets by Project
 
 1. **Core Platform**: ~35 tickets
-2. **Workflows & Nodes**: ~65 tickets
+2. **Workflows & Nodes**: ~62 tickets (26 node implementations + 8 testing infrastructure + 28 improvements)
 3. **Agents**: ~50 tickets
 4. **Integrations**: ~75 tickets
 5. **Templates & Demos**: ~60 tickets
@@ -826,21 +865,24 @@ Comprehensive documentation for users, developers, and administrators. Help peop
 7. **Infrastructure & DevOps**: ~80 tickets
 8. **Documentation**: ~45 tickets
 
-**Grand Total: ~470 tickets**
+**Grand Total: ~467 tickets**
 
 ### High Priority Areas
 
-1. Testing infrastructure (commented out in CI)
-2. Voice agent production implementation
-3. Integration coverage expansion (9 → 30+ providers)
-4. RBAC and workspace features
-5. Monitoring and observability
+1. **Complete existing node implementations** (26 nodes need full implementation and testing)
+2. Testing infrastructure (commented out in CI)
+3. Voice agent production implementation
+4. Integration coverage expansion (9 → 30+ providers)
+5. RBAC and workspace features
+6. Monitoring and observability
 
 ### Quick Wins
 
+- Complete core nodes (Input, Output, Variable, Echo, Wait)
+- Complete control flow nodes (Conditional, Switch, Loop)
+- Complete LLM node (most critical for AI workflows)
 - Uncomment and fix tests in CI
-- Implement missing node types (Email, SMS, Data Validation)
+- Create automated test suite for node executors
 - Add template gallery UI
 - Create first 10 workflow templates
-- Add dark mode toggle
 - Set up error tracking (Sentry)
