@@ -1255,8 +1255,7 @@ export const ALL_PROVIDERS: MCPProvider[] = [
         description: "Issue tracking for software teams",
         logoUrl: getBrandLogo("linear.app"),
         category: "Developer Tools",
-        methods: ["api_key"],
-        comingSoon: true
+        methods: ["oauth2"]
     },
     {
         provider: "vercel",

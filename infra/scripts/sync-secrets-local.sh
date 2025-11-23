@@ -149,6 +149,8 @@ HUBSPOT_CLIENT_ID=$(get_secret "flowmaestro-app-hubspot-client-id" "")
 HUBSPOT_CLIENT_SECRET=$(get_secret "flowmaestro-app-hubspot-client-secret" "")
 GITHUB_CLIENT_ID=$(get_secret "flowmaestro-app-github-client-id" "")
 GITHUB_CLIENT_SECRET=$(get_secret "flowmaestro-app-github-client-secret" "")
+LINEAR_CLIENT_ID=$(get_secret "flowmaestro-app-linear-client-id" "")
+LINEAR_CLIENT_SECRET=$(get_secret "flowmaestro-app-linear-client-secret" "")
 
 print_success "Developer secrets fetched successfully"
 
@@ -306,6 +308,19 @@ else
     echo "# GitHub" >> "$BACKEND_ENV_FILE"
     echo "GITHUB_CLIENT_ID=" >> "$BACKEND_ENV_FILE"
     echo "GITHUB_CLIENT_SECRET=" >> "$BACKEND_ENV_FILE"
+    echo "" >> "$BACKEND_ENV_FILE"
+fi
+
+# Linear OAuth
+if [ -n "$LINEAR_CLIENT_ID" ] || [ -n "$LINEAR_CLIENT_SECRET" ]; then
+    echo "# Linear" >> "$BACKEND_ENV_FILE"
+    echo "LINEAR_CLIENT_ID=${LINEAR_CLIENT_ID}" >> "$BACKEND_ENV_FILE"
+    echo "LINEAR_CLIENT_SECRET=${LINEAR_CLIENT_SECRET}" >> "$BACKEND_ENV_FILE"
+    echo "" >> "$BACKEND_ENV_FILE"
+else
+    echo "# Linear" >> "$BACKEND_ENV_FILE"
+    echo "LINEAR_CLIENT_ID=" >> "$BACKEND_ENV_FILE"
+    echo "LINEAR_CLIENT_SECRET=" >> "$BACKEND_ENV_FILE"
     echo "" >> "$BACKEND_ENV_FILE"
 fi
 

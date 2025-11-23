@@ -425,6 +425,69 @@ export const OAUTH_PROVIDERS: Record<string, OAuthProvider> = {
             }
         },
         refreshable: true
+    },
+
+    linear: {
+        name: "linear",
+        displayName: "Linear",
+        authUrl: "https://linear.app/oauth/authorize",
+        tokenUrl: "https://api.linear.app/oauth/token",
+        scopes: ["read", "write"],
+        clientId: process.env.LINEAR_CLIENT_ID || "",
+        clientSecret: process.env.LINEAR_CLIENT_SECRET || "",
+        redirectUri: `${process.env.API_URL || "http://localhost:3000"}/api/oauth/linear/callback`,
+        tokenParams: {
+            grant_type: "authorization_code"
+        },
+        getUserInfo: async (accessToken: string) => {
+            try {
+                const response = await fetch("https://api.linear.app/graphql", {
+                    method: "POST",
+                    headers: {
+                        Authorization: `Bearer ${accessToken}`,
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        query: "query { viewer { id name email } }"
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const result = (await response.json()) as {
+                    data?: {
+                        viewer?: {
+                            id?: string;
+                            name?: string;
+                            email?: string;
+                        };
+                    };
+                    errors?: Array<{ message: string }>;
+                };
+
+                if (result.errors && result.errors.length > 0) {
+                    throw new Error(result.errors[0].message);
+                }
+
+                const viewer = result.data?.viewer;
+
+                return {
+                    userId: viewer?.id || "unknown",
+                    name: viewer?.name || "Linear User",
+                    email: viewer?.email || "unknown@linear.app"
+                };
+            } catch (error) {
+                console.error("[OAuth] Failed to get Linear user info:", error);
+                return {
+                    userId: "unknown",
+                    name: "Linear User",
+                    email: "unknown@linear.app"
+                };
+            }
+        },
+        refreshable: true
     }
 };
 

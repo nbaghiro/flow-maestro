@@ -92,6 +92,18 @@ const githubEntry: ProviderRegistryEntry = {
     }
 };
 
+// Register Linear provider
+const linearEntry: ProviderRegistryEntry = {
+    name: "linear",
+    displayName: "Linear",
+    authMethod: "oauth2",
+    category: "project_management",
+    loader: async () => {
+        const { LinearProvider } = await import("./providers/linear/LinearProvider");
+        return new LinearProvider();
+    }
+};
+
 // Register all providers
 providerRegistry.register(slackEntry);
 providerRegistry.register(codaEntry);
@@ -100,6 +112,7 @@ providerRegistry.register(airtableEntry);
 providerRegistry.register(hubspotEntry);
 providerRegistry.register(postgresqlEntry);
 providerRegistry.register(githubEntry);
+providerRegistry.register(linearEntry);
 
 // Export for use in application
 export { providerRegistry };
