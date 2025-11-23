@@ -64,17 +64,17 @@
 }
 
 /* Override React Flow's default input/output node styling */
+/* Only remove React Flow's default black border - don't interfere with sizing/resize */
 .react-flow__node-input,
 .react-flow__node-output {
-    padding: 0;
-    border-radius: 0;
-    background: transparent;
-    border: none;
-    font-size: inherit;
-    color: inherit;
-    text-align: inherit;
-    width: auto;
-    height: auto;
+    border: none !important;
+    border-width: 0 !important;
+    border-style: none !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
 }
 
 .react-flow__node.selected .node-ai-category {
