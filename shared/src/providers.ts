@@ -1140,11 +1140,10 @@ export const ALL_PROVIDERS: MCPProvider[] = [
     {
         provider: "figma",
         displayName: "Figma",
-        description: "Design and prototyping tool",
+        description: "Design and prototyping tool - access files, components, comments",
         logoUrl: getBrandLogo("figma.com"),
         category: "Design",
-        methods: ["api_key"],
-        comingSoon: true
+        methods: ["oauth2"]
     },
     {
         provider: "canva",

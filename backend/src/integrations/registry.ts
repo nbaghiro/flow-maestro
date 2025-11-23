@@ -104,6 +104,18 @@ const linearEntry: ProviderRegistryEntry = {
     }
 };
 
+// Register Figma provider
+const figmaEntry: ProviderRegistryEntry = {
+    name: "figma",
+    displayName: "Figma",
+    authMethod: "oauth2",
+    category: "design",
+    loader: async () => {
+        const { FigmaProvider } = await import("./providers/figma/FigmaProvider");
+        return new FigmaProvider();
+    }
+};
+
 // Register all providers
 providerRegistry.register(slackEntry);
 providerRegistry.register(codaEntry);
@@ -113,6 +125,7 @@ providerRegistry.register(hubspotEntry);
 providerRegistry.register(postgresqlEntry);
 providerRegistry.register(githubEntry);
 providerRegistry.register(linearEntry);
+providerRegistry.register(figmaEntry);
 
 // Export for use in application
 export { providerRegistry };

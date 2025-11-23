@@ -488,6 +488,59 @@ export const OAUTH_PROVIDERS: Record<string, OAuthProvider> = {
             }
         },
         refreshable: true
+    },
+
+    figma: {
+        name: "figma",
+        displayName: "Figma",
+        authUrl: "https://www.figma.com/oauth",
+        tokenUrl: "https://api.figma.com/v1/oauth/token",
+        scopes: [
+            "file_content:read",
+            "file_metadata:read",
+            "file_comments:read",
+            "file_comments:write",
+            "webhooks:write"
+        ],
+        clientId: process.env.FIGMA_CLIENT_ID || "",
+        clientSecret: process.env.FIGMA_CLIENT_SECRET || "",
+        redirectUri: `${process.env.API_URL || "http://localhost:3000"}/api/oauth/figma/callback`,
+        pkceEnabled: true,
+        getUserInfo: async (accessToken: string) => {
+            try {
+                const response = await fetch("https://api.figma.com/v1/me", {
+                    headers: {
+                        Authorization: `Bearer ${accessToken}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = (await response.json()) as {
+                    id?: string;
+                    handle?: string;
+                    email?: string;
+                    img_url?: string;
+                };
+
+                return {
+                    userId: data.id || "unknown",
+                    name: data.handle || "Figma User",
+                    email: data.email || "unknown@figma.com",
+                    avatar: data.img_url
+                };
+            } catch (error) {
+                console.error("[OAuth] Failed to get Figma user info:", error);
+                return {
+                    userId: "unknown",
+                    name: "Figma User",
+                    email: "unknown@figma.com"
+                };
+            }
+        },
+        refreshable: true
     }
 };
 

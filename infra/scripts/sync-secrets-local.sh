@@ -151,6 +151,8 @@ GITHUB_CLIENT_ID=$(get_secret "flowmaestro-app-github-client-id" "")
 GITHUB_CLIENT_SECRET=$(get_secret "flowmaestro-app-github-client-secret" "")
 LINEAR_CLIENT_ID=$(get_secret "flowmaestro-app-linear-client-id" "")
 LINEAR_CLIENT_SECRET=$(get_secret "flowmaestro-app-linear-client-secret" "")
+FIGMA_CLIENT_ID=$(get_secret "flowmaestro-app-figma-client-id" "")
+FIGMA_CLIENT_SECRET=$(get_secret "flowmaestro-app-figma-client-secret" "")
 
 print_success "Developer secrets fetched successfully"
 
@@ -321,6 +323,19 @@ else
     echo "# Linear" >> "$BACKEND_ENV_FILE"
     echo "LINEAR_CLIENT_ID=" >> "$BACKEND_ENV_FILE"
     echo "LINEAR_CLIENT_SECRET=" >> "$BACKEND_ENV_FILE"
+    echo "" >> "$BACKEND_ENV_FILE"
+fi
+
+# Figma OAuth
+if [ -n "$FIGMA_CLIENT_ID" ] || [ -n "$FIGMA_CLIENT_SECRET" ]; then
+    echo "# Figma" >> "$BACKEND_ENV_FILE"
+    echo "FIGMA_CLIENT_ID=${FIGMA_CLIENT_ID}" >> "$BACKEND_ENV_FILE"
+    echo "FIGMA_CLIENT_SECRET=${FIGMA_CLIENT_SECRET}" >> "$BACKEND_ENV_FILE"
+    echo "" >> "$BACKEND_ENV_FILE"
+else
+    echo "# Figma" >> "$BACKEND_ENV_FILE"
+    echo "FIGMA_CLIENT_ID=" >> "$BACKEND_ENV_FILE"
+    echo "FIGMA_CLIENT_SECRET=" >> "$BACKEND_ENV_FILE"
     echo "" >> "$BACKEND_ENV_FILE"
 fi
 
