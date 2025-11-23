@@ -11,7 +11,7 @@ import { ExecutionPanel } from "../components/ExecutionPanel";
 import { WorkflowSettingsDialog } from "../components/WorkflowSettingsDialog";
 import { getWorkflow, updateWorkflow } from "../lib/api";
 import { generateId } from "../lib/utils";
-import { useHistoryStore } from "../stores/historyStore";
+import { useHistoryStore, initializeHistoryTracking } from "../stores/historyStore";
 import { useWorkflowStore } from "../stores/workflowStore";
 
 type SaveStatus = "idle" | "saving" | "saved" | "error";
@@ -52,15 +52,22 @@ export function FlowBuilder() {
     // clear() resets the entire undo/redo stack (called on unmount + page refresh).
     const { undo, redo, canUndo, canRedo, clear } = useHistoryStore();
 
-    // Clear history when exiting the FlowBuilder page (component unmount).
-    // This ensures each workflow starts with a fresh undo/redo stack.
+    // Set up history tracking when the FlowBuilder mounts.
+    // initializeHistoryTracking() subscribes to the workflow store and manages snapshot recording.
+    //
+    // On unmount we:
+    //   1. Unsubscribe from the store (stops history tracking)
+    //   2. Clear the undo/redo stack so each workflow starts fresh
     useEffect(() => {
+        const unsubscribe = initializeHistoryTracking();
         return () => {
+            unsubscribe();
             clear();
         };
     }, []);
 
-    // Clear history on browser refresh (Cmd + R, F5, or closing tab).
+    // Also clear history on browser refresh (Cmd+R, F5, direct tab close).
+    // This prevents stale undo/redo data from carrying into the next session.
     useEffect(() => {
         const handleBeforeUnload = () => {
             clear();

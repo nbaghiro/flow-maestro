@@ -20,6 +20,13 @@ interface HistoryStore {
     canUndo: () => boolean;
     canRedo: () => boolean;
 }
+// Internal state used by the history engine.
+// This is intentionally not part of Zustand, it represents
+// transient coordination state shared between undo/redo and the subscriber.
+export const historyInternal = {
+    isApplyingHistory: false as boolean,
+    lastSnapshot: null as HistorySnapshot | null
+};
 
 export const useHistoryStore = create<HistoryStore>((set, get) => ({
     past: [],
@@ -39,7 +46,8 @@ export const useHistoryStore = create<HistoryStore>((set, get) => ({
 
     // Undo the last user action.
     // We apply the previous snapshot to the workflow store and push the current state into the redo stack.
-    // isApplyingHistory prevents the subscriber from treating this state change as a new history entry.
+    // Prevent the subscriber from recording history while applying snapshots,
+    // otherwise undo/redo actions would generate their own history entries.
     undo: () => {
         const { past, future } = get();
 
@@ -54,8 +62,8 @@ export const useHistoryStore = create<HistoryStore>((set, get) => ({
             selectedNode: useWorkflowStore.getState().selectedNode
         };
 
-        isApplyingHistory = true;
-        lastSnapshot = null; // Reset snapshot tracking so next real user action starts a fresh history entry
+        historyInternal.isApplyingHistory = true;
+        historyInternal.lastSnapshot = null; // Reset snapshot tracking so next real user action starts a fresh history entry
 
         useWorkflowStore.setState({
             nodes: structuredClone(previous.nodes),
@@ -68,7 +76,7 @@ export const useHistoryStore = create<HistoryStore>((set, get) => ({
             future: [currentSnapshot, ...future]
         });
 
-        isApplyingHistory = false;
+        historyInternal.isApplyingHistory = false;
     },
 
     // Redo the next action in the redo stack.
@@ -88,8 +96,8 @@ export const useHistoryStore = create<HistoryStore>((set, get) => ({
             selectedNode: useWorkflowStore.getState().selectedNode
         };
 
-        isApplyingHistory = true;
-        lastSnapshot = null; // Reset snapshot tracking so next real user action starts a fresh history entry
+        historyInternal.isApplyingHistory = true;
+        historyInternal.lastSnapshot = null; // Reset snapshot tracking so next real user action starts a fresh history entry
 
         useWorkflowStore.setState({
             nodes: structuredClone(next.nodes),
@@ -102,7 +110,7 @@ export const useHistoryStore = create<HistoryStore>((set, get) => ({
             future: newFuture
         });
 
-        isApplyingHistory = false;
+        historyInternal.isApplyingHistory = false;
     },
 
     clear: () => {
@@ -115,69 +123,72 @@ export const useHistoryStore = create<HistoryStore>((set, get) => ({
     canUndo: () => get().past.length > 0,
     canRedo: () => get().future.length > 0
 }));
+export function initializeHistoryTracking() {
+    // lastSnapshot is reset for each FlowBuilder mount.
+    // This ensures history tracking is scoped to the component lifecycle
+    // and avoids leaking snapshots across workflows.
+    historyInternal.lastSnapshot = null;
 
-// Tracks the last recorded workflow snapshot.
-// Used to detect whether the current state has changed enough to push a new history entry.
-let lastSnapshot: HistorySnapshot | null = null;
+    // Ensures we don't push multiple history entries during rapid state changes (dragging nodes, etc).
+    let debounceTimer: NodeJS.Timeout | null = null;
+    const debounce_ms = 120;
 
-// Ensures we don't push multiple history entries during rapid state changes (dragging nodes, etc).
-let debounceTimer: NodeJS.Timeout | null = null;
-const debounce_ms = 120;
+    // When true, the subscriber MUST NOT record history.
+    // This prevents undo/redo from generating new snapshots and destroying the redo stack.
+    historyInternal.isApplyingHistory = false;
 
-// When true, the subscriber MUST NOT record history.
-// This prevents undo/redo from generating new snapshots and destroying the redo stack.
-let isApplyingHistory = false;
+    // The workflow store changes constantly (dragging nodes, selecting, editing config).
+    // Instead of recording every tiny update, we:
+    //   1. Compare against the last snapshot to detect meaningful changes.
+    //   2. Debounce to avoid recording mid-drag states.
+    //   3. Push the PREVIOUS snapshot into `past` (true undo behavior).
+    //
+    // IMPORTANT: If undo/redo is applying state (`isApplyingHistory === true`)
+    // this subscriber must NOT push history, or redo will break.
+    const unsubscribe = useWorkflowStore.subscribe((state) => {
+        if (historyInternal.isApplyingHistory) return; // Ignore state changes caused by undo/redo
 
-// The workflow store changes constantly (dragging nodes, selecting, editing config).
-// Instead of recording every tiny update, we:
-//   1. Compare against the last snapshot to detect meaningful changes.
-//   2. Debounce to avoid recording mid-drag states.
-//   3. Push the PREVIOUS snapshot into `past` (true undo behavior).
-//
-// IMPORTANT: If undo/redo is applying state (`isApplyingHistory === true`)
-// this subscriber must NOT push history, or redo will break.
-useWorkflowStore.subscribe((state) => {
-    if (isApplyingHistory) return; // Ignore state changes caused by undo/redo
+        const snapshot: HistorySnapshot = {
+            nodes: structuredClone(state.nodes),
+            edges: structuredClone(state.edges),
+            selectedNode: state.selectedNode
+        };
 
-    const snapshot: HistorySnapshot = {
-        nodes: structuredClone(state.nodes),
-        edges: structuredClone(state.edges),
-        selectedNode: state.selectedNode
-    };
-
-    if (lastSnapshot === null) {
-        lastSnapshot = snapshot;
-        return;
-    }
-
-    // Compare deeply to detect if nodes, edges, or selection actually changed.
-    // JSON.stringify is acceptable here since objects are small and well-structured.
-    const changed =
-        JSON.stringify(snapshot.nodes) !== JSON.stringify(lastSnapshot.nodes) ||
-        JSON.stringify(snapshot.edges) !== JSON.stringify(lastSnapshot.edges) ||
-        snapshot.selectedNode !== lastSnapshot.selectedNode;
-
-    if (!changed) return;
-
-    if (debounceTimer) clearTimeout(debounceTimer);
-
-    // Debounce ensures that during rapid changes (like dragging nodes)
-    // only the final position is stored as a history entry.
-    debounceTimer = setTimeout(() => {
-        useHistoryStore.getState().push({
-            nodes: structuredClone(lastSnapshot!.nodes),
-            edges: structuredClone(lastSnapshot!.edges),
-            selectedNode: lastSnapshot!.selectedNode
-        });
-
-        lastSnapshot = snapshot;
-
-        const { past } = useHistoryStore.getState();
-
-        // Prevent the history stack from growing unbounded.
-        // Keep only the last 50 actions (more than enough for workflow editing).
-        if (past.length > 50) {
-            useHistoryStore.setState({ past: past.slice(past.length - 50) });
+        if (historyInternal.lastSnapshot === null) {
+            historyInternal.lastSnapshot = snapshot;
+            return;
         }
-    }, debounce_ms);
-});
+
+        // Compare deeply to detect if nodes, edges, or selection actually changed.
+        // JSON.stringify is acceptable here since objects are small and well-structured.
+        const changed =
+            JSON.stringify(snapshot.nodes) !== JSON.stringify(historyInternal.lastSnapshot.nodes) ||
+            JSON.stringify(snapshot.edges) !== JSON.stringify(historyInternal.lastSnapshot.edges) ||
+            snapshot.selectedNode !== historyInternal.lastSnapshot.selectedNode;
+
+        if (!changed) return;
+
+        if (debounceTimer) clearTimeout(debounceTimer);
+
+        // Debounce ensures we only commit meaningful end-of-interaction changes
+        // (e.g., the final position after a drag), not every intermediate state.
+        debounceTimer = setTimeout(() => {
+            useHistoryStore.getState().push({
+                nodes: structuredClone(historyInternal.lastSnapshot!.nodes),
+                edges: structuredClone(historyInternal.lastSnapshot!.edges),
+                selectedNode: historyInternal.lastSnapshot!.selectedNode
+            });
+
+            historyInternal.lastSnapshot = snapshot;
+
+            const { past } = useHistoryStore.getState();
+
+            // Prevent the history stack from growing unbounded.
+            // Keep only the last 50 actions (more than enough for workflow editing).
+            if (past.length > 50) {
+                useHistoryStore.setState({ past: past.slice(past.length - 50) });
+            }
+        }, debounce_ms);
+    });
+    return unsubscribe;
+}
