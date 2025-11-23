@@ -178,7 +178,6 @@ export const ALL_PROVIDERS: MCPProvider[] = [
         logoUrl: getBrandLogo("github.com"),
         category: "Developer Tools",
         methods: ["api_key", "oauth2"],
-        comingSoon: true,
         mcpServerUrl: "https://mcp.pipedream.com/app/github",
         mcpAuthType: "oauth2"
     },

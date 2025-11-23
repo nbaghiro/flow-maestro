@@ -285,6 +285,65 @@ export const OAUTH_PROVIDERS: Record<string, OAuthProvider> = {
         refreshable: true
     },
 
+    github: {
+        name: "github",
+        displayName: "GitHub",
+        authUrl: "https://github.com/login/oauth/authorize",
+        tokenUrl: "https://github.com/login/oauth/access_token",
+        scopes: [
+            "repo", // Full repository access
+            "read:org", // Read organization membership
+            "workflow", // Manage GitHub Actions workflows
+            "write:discussion" // Write discussions
+        ],
+        clientId: process.env.GITHUB_CLIENT_ID || "",
+        clientSecret: process.env.GITHUB_CLIENT_SECRET || "",
+        redirectUri: `${process.env.API_URL || "http://localhost:3000"}/api/oauth/github/callback`,
+        getUserInfo: async (accessToken: string) => {
+            try {
+                const response = await fetch("https://api.github.com/user", {
+                    headers: {
+                        Authorization: `Bearer ${accessToken}`,
+                        Accept: "application/vnd.github+json",
+                        "X-GitHub-Api-Version": "2022-11-28"
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = (await response.json()) as {
+                    login?: string;
+                    id?: number;
+                    email?: string;
+                    name?: string;
+                    avatar_url?: string;
+                    company?: string;
+                    location?: string;
+                };
+
+                return {
+                    username: data.login || "unknown",
+                    userId: data.id?.toString() || "unknown",
+                    email: data.email || `${data.login}@github`,
+                    name: data.name || data.login,
+                    avatar: data.avatar_url,
+                    company: data.company,
+                    location: data.location
+                };
+            } catch (error) {
+                console.error("[OAuth] Failed to get GitHub user info:", error);
+                return {
+                    username: "GitHub User",
+                    userId: "unknown",
+                    email: "unknown@github"
+                };
+            }
+        },
+        refreshable: false // GitHub OAuth tokens don't expire unless revoked
+    },
+
     hubspot: {
         name: "hubspot",
         displayName: "HubSpot",

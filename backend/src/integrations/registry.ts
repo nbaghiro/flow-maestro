@@ -80,6 +80,18 @@ const postgresqlEntry: ProviderRegistryEntry = {
     }
 };
 
+// Register GitHub provider
+const githubEntry: ProviderRegistryEntry = {
+    name: "github",
+    displayName: "GitHub",
+    authMethod: "oauth2",
+    category: "developer_tools",
+    loader: async () => {
+        const { GitHubProvider } = await import("./providers/github/GitHubProvider");
+        return new GitHubProvider();
+    }
+};
+
 // Register all providers
 providerRegistry.register(slackEntry);
 providerRegistry.register(codaEntry);
@@ -87,6 +99,7 @@ providerRegistry.register(notionEntry);
 providerRegistry.register(airtableEntry);
 providerRegistry.register(hubspotEntry);
 providerRegistry.register(postgresqlEntry);
+providerRegistry.register(githubEntry);
 
 // Export for use in application
 export { providerRegistry };
