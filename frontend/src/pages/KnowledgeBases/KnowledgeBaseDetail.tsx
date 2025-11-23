@@ -74,25 +74,16 @@ export function KnowledgeBaseDetail() {
         wsClient.connect(token).catch(console.error);
 
         // Listen for document processing events
-        const handleDocumentProcessing = (event: unknown) => {
-            const e = event as { documentId: string; fileName: string; progress?: number };
-            console.log("[KB] Document processing:", e);
-            // Refresh documents to show updated status
+        const handleDocumentProcessing = () => {
             fetchDocuments(id);
         };
 
-        const handleDocumentCompleted = (event: unknown) => {
-            const e = event as { documentId: string; fileName: string; chunksCreated?: number };
-            console.log("[KB] Document completed:", e);
-            // Refresh documents and stats
+        const handleDocumentCompleted = () => {
             fetchDocuments(id);
             fetchStats(id);
         };
 
-        const handleDocumentFailed = (event: unknown) => {
-            const e = event as { documentId: string; fileName: string; error: string };
-            console.log("[KB] Document failed:", e);
-            // Refresh documents to show error status
+        const handleDocumentFailed = () => {
             fetchDocuments(id);
         };
 

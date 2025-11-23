@@ -85,10 +85,6 @@ export async function uploadDocumentRoute(fastify: FastifyInstance) {
                 const client = await getTemporalClient();
                 workflowId = `process-document-${document.id}`;
 
-                console.log(
-                    `[upload-document] Starting workflow ${workflowId} for document ${document.id}`
-                );
-
                 await client.workflow.start("processDocumentWorkflow", {
                     taskQueue: "flowmaestro-orchestrator",
                     workflowId,
@@ -102,13 +98,9 @@ export async function uploadDocumentRoute(fastify: FastifyInstance) {
                         }
                     ]
                 });
-
-                console.log(`[upload-document] Workflow ${workflowId} started successfully`);
             } catch (error: unknown) {
                 const errorMsg = error instanceof Error ? error.message : String(error);
                 fastify.log.error(`Failed to start Temporal workflow: ${errorMsg}`);
-                // Don't fail the upload, but log the error
-                // The document will remain in "pending" state
                 console.error("[upload-document] Workflow start failed:", error);
             }
 
