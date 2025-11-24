@@ -4,12 +4,26 @@ import { UserModel, CreateUserInput, UpdateUserInput } from "../models/User";
 export class UserRepository {
     async create(input: CreateUserInput): Promise<UserModel> {
         const query = `
-            INSERT INTO flowmaestro.users (email, password_hash, name)
-            VALUES ($1, $2, $3)
+            INSERT INTO flowmaestro.users (
+                email,
+                password_hash,
+                name,
+                google_id,
+                auth_provider,
+                avatar_url
+            )
+            VALUES ($1, $2, $3, $4, $5, $6)
             RETURNING *
         `;
 
-        const values = [input.email, input.password_hash, input.name || null];
+        const values = [
+            input.email,
+            input.password_hash || null,
+            input.name || null,
+            input.google_id || null,
+            input.auth_provider || "local",
+            input.avatar_url || null
+        ];
 
         const result = await db.query<UserModel>(query, values);
         return this.mapRow(result.rows[0]);
@@ -35,6 +49,27 @@ export class UserRepository {
         return result.rows.length > 0 ? this.mapRow(result.rows[0]) : null;
     }
 
+    async findByGoogleId(googleId: string): Promise<UserModel | null> {
+        const query = `
+            SELECT * FROM flowmaestro.users
+            WHERE google_id = $1
+        `;
+
+        const result = await db.query<UserModel>(query, [googleId]);
+        return result.rows.length > 0 ? this.mapRow(result.rows[0]) : null;
+    }
+
+    async findByEmailOrGoogleId(email: string, googleId: string): Promise<UserModel | null> {
+        const query = `
+            SELECT * FROM flowmaestro.users
+            WHERE email = $1 OR google_id = $2
+            LIMIT 1
+        `;
+
+        const result = await db.query<UserModel>(query, [email, googleId]);
+        return result.rows.length > 0 ? this.mapRow(result.rows[0]) : null;
+    }
+
     async update(id: string, input: UpdateUserInput): Promise<UserModel | null> {
         const updates: string[] = [];
         const values: unknown[] = [];
@@ -53,6 +88,16 @@ export class UserRepository {
         if (input.name !== undefined) {
             updates.push(`name = $${paramIndex++}`);
             values.push(input.name);
+        }
+
+        if (input.google_id !== undefined) {
+            updates.push(`google_id = $${paramIndex++}`);
+            values.push(input.google_id);
+        }
+
+        if (input.avatar_url !== undefined) {
+            updates.push(`avatar_url = $${paramIndex++}`);
+            values.push(input.avatar_url);
         }
 
         if (input.last_login_at !== undefined) {
@@ -90,8 +135,11 @@ export class UserRepository {
         const r = row as {
             id: string;
             email: string;
-            password_hash: string;
+            password_hash: string | null;
             name: string | null;
+            google_id: string | null;
+            auth_provider: "local" | "google";
+            avatar_url: string | null;
             created_at: string | Date;
             updated_at: string | Date;
             last_login_at: string | Date | null;
@@ -101,6 +149,9 @@ export class UserRepository {
             email: r.email,
             password_hash: r.password_hash,
             name: r.name,
+            google_id: r.google_id,
+            auth_provider: r.auth_provider,
+            avatar_url: r.avatar_url,
             created_at: new Date(r.created_at),
             updated_at: new Date(r.updated_at),
             last_login_at: r.last_login_at ? new Date(r.last_login_at) : null

@@ -11,6 +11,9 @@ interface User {
     id: string;
     email: string;
     name?: string;
+    avatar_url?: string;
+    google_id?: string | null;
+    has_password?: boolean;
 }
 
 interface AuthContextType {
@@ -29,8 +32,61 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
+        // Check for OAuth callback with token in URL hash
+        const hash = window.location.hash;
+        if (hash.includes("auth_token=")) {
+            const params = new URLSearchParams(hash.substring(1));
+            const token = params.get("auth_token");
+            const userData = params.get("user_data");
+
+            if (token) {
+                // Store token
+                localStorage.setItem("auth_token", token);
+                setAuthToken(token);
+
+                // Parse and store user data
+                if (userData) {
+                    try {
+                        const user = JSON.parse(decodeURIComponent(userData));
+                        setUser(user);
+                        setIsLoading(false);
+
+                        // Clear hash from URL
+                        window.history.replaceState(null, "", window.location.pathname);
+                        return;
+                    } catch (error) {
+                        console.error("Failed to parse user data from URL:", error);
+                    }
+                }
+            }
+        }
+
         // Check if user is already logged in on mount
-        const token = localStorage.getItem("auth_token");
+        // Support both "token" (from Google OAuth) and "auth_token" (from email/password)
+        let token = localStorage.getItem("auth_token");
+        const googleToken = localStorage.getItem("token");
+
+        if (googleToken && !token) {
+            // Google OAuth callback stored token as "token", migrate to "auth_token"
+            localStorage.setItem("auth_token", googleToken);
+            localStorage.removeItem("token");
+            token = googleToken;
+
+            // Also restore user from localStorage if stored by Google callback
+            const storedUser = localStorage.getItem("user");
+            if (storedUser) {
+                try {
+                    const user = JSON.parse(storedUser);
+                    setUser(user);
+                    setIsLoading(false);
+                    return;
+                } catch (error) {
+                    console.error("Failed to parse stored user:", error);
+                    localStorage.removeItem("user");
+                }
+            }
+        }
+
         if (token) {
             // Validate token and restore user session
             getCurrentUser()

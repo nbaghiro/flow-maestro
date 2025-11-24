@@ -1,7 +1,9 @@
 import { FastifyInstance } from "fastify";
 import type { JsonValue } from "@flowmaestro/shared";
 import { oauthService } from "../../../services/oauth/OAuthService";
+import { config } from "../../../shared/config";
 import { ConnectionRepository } from "../../../storage/repositories/ConnectionRepository";
+import { UserRepository } from "../../../storage/repositories/UserRepository";
 
 interface CallbackParams {
     provider: string;
@@ -147,7 +149,83 @@ export async function callbackRoute(fastify: FastifyInstance) {
                     `Successfully exchanged code for ${actualProvider}, user: ${result.userId}`
                 );
 
-                // Store connection in database
+                // Check if this is authentication (google-auth) vs integration
+                if (actualProvider === "google-auth") {
+                    // AUTHENTICATION FLOW - Create/login user
+                    const accountInfo = result.accountInfo as {
+                        email?: string;
+                        name?: string;
+                        picture?: string;
+                        userId?: string;
+                    };
+
+                    if (!accountInfo?.email || !accountInfo?.userId) {
+                        throw new Error("Google user info missing required fields");
+                    }
+
+                    const userRepository = new UserRepository();
+
+                    // Check if user exists by google_id or email
+                    let user = await userRepository.findByEmailOrGoogleId(
+                        accountInfo.email,
+                        accountInfo.userId
+                    );
+
+                    if (user) {
+                        // Existing user - link Google account if not already linked
+                        if (!user.google_id) {
+                            user = await userRepository.update(user.id, {
+                                google_id: accountInfo.userId,
+                                avatar_url: accountInfo.picture,
+                                last_login_at: new Date()
+                            });
+                        } else {
+                            // Just update last login
+                            user = await userRepository.update(user.id, {
+                                last_login_at: new Date()
+                            });
+                        }
+
+                        if (!user) {
+                            throw new Error("Failed to update user");
+                        }
+
+                        fastify.log.info(`User ${user.id} logged in via Google`);
+                    } else {
+                        // New user - create account
+                        user = await userRepository.create({
+                            email: accountInfo.email,
+                            name: accountInfo.name,
+                            google_id: accountInfo.userId,
+                            auth_provider: "google",
+                            avatar_url: accountInfo.picture
+                        });
+
+                        fastify.log.info(`New user ${user.id} created via Google OAuth`);
+                    }
+
+                    // Generate JWT token
+                    const token = fastify.jwt.sign({
+                        id: user.id,
+                        email: user.email
+                    });
+
+                    // Redirect to frontend with token in URL hash
+                    const userData = encodeURIComponent(
+                        JSON.stringify({
+                            id: user.id,
+                            email: user.email,
+                            name: user.name || "",
+                            avatar_url: user.avatar_url || ""
+                        })
+                    );
+
+                    const redirectUrl = `${config.frontend.url}#auth_token=${token}&user_data=${userData}`;
+
+                    return reply.redirect(redirectUrl);
+                }
+
+                // INTEGRATION FLOW - Store connection in database
                 const connectionRepo = new ConnectionRepository();
                 const accountInfo = result.accountInfo as Record<string, unknown> | undefined;
                 const connection = await connectionRepo.create({

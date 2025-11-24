@@ -20,6 +20,13 @@ export async function loginRoute(fastify: FastifyInstance) {
                 throw new UnauthorizedError("Invalid credentials");
             }
 
+            // Check if user is OAuth-only (no password)
+            if (!user.password_hash) {
+                throw new UnauthorizedError(
+                    "This account uses Google sign-in. Please use the 'Continue with Google' button."
+                );
+            }
+
             // Verify password
             const isValidPassword = await PasswordUtils.verify(body.password, user.password_hash);
             if (!isValidPassword) {
@@ -43,7 +50,10 @@ export async function loginRoute(fastify: FastifyInstance) {
                     user: {
                         id: user.id,
                         email: user.email,
-                        name: user.name
+                        name: user.name,
+                        avatar_url: user.avatar_url,
+                        google_id: user.google_id,
+                        has_password: !!user.password_hash
                     },
                     token
                 }

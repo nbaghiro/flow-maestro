@@ -1,8 +1,11 @@
 export interface UserModel {
     id: string;
     email: string;
-    password_hash: string;
+    password_hash: string | null; // Nullable for OAuth users
     name: string | null;
+    google_id: string | null;
+    auth_provider: "local" | "google";
+    avatar_url: string | null;
     created_at: Date;
     updated_at: Date;
     last_login_at: Date | null;
@@ -10,13 +13,18 @@ export interface UserModel {
 
 export interface CreateUserInput {
     email: string;
-    password_hash: string;
+    password_hash?: string; // Optional for OAuth users
     name?: string;
+    google_id?: string;
+    auth_provider?: "local" | "google";
+    avatar_url?: string;
 }
 
 export interface UpdateUserInput {
     email?: string;
     password_hash?: string;
     name?: string;
+    google_id?: string | null;
+    avatar_url?: string | null;
     last_login_at?: Date;
 }

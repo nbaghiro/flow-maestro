@@ -42,7 +42,10 @@ export async function registerRoute(fastify: FastifyInstance) {
                     user: {
                         id: user.id,
                         email: user.email,
-                        name: user.name
+                        name: user.name,
+                        avatar_url: user.avatar_url,
+                        google_id: user.google_id,
+                        has_password: !!user.password_hash
                     },
                     token
                 }
