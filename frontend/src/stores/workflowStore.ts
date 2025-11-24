@@ -3,7 +3,7 @@ import { create } from "zustand";
 import type { JsonValue, JsonObject } from "@flowmaestro/shared";
 import { getErrorMessage } from "@flowmaestro/shared";
 import { executeWorkflow as executeWorkflowAPI, generateWorkflow } from "../lib/api";
-import { convertToReactFlowFormat } from "../lib/workflow-layout";
+import { convertToReactFlowFormat } from "../lib/workflowLayout";
 
 const INITIAL_NODE_WIDTH = 260;
 const INITIAL_NODE_HEIGHT = 140;
