@@ -188,8 +188,7 @@ Next Steps:
    # GCS configuration
    $ kubectl create configmap gcs-config \\
        --namespace=flowmaestro \\
-       --from-literal=GCS_BUCKET_NAME=${storageOutputs.knowledgeDocsBucketName} \\
-       --from-literal=GCS_PROJECT_ID=${infrastructureConfig.project}
+       --from-literal=GCS_BUCKET_NAME=${storageOutputs.knowledgeDocsBucketName}
 
 5. Deploy Temporal server:
    $ kubectl apply -f infra/k8s/jobs/temporal-schema-migration.yaml

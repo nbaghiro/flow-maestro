@@ -21,7 +21,6 @@ export class GCSStorageService {
 
     constructor() {
         const bucketName = process.env.GCS_BUCKET_NAME;
-        const projectId = process.env.GCS_PROJECT_ID;
 
         if (!bucketName) {
             throw new Error("GCS_BUCKET_NAME environment variable is required");
@@ -30,9 +29,8 @@ export class GCSStorageService {
         // Initialize Storage with Application Default Credentials
         // In GKE with Workload Identity, this automatically uses the pod's service account
         // For local development, use: gcloud auth application-default login
-        this.storage = new Storage({
-            projectId: projectId || undefined
-        });
+        // Project ID is auto-detected from the environment
+        this.storage = new Storage();
 
         this.bucketName = bucketName;
         this.bucket = this.storage.bucket(bucketName);

@@ -131,11 +131,6 @@ spec:
                 configMapKeyRef:
                   name: gcs-config
                   key: GCS_BUCKET_NAME
-            - name: GCS_PROJECT_ID
-              valueFrom:
-                configMapKeyRef:
-                  name: gcs-config
-                  key: GCS_PROJECT_ID
 
           # Mount Temporal certificates
           volumeMounts:
