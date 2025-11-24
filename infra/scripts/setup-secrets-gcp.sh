@@ -269,6 +269,12 @@ EXISTING_AIRTABLE_CLIENT_ID=$(get_existing_gcp_secret "flowmaestro-app-airtable-
 EXISTING_AIRTABLE_CLIENT_SECRET=$(get_existing_gcp_secret "flowmaestro-app-airtable-client-secret")
 EXISTING_HUBSPOT_CLIENT_ID=$(get_existing_gcp_secret "flowmaestro-app-hubspot-client-id")
 EXISTING_HUBSPOT_CLIENT_SECRET=$(get_existing_gcp_secret "flowmaestro-app-hubspot-client-secret")
+EXISTING_GITHUB_CLIENT_ID=$(get_existing_gcp_secret "flowmaestro-app-github-client-id")
+EXISTING_GITHUB_CLIENT_SECRET=$(get_existing_gcp_secret "flowmaestro-app-github-client-secret")
+EXISTING_LINEAR_CLIENT_ID=$(get_existing_gcp_secret "flowmaestro-app-linear-client-id")
+EXISTING_LINEAR_CLIENT_SECRET=$(get_existing_gcp_secret "flowmaestro-app-linear-client-secret")
+EXISTING_FIGMA_CLIENT_ID=$(get_existing_gcp_secret "flowmaestro-app-figma-client-id")
+EXISTING_FIGMA_CLIENT_SECRET=$(get_existing_gcp_secret "flowmaestro-app-figma-client-secret")
 
 # Try to get from Pulumi outputs as fallback for infrastructure values
 if [ -z "$EXISTING_DB_HOST" ]; then
@@ -291,6 +297,9 @@ FOUND_COUNT=0
 [ -n "$EXISTING_NOTION_CLIENT_ID" ] && ((FOUND_COUNT++))
 [ -n "$EXISTING_AIRTABLE_CLIENT_ID" ] && ((FOUND_COUNT++))
 [ -n "$EXISTING_HUBSPOT_CLIENT_ID" ] && ((FOUND_COUNT++))
+[ -n "$EXISTING_GITHUB_CLIENT_ID" ] && ((FOUND_COUNT++))
+[ -n "$EXISTING_LINEAR_CLIENT_ID" ] && ((FOUND_COUNT++))
+[ -n "$EXISTING_FIGMA_CLIENT_ID" ] && ((FOUND_COUNT++))
 
 if [ $FOUND_COUNT -gt 0 ]; then
     print_success "Found $FOUND_COUNT existing secret(s)!"
@@ -623,6 +632,48 @@ else
     echo
 fi
 
+# GitHub OAuth
+if [ -n "$EXISTING_GITHUB_CLIENT_ID" ] && [ "$PROMPT_ALL" = false ]; then
+    print_info "GitHub OAuth: already configured"
+    GITHUB_CLIENT_ID="$EXISTING_GITHUB_CLIENT_ID"
+    GITHUB_CLIENT_SECRET="$EXISTING_GITHUB_CLIENT_SECRET"
+elif [ -n "$EXISTING_GITHUB_CLIENT_ID" ]; then
+    prompt_with_existing "GitHub Client ID" "$EXISTING_GITHUB_CLIENT_ID" "GITHUB_CLIENT_ID"
+    prompt_with_existing "GitHub Client Secret" "$EXISTING_GITHUB_CLIENT_SECRET" "GITHUB_CLIENT_SECRET"
+else
+    read -p "GitHub Client ID: " GITHUB_CLIENT_ID
+    read -p "GitHub Client Secret: " -s GITHUB_CLIENT_SECRET
+    echo
+fi
+
+# Linear OAuth
+if [ -n "$EXISTING_LINEAR_CLIENT_ID" ] && [ "$PROMPT_ALL" = false ]; then
+    print_info "Linear OAuth: already configured"
+    LINEAR_CLIENT_ID="$EXISTING_LINEAR_CLIENT_ID"
+    LINEAR_CLIENT_SECRET="$EXISTING_LINEAR_CLIENT_SECRET"
+elif [ -n "$EXISTING_LINEAR_CLIENT_ID" ]; then
+    prompt_with_existing "Linear Client ID" "$EXISTING_LINEAR_CLIENT_ID" "LINEAR_CLIENT_ID"
+    prompt_with_existing "Linear Client Secret" "$EXISTING_LINEAR_CLIENT_SECRET" "LINEAR_CLIENT_SECRET"
+else
+    read -p "Linear Client ID: " LINEAR_CLIENT_ID
+    read -p "Linear Client Secret: " -s LINEAR_CLIENT_SECRET
+    echo
+fi
+
+# Figma OAuth
+if [ -n "$EXISTING_FIGMA_CLIENT_ID" ] && [ "$PROMPT_ALL" = false ]; then
+    print_info "Figma OAuth: already configured"
+    FIGMA_CLIENT_ID="$EXISTING_FIGMA_CLIENT_ID"
+    FIGMA_CLIENT_SECRET="$EXISTING_FIGMA_CLIENT_SECRET"
+elif [ -n "$EXISTING_FIGMA_CLIENT_ID" ]; then
+    prompt_with_existing "Figma Client ID" "$EXISTING_FIGMA_CLIENT_ID" "FIGMA_CLIENT_ID"
+    prompt_with_existing "Figma Client Secret" "$EXISTING_FIGMA_CLIENT_SECRET" "FIGMA_CLIENT_SECRET"
+else
+    read -p "Figma Client ID: " FIGMA_CLIENT_ID
+    read -p "Figma Client Secret: " -s FIGMA_CLIENT_SECRET
+    echo
+fi
+
 print_header "Creating/Updating Secrets in GCP Secret Manager"
 
 # Create/update all secrets
@@ -649,6 +700,12 @@ create_or_update_secret "flowmaestro-app-airtable-client-id" "$AIRTABLE_CLIENT_I
 create_or_update_secret "flowmaestro-app-airtable-client-secret" "$AIRTABLE_CLIENT_SECRET"
 create_or_update_secret "flowmaestro-app-hubspot-client-id" "$HUBSPOT_CLIENT_ID"
 create_or_update_secret "flowmaestro-app-hubspot-client-secret" "$HUBSPOT_CLIENT_SECRET"
+create_or_update_secret "flowmaestro-app-github-client-id" "$GITHUB_CLIENT_ID"
+create_or_update_secret "flowmaestro-app-github-client-secret" "$GITHUB_CLIENT_SECRET"
+create_or_update_secret "flowmaestro-app-linear-client-id" "$LINEAR_CLIENT_ID"
+create_or_update_secret "flowmaestro-app-linear-client-secret" "$LINEAR_CLIENT_SECRET"
+create_or_update_secret "flowmaestro-app-figma-client-id" "$FIGMA_CLIENT_ID"
+create_or_update_secret "flowmaestro-app-figma-client-secret" "$FIGMA_CLIENT_SECRET"
 
 print_header "Setup Complete!"
 print_success "All secrets have been created/updated in ${GCP_PROJECT}"

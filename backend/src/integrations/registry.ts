@@ -80,6 +80,84 @@ const postgresqlEntry: ProviderRegistryEntry = {
     }
 };
 
+// Register GitHub provider
+const githubEntry: ProviderRegistryEntry = {
+    name: "github",
+    displayName: "GitHub",
+    authMethod: "oauth2",
+    category: "developer_tools",
+    loader: async () => {
+        const { GitHubProvider } = await import("./providers/github/GitHubProvider");
+        return new GitHubProvider();
+    }
+};
+
+// Register Linear provider
+const linearEntry: ProviderRegistryEntry = {
+    name: "linear",
+    displayName: "Linear",
+    authMethod: "oauth2",
+    category: "project_management",
+    loader: async () => {
+        const { LinearProvider } = await import("./providers/linear/LinearProvider");
+        return new LinearProvider();
+    }
+};
+
+// Register Figma provider
+const figmaEntry: ProviderRegistryEntry = {
+    name: "figma",
+    displayName: "Figma",
+    authMethod: "oauth2",
+    category: "design",
+    loader: async () => {
+        const { FigmaProvider } = await import("./providers/figma/FigmaProvider");
+        return new FigmaProvider();
+    }
+};
+
+// Register Google Sheets provider
+const googleSheetsEntry: ProviderRegistryEntry = {
+    name: "google-sheets",
+    displayName: "Google Sheets",
+    authMethod: "oauth2",
+    category: "productivity",
+    loader: async () => {
+        const { GoogleSheetsProvider } = await import(
+            "./providers/google-sheets/GoogleSheetsProvider"
+        );
+        return new GoogleSheetsProvider();
+    }
+};
+
+// Register Google Drive provider
+const googleDriveEntry: ProviderRegistryEntry = {
+    name: "google-drive",
+    displayName: "Google Drive",
+    authMethod: "oauth2",
+    category: "file_storage",
+    loader: async () => {
+        const { GoogleDriveProvider } = await import(
+            "./providers/google-drive/GoogleDriveProvider"
+        );
+        return new GoogleDriveProvider();
+    }
+};
+
+// Register Google Calendar provider
+const googleCalendarEntry: ProviderRegistryEntry = {
+    name: "google-calendar",
+    displayName: "Google Calendar",
+    authMethod: "oauth2",
+    category: "productivity",
+    loader: async () => {
+        const { GoogleCalendarProvider } = await import(
+            "./providers/google-calendar/GoogleCalendarProvider"
+        );
+        return new GoogleCalendarProvider();
+    }
+};
+
 // Register all providers
 providerRegistry.register(slackEntry);
 providerRegistry.register(codaEntry);
@@ -87,6 +165,12 @@ providerRegistry.register(notionEntry);
 providerRegistry.register(airtableEntry);
 providerRegistry.register(hubspotEntry);
 providerRegistry.register(postgresqlEntry);
+providerRegistry.register(githubEntry);
+providerRegistry.register(linearEntry);
+providerRegistry.register(figmaEntry);
+providerRegistry.register(googleSheetsEntry);
+providerRegistry.register(googleDriveEntry);
+providerRegistry.register(googleCalendarEntry);
 
 // Export for use in application
 export { providerRegistry };

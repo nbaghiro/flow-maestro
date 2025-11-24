@@ -142,6 +142,98 @@ export const OAUTH_PROVIDERS: Record<string, OAuthProvider> = {
         refreshable: true
     },
 
+    "google-sheets": {
+        name: "google-sheets",
+        displayName: "Google Sheets",
+        authUrl: "https://accounts.google.com/o/oauth2/v2/auth",
+        tokenUrl: "https://oauth2.googleapis.com/token",
+        scopes: ["https://www.googleapis.com/auth/spreadsheets"],
+        authParams: {
+            access_type: "offline",
+            prompt: "consent"
+        },
+        clientId: process.env.GOOGLE_CLIENT_ID || "",
+        clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
+        redirectUri: `${process.env.API_URL || "http://localhost:3000"}/api/oauth/google/callback`,
+        getUserInfo: async (accessToken: string) => {
+            try {
+                const response = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
+                    headers: {
+                        Authorization: `Bearer ${accessToken}`
+                    }
+                });
+
+                const data = (await response.json()) as {
+                    email?: string;
+                    name?: string;
+                    picture?: string;
+                    id?: string;
+                };
+
+                return {
+                    email: data.email,
+                    name: data.name,
+                    picture: data.picture,
+                    userId: data.id
+                };
+            } catch (error) {
+                console.error("[OAuth] Failed to get Google Sheets user info:", error);
+                return {
+                    email: "unknown@google",
+                    name: "Google User"
+                };
+            }
+        },
+        revokeUrl: "https://oauth2.googleapis.com/revoke",
+        refreshable: true
+    },
+
+    "google-calendar": {
+        name: "google-calendar",
+        displayName: "Google Calendar",
+        authUrl: "https://accounts.google.com/o/oauth2/v2/auth",
+        tokenUrl: "https://oauth2.googleapis.com/token",
+        scopes: ["https://www.googleapis.com/auth/calendar.events"],
+        authParams: {
+            access_type: "offline",
+            prompt: "consent"
+        },
+        clientId: process.env.GOOGLE_CLIENT_ID || "",
+        clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
+        redirectUri: `${process.env.API_URL || "http://localhost:3000"}/api/oauth/google/callback`,
+        getUserInfo: async (accessToken: string) => {
+            try {
+                const response = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
+                    headers: {
+                        Authorization: `Bearer ${accessToken}`
+                    }
+                });
+
+                const data = (await response.json()) as {
+                    email?: string;
+                    name?: string;
+                    picture?: string;
+                    id?: string;
+                };
+
+                return {
+                    email: data.email,
+                    name: data.name,
+                    picture: data.picture,
+                    userId: data.id
+                };
+            } catch (error) {
+                console.error("[OAuth] Failed to get Google Calendar user info:", error);
+                return {
+                    email: "unknown@google",
+                    name: "Google User"
+                };
+            }
+        },
+        revokeUrl: "https://oauth2.googleapis.com/revoke",
+        refreshable: true
+    },
+
     notion: {
         name: "notion",
         displayName: "Notion",
@@ -285,6 +377,65 @@ export const OAUTH_PROVIDERS: Record<string, OAuthProvider> = {
         refreshable: true
     },
 
+    github: {
+        name: "github",
+        displayName: "GitHub",
+        authUrl: "https://github.com/login/oauth/authorize",
+        tokenUrl: "https://github.com/login/oauth/access_token",
+        scopes: [
+            "repo", // Full repository access
+            "read:org", // Read organization membership
+            "workflow", // Manage GitHub Actions workflows
+            "write:discussion" // Write discussions
+        ],
+        clientId: process.env.GITHUB_CLIENT_ID || "",
+        clientSecret: process.env.GITHUB_CLIENT_SECRET || "",
+        redirectUri: `${process.env.API_URL || "http://localhost:3000"}/api/oauth/github/callback`,
+        getUserInfo: async (accessToken: string) => {
+            try {
+                const response = await fetch("https://api.github.com/user", {
+                    headers: {
+                        Authorization: `Bearer ${accessToken}`,
+                        Accept: "application/vnd.github+json",
+                        "X-GitHub-Api-Version": "2022-11-28"
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = (await response.json()) as {
+                    login?: string;
+                    id?: number;
+                    email?: string;
+                    name?: string;
+                    avatar_url?: string;
+                    company?: string;
+                    location?: string;
+                };
+
+                return {
+                    username: data.login || "unknown",
+                    userId: data.id?.toString() || "unknown",
+                    email: data.email || `${data.login}@github`,
+                    name: data.name || data.login,
+                    avatar: data.avatar_url,
+                    company: data.company,
+                    location: data.location
+                };
+            } catch (error) {
+                console.error("[OAuth] Failed to get GitHub user info:", error);
+                return {
+                    username: "GitHub User",
+                    userId: "unknown",
+                    email: "unknown@github"
+                };
+            }
+        },
+        refreshable: false // GitHub OAuth tokens don't expire unless revoked
+    },
+
     hubspot: {
         name: "hubspot",
         displayName: "HubSpot",
@@ -365,6 +516,168 @@ export const OAUTH_PROVIDERS: Record<string, OAuthProvider> = {
                 };
             }
         },
+        refreshable: true
+    },
+
+    linear: {
+        name: "linear",
+        displayName: "Linear",
+        authUrl: "https://linear.app/oauth/authorize",
+        tokenUrl: "https://api.linear.app/oauth/token",
+        scopes: ["read", "write"],
+        clientId: process.env.LINEAR_CLIENT_ID || "",
+        clientSecret: process.env.LINEAR_CLIENT_SECRET || "",
+        redirectUri: `${process.env.API_URL || "http://localhost:3000"}/api/oauth/linear/callback`,
+        tokenParams: {
+            grant_type: "authorization_code"
+        },
+        getUserInfo: async (accessToken: string) => {
+            try {
+                const response = await fetch("https://api.linear.app/graphql", {
+                    method: "POST",
+                    headers: {
+                        Authorization: `Bearer ${accessToken}`,
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        query: "query { viewer { id name email } }"
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const result = (await response.json()) as {
+                    data?: {
+                        viewer?: {
+                            id?: string;
+                            name?: string;
+                            email?: string;
+                        };
+                    };
+                    errors?: Array<{ message: string }>;
+                };
+
+                if (result.errors && result.errors.length > 0) {
+                    throw new Error(result.errors[0].message);
+                }
+
+                const viewer = result.data?.viewer;
+
+                return {
+                    userId: viewer?.id || "unknown",
+                    name: viewer?.name || "Linear User",
+                    email: viewer?.email || "unknown@linear.app"
+                };
+            } catch (error) {
+                console.error("[OAuth] Failed to get Linear user info:", error);
+                return {
+                    userId: "unknown",
+                    name: "Linear User",
+                    email: "unknown@linear.app"
+                };
+            }
+        },
+        refreshable: true
+    },
+
+    figma: {
+        name: "figma",
+        displayName: "Figma",
+        authUrl: "https://www.figma.com/oauth",
+        tokenUrl: "https://api.figma.com/v1/oauth/token",
+        scopes: [
+            "file_content:read",
+            "file_metadata:read",
+            "file_comments:read",
+            "file_comments:write",
+            "webhooks:write"
+        ],
+        clientId: process.env.FIGMA_CLIENT_ID || "",
+        clientSecret: process.env.FIGMA_CLIENT_SECRET || "",
+        redirectUri: `${process.env.API_URL || "http://localhost:3000"}/api/oauth/figma/callback`,
+        pkceEnabled: true,
+        getUserInfo: async (accessToken: string) => {
+            try {
+                const response = await fetch("https://api.figma.com/v1/me", {
+                    headers: {
+                        Authorization: `Bearer ${accessToken}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = (await response.json()) as {
+                    id?: string;
+                    handle?: string;
+                    email?: string;
+                    img_url?: string;
+                };
+
+                return {
+                    userId: data.id || "unknown",
+                    name: data.handle || "Figma User",
+                    email: data.email || "unknown@figma.com",
+                    avatar: data.img_url
+                };
+            } catch (error) {
+                console.error("[OAuth] Failed to get Figma user info:", error);
+                return {
+                    userId: "unknown",
+                    name: "Figma User",
+                    email: "unknown@figma.com"
+                };
+            }
+        },
+        refreshable: true
+    },
+
+    "google-drive": {
+        name: "google-drive",
+        displayName: "Google Drive",
+        authUrl: "https://accounts.google.com/o/oauth2/v2/auth",
+        tokenUrl: "https://oauth2.googleapis.com/token",
+        scopes: ["https://www.googleapis.com/auth/drive"],
+        authParams: {
+            access_type: "offline",
+            prompt: "consent"
+        },
+        clientId: process.env.GOOGLE_CLIENT_ID || "",
+        clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
+        redirectUri: `${process.env.API_URL || "http://localhost:3000"}/api/oauth/google/callback`,
+        getUserInfo: async (accessToken: string) => {
+            try {
+                const response = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
+                    headers: {
+                        Authorization: `Bearer ${accessToken}`
+                    }
+                });
+
+                const data = (await response.json()) as {
+                    email?: string;
+                    name?: string;
+                    picture?: string;
+                    id?: string;
+                };
+
+                return {
+                    email: data.email,
+                    name: data.name,
+                    picture: data.picture,
+                    userId: data.id
+                };
+            } catch (error) {
+                console.error("[OAuth] Failed to get Google Drive user info:", error);
+                return {
+                    email: "unknown@google",
+                    name: "Google User"
+                };
+            }
+        },
+        revokeUrl: "https://oauth2.googleapis.com/revoke",
         refreshable: true
     }
 };

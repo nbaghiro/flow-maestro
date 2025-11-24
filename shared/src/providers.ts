@@ -178,7 +178,6 @@ export const ALL_PROVIDERS: MCPProvider[] = [
         logoUrl: getBrandLogo("github.com"),
         category: "Developer Tools",
         methods: ["api_key", "oauth2"],
-        comingSoon: true,
         mcpServerUrl: "https://mcp.pipedream.com/app/github",
         mcpAuthType: "oauth2"
     },
@@ -1053,7 +1052,6 @@ export const ALL_PROVIDERS: MCPProvider[] = [
         logoUrl: getBrandLogo("drive.google.com"),
         category: "File Storage",
         methods: ["oauth2"],
-        comingSoon: true,
         mcpServerUrl: "https://mcp.pipedream.com/app/google-drive",
         mcpAuthType: "oauth2"
     },
@@ -1063,8 +1061,7 @@ export const ALL_PROVIDERS: MCPProvider[] = [
         description: "Cloud spreadsheet application",
         logoUrl: getBrandLogo("sheets.google.com"),
         category: "Productivity",
-        methods: ["oauth2"],
-        comingSoon: true
+        methods: ["oauth2"]
     },
     {
         provider: "google-docs",
@@ -1099,8 +1096,7 @@ export const ALL_PROVIDERS: MCPProvider[] = [
         description: "Calendar and scheduling",
         logoUrl: getBrandLogo("calendar.google.com"),
         category: "Productivity",
-        methods: ["oauth2"],
-        comingSoon: true
+        methods: ["oauth2"]
     },
     {
         provider: "miro",
@@ -1141,11 +1137,10 @@ export const ALL_PROVIDERS: MCPProvider[] = [
     {
         provider: "figma",
         displayName: "Figma",
-        description: "Design and prototyping tool",
+        description: "Design and prototyping tool - access files, components, comments",
         logoUrl: getBrandLogo("figma.com"),
         category: "Design",
-        methods: ["api_key"],
-        comingSoon: true
+        methods: ["oauth2"]
     },
     {
         provider: "canva",
@@ -1256,8 +1251,7 @@ export const ALL_PROVIDERS: MCPProvider[] = [
         description: "Issue tracking for software teams",
         logoUrl: getBrandLogo("linear.app"),
         category: "Developer Tools",
-        methods: ["api_key"],
-        comingSoon: true
+        methods: ["oauth2"]
     },
     {
         provider: "vercel",
