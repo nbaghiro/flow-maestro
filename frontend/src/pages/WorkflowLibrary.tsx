@@ -12,7 +12,7 @@ import {
     updateWorkflow,
     type WorkflowDefinition
 } from "../lib/api";
-import { convertToReactFlowFormat } from "../lib/workflow-layout";
+import { convertToReactFlowFormat } from "../lib/workflowLayout";
 
 interface Workflow {
     id: string;
