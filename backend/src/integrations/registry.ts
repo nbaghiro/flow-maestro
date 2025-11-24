@@ -144,6 +144,20 @@ const googleDriveEntry: ProviderRegistryEntry = {
     }
 };
 
+// Register Google Calendar provider
+const googleCalendarEntry: ProviderRegistryEntry = {
+    name: "google-calendar",
+    displayName: "Google Calendar",
+    authMethod: "oauth2",
+    category: "productivity",
+    loader: async () => {
+        const { GoogleCalendarProvider } = await import(
+            "./providers/google-calendar/GoogleCalendarProvider"
+        );
+        return new GoogleCalendarProvider();
+    }
+};
+
 // Register all providers
 providerRegistry.register(slackEntry);
 providerRegistry.register(codaEntry);
@@ -156,6 +170,7 @@ providerRegistry.register(linearEntry);
 providerRegistry.register(figmaEntry);
 providerRegistry.register(googleSheetsEntry);
 providerRegistry.register(googleDriveEntry);
+providerRegistry.register(googleCalendarEntry);
 
 // Export for use in application
 export { providerRegistry };

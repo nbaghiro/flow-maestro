@@ -117,6 +117,13 @@ export const driveApi = new gcp.projects.Service("drive-api", {
     disableOnDestroy: false
 });
 
+// Google Calendar API - Required for Google Calendar integration
+export const calendarApi = new gcp.projects.Service("calendar-api", {
+    service: "calendar-json.googleapis.com",
+    project: infrastructureConfig.project,
+    disableOnDestroy: false
+});
+
 // =============================================================================
 // Exports
 // =============================================================================
@@ -138,5 +145,6 @@ export const apiOutputs = {
 
     // Integration APIs
     sheetsApiEnabled: sheetsApi.service,
-    driveApiEnabled: driveApi.service
+    driveApiEnabled: driveApi.service,
+    calendarApiEnabled: calendarApi.service
 };

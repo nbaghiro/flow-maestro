@@ -96,6 +96,7 @@ export const outputs = {
     // Google Cloud APIs (Integrations)
     sheetsApiEnabled: apiOutputs.sheetsApiEnabled,
     driveApiEnabled: apiOutputs.driveApiEnabled,
+    calendarApiEnabled: apiOutputs.calendarApiEnabled,
 
     // Temporal Configuration (self-hosted)
     temporalNamespace: infrastructureConfig.temporalNamespace,

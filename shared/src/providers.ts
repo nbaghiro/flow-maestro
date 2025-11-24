@@ -1096,8 +1096,7 @@ export const ALL_PROVIDERS: MCPProvider[] = [
         description: "Calendar and scheduling",
         logoUrl: getBrandLogo("calendar.google.com"),
         category: "Productivity",
-        methods: ["oauth2"],
-        comingSoon: true
+        methods: ["oauth2"]
     },
     {
         provider: "miro",
