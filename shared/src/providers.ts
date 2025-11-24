@@ -1052,7 +1052,6 @@ export const ALL_PROVIDERS: MCPProvider[] = [
         logoUrl: getBrandLogo("drive.google.com"),
         category: "File Storage",
         methods: ["oauth2"],
-        comingSoon: true,
         mcpServerUrl: "https://mcp.pipedream.com/app/google-drive",
         mcpAuthType: "oauth2"
     },

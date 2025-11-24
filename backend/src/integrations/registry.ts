@@ -130,6 +130,20 @@ const googleSheetsEntry: ProviderRegistryEntry = {
     }
 };
 
+// Register Google Drive provider
+const googleDriveEntry: ProviderRegistryEntry = {
+    name: "google-drive",
+    displayName: "Google Drive",
+    authMethod: "oauth2",
+    category: "file_storage",
+    loader: async () => {
+        const { GoogleDriveProvider } = await import(
+            "./providers/google-drive/GoogleDriveProvider"
+        );
+        return new GoogleDriveProvider();
+    }
+};
+
 // Register all providers
 providerRegistry.register(slackEntry);
 providerRegistry.register(codaEntry);
@@ -141,6 +155,7 @@ providerRegistry.register(githubEntry);
 providerRegistry.register(linearEntry);
 providerRegistry.register(figmaEntry);
 providerRegistry.register(googleSheetsEntry);
+providerRegistry.register(googleDriveEntry);
 
 // Export for use in application
 export { providerRegistry };
