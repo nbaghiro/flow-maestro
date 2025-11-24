@@ -5,6 +5,7 @@ import {
 } from "../../../storage/repositories";
 import { getTemporalClient } from "../../../temporal/client";
 import { authMiddleware } from "../../middleware";
+import { serializeDocument } from "./utils";
 
 export async function addUrlRoute(fastify: FastifyInstance) {
     fastify.post(
@@ -73,7 +74,7 @@ export async function addUrlRoute(fastify: FastifyInstance) {
             return reply.status(201).send({
                 success: true,
                 data: {
-                    document,
+                    document: serializeDocument(document),
                     workflowId
                 },
                 message: "URL added successfully and processing started"

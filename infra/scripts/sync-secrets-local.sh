@@ -373,8 +373,7 @@ VITE_WS_URL=http://localhost:3001
 # ==============================================================================
 # Google Cloud Storage (for Knowledge Base documents)
 # ==============================================================================
-GCS_BUCKET_NAME=flowmaestro-knowledge-docs
-GCS_PROJECT_ID=
+GCS_BUCKET_NAME=flowmaestro-knowledge-docs-flowmaestro-prod
 GCS_SIGNED_URL_EXPIRATION=3600
 EOF
 

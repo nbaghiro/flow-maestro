@@ -8,6 +8,7 @@ import {
 } from "../../../storage/repositories";
 import { getTemporalClient } from "../../../temporal/client";
 import { authMiddleware } from "../../middleware";
+import { serializeDocument } from "./utils";
 
 export async function uploadDocumentRoute(fastify: FastifyInstance) {
     fastify.post(
@@ -79,27 +80,34 @@ export async function uploadDocumentRoute(fastify: FastifyInstance) {
             });
 
             // Start Temporal workflow to process the document
-            const client = await getTemporalClient();
-            const workflowId = `process-document-${document.id}`;
+            let workflowId: string | undefined;
+            try {
+                const client = await getTemporalClient();
+                workflowId = `process-document-${document.id}`;
 
-            await client.workflow.start("processDocumentWorkflow", {
-                taskQueue: "flowmaestro-orchestrator",
-                workflowId,
-                args: [
-                    {
-                        documentId: document.id,
-                        knowledgeBaseId: params.id,
-                        filePath: gcsUri,
-                        fileType: fileExtension,
-                        userId: request.user!.id
-                    }
-                ]
-            });
+                await client.workflow.start("processDocumentWorkflow", {
+                    taskQueue: "flowmaestro-orchestrator",
+                    workflowId,
+                    args: [
+                        {
+                            documentId: document.id,
+                            knowledgeBaseId: params.id,
+                            filePath: gcsUri,
+                            fileType: fileExtension,
+                            userId: request.user!.id
+                        }
+                    ]
+                });
+            } catch (error: unknown) {
+                const errorMsg = error instanceof Error ? error.message : String(error);
+                fastify.log.error(`Failed to start Temporal workflow: ${errorMsg}`);
+                console.error("[upload-document] Workflow start failed:", error);
+            }
 
             return reply.status(201).send({
                 success: true,
                 data: {
-                    document,
+                    document: serializeDocument(document),
                     workflowId
                 },
                 message: "Document uploaded successfully and processing started"

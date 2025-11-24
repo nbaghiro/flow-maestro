@@ -882,7 +882,6 @@ WITH (m = 16, ef_construction = 64);
 ```bash
 # Google Cloud Storage
 GCS_BUCKET_NAME=flowmaestro-knowledge-docs-dev
-GCS_PROJECT_ID=your-project-id
 GCS_SIGNED_URL_EXPIRATION=3600
 
 # OpenAI (fallback if user has no connection)

@@ -12,9 +12,10 @@ import {
     RefreshCw,
     Search
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ChunkSearchResult } from "../../lib/api";
+import { wsClient } from "../../lib/websocket";
 import { useKnowledgeBaseStore } from "../../stores/knowledgeBaseStore";
 
 export function KnowledgeBaseDetail() {
@@ -51,6 +52,9 @@ export function KnowledgeBaseDetail() {
     const [showDeleteKBModal, setShowDeleteKBModal] = useState(false);
     const [deletingKB, setDeletingKB] = useState(false);
 
+    // Polling interval ref
+    const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
     useEffect(() => {
         if (id) {
             fetchKnowledgeBase(id);
@@ -58,6 +62,52 @@ export function KnowledgeBaseDetail() {
             fetchStats(id);
         }
     }, [id]);
+
+    // Set up WebSocket listeners and polling for document updates
+    useEffect(() => {
+        if (!id) return;
+
+        const token = localStorage.getItem("auth_token");
+        if (!token) return;
+
+        // Connect WebSocket if not already connected
+        wsClient.connect(token).catch(console.error);
+
+        // Listen for document processing events
+        const handleDocumentProcessing = () => {
+            fetchDocuments(id);
+        };
+
+        const handleDocumentCompleted = () => {
+            fetchDocuments(id);
+            fetchStats(id);
+        };
+
+        const handleDocumentFailed = () => {
+            fetchDocuments(id);
+        };
+
+        // Register WebSocket event handlers
+        wsClient.on("kb:document:processing", handleDocumentProcessing);
+        wsClient.on("kb:document:completed", handleDocumentCompleted);
+        wsClient.on("kb:document:failed", handleDocumentFailed);
+
+        // Set up polling as fallback (every 5 seconds)
+        pollingIntervalRef.current = setInterval(() => {
+            fetchDocuments(id);
+            fetchStats(id);
+        }, 5000);
+
+        // Cleanup
+        return () => {
+            wsClient.off("kb:document:processing", handleDocumentProcessing);
+            wsClient.off("kb:document:completed", handleDocumentCompleted);
+            wsClient.off("kb:document:failed", handleDocumentFailed);
+            if (pollingIntervalRef.current) {
+                clearInterval(pollingIntervalRef.current);
+            }
+        };
+    }, [id, fetchDocuments, fetchStats]);
 
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (!e.target.files || !e.target.files[0] || !id) return;

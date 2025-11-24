@@ -4,6 +4,7 @@ import {
     KnowledgeDocumentRepository
 } from "../../../storage/repositories";
 import { authMiddleware } from "../../middleware";
+import { serializeDocuments } from "./utils";
 import type { DocumentStatus } from "../../../storage/models/KnowledgeDocument";
 
 export async function listDocumentsRoute(fastify: FastifyInstance) {
@@ -49,7 +50,7 @@ export async function listDocumentsRoute(fastify: FastifyInstance) {
 
             return reply.send({
                 success: true,
-                data: result.documents,
+                data: serializeDocuments(result.documents),
                 pagination: {
                     total: result.total,
                     limit,
