@@ -7,6 +7,7 @@ import { generatePKCEPair } from "./utils/pkce";
  */
 interface StateTokenData {
     userId: string;
+    provider: string; // Track which service initiated the OAuth flow
     expiresAt: number;
     codeVerifier?: string; // PKCE code verifier
 }
@@ -27,6 +28,7 @@ interface OAuthToken {
  */
 export interface OAuthTokenResult {
     userId: string;
+    provider: string; // The actual provider that initiated the OAuth flow
     tokens: {
         access_token: string;
         refresh_token?: string;
@@ -70,7 +72,7 @@ export class OAuthService {
         }
 
         // Generate CSRF state token (store code_verifier if using PKCE)
-        const state = this.generateStateToken(userId, codeVerifier);
+        const state = this.generateStateToken(userId, provider, codeVerifier);
 
         // Build authorization URL with parameters
         const params = new URLSearchParams({
@@ -103,25 +105,28 @@ export class OAuthService {
      * GENERIC - works for all OAuth providers
      */
     async exchangeCodeForToken(
-        provider: string,
+        _provider: string,
         code: string,
         state: string
     ): Promise<OAuthTokenResult> {
-        const config = getOAuthProvider(provider);
-
         // Validate state token (CSRF protection)
         const stateData = this.validateStateToken(state);
         if (!stateData) {
             throw new Error("Invalid or expired state token");
         }
 
-        console.log(`[OAuth] Exchanging code for token: ${provider}`);
+        // Use provider from state (handles shared callbacks like /google/callback)
+        const actualProvider = stateData.provider;
+
+        const config = getOAuthProvider(actualProvider);
+
+        console.log(`[OAuth] Exchanging code for token: ${actualProvider}`);
 
         try {
             // Exchange code for token (with PKCE verifier if applicable)
             const tokenData = await this.performTokenExchange(config, code, stateData.codeVerifier);
 
-            console.log(`[OAuth] Token exchange successful for ${provider}`);
+            console.log(`[OAuth] Token exchange successful for ${actualProvider}`);
 
             // Get user info from provider
             let accountInfo: Record<string, unknown> = {};
@@ -129,15 +134,16 @@ export class OAuthService {
                 try {
                     const userInfo = await config.getUserInfo(tokenData.access_token);
                     accountInfo = userInfo as Record<string, unknown>;
-                    console.log(`[OAuth] Retrieved user info for ${provider}:`, accountInfo);
+                    console.log(`[OAuth] Retrieved user info for ${actualProvider}:`, accountInfo);
                 } catch (error: unknown) {
-                    console.error(`[OAuth] Failed to get user info for ${provider}:`, error);
+                    console.error(`[OAuth] Failed to get user info for ${actualProvider}:`, error);
                     // Continue anyway, user info is optional
                 }
             }
 
             return {
                 userId: stateData.userId,
+                provider: actualProvider, // Return the actual provider from state
                 tokens: {
                     access_token: tokenData.access_token,
                     refresh_token: tokenData.refresh_token,
@@ -149,7 +155,7 @@ export class OAuthService {
             };
         } catch (error: unknown) {
             const errorMsg = error instanceof Error ? error.message : "Unknown error";
-            console.error(`[OAuth] Token exchange failed for ${provider}:`, errorMsg);
+            console.error(`[OAuth] Token exchange failed for ${actualProvider}:`, errorMsg);
             throw new Error(`Failed to exchange authorization code: ${errorMsg}`);
         }
     }
@@ -322,11 +328,12 @@ export class OAuthService {
     /**
      * Generate a secure state token for CSRF protection
      */
-    private generateStateToken(userId: string, codeVerifier?: string): string {
+    private generateStateToken(userId: string, provider: string, codeVerifier?: string): string {
         const state = randomBytes(32).toString("hex");
 
         this.stateStore.set(state, {
             userId,
+            provider, // Store which service initiated the flow
             expiresAt: Date.now() + 5 * 60 * 1000, // 5 minutes expiry
             codeVerifier // Store PKCE verifier if using PKCE
         });

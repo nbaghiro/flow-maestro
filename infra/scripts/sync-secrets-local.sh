@@ -147,6 +147,12 @@ AIRTABLE_CLIENT_ID=$(get_secret "flowmaestro-app-airtable-client-id" "")
 AIRTABLE_CLIENT_SECRET=$(get_secret "flowmaestro-app-airtable-client-secret" "")
 HUBSPOT_CLIENT_ID=$(get_secret "flowmaestro-app-hubspot-client-id" "")
 HUBSPOT_CLIENT_SECRET=$(get_secret "flowmaestro-app-hubspot-client-secret" "")
+GITHUB_CLIENT_ID=$(get_secret "flowmaestro-app-github-client-id" "")
+GITHUB_CLIENT_SECRET=$(get_secret "flowmaestro-app-github-client-secret" "")
+LINEAR_CLIENT_ID=$(get_secret "flowmaestro-app-linear-client-id" "")
+LINEAR_CLIENT_SECRET=$(get_secret "flowmaestro-app-linear-client-secret" "")
+FIGMA_CLIENT_ID=$(get_secret "flowmaestro-app-figma-client-id" "")
+FIGMA_CLIENT_SECRET=$(get_secret "flowmaestro-app-figma-client-secret" "")
 
 print_success "Developer secrets fetched successfully"
 
@@ -291,6 +297,45 @@ else
     echo "# HubSpot" >> "$BACKEND_ENV_FILE"
     echo "HUBSPOT_CLIENT_ID=" >> "$BACKEND_ENV_FILE"
     echo "HUBSPOT_CLIENT_SECRET=" >> "$BACKEND_ENV_FILE"
+    echo "" >> "$BACKEND_ENV_FILE"
+fi
+
+# GitHub OAuth
+if [ -n "$GITHUB_CLIENT_ID" ] || [ -n "$GITHUB_CLIENT_SECRET" ]; then
+    echo "# GitHub" >> "$BACKEND_ENV_FILE"
+    echo "GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID}" >> "$BACKEND_ENV_FILE"
+    echo "GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET}" >> "$BACKEND_ENV_FILE"
+    echo "" >> "$BACKEND_ENV_FILE"
+else
+    echo "# GitHub" >> "$BACKEND_ENV_FILE"
+    echo "GITHUB_CLIENT_ID=" >> "$BACKEND_ENV_FILE"
+    echo "GITHUB_CLIENT_SECRET=" >> "$BACKEND_ENV_FILE"
+    echo "" >> "$BACKEND_ENV_FILE"
+fi
+
+# Linear OAuth
+if [ -n "$LINEAR_CLIENT_ID" ] || [ -n "$LINEAR_CLIENT_SECRET" ]; then
+    echo "# Linear" >> "$BACKEND_ENV_FILE"
+    echo "LINEAR_CLIENT_ID=${LINEAR_CLIENT_ID}" >> "$BACKEND_ENV_FILE"
+    echo "LINEAR_CLIENT_SECRET=${LINEAR_CLIENT_SECRET}" >> "$BACKEND_ENV_FILE"
+    echo "" >> "$BACKEND_ENV_FILE"
+else
+    echo "# Linear" >> "$BACKEND_ENV_FILE"
+    echo "LINEAR_CLIENT_ID=" >> "$BACKEND_ENV_FILE"
+    echo "LINEAR_CLIENT_SECRET=" >> "$BACKEND_ENV_FILE"
+    echo "" >> "$BACKEND_ENV_FILE"
+fi
+
+# Figma OAuth
+if [ -n "$FIGMA_CLIENT_ID" ] || [ -n "$FIGMA_CLIENT_SECRET" ]; then
+    echo "# Figma" >> "$BACKEND_ENV_FILE"
+    echo "FIGMA_CLIENT_ID=${FIGMA_CLIENT_ID}" >> "$BACKEND_ENV_FILE"
+    echo "FIGMA_CLIENT_SECRET=${FIGMA_CLIENT_SECRET}" >> "$BACKEND_ENV_FILE"
+    echo "" >> "$BACKEND_ENV_FILE"
+else
+    echo "# Figma" >> "$BACKEND_ENV_FILE"
+    echo "FIGMA_CLIENT_ID=" >> "$BACKEND_ENV_FILE"
+    echo "FIGMA_CLIENT_SECRET=" >> "$BACKEND_ENV_FILE"
     echo "" >> "$BACKEND_ENV_FILE"
 fi
 

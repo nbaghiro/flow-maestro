@@ -167,25 +167,12 @@ export function useOAuth() {
                 }
             };
 
-            // Monitor popup closure
-            const checkPopupClosed = setInterval(() => {
-                if (popup.closed) {
-                    cleanup();
-                    reject(new Error("OAuth popup was closed"));
-                }
-            }, 500);
-
             // Cleanup function
             const cleanup = () => {
                 clearTimeout(timeout);
-                clearInterval(checkPopupClosed);
                 window.removeEventListener("message", messageHandler);
                 setLoading(false);
-
-                // Close popup if still open
-                if (!popup.closed) {
-                    popup.close();
-                }
+                popup.close();
             };
 
             // Register message listener
