@@ -37,7 +37,8 @@ export async function callbackRoute(fastify: FastifyInstance) {
                 const errorMessage = error_description || error;
                 fastify.log.error(`OAuth error from ${provider}: ${errorMessage}`);
 
-                return reply.type("text/html").send(`
+                return reply.header("Cross-Origin-Opener-Policy", "unsafe-none").type("text/html")
+                    .send(`
                     <!DOCTYPE html>
                     <html>
                         <head>
@@ -89,7 +90,8 @@ export async function callbackRoute(fastify: FastifyInstance) {
 
             // Validate required parameters
             if (!code || !state) {
-                return reply.type("text/html").send(`
+                return reply.header("Cross-Origin-Opener-Policy", "unsafe-none").type("text/html")
+                    .send(`
                     <!DOCTYPE html>
                     <html>
                         <head>
@@ -138,8 +140,11 @@ export async function callbackRoute(fastify: FastifyInstance) {
                 // Exchange authorization code for tokens
                 const result = await oauthService.exchangeCodeForToken(provider, code, state);
 
+                // Use the actual provider from the state (handles shared callbacks)
+                const actualProvider = result.provider;
+
                 fastify.log.info(
-                    `Successfully exchanged code for ${provider}, user: ${result.userId}`
+                    `Successfully exchanged code for ${actualProvider}, user: ${result.userId}`
                 );
 
                 // Store connection in database
@@ -147,14 +152,14 @@ export async function callbackRoute(fastify: FastifyInstance) {
                 const accountInfo = result.accountInfo as Record<string, unknown> | undefined;
                 const connection = await connectionRepo.create({
                     user_id: result.userId,
-                    name: `${provider} - ${
+                    name: `${actualProvider} - ${
                         (accountInfo?.email as string) ||
                         (accountInfo?.workspace as string) ||
                         (accountInfo?.user as string) ||
                         "Account"
                     }`,
                     connection_method: "oauth2",
-                    provider,
+                    provider: actualProvider,
                     data: result.tokens,
                     metadata: {
                         scopes: result.tokens.scope?.split(" ") || [],
@@ -166,10 +171,11 @@ export async function callbackRoute(fastify: FastifyInstance) {
                     status: "active"
                 });
 
-                fastify.log.info(`Created connection ${connection.id} for ${provider}`);
+                fastify.log.info(`Created connection ${connection.id} for ${actualProvider}`);
 
                 // Return success page that notifies parent window
-                return reply.type("text/html").send(`
+                return reply.header("Cross-Origin-Opener-Policy", "unsafe-none").type("text/html")
+                    .send(`
                     <!DOCTYPE html>
                     <html>
                         <head>
@@ -257,7 +263,7 @@ export async function callbackRoute(fastify: FastifyInstance) {
                             <script>
                                 window.opener?.postMessage({
                                     type: 'oauth_success',
-                                    provider: '${provider}',
+                                    provider: '${actualProvider}',
                                     connection: ${JSON.stringify(connection)}
                                 }, '*');
                                 setTimeout(() => window.close(), 2000);
@@ -269,7 +275,8 @@ export async function callbackRoute(fastify: FastifyInstance) {
                 const errorMsg = error instanceof Error ? error.message : "Unknown error";
                 fastify.log.error(error, `OAuth callback failed for ${provider}`);
 
-                return reply.type("text/html").send(`
+                return reply.header("Cross-Origin-Opener-Policy", "unsafe-none").type("text/html")
+                    .send(`
                     <!DOCTYPE html>
                     <html>
                         <head>

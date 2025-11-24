@@ -116,6 +116,20 @@ const figmaEntry: ProviderRegistryEntry = {
     }
 };
 
+// Register Google Sheets provider
+const googleSheetsEntry: ProviderRegistryEntry = {
+    name: "google-sheets",
+    displayName: "Google Sheets",
+    authMethod: "oauth2",
+    category: "productivity",
+    loader: async () => {
+        const { GoogleSheetsProvider } = await import(
+            "./providers/google-sheets/GoogleSheetsProvider"
+        );
+        return new GoogleSheetsProvider();
+    }
+};
+
 // Register all providers
 providerRegistry.register(slackEntry);
 providerRegistry.register(codaEntry);
@@ -126,6 +140,7 @@ providerRegistry.register(postgresqlEntry);
 providerRegistry.register(githubEntry);
 providerRegistry.register(linearEntry);
 providerRegistry.register(figmaEntry);
+providerRegistry.register(googleSheetsEntry);
 
 // Export for use in application
 export { providerRegistry };

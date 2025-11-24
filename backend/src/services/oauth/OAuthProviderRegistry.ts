@@ -142,6 +142,52 @@ export const OAUTH_PROVIDERS: Record<string, OAuthProvider> = {
         refreshable: true
     },
 
+    "google-sheets": {
+        name: "google-sheets",
+        displayName: "Google Sheets",
+        authUrl: "https://accounts.google.com/o/oauth2/v2/auth",
+        tokenUrl: "https://oauth2.googleapis.com/token",
+        scopes: ["https://www.googleapis.com/auth/spreadsheets"],
+        authParams: {
+            access_type: "offline",
+            prompt: "consent"
+        },
+        clientId: process.env.GOOGLE_CLIENT_ID || "",
+        clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
+        redirectUri: `${process.env.API_URL || "http://localhost:3000"}/api/oauth/google/callback`,
+        getUserInfo: async (accessToken: string) => {
+            try {
+                const response = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
+                    headers: {
+                        Authorization: `Bearer ${accessToken}`
+                    }
+                });
+
+                const data = (await response.json()) as {
+                    email?: string;
+                    name?: string;
+                    picture?: string;
+                    id?: string;
+                };
+
+                return {
+                    email: data.email,
+                    name: data.name,
+                    picture: data.picture,
+                    userId: data.id
+                };
+            } catch (error) {
+                console.error("[OAuth] Failed to get Google Sheets user info:", error);
+                return {
+                    email: "unknown@google",
+                    name: "Google User"
+                };
+            }
+        },
+        revokeUrl: "https://oauth2.googleapis.com/revoke",
+        refreshable: true
+    },
+
     notion: {
         name: "notion",
         displayName: "Notion",

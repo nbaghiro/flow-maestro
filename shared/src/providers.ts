@@ -1062,8 +1062,7 @@ export const ALL_PROVIDERS: MCPProvider[] = [
         description: "Cloud spreadsheet application",
         logoUrl: getBrandLogo("sheets.google.com"),
         category: "Productivity",
-        methods: ["oauth2"],
-        comingSoon: true
+        methods: ["oauth2"]
     },
     {
         provider: "google-docs",

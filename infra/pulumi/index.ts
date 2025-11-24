@@ -7,6 +7,7 @@ import {
 } from "./src/resources/database";
 import { esoOutputs } from "./src/resources/external-secrets-operator";
 import { clusterOutputs } from "./src/resources/gke-cluster";
+import { apiOutputs } from "./src/resources/google-apis";
 import { monitoringOutputs } from "./src/resources/monitoring";
 import { networkOutputs, staticIp } from "./src/resources/networking";
 import { redisOutputs } from "./src/resources/redis";
@@ -77,6 +78,24 @@ export const outputs = {
     esoNamespace: esoOutputs.namespace,
     esoServiceAccountName: esoOutputs.serviceAccountName,
     esoGcpServiceAccount: esoOutputs.gcpServiceAccountEmail,
+
+    // Google Cloud APIs (Infrastructure)
+    computeApiEnabled: apiOutputs.computeApiEnabled,
+    containerApiEnabled: apiOutputs.containerApiEnabled,
+    sqlAdminApiEnabled: apiOutputs.sqlAdminApiEnabled,
+    redisApiEnabled: apiOutputs.redisApiEnabled,
+    artifactRegistryApiEnabled: apiOutputs.artifactRegistryApiEnabled,
+    serviceNetworkingApiEnabled: apiOutputs.serviceNetworkingApiEnabled,
+    cloudResourceManagerApiEnabled: apiOutputs.cloudResourceManagerApiEnabled,
+    iamApiEnabled: apiOutputs.iamApiEnabled,
+    monitoringApiEnabled: apiOutputs.monitoringApiEnabled,
+    loggingApiEnabled: apiOutputs.loggingApiEnabled,
+    secretManagerApiEnabled: apiOutputs.secretManagerApiEnabled,
+    storageApiEnabled: apiOutputs.storageApiEnabled,
+
+    // Google Cloud APIs (Integrations)
+    sheetsApiEnabled: apiOutputs.sheetsApiEnabled,
+    driveApiEnabled: apiOutputs.driveApiEnabled,
 
     // Temporal Configuration (self-hosted)
     temporalNamespace: infrastructureConfig.temporalNamespace,
