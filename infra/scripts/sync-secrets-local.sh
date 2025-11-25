@@ -153,6 +153,10 @@ LINEAR_CLIENT_ID=$(get_secret "flowmaestro-app-linear-client-id" "")
 LINEAR_CLIENT_SECRET=$(get_secret "flowmaestro-app-linear-client-secret" "")
 FIGMA_CLIENT_ID=$(get_secret "flowmaestro-app-figma-client-id" "")
 FIGMA_CLIENT_SECRET=$(get_secret "flowmaestro-app-figma-client-secret" "")
+META_APP_ID=$(get_secret "flowmaestro-app-meta-app-id" "")
+META_APP_SECRET=$(get_secret "flowmaestro-app-meta-app-secret" "")
+META_CLIENT_TOKEN=$(get_secret "flowmaestro-app-meta-client-token" "")
+META_WEBHOOK_VERIFY_TOKEN=$(get_secret "flowmaestro-app-meta-webhook-verify-token" "")
 
 print_success "Developer secrets fetched successfully"
 
@@ -336,6 +340,23 @@ else
     echo "# Figma" >> "$BACKEND_ENV_FILE"
     echo "FIGMA_CLIENT_ID=" >> "$BACKEND_ENV_FILE"
     echo "FIGMA_CLIENT_SECRET=" >> "$BACKEND_ENV_FILE"
+    echo "" >> "$BACKEND_ENV_FILE"
+fi
+
+# Meta Platform OAuth (WhatsApp, Instagram, Messenger, Facebook Ads)
+if [ -n "$META_APP_ID" ] || [ -n "$META_APP_SECRET" ]; then
+    echo "# Meta Platform (WhatsApp, Instagram, Messenger, Facebook Ads)" >> "$BACKEND_ENV_FILE"
+    echo "META_APP_ID=${META_APP_ID}" >> "$BACKEND_ENV_FILE"
+    echo "META_APP_SECRET=${META_APP_SECRET}" >> "$BACKEND_ENV_FILE"
+    echo "META_CLIENT_TOKEN=${META_CLIENT_TOKEN}" >> "$BACKEND_ENV_FILE"
+    echo "META_WEBHOOK_VERIFY_TOKEN=${META_WEBHOOK_VERIFY_TOKEN}" >> "$BACKEND_ENV_FILE"
+    echo "" >> "$BACKEND_ENV_FILE"
+else
+    echo "# Meta Platform (WhatsApp, Instagram, Messenger, Facebook Ads)" >> "$BACKEND_ENV_FILE"
+    echo "META_APP_ID=" >> "$BACKEND_ENV_FILE"
+    echo "META_APP_SECRET=" >> "$BACKEND_ENV_FILE"
+    echo "META_CLIENT_TOKEN=" >> "$BACKEND_ENV_FILE"
+    echo "META_WEBHOOK_VERIFY_TOKEN=" >> "$BACKEND_ENV_FILE"
     echo "" >> "$BACKEND_ENV_FILE"
 fi
 
