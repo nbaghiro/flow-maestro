@@ -1463,8 +1463,7 @@ export const ALL_PROVIDERS: MCPProvider[] = [
         description: "NoSQL database platform",
         logoUrl: getBrandLogo("mongodb.com"),
         category: "Databases",
-        methods: ["api_key"],
-        comingSoon: true
+        methods: ["api_key"]
     },
     {
         provider: "postgresql",

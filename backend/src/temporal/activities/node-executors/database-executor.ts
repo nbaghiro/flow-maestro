@@ -11,7 +11,23 @@ export interface DatabaseNodeConfig {
     provider: "postgresql" | "mysql" | "mongodb";
 
     // Operation to perform
-    operation: "query" | "insert" | "update" | "delete" | "listTables";
+    // SQL operations (postgresql, mysql)
+    // MongoDB operations
+    operation:
+        | "query"
+        | "insert"
+        | "update"
+        | "delete"
+        | "listTables"
+        | "find"
+        | "insertOne"
+        | "insertMany"
+        | "updateOne"
+        | "updateMany"
+        | "deleteOne"
+        | "deleteMany"
+        | "listCollections"
+        | "aggregate";
 
     // Operation parameters (varies by operation)
     parameters: Record<string, unknown>;

@@ -80,6 +80,18 @@ const postgresqlEntry: ProviderRegistryEntry = {
     }
 };
 
+// Register MongoDB provider
+const mongodbEntry: ProviderRegistryEntry = {
+    name: "mongodb",
+    displayName: "MongoDB",
+    authMethod: "api_key",
+    category: "database",
+    loader: async () => {
+        const { MongoDBProvider } = await import("./providers/mongodb/MongoDBProvider");
+        return new MongoDBProvider();
+    }
+};
+
 // Register GitHub provider
 const githubEntry: ProviderRegistryEntry = {
     name: "github",
@@ -165,6 +177,7 @@ providerRegistry.register(notionEntry);
 providerRegistry.register(airtableEntry);
 providerRegistry.register(hubspotEntry);
 providerRegistry.register(postgresqlEntry);
+providerRegistry.register(mongodbEntry);
 providerRegistry.register(githubEntry);
 providerRegistry.register(linearEntry);
 providerRegistry.register(figmaEntry);
