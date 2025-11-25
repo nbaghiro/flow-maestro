@@ -138,8 +138,7 @@ export const ALL_PROVIDERS: MCPProvider[] = [
         description: "Send WhatsApp messages via API",
         logoUrl: getBrandLogo("whatsapp.com"),
         category: "Communication",
-        methods: ["api_key"],
-        comingSoon: true
+        methods: ["oauth2"]
     },
 
     // Productivity & Collaboration
@@ -420,20 +419,18 @@ export const ALL_PROVIDERS: MCPProvider[] = [
     {
         provider: "facebook",
         displayName: "Facebook",
-        description: "Post and manage pages",
+        description: "Send messages and manage pages via Messenger",
         logoUrl: getBrandLogo("facebook.com"),
         category: "Social Media",
-        methods: ["oauth2"],
-        comingSoon: true
+        methods: ["oauth2"]
     },
     {
         provider: "instagram",
         displayName: "Instagram",
-        description: "Post content and manage account",
+        description: "Send messages and publish content",
         logoUrl: getBrandLogo("instagram.com"),
         category: "Social Media",
-        methods: ["oauth2"],
-        comingSoon: true
+        methods: ["oauth2"]
     },
 
     // Analytics

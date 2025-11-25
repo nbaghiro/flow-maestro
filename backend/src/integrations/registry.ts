@@ -170,6 +170,42 @@ const googleCalendarEntry: ProviderRegistryEntry = {
     }
 };
 
+// Register WhatsApp Business provider
+const whatsappEntry: ProviderRegistryEntry = {
+    name: "whatsapp",
+    displayName: "WhatsApp Business",
+    authMethod: "oauth2",
+    category: "communication",
+    loader: async () => {
+        const { WhatsAppProvider } = await import("./providers/whatsapp/WhatsAppProvider");
+        return new WhatsAppProvider();
+    }
+};
+
+// Register Instagram provider
+const instagramEntry: ProviderRegistryEntry = {
+    name: "instagram",
+    displayName: "Instagram",
+    authMethod: "oauth2",
+    category: "communication",
+    loader: async () => {
+        const { InstagramProvider } = await import("./providers/instagram/InstagramProvider");
+        return new InstagramProvider();
+    }
+};
+
+// Register Facebook provider
+const facebookEntry: ProviderRegistryEntry = {
+    name: "facebook",
+    displayName: "Facebook",
+    authMethod: "oauth2",
+    category: "communication",
+    loader: async () => {
+        const { FacebookProvider } = await import("./providers/facebook/FacebookProvider");
+        return new FacebookProvider();
+    }
+};
+
 // Register all providers
 providerRegistry.register(slackEntry);
 providerRegistry.register(codaEntry);
@@ -184,6 +220,9 @@ providerRegistry.register(figmaEntry);
 providerRegistry.register(googleSheetsEntry);
 providerRegistry.register(googleDriveEntry);
 providerRegistry.register(googleCalendarEntry);
+providerRegistry.register(whatsappEntry);
+providerRegistry.register(instagramEntry);
+providerRegistry.register(facebookEntry);
 
 // Export for use in application
 export { providerRegistry };

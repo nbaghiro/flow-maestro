@@ -24,6 +24,7 @@ import { nodeRoutes } from "./routes/nodes";
 import { oauthRoutes } from "./routes/oauth";
 import { threadRoutes } from "./routes/threads";
 import { triggerRoutes } from "./routes/triggers";
+import { webhookRoutes } from "./routes/webhooks";
 import { websocketRoutes } from "./routes/websocket";
 import { workflowRoutes } from "./routes/workflows";
 
@@ -127,6 +128,7 @@ export async function buildServer() {
     await fastify.register(threadRoutes, { prefix: "/api/threads" });
     await fastify.register(mcpRoutes, { prefix: "/api/mcp" });
     await fastify.register(triggerRoutes, { prefix: "/api" });
+    await fastify.register(webhookRoutes, { prefix: "/api/webhooks" });
     await fastify.register(analyticsRoutes);
     await fastify.register(websocketRoutes);
 
