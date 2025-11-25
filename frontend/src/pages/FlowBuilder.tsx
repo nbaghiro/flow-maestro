@@ -8,6 +8,7 @@ import { WorkflowCanvas } from "../canvas/WorkflowCanvas";
 import { AIGenerateButton } from "../components/AIGenerateButton";
 import { BuilderHeader } from "../components/BuilderHeader";
 import { ExecutionPanel } from "../components/ExecutionPanel";
+import { VersionPanel } from "../components/VersionPanel";
 import { WorkflowSettingsDialog } from "../components/WorkflowSettingsDialog";
 import { useKeyboardShortcuts } from "../hooks/useKeyboardShortcuts";
 import { getWorkflow, updateWorkflow } from "../lib/api";
@@ -47,6 +48,13 @@ export function FlowBuilder() {
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [copiedNode, setCopiedNode] = useState<CopiedNode | null>(null);
     const reactFlowInstanceRef = useRef<ReturnType<typeof useReactFlow> | null>(null);
+    const [isVersionOpen, setIsVersionOpen] = useState(false);
+
+    const mockVersions = [
+        { id: "1", name: "Initial version", createdAt: "Nov 21, 2025 – 10:22 AM" },
+        { id: "2", name: "Checkpoint A", createdAt: "Nov 22, 2025 – 3:10 PM" },
+        { id: "3", name: null, createdAt: "Nov 23, 2025 – 7:45 PM" }
+    ];
 
     const {
         selectedNode,
@@ -309,6 +317,10 @@ export function FlowBuilder() {
         }
     };
 
+    const handleRenameVersion = (id: string, newName: string) => {
+        console.log("Rename version:", id, "->", newName);
+    };
+
     useKeyboardShortcuts({
         onSave: handleSave,
         onRun: handleRunWorkflow,
@@ -348,6 +360,7 @@ export function FlowBuilder() {
                     onSave={handleSave}
                     onNameChange={handleNameChange}
                     onOpenSettings={() => setIsSettingsOpen(true)}
+                    onOpenVersion={() => setIsVersionOpen(true)}
                 />
 
                 <WorkflowSettingsDialog
@@ -360,7 +373,7 @@ export function FlowBuilder() {
                     onSave={handleSettingsSave}
                 />
 
-                <div className="flex-1 flex overflow-hidden">
+                <div className="flex-1 flex overflow-hidden relative">
                     <NodeLibrary
                         isCollapsed={isSidebarCollapsed}
                         onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
@@ -382,6 +395,14 @@ export function FlowBuilder() {
                     </div>
 
                     {workflowId && <ExecutionPanel workflowId={workflowId} renderPanelOnly />}
+                    <VersionPanel
+                        open={isVersionOpen}
+                        onClose={() => setIsVersionOpen(false)}
+                        versions={mockVersions}
+                        onRevert={(id) => console.log("revert", id)}
+                        onDelete={(id) => console.log("delete", id)}
+                        onRename={handleRenameVersion}
+                    />
                 </div>
             </div>
         </ReactFlowProvider>
