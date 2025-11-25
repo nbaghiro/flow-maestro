@@ -72,7 +72,7 @@ export async function buildServer() {
     });
 
     // Configure JSON parser to allow empty bodies
-    fastify.addContentTypeParser("application/json", { parseAs: "string" }, (req, body, done) => {
+    fastify.addContentTypeParser("application/json", { parseAs: "string" }, (_req, body, done) => {
         try {
             const json = body === "" || body === "{}" ? {} : JSON.parse(body as string);
             done(null, json);
