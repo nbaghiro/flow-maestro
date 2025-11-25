@@ -67,7 +67,17 @@ export async function extractTextActivity(input: ProcessDocumentInput): Promise<
 
         if (input.sourceUrl) {
             // Extract from URL
-            extractedText = await textExtractor.extractFromURL(input.sourceUrl);
+            console.log(`[extractTextActivity] Extracting from URL: ${input.sourceUrl}`);
+            try {
+                extractedText = await textExtractor.extractFromURL(input.sourceUrl);
+                console.log(
+                    `[extractTextActivity] Successfully extracted ${extractedText.content.length} characters from URL`
+                );
+            } catch (error: unknown) {
+                const errorMsg = error instanceof Error ? error.message : String(error);
+                console.error(`[extractTextActivity] Failed to extract from URL: ${errorMsg}`);
+                throw error;
+            }
         } else if (input.filePath) {
             // Check if file path is a GCS URI
             const isGCSUri = input.filePath.startsWith("gs://");

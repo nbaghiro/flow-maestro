@@ -2071,13 +2071,18 @@ export async function addUrlToKnowledgeBase(
 ): Promise<ApiResponse> {
     const token = getAuthToken();
 
+    const body: { url: string; name?: string } = { url: url.trim() };
+    if (name && name.trim()) {
+        body.name = name.trim();
+    }
+
     const response = await fetch(`${API_BASE_URL}/api/knowledge-bases/${id}/documents/url`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
             ...(token && { Authorization: `Bearer ${token}` })
         },
-        body: JSON.stringify({ url, name })
+        body: JSON.stringify(body)
     });
 
     if (!response.ok) {

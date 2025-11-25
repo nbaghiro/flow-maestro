@@ -537,7 +537,11 @@ export function KnowledgeBaseDetail() {
                                     <div className="flex-1">
                                         <div className="flex items-center gap-2 mb-1">
                                             <FileText className="w-4 h-4 text-muted-foreground" />
-                                            <span className="font-medium">{doc.name}</span>
+                                            <span className="font-medium">
+                                                {doc.source_type === "url" && doc.source_url
+                                                    ? doc.source_url
+                                                    : doc.name}
+                                            </span>
                                             <span className="text-xs text-muted-foreground uppercase">
                                                 {doc.file_type}
                                             </span>
