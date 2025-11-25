@@ -71,6 +71,16 @@ export async function buildServer() {
         }
     });
 
+    // Configure JSON parser to allow empty bodies
+    fastify.addContentTypeParser("application/json", { parseAs: "string" }, (req, body, done) => {
+        try {
+            const json = body === "" || body === "{}" ? {} : JSON.parse(body as string);
+            done(null, json);
+        } catch (err) {
+            done(err as Error, undefined);
+        }
+    });
+
     // Initialize event bridge (connect orchestrator events to WebSocket via Redis)
     await eventBridge.initialize();
 
