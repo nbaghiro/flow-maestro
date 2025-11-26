@@ -1,34 +1,28 @@
-import { BookOpen, Plus, Trash2, FileText, Loader2 } from "lucide-react";
+import { BookOpen, Plus, Trash2, FileText } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useKnowledgeBaseStore } from "../../stores/knowledgeBaseStore";
+import { CreateKnowledgeBaseModal, DeleteKnowledgeBaseModal } from "../components/knowledgebases";
+import { useKnowledgeBaseStore } from "../stores/knowledgeBaseStore";
 
-export function KnowledgeBaseList() {
+export function KnowledgeBases() {
     const navigate = useNavigate();
-    const { knowledgeBases, loading, error, fetchKnowledgeBases, deleteKB } =
+    const { knowledgeBases, loading, error, fetchKnowledgeBases, createKB, deleteKB } =
         useKnowledgeBaseStore();
     const [showCreateModal, setShowCreateModal] = useState(false);
-    const [newKBName, setNewKBName] = useState("");
-    const [newKBDescription, setNewKBDescription] = useState("");
     const [deletingId, setDeletingId] = useState<string | null>(null);
     const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; name: string } | null>(null);
-    const { createKB } = useKnowledgeBaseStore();
 
     useEffect(() => {
         fetchKnowledgeBases();
     }, [fetchKnowledgeBases]);
 
-    const handleCreate = async () => {
-        if (!newKBName.trim()) return;
-
+    const handleCreate = async (name: string, description?: string) => {
         try {
             const kb = await createKB({
-                name: newKBName,
-                description: newKBDescription || undefined
+                name,
+                description
             });
             setShowCreateModal(false);
-            setNewKBName("");
-            setNewKBDescription("");
             navigate(`/knowledge-bases/${kb.id}`);
         } catch (error) {
             console.error("Failed to create knowledge base:", error);
@@ -41,7 +35,6 @@ export function KnowledgeBaseList() {
         setDeletingId(deleteConfirm.id);
         try {
             await deleteKB(deleteConfirm.id);
-            // Refresh the list after deletion
             await fetchKnowledgeBases();
             setDeleteConfirm(null);
         } catch (error) {
@@ -154,96 +147,20 @@ export function KnowledgeBaseList() {
             )}
 
             {/* Create Modal */}
-            {showCreateModal && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-lg p-6 w-full max-w-md">
-                        <h2 className="text-lg font-semibold mb-4">Create Knowledge Base</h2>
-
-                        <div className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium mb-1">Name *</label>
-                                <input
-                                    type="text"
-                                    value={newKBName}
-                                    onChange={(e) => setNewKBName(e.target.value)}
-                                    placeholder="My Knowledge Base"
-                                    className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20"
-                                    autoFocus
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium mb-1">
-                                    Description
-                                </label>
-                                <textarea
-                                    value={newKBDescription}
-                                    onChange={(e) => setNewKBDescription(e.target.value)}
-                                    placeholder="What is this knowledge base for?"
-                                    rows={3}
-                                    className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
-                                />
-                            </div>
-                        </div>
-
-                        <div className="flex items-center gap-2 mt-6">
-                            <button
-                                onClick={() => {
-                                    setShowCreateModal(false);
-                                    setNewKBName("");
-                                    setNewKBDescription("");
-                                }}
-                                className="flex-1 px-4 py-2 border border-border rounded-lg hover:bg-muted transition-colors"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={handleCreate}
-                                disabled={!newKBName.trim()}
-                                className="flex-1 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                Create
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            <CreateKnowledgeBaseModal
+                isOpen={showCreateModal}
+                onClose={() => setShowCreateModal(false)}
+                onSubmit={handleCreate}
+            />
 
             {/* Delete Confirmation Modal */}
-            {deleteConfirm && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-lg p-6 w-full max-w-md">
-                        <h2 className="text-lg font-semibold mb-4">Delete Knowledge Base</h2>
-                        <p className="text-muted-foreground mb-6">
-                            Are you sure you want to delete <strong>{deleteConfirm.name}</strong>?
-                            This will delete all documents and embeddings.
-                        </p>
-                        <div className="flex items-center gap-2">
-                            <button
-                                onClick={() => setDeleteConfirm(null)}
-                                className="flex-1 px-4 py-2 border border-border rounded-lg hover:bg-muted transition-colors"
-                                disabled={deletingId === deleteConfirm.id}
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={handleDelete}
-                                disabled={deletingId === deleteConfirm.id}
-                                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                            >
-                                {deletingId === deleteConfirm.id ? (
-                                    <>
-                                        <Loader2 className="w-4 h-4 animate-spin" />
-                                        Deleting...
-                                    </>
-                                ) : (
-                                    "Delete"
-                                )}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            <DeleteKnowledgeBaseModal
+                isOpen={deleteConfirm !== null}
+                onClose={() => setDeleteConfirm(null)}
+                onConfirm={handleDelete}
+                isLoading={deletingId === deleteConfirm?.id}
+                knowledgeBaseName={deleteConfirm?.name || ""}
+            />
         </div>
     );
 }
