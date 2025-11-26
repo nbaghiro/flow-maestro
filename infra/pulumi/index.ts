@@ -64,6 +64,7 @@ export const outputs = {
     artifactsBucketUrl: storageOutputs.artifactsBucketUrl,
     knowledgeDocsBucketName: storageOutputs.knowledgeDocsBucketName,
     knowledgeDocsBucketUrl: storageOutputs.knowledgeDocsBucketUrl,
+    storageServiceAccountEmail: storageOutputs.storageServiceAccountEmail,
 
     // Monitoring
     dashboardId: monitoringOutputs.dashboardId,
@@ -240,6 +241,20 @@ Google Cloud Storage:
   Knowledge Docs Bucket: ${storageOutputs.knowledgeDocsBucketName}
   Uploads Bucket: ${storageOutputs.uploadsBucketName}
   Artifacts Bucket: ${storageOutputs.artifactsBucketName}
+  Storage Service Account: ${storageOutputs.storageServiceAccountEmail}
+
+Local Development - GCS Setup:
+==============================
+To use GCS in local development, create a service account key:
+
+  gcloud iam service-accounts keys create ~/.config/gcloud/flowmaestro-storage-key.json \\
+      --iam-account=${storageOutputs.storageServiceAccountEmail}
+
+Then add to your backend/.env file:
+  GOOGLE_APPLICATION_CREDENTIALS=/Users/YOUR_USERNAME/.config/gcloud/flowmaestro-storage-key.json
+
+Note: Service account keys don't expire like user credentials (gcloud auth), avoiding
+the "invalid_rapt" re-authentication errors that occur with user credentials.
 
 Load Balancer IP: ${staticIp.address}
 `
