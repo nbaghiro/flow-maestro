@@ -10,7 +10,13 @@ import {
     Clock,
     Trash2,
     RefreshCw,
-    Search
+    Search,
+    Settings,
+    ChevronDown,
+    ChevronUp,
+    History,
+    Download,
+    X
 } from "lucide-react";
 import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
@@ -51,6 +57,11 @@ export function KnowledgeBaseDetail() {
     const [showSearchResults, setShowSearchResults] = useState(false);
     const [showDeleteKBModal, setShowDeleteKBModal] = useState(false);
     const [deletingKB, setDeletingKB] = useState(false);
+    const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
+    const [topK, setTopK] = useState(10);
+    const [similarityThreshold, setSimilarityThreshold] = useState(0.3);
+    const [searchHistory, setSearchHistory] = useState<string[]>([]);
+    const [expandedChunks, setExpandedChunks] = useState<Set<string>>(new Set());
 
     // Polling interval ref
     const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -179,9 +190,17 @@ export function KnowledgeBaseDetail() {
         setShowSearchResults(true);
         try {
             const results = await query(id, {
-                query: searchQuery
+                query: searchQuery,
+                top_k: topK,
+                similarity_threshold: similarityThreshold
             });
             setSearchResults(results);
+
+            // Add to search history (keep last 10)
+            setSearchHistory((prev) => {
+                const updated = [searchQuery, ...prev.filter((q) => q !== searchQuery)];
+                return updated.slice(0, 10);
+            });
         } catch (error) {
             console.error("Failed to search knowledge base:", error);
             setSearchResults([]);
@@ -189,6 +208,71 @@ export function KnowledgeBaseDetail() {
             setSearching(false);
         }
     };
+
+    const handleHistoryClick = (query: string) => {
+        setSearchQuery(query);
+        // Trigger search after a brief delay to allow state update
+        setTimeout(() => {
+            handleSearch();
+        }, 100);
+    };
+
+    const toggleChunkExpansion = (chunkId: string) => {
+        setExpandedChunks((prev) => {
+            const next = new Set(prev);
+            if (next.has(chunkId)) {
+                next.delete(chunkId);
+            } else {
+                next.add(chunkId);
+            }
+            return next;
+        });
+    };
+
+    const exportResults = () => {
+        const data = {
+            query: searchQuery,
+            timestamp: new Date().toISOString(),
+            parameters: {
+                top_k: topK,
+                similarity_threshold: similarityThreshold
+            },
+            results: searchResults.map((r) => ({
+                document: r.document_name,
+                chunk_index: r.chunk_index,
+                similarity: r.similarity,
+                content: r.content,
+                metadata: r.metadata
+            }))
+        };
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `knowledge-base-search-${Date.now()}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    };
+
+    // Always group results by document for file-based view
+    const groupedResults = searchResults.reduce(
+        (acc, result) => {
+            const docName = result.document_name;
+            if (!acc[docName]) {
+                acc[docName] = [];
+            }
+            acc[docName].push(result);
+            return acc;
+        },
+        {} as Record<string, ChunkSearchResult[]>
+    );
+
+    // Sort chunks within each document by chunk_index
+    Object.keys(groupedResults).forEach((docName) => {
+        groupedResults[docName].sort((a, b) => a.chunk_index - b.chunk_index);
+    });
 
     const handleSearchKeyPress = (e: React.KeyboardEvent) => {
         if (e.key === "Enter" && !e.shiftKey) {
@@ -329,12 +413,97 @@ export function KnowledgeBaseDetail() {
 
             {/* Search Section */}
             <div className="border border-border rounded-lg p-6 mb-6">
-                <div className="flex items-center gap-2 mb-4">
-                    <Search className="w-5 h-5 text-primary" />
-                    <h2 className="text-lg font-semibold">Search Knowledge Base</h2>
+                <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                        <Search className="w-5 h-5 text-primary" />
+                        <h2 className="text-lg font-semibold">Search Knowledge Base</h2>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        {searchHistory.length > 0 && (
+                            <button
+                                onClick={() => setShowAdvancedOptions(!showAdvancedOptions)}
+                                className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
+                                title="Search History"
+                            >
+                                <History className="w-4 h-4" />
+                            </button>
+                        )}
+                        <button
+                            onClick={() => setShowAdvancedOptions(!showAdvancedOptions)}
+                            className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
+                            title="Advanced Options"
+                        >
+                            <Settings className="w-4 h-4" />
+                        </button>
+                    </div>
                 </div>
 
                 <div className="space-y-4">
+                    {/* Search History Dropdown */}
+                    {showAdvancedOptions && searchHistory.length > 0 && (
+                        <div className="border border-border rounded-lg p-3 bg-muted/30">
+                            <div className="flex items-center gap-2 mb-2">
+                                <History className="w-4 h-4 text-muted-foreground" />
+                                <span className="text-sm font-medium">Recent Searches</span>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                                {searchHistory.map((query, idx) => (
+                                    <button
+                                        key={idx}
+                                        onClick={() => handleHistoryClick(query)}
+                                        className="text-xs px-2 py-1 bg-background border border-border rounded hover:bg-muted transition-colors"
+                                    >
+                                        {query}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Advanced Options */}
+                    {showAdvancedOptions && (
+                        <div className="border border-border rounded-lg p-4 bg-muted/30 space-y-4">
+                            <div className="flex items-center justify-between">
+                                <label className="text-sm font-medium">Top K Results</label>
+                                <span className="text-sm text-muted-foreground">{topK}</span>
+                            </div>
+                            <input
+                                type="range"
+                                min="1"
+                                max="50"
+                                value={topK}
+                                onChange={(e) => setTopK(Number(e.target.value))}
+                                className="w-full"
+                            />
+                            <div className="flex items-center justify-between text-xs text-muted-foreground">
+                                <span>1</span>
+                                <span>50</span>
+                            </div>
+
+                            <div className="flex items-center justify-between">
+                                <label className="text-sm font-medium">Similarity Threshold</label>
+                                <span className="text-sm text-muted-foreground">
+                                    {(similarityThreshold * 100).toFixed(0)}%
+                                </span>
+                            </div>
+                            <input
+                                type="range"
+                                min="0"
+                                max="100"
+                                step="5"
+                                value={similarityThreshold * 100}
+                                onChange={(e) =>
+                                    setSimilarityThreshold(Number(e.target.value) / 100)
+                                }
+                                className="w-full"
+                            />
+                            <div className="flex items-center justify-between text-xs text-muted-foreground">
+                                <span>0%</span>
+                                <span>100%</span>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Search Input */}
                     <div className="flex gap-2">
                         <input
@@ -372,12 +541,24 @@ export function KnowledgeBaseDetail() {
                                         </span>
                                     )}
                                 </h3>
-                                <button
-                                    onClick={() => setShowSearchResults(false)}
-                                    className="text-sm text-muted-foreground hover:text-foreground"
-                                >
-                                    Hide
-                                </button>
+                                <div className="flex items-center gap-2">
+                                    {searchResults.length > 0 && (
+                                        <button
+                                            onClick={exportResults}
+                                            className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
+                                            title="Export Results"
+                                        >
+                                            <Download className="w-4 h-4" />
+                                        </button>
+                                    )}
+                                    <button
+                                        onClick={() => setShowSearchResults(false)}
+                                        className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
+                                        title="Hide Results"
+                                    >
+                                        <X className="w-4 h-4" />
+                                    </button>
+                                </div>
                             </div>
 
                             {searching ? (
@@ -392,76 +573,176 @@ export function KnowledgeBaseDetail() {
                                     <FileText className="w-12 h-12 mx-auto text-muted-foreground mb-2" />
                                     <p className="text-muted-foreground">No results found</p>
                                     <p className="text-sm text-muted-foreground mt-1">
-                                        Try adjusting your query or lowering the similarity
-                                        threshold
+                                        Try adjusting your query, increasing top K, or lowering the
+                                        similarity threshold
                                     </p>
                                 </div>
-                            ) : (
+                            ) : Object.keys(groupedResults).length > 0 ? (
                                 <div className="space-y-4">
-                                    {searchResults.map((result, index) => (
-                                        <div
-                                            key={result.id}
-                                            className="border border-border rounded-lg p-4 hover:bg-muted/50 transition-colors"
-                                        >
-                                            <div className="flex items-start justify-between mb-2">
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-xs font-medium text-muted-foreground">
-                                                        #{index + 1}
-                                                    </span>
-                                                    <span className="text-sm font-medium">
-                                                        {result.document_name}
-                                                    </span>
-                                                    <span className="text-xs text-muted-foreground">
-                                                        Chunk {result.chunk_index + 1}
-                                                    </span>
-                                                </div>
-                                                <div className="flex items-center gap-2">
-                                                    <div className="text-xs font-medium text-primary">
-                                                        {(result.similarity * 100).toFixed(1)}%
-                                                        match
+                                    {Object.entries(groupedResults).map(([docName, results]) => {
+                                        // Get document info from currentDocuments if available
+                                        const docInfo = currentDocuments.find(
+                                            (d) =>
+                                                (d.source_type === "url" &&
+                                                    d.source_url === docName) ||
+                                                d.name === docName
+                                        );
+
+                                        return (
+                                            <div
+                                                key={docName}
+                                                className="border border-border rounded-lg p-4 hover:bg-muted/50 transition-colors"
+                                            >
+                                                {/* File Header */}
+                                                <div className="flex items-start justify-between mb-3">
+                                                    <div className="flex items-center gap-2 flex-1">
+                                                        <FileText className="w-5 h-5 text-primary flex-shrink-0" />
+                                                        <div className="flex-1 min-w-0">
+                                                            <h4 className="font-semibold text-base truncate">
+                                                                {docName}
+                                                            </h4>
+                                                            {docInfo && (
+                                                                <div className="flex items-center gap-2 mt-1">
+                                                                    <span className="text-xs text-muted-foreground">
+                                                                        {docInfo.file_type.toUpperCase()}
+                                                                    </span>
+                                                                    {docInfo.source_type ===
+                                                                        "url" &&
+                                                                        docInfo.source_url && (
+                                                                            <a
+                                                                                href={
+                                                                                    docInfo.source_url
+                                                                                }
+                                                                                target="_blank"
+                                                                                rel="noopener noreferrer"
+                                                                                className="text-xs text-primary hover:underline"
+                                                                                onClick={(e) =>
+                                                                                    e.stopPropagation()
+                                                                                }
+                                                                            >
+                                                                                View Source
+                                                                            </a>
+                                                                        )}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                    <div className="text-xs text-muted-foreground flex-shrink-0 ml-2">
+                                                        {results.length}{" "}
+                                                        {results.length === 1 ? "match" : "matches"}
                                                     </div>
                                                 </div>
-                                            </div>
 
-                                            <div className="text-sm text-foreground leading-relaxed">
-                                                {result.content}
-                                            </div>
+                                                {/* Chunk List */}
+                                                <div className="space-y-2 pl-7">
+                                                    {results.map((result) => {
+                                                        const isExpanded = expandedChunks.has(
+                                                            result.id
+                                                        );
+                                                        const contentPreview =
+                                                            result.content.length > 200
+                                                                ? result.content.substring(0, 200) +
+                                                                  "..."
+                                                                : result.content;
 
-                                            {result.metadata &&
-                                                Object.keys(result.metadata).length > 0 && (
-                                                    <div className="mt-2 flex flex-wrap gap-2">
-                                                        {(() => {
-                                                            const meta = result.metadata as Record<
-                                                                string,
-                                                                unknown
-                                                            >;
-                                                            return (
-                                                                <>
-                                                                    {meta.page && (
-                                                                        <span className="text-xs px-2 py-1 bg-muted rounded">
-                                                                            Page {String(meta.page)}
-                                                                        </span>
-                                                                    )}
-                                                                    {meta.section && (
-                                                                        <span className="text-xs px-2 py-1 bg-muted rounded">
-                                                                            {String(meta.section)}
-                                                                        </span>
-                                                                    )}
-                                                                </>
-                                                            );
-                                                        })()}
-                                                    </div>
-                                                )}
-                                        </div>
-                                    ))}
+                                                        return (
+                                                            <div
+                                                                key={result.id}
+                                                                className="border-l-2 border-primary/30 pl-3 py-2 hover:bg-muted/30 rounded-r transition-colors"
+                                                            >
+                                                                <div className="flex items-start justify-between gap-2">
+                                                                    <div className="flex-1 min-w-0">
+                                                                        <div className="flex items-center gap-2 mb-1">
+                                                                            <span className="text-xs font-medium text-primary">
+                                                                                Chunk{" "}
+                                                                                {result.chunk_index +
+                                                                                    1}
+                                                                            </span>
+                                                                            <span className="text-xs text-muted-foreground">
+                                                                                {(
+                                                                                    result.similarity *
+                                                                                    100
+                                                                                ).toFixed(1)}
+                                                                                % match
+                                                                            </span>
+                                                                            {result.metadata &&
+                                                                                Object.keys(
+                                                                                    result.metadata
+                                                                                ).length > 0 && (
+                                                                                    <div className="flex flex-wrap gap-1">
+                                                                                        {(() => {
+                                                                                            const meta =
+                                                                                                result.metadata as Record<
+                                                                                                    string,
+                                                                                                    unknown
+                                                                                                >;
+                                                                                            return (
+                                                                                                <>
+                                                                                                    {meta.page && (
+                                                                                                        <span className="text-xs px-1.5 py-0.5 bg-muted rounded">
+                                                                                                            Page{" "}
+                                                                                                            {String(
+                                                                                                                meta.page
+                                                                                                            )}
+                                                                                                        </span>
+                                                                                                    )}
+                                                                                                    {meta.section && (
+                                                                                                        <span className="text-xs px-1.5 py-0.5 bg-muted rounded">
+                                                                                                            {String(
+                                                                                                                meta.section
+                                                                                                            )}
+                                                                                                        </span>
+                                                                                                    )}
+                                                                                                </>
+                                                                                            );
+                                                                                        })()}
+                                                                                    </div>
+                                                                                )}
+                                                                        </div>
+                                                                        <div className="text-sm text-foreground leading-relaxed">
+                                                                            {isExpanded
+                                                                                ? result.content
+                                                                                : contentPreview}
+                                                                        </div>
+                                                                    </div>
+                                                                    {result.content.length > 200 ? (
+                                                                        <button
+                                                                            onClick={() =>
+                                                                                toggleChunkExpansion(
+                                                                                    result.id
+                                                                                )
+                                                                            }
+                                                                            className="p-1 text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors flex-shrink-0"
+                                                                            title={
+                                                                                isExpanded
+                                                                                    ? "Collapse"
+                                                                                    : "Expand"
+                                                                            }
+                                                                        >
+                                                                            {isExpanded ? (
+                                                                                <ChevronUp className="w-4 h-4" />
+                                                                            ) : (
+                                                                                <ChevronDown className="w-4 h-4" />
+                                                                            )}
+                                                                        </button>
+                                                                    ) : null}
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
                                 </div>
-                            )}
+                            ) : null}
                         </div>
                     )}
 
                     <div className="text-xs text-muted-foreground">
                         <strong>Tip:</strong> Use semantic search to find relevant information
-                        across all your documents. Press Enter to search.
+                        across all your documents. Press Enter to search. Adjust advanced options to
+                        fine-tune results.
                     </div>
                 </div>
             </div>
