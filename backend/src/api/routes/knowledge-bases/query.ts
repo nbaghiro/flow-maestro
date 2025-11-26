@@ -17,6 +17,8 @@ export async function queryKnowledgeBaseRoute(fastify: FastifyInstance) {
             const params = request.params as { id: string };
             const body = request.body as {
                 query: string;
+                top_k?: number;
+                similarity_threshold?: number;
             };
 
             // Verify ownership
@@ -55,11 +57,18 @@ export async function queryKnowledgeBaseRoute(fastify: FastifyInstance) {
                 );
 
                 // Search for similar chunks
+                // Default values: top_k=10, similarity_threshold=0.3
+                const topK = Math.min(Math.max(body.top_k ?? 10, 1), 50); // Clamp between 1 and 50
+                const similarityThreshold = Math.max(
+                    Math.min(body.similarity_threshold ?? 0.3, 1.0),
+                    0.0
+                ); // Clamp between 0.0 and 1.0
+
                 const results = await chunkRepository.searchSimilar({
                     knowledge_base_id: params.id,
                     query_embedding: queryEmbedding,
-                    top_k: 5,
-                    similarity_threshold: 0.7
+                    top_k: topK,
+                    similarity_threshold: similarityThreshold
                 });
 
                 return reply.send({
@@ -67,7 +76,9 @@ export async function queryKnowledgeBaseRoute(fastify: FastifyInstance) {
                     data: {
                         query: body.query,
                         results,
-                        count: results.length
+                        count: results.length,
+                        top_k: topK,
+                        similarity_threshold: similarityThreshold
                     }
                 });
             } catch (error: unknown) {

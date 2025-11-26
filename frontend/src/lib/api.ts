@@ -82,6 +82,8 @@ export interface UpdateKnowledgeBaseInput {
 
 export interface QueryKnowledgeBaseInput {
     query: string;
+    top_k?: number;
+    similarity_threshold?: number;
 }
 
 export interface ApiResponse<T = unknown> {
