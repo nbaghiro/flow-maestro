@@ -1,4 +1,4 @@
-# Form Interfaces - Exploration & Implementation Plan
+# Form Interfaces - Implementation Plan
 
 ## Overview
 
@@ -35,10 +35,10 @@ Form Interfaces allow users to create customizable, public-facing forms that col
 │                                         │           │             │ │
 │                                         │     ┌─────┴─────┐       │ │
 │                                         │     ▼           ▼       │ │
-│                                         │ ┌───────┐ ┌─────────┐   │ │
+│                                         │ ┌───────-┐ ┌─────────┐  │ │
 │                                         │ │Workflow│ │  Agent  │  │ │
 │                                         │ │Trigger │ │ Message │  │ │
-│                                         │ └───┬───┘ └────┬────┘   │ │
+│                                         │ └───┬───-┘ └────┬────┘  │ │
 │                                         └─────┼──────────┼───────-┘ │
 └───────────────────────────────────────────────┼──────────┼────────-─┘
                                                 │          │
