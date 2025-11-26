@@ -983,6 +983,711 @@ frontend/src/lib/formApi.ts
 
 ---
 
+## Backend Services
+
+### FormStorageService
+
+Extends GCS patterns from `backend/src/services/storage/GCSStorageService.ts`:
+
+```typescript
+// backend/src/services/storage/FormStorageService.ts
+export class FormStorageService {
+    private gcsService: GCSStorageService;
+
+    /**
+     * Upload form submission file
+     * Path: users/{userId}/forms/{formId}/submissions/{submissionId}/{timestamp}_{filename}
+     */
+    async uploadSubmissionFile(
+        fileStream: Readable,
+        userId: string,
+        formId: string,
+        submissionId: string,
+        filename: string
+    ): Promise<{ gcsUri: string; downloadUrl: string }> {
+        const sanitizedFilename = this.sanitizeFilename(filename);
+        const gcsPath = `${userId}/forms/${formId}/submissions/${submissionId}/${Date.now()}_${sanitizedFilename}`;
+
+        const gcsUri = await this.gcsService.uploadToPath(fileStream, gcsPath);
+        const downloadUrl = await this.gcsService.getSignedDownloadUrl(gcsUri, 3600);
+
+        return { gcsUri, downloadUrl };
+    }
+
+    /**
+     * Upload form asset (header image, icon)
+     * Path: users/{userId}/forms/{formId}/assets/{assetType}_{timestamp}_{filename}
+     */
+    async uploadFormAsset(
+        fileStream: Readable,
+        userId: string,
+        formId: string,
+        assetType: "header" | "icon",
+        filename: string
+    ): Promise<string> {
+        const gcsPath = `${userId}/forms/${formId}/assets/${assetType}_${Date.now()}_${filename}`;
+        return this.gcsService.uploadToPath(fileStream, gcsPath);
+    }
+
+    /**
+     * Delete all files for a submission
+     */
+    async deleteSubmissionFiles(gcsUris: string[]): Promise<void> {
+        await Promise.all(gcsUris.map((uri) => this.gcsService.delete(uri)));
+    }
+}
+```
+
+### FormWorkflowTriggerService
+
+```typescript
+// backend/src/services/FormWorkflowTriggerService.ts
+export class FormWorkflowTriggerService {
+    private temporalClient: TemporalClient;
+    private formRepo: FormInterfaceRepository;
+    private submissionRepo: FormSubmissionRepository;
+
+    async triggerFromSubmission(
+        form: FormInterface,
+        submission: FormSubmission
+    ): Promise<{ workflowRunId: string; executionId: string }> {
+        if (form.targetType !== "workflow" || !form.workflowId) {
+            throw new AppError("Form is not linked to a workflow", 400);
+        }
+
+        // Map form data to workflow inputs
+        const inputs = this.mapToWorkflowInputs(form, submission);
+
+        // Start Temporal workflow
+        const workflowId = `form-${form.id}-${submission.id}`;
+        const handle = await this.temporalClient.workflow.start("formTriggeredWorkflow", {
+            taskQueue: "flowmaestro-orchestrator",
+            workflowId,
+            args: [
+                {
+                    workflowId: form.workflowId,
+                    formInterfaceId: form.id,
+                    submissionId: submission.id,
+                    inputs
+                }
+            ]
+        });
+
+        // Update submission with execution tracking
+        await this.submissionRepo.update(submission.id, {
+            executionStatus: "triggered"
+        });
+
+        return {
+            workflowRunId: handle.workflowId,
+            executionId: submission.id
+        };
+    }
+
+    private mapToWorkflowInputs(
+        form: FormInterface,
+        submission: FormSubmission
+    ): Record<string, unknown> {
+        const inputs: Record<string, unknown> = {
+            _formId: form.id,
+            _formName: form.name,
+            _submissionId: submission.id,
+            _submittedAt: submission.submittedAt.toISOString()
+        };
+
+        // Map each field's outputVariable to submitted value
+        for (const field of form.fields) {
+            if ("outputVariable" in field && field.outputVariable) {
+                const value = submission.data[field.id];
+
+                // Handle file fields specially
+                if (field.type === "file") {
+                    const files = submission.files.filter((f) => f.fieldId === field.id);
+                    inputs[field.outputVariable] = files.map((f) => ({
+                        fileName: f.fileName,
+                        fileSize: f.fileSize,
+                        mimeType: f.mimeType,
+                        downloadUrl: f.downloadUrl
+                    }));
+                } else {
+                    inputs[field.outputVariable] = value;
+                }
+            }
+        }
+
+        return inputs;
+    }
+}
+```
+
+### FormAgentTriggerService
+
+```typescript
+// backend/src/services/FormAgentTriggerService.ts
+export class FormAgentTriggerService {
+    private agentService: AgentService;
+    private threadRepo: ThreadRepository;
+
+    async triggerFromSubmission(
+        form: FormInterface,
+        submission: FormSubmission
+    ): Promise<{ threadId: string; executionId: string }> {
+        if (form.targetType !== "agent" || !form.agentId) {
+            throw new AppError("Form is not linked to an agent", 400);
+        }
+
+        // Create new thread for this submission
+        const thread = await this.threadRepo.create({
+            agentId: form.agentId,
+            userId: form.userId,
+            title: `Form: ${form.name} - ${new Date().toLocaleDateString()}`,
+            metadata: {
+                formSubmissionId: submission.id,
+                formInterfaceId: form.id
+            }
+        });
+
+        // Build context message from template or default
+        const contextMessage = this.buildContextMessage(form, submission);
+
+        // Start agent execution with form context
+        const execution = await this.agentService.executeAgent({
+            agentId: form.agentId,
+            threadId: thread.id,
+            message: contextMessage,
+            userId: form.userId
+        });
+
+        return {
+            threadId: thread.id,
+            executionId: execution.id
+        };
+    }
+
+    private buildContextMessage(form: FormInterface, submission: FormSubmission): string {
+        // Use custom template if provided
+        if (form.agentContextTemplate) {
+            return this.renderTemplate(form.agentContextTemplate, form, submission);
+        }
+
+        // Default template
+        let message = `New form submission received:\n\n`;
+
+        for (const field of form.fields) {
+            if ("outputVariable" in field && field.outputVariable) {
+                const value = submission.data[field.id];
+                if (value !== undefined && value !== null && value !== "") {
+                    message += `**${field.label}**: ${this.formatValue(value)}\n`;
+                }
+            }
+        }
+
+        if (submission.files.length > 0) {
+            message += `\n**Attachments**: ${submission.files.length} file(s) uploaded\n`;
+        }
+
+        message += `\nPlease assist based on this submission.`;
+        return message;
+    }
+
+    private renderTemplate(
+        template: string,
+        form: FormInterface,
+        submission: FormSubmission
+    ): string {
+        // Simple mustache-style template rendering
+        let result = template;
+
+        for (const field of form.fields) {
+            if ("outputVariable" in field) {
+                const value = submission.data[field.id];
+                const placeholder = `{{${field.outputVariable}}}`;
+                result = result.replace(new RegExp(placeholder, "g"), String(value ?? ""));
+            }
+        }
+
+        return result;
+    }
+}
+```
+
+---
+
+## Frontend Components
+
+### Component Tree
+
+```
+frontend/src/
+├── pages/
+│   ├── Forms.tsx                      # List page with create button
+│   ├── FormBuilder.tsx                # Main builder page
+│   ├── FormSubmissions.tsx            # Submissions list
+│   └── PublicForm.tsx                 # Public form at /f/:slug
+│
+├── components/form-builder/
+│   ├── FormBuilderLayout.tsx          # 3-panel layout container
+│   │
+│   ├── FieldLibrary.tsx               # Left panel - draggable fields
+│   │   └── FieldLibraryItem.tsx       # Individual draggable item
+│   │
+│   ├── FormCanvas.tsx                 # Center - form preview with drops
+│   │   ├── CanvasHeader.tsx           # Header image, icon, title area
+│   │   ├── CanvasDropZone.tsx         # Drop indicator between fields
+│   │   └── CanvasField.tsx            # Rendered field with selection
+│   │
+│   ├── FieldEditor.tsx                # Right panel - edit selected field
+│   │   ├── FieldBasicSettings.tsx     # Label, placeholder, required
+│   │   ├── FieldValidation.tsx        # Validation rules
+│   │   └── FieldAdvanced.tsx          # Output variable, default value
+│   │
+│   ├── BrandingEditor.tsx             # Branding settings panel
+│   ├── SettingsEditor.tsx             # Form settings panel
+│   ├── TargetSelector.tsx             # Workflow/Agent picker
+│   ├── PublishDialog.tsx              # Publish confirmation
+│   │
+│   └── fields/                        # Field renderers (canvas + public)
+│       ├── TextField.tsx
+│       ├── TextareaField.tsx
+│       ├── EmailField.tsx
+│       ├── NumberField.tsx
+│       ├── PhoneField.tsx
+│       ├── DateField.tsx
+│       ├── SelectField.tsx
+│       ├── MultiSelectField.tsx
+│       ├── CheckboxField.tsx
+│       ├── FileUploadField.tsx
+│       ├── HeadingField.tsx
+│       ├── DescriptionField.tsx
+│       └── DividerField.tsx
+│
+└── stores/
+    └── formBuilderStore.ts            # Zustand store
+```
+
+### FormBuilderStore (Zustand)
+
+```typescript
+// frontend/src/stores/formBuilderStore.ts
+interface FormBuilderStore {
+    // State
+    form: FormInterface | null;
+    isDirty: boolean;
+    isSaving: boolean;
+    isPublishing: boolean;
+    selectedFieldId: string | null;
+    draggedFieldType: FormFieldType | null;
+    previewMode: "desktop" | "mobile";
+    activePanel: "field" | "branding" | "settings";
+
+    // Form Actions
+    setForm: (form: FormInterface) => void;
+    updateFormMeta: (
+        updates: Partial<Pick<FormInterface, "name" | "slug" | "description">>
+    ) => void;
+    reset: () => void;
+
+    // Field Actions
+    addField: (fieldType: FormFieldType, index?: number) => void;
+    updateField: (fieldId: string, updates: Partial<FormField>) => void;
+    removeField: (fieldId: string) => void;
+    reorderFields: (fromIndex: number, toIndex: number) => void;
+    duplicateField: (fieldId: string) => void;
+    selectField: (fieldId: string | null) => void;
+
+    // Branding/Settings Actions
+    updateBranding: (updates: Partial<FormBranding>) => void;
+    updateSettings: (updates: Partial<FormSettings>) => void;
+
+    // Target Actions
+    setTarget: (targetType: FormTargetType, targetId: string | null) => void;
+    updateAgentContextTemplate: (template: string) => void;
+
+    // Persistence
+    save: () => Promise<void>;
+    publish: () => Promise<void>;
+    unpublish: () => Promise<void>;
+
+    // Drag State
+    setDraggedFieldType: (type: FormFieldType | null) => void;
+}
+
+export const useFormBuilderStore = create<FormBuilderStore>((set, get) => ({
+    form: null,
+    isDirty: false,
+    isSaving: false,
+    isPublishing: false,
+    selectedFieldId: null,
+    draggedFieldType: null,
+    previewMode: "desktop",
+    activePanel: "field",
+
+    addField: (fieldType, index) => {
+        const { form } = get();
+        if (!form) return;
+
+        const newField = createFieldFromType(fieldType, form.fields.length);
+        const fields = [...form.fields];
+
+        if (index !== undefined) {
+            fields.splice(index, 0, newField);
+        } else {
+            fields.push(newField);
+        }
+
+        // Reorder
+        fields.forEach((f, i) => {
+            f.order = i;
+        });
+
+        set({
+            form: { ...form, fields },
+            isDirty: true,
+            selectedFieldId: newField.id
+        });
+    },
+
+    reorderFields: (fromIndex, toIndex) => {
+        const { form } = get();
+        if (!form) return;
+
+        const fields = [...form.fields];
+        const [removed] = fields.splice(fromIndex, 1);
+        fields.splice(toIndex, 0, removed);
+        fields.forEach((f, i) => {
+            f.order = i;
+        });
+
+        set({ form: { ...form, fields }, isDirty: true });
+    },
+
+    save: async () => {
+        const { form } = get();
+        if (!form) return;
+
+        set({ isSaving: true });
+        try {
+            await formApi.updateFormInterface(form.id, {
+                name: form.name,
+                slug: form.slug,
+                description: form.description,
+                fields: form.fields,
+                settings: form.settings,
+                branding: form.branding,
+                targetType: form.targetType,
+                workflowId: form.workflowId,
+                agentId: form.agentId,
+                agentContextTemplate: form.agentContextTemplate
+            });
+            set({ isDirty: false });
+        } finally {
+            set({ isSaving: false });
+        }
+    }
+
+    // ... other implementations
+}));
+
+// Helper to create default field from type
+function createFieldFromType(type: FormFieldType, order: number): FormField {
+    const id = `field_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+    switch (type) {
+        case "text":
+            return {
+                id,
+                type,
+                order,
+                label: "Text Field",
+                placeholder: "",
+                required: false,
+                outputVariable: `text_${order}`
+            };
+        case "email":
+            return {
+                id,
+                type,
+                order,
+                label: "Email",
+                placeholder: "you@example.com",
+                required: false,
+                outputVariable: "email"
+            };
+        case "heading":
+            return { id, type, order, text: "Section Title", level: 2 };
+        case "divider":
+            return { id, type, order };
+        // ... other field types
+    }
+}
+```
+
+---
+
+## Validation Strategy
+
+### Client-Side Validation
+
+```typescript
+// frontend/src/lib/formValidation.ts
+export function validateField(field: FormField, value: unknown): string | null {
+    // Skip structure fields
+    if (field.type === "heading" || field.type === "description" || field.type === "divider") {
+        return null;
+    }
+
+    const inputField = field as
+        | FormInputField
+        | FormSelectField
+        | FormCheckboxField
+        | FormFileField;
+
+    // Required check
+    if (inputField.required) {
+        if (value === undefined || value === null || value === "") {
+            return `${inputField.label} is required`;
+        }
+        if (Array.isArray(value) && value.length === 0) {
+            return `${inputField.label} is required`;
+        }
+    }
+
+    // Type-specific validation
+    if (value !== undefined && value !== null && value !== "") {
+        switch (field.type) {
+            case "email":
+                if (!isValidEmail(String(value))) {
+                    return "Please enter a valid email address";
+                }
+                break;
+            case "phone":
+                if (!isValidPhone(String(value))) {
+                    return "Please enter a valid phone number";
+                }
+                break;
+            case "number":
+                const num = Number(value);
+                const validation = (field as FormInputField).validation;
+                if (validation?.min !== undefined && num < validation.min) {
+                    return `Value must be at least ${validation.min}`;
+                }
+                if (validation?.max !== undefined && num > validation.max) {
+                    return `Value must be at most ${validation.max}`;
+                }
+                break;
+            case "text":
+            case "textarea":
+                const textValidation = (field as FormInputField).validation;
+                const strValue = String(value);
+                if (textValidation?.minLength && strValue.length < textValidation.minLength) {
+                    return `Must be at least ${textValidation.minLength} characters`;
+                }
+                if (textValidation?.maxLength && strValue.length > textValidation.maxLength) {
+                    return `Must be at most ${textValidation.maxLength} characters`;
+                }
+                if (textValidation?.pattern) {
+                    const regex = new RegExp(textValidation.pattern);
+                    if (!regex.test(strValue)) {
+                        return textValidation.patternMessage || "Invalid format";
+                    }
+                }
+                break;
+            case "file":
+                const fileField = field as FormFileField;
+                const files = value as File[];
+                if (fileField.maxFiles && files.length > fileField.maxFiles) {
+                    return `Maximum ${fileField.maxFiles} files allowed`;
+                }
+                for (const file of files) {
+                    if (fileField.maxSize && file.size > fileField.maxSize) {
+                        return `File ${file.name} exceeds maximum size`;
+                    }
+                    if (
+                        fileField.allowedTypes?.length &&
+                        !fileField.allowedTypes.includes(file.type)
+                    ) {
+                        return `File type ${file.type} is not allowed`;
+                    }
+                }
+                break;
+        }
+    }
+
+    return null;
+}
+
+export function validateForm(
+    form: FormInterface,
+    data: Record<string, unknown>
+): Record<string, string> {
+    const errors: Record<string, string> = {};
+
+    for (const field of form.fields) {
+        const error = validateField(field, data[field.id]);
+        if (error) {
+            errors[field.id] = error;
+        }
+    }
+
+    return errors;
+}
+```
+
+### Server-Side Validation
+
+```typescript
+// backend/src/api/routes/public/forms.ts
+const submitFormSchema = z
+    .object({
+        // Data validated dynamically based on form fields
+    })
+    .passthrough();
+
+async function validateSubmission(
+    form: FormInterface,
+    data: Record<string, unknown>,
+    files: UploadedFile[]
+): Promise<{ valid: boolean; errors: Record<string, string> }> {
+    const errors: Record<string, string> = {};
+
+    for (const field of form.fields) {
+        if (!("outputVariable" in field)) continue;
+
+        const value = data[field.id];
+
+        // Required validation
+        if (field.required && (value === undefined || value === null || value === "")) {
+            errors[field.id] = `${field.label} is required`;
+            continue;
+        }
+
+        // Type-specific validation (similar to client-side)
+        // ... validation logic
+    }
+
+    return {
+        valid: Object.keys(errors).length === 0,
+        errors
+    };
+}
+```
+
+---
+
+## Security Considerations
+
+### Rate Limiting
+
+```typescript
+// backend/src/api/middleware/rateLimiter.ts
+const formSubmissionLimits = new Map<string, { count: number; resetAt: number }>();
+
+export function createFormRateLimiter(defaultLimit: number = 10) {
+    return async (request: FastifyRequest, reply: FastifyReply) => {
+        const ip = request.ip;
+        const now = Date.now();
+        const windowMs = 60 * 1000; // 1 minute
+
+        const entry = formSubmissionLimits.get(ip);
+
+        if (entry && entry.resetAt > now) {
+            if (entry.count >= defaultLimit) {
+                reply.status(429).send({
+                    success: false,
+                    error: "Too many submissions. Please try again in a minute."
+                });
+                return;
+            }
+            entry.count++;
+        } else {
+            formSubmissionLimits.set(ip, {
+                count: 1,
+                resetAt: now + windowMs
+            });
+        }
+
+        // Cleanup old entries periodically
+        if (Math.random() < 0.01) {
+            for (const [key, val] of formSubmissionLimits) {
+                if (val.resetAt < now) {
+                    formSubmissionLimits.delete(key);
+                }
+            }
+        }
+    };
+}
+```
+
+### File Upload Security
+
+```typescript
+// Allowed MIME types for form file uploads
+const ALLOWED_MIME_TYPES = [
+    "application/pdf",
+    "image/jpeg",
+    "image/png",
+    "image/gif",
+    "image/webp",
+    "application/msword",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "application/vnd.ms-excel",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "text/plain",
+    "text/csv"
+];
+
+const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25MB per file
+const MAX_TOTAL_SIZE = 100 * 1024 * 1024; // 100MB per submission
+const MAX_FILES_PER_SUBMISSION = 10;
+```
+
+### Slug Validation
+
+```typescript
+// Prevent reserved slugs
+const RESERVED_SLUGS = [
+    "api",
+    "admin",
+    "forms",
+    "login",
+    "logout",
+    "signup",
+    "settings",
+    "dashboard",
+    "workflows",
+    "agents",
+    "help"
+];
+
+function validateSlug(slug: string): boolean {
+    if (RESERVED_SLUGS.includes(slug.toLowerCase())) {
+        return false;
+    }
+    // Only allow alphanumeric, hyphens, max 100 chars
+    return /^[a-z0-9][a-z0-9-]{0,98}[a-z0-9]$/.test(slug);
+}
+```
+
+---
+
+## Reference Files
+
+These existing codebase files should be referenced during implementation:
+
+| Pattern                   | Reference File                                                  |
+| ------------------------- | --------------------------------------------------------------- |
+| Model definitions         | `backend/src/storage/models/Trigger.ts`                         |
+| Repository pattern        | `backend/src/storage/repositories/TriggerRepository.ts`         |
+| API route structure       | `backend/src/api/routes/triggers/webhook.ts`                    |
+| Public endpoint (no auth) | `backend/src/api/routes/triggers/webhook.ts`                    |
+| GCS file uploads          | `backend/src/services/storage/GCSStorageService.ts`             |
+| Drag-and-drop UI          | `frontend/src/canvas/panels/NodeLibrary.tsx`                    |
+| Zustand store pattern     | `frontend/src/stores/workflowStore.ts`                          |
+| Agent execution           | `backend/src/temporal/workflows/agent-orchestrator-workflow.ts` |
+| Workflow execution        | `backend/src/temporal/workflows/orchestrator-workflow.ts`       |
+
+---
+
 ## Key Design Decisions
 
 1. **Unified Form Interface**: Single form entity can target workflow OR agent
