@@ -24,6 +24,7 @@ import { nodeRoutes } from "./routes/nodes";
 import { oauthRoutes } from "./routes/oauth";
 import { threadRoutes } from "./routes/threads";
 import { triggerRoutes } from "./routes/triggers";
+import { versionRoutes } from "./routes/versions";
 import { websocketRoutes } from "./routes/websocket";
 import { workflowRoutes } from "./routes/workflows";
 
@@ -117,6 +118,7 @@ export async function buildServer() {
     // Register routes
     await fastify.register(authRoutes, { prefix: "/api/auth" });
     await fastify.register(workflowRoutes, { prefix: "/api/workflows" });
+    await fastify.register(versionRoutes, { prefix: "/api/versions" });
     await fastify.register(executionRoutes, { prefix: "/api/executions" });
     await fastify.register(connectionRoutes, { prefix: "/api/connections" });
     await fastify.register(integrationRoutes, { prefix: "/api/integrations" });

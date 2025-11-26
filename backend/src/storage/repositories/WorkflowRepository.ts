@@ -129,6 +129,20 @@ export class WorkflowRepository {
         return result.rows.length > 0 ? this.mapRow(result.rows[0] as WorkflowRow) : null;
     }
 
+    async updateSnapshot(id: string, snapshot: Record<string, JsonValue>) {
+        const result = await db.query(
+            `
+            UPDATE flowmaestro.workflows
+            SET snapshot = $2
+            WHERE id = $1
+            RETURNING *
+            `,
+            [id, JSON.stringify(snapshot)]
+        );
+
+        return this.mapRow(result.rows[0] as WorkflowRow);
+    }
+
     async delete(id: string): Promise<boolean> {
         const query = `
             UPDATE flowmaestro.workflows
