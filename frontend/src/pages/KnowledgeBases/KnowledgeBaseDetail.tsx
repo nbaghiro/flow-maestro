@@ -24,6 +24,50 @@ import { ChunkSearchResult } from "../../lib/api";
 import { wsClient } from "../../lib/websocket";
 import { useKnowledgeBaseStore } from "../../stores/knowledgeBaseStore";
 
+/**
+ * Highlights search terms within text content.
+ * Returns an array of React elements with highlighted spans.
+ */
+function highlightSearchTerms(text: string, searchQuery: string): React.ReactNode {
+    if (!searchQuery.trim()) {
+        return text;
+    }
+
+    // Split search query into words and filter out empty strings
+    const searchTerms = searchQuery
+        .toLowerCase()
+        .split(/\s+/)
+        .filter((term) => term.length > 2); // Ignore very short terms
+
+    if (searchTerms.length === 0) {
+        return text;
+    }
+
+    // Escape special regex characters in search terms
+    const escapedTerms = searchTerms.map((term) => term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+
+    // Create a regex that matches any of the search terms (case-insensitive)
+    const regex = new RegExp(`(${escapedTerms.join("|")})`, "gi");
+
+    // Split the text by the regex, keeping the matched parts
+    const parts = text.split(regex);
+
+    return parts.map((part, index) => {
+        // Check if this part matches any search term
+        const isMatch = searchTerms.some((term) => part.toLowerCase() === term.toLowerCase());
+
+        if (isMatch) {
+            return (
+                <mark key={index} className="bg-yellow-200 text-yellow-900 px-0.5 rounded-sm">
+                    {part}
+                </mark>
+            );
+        }
+
+        return part;
+    });
+}
+
 export function KnowledgeBaseDetail() {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
@@ -700,9 +744,12 @@ export function KnowledgeBaseDetail() {
                                                                                 )}
                                                                         </div>
                                                                         <div className="text-sm text-foreground leading-relaxed">
-                                                                            {isExpanded
-                                                                                ? result.content
-                                                                                : contentPreview}
+                                                                            {highlightSearchTerms(
+                                                                                isExpanded
+                                                                                    ? result.content
+                                                                                    : contentPreview,
+                                                                                searchQuery
+                                                                            )}
                                                                         </div>
                                                                     </div>
                                                                     {result.content.length > 200 ? (
