@@ -14,15 +14,24 @@ interface AccountSection {
 
 export function Account() {
     const { user } = useAuth();
-    const [isUnlinkDialogOpen, setIsUnlinkDialogOpen] = useState(false);
+    const [isUnlinkGoogleDialogOpen, setIsUnlinkGoogleDialogOpen] = useState(false);
+    const [isUnlinkMicrosoftDialogOpen, setIsUnlinkMicrosoftDialogOpen] = useState(false);
     const [isUnlinking, setIsUnlinking] = useState(false);
 
     const isGoogleConnected = !!user?.google_id;
+    const isMicrosoftConnected = !!user?.microsoft_id;
     const hasPassword = !!user?.has_password;
 
+    // Check if user can unlink an OAuth provider (must have another auth method)
+    const canUnlinkGoogle = hasPassword || isMicrosoftConnected;
+    const canUnlinkMicrosoft = hasPassword || isGoogleConnected;
+
     const handleConnectGoogle = () => {
-        // Redirect to Google OAuth for linking
         window.location.href = `${import.meta.env.VITE_API_URL || "http://localhost:3001"}/api/auth/google`;
+    };
+
+    const handleConnectMicrosoft = () => {
+        window.location.href = `${import.meta.env.VITE_API_URL || "http://localhost:3001"}/api/auth/microsoft`;
     };
 
     const handleUnlinkGoogle = async () => {
@@ -42,14 +51,38 @@ export function Account() {
                 throw new Error("Failed to unlink Google account");
             }
 
-            // Refresh the page to update user data
             window.location.reload();
         } catch (error) {
             console.error("Failed to unlink Google:", error);
-            alert("Failed to unlink Google account. Please try again.");
         } finally {
             setIsUnlinking(false);
-            setIsUnlinkDialogOpen(false);
+            setIsUnlinkGoogleDialogOpen(false);
+        }
+    };
+
+    const handleUnlinkMicrosoft = async () => {
+        setIsUnlinking(true);
+        try {
+            const response = await fetch(
+                `${import.meta.env.VITE_API_URL || "http://localhost:3001"}/api/auth/microsoft/unlink`,
+                {
+                    method: "POST",
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem("auth_token")}`
+                    }
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error("Failed to unlink Microsoft account");
+            }
+
+            window.location.reload();
+        } catch (error) {
+            console.error("Failed to unlink Microsoft:", error);
+        } finally {
+            setIsUnlinking(false);
+            setIsUnlinkMicrosoftDialogOpen(false);
         }
     };
 
@@ -60,7 +93,16 @@ export function Account() {
             description: "Manage your personal information",
             fields: [
                 { label: "Name", value: user?.name || "Not set" },
-                { label: "Email", value: user?.email || "Not set" },
+                { label: "Email", value: user?.email || "Not set" }
+            ]
+        },
+        {
+            icon: Lock,
+            title: "Security",
+            description: "Password and authentication settings",
+            fields: [
+                { label: "Password", value: hasPassword ? "••••••••" : "Not set" },
+                { label: "Two-factor authentication", value: "Disabled" },
                 {
                     label: "Google Account",
                     value: (
@@ -71,7 +113,7 @@ export function Account() {
                                         Connected
                                     </span>
                                     <button
-                                        onClick={() => setIsUnlinkDialogOpen(true)}
+                                        onClick={() => setIsUnlinkGoogleDialogOpen(true)}
                                         className="text-xs text-red-600 hover:text-red-700 underline"
                                     >
                                         Disconnect
@@ -92,16 +134,39 @@ export function Account() {
                             )}
                         </div>
                     )
+                },
+                {
+                    label: "Microsoft Account",
+                    value: (
+                        <div className="flex items-center gap-2">
+                            {isMicrosoftConnected ? (
+                                <>
+                                    <span className="text-sm text-green-600 font-medium">
+                                        Connected
+                                    </span>
+                                    <button
+                                        onClick={() => setIsUnlinkMicrosoftDialogOpen(true)}
+                                        className="text-xs text-red-600 hover:text-red-700 underline"
+                                    >
+                                        Disconnect
+                                    </button>
+                                </>
+                            ) : (
+                                <>
+                                    <span className="text-sm text-muted-foreground">
+                                        Not connected
+                                    </span>
+                                    <button
+                                        onClick={handleConnectMicrosoft}
+                                        className="text-xs text-primary hover:text-primary/80 underline"
+                                    >
+                                        Connect
+                                    </button>
+                                </>
+                            )}
+                        </div>
+                    )
                 }
-            ]
-        },
-        {
-            icon: Lock,
-            title: "Security",
-            description: "Password and authentication settings",
-            fields: [
-                { label: "Password", value: hasPassword ? "••••••••" : "Not set" },
-                { label: "Two-factor authentication", value: "Disabled" }
             ]
         },
         {
@@ -166,24 +231,49 @@ export function Account() {
                 })}
             </div>
 
-            {hasPassword ? (
+            {/* Google Unlink Dialog */}
+            {canUnlinkGoogle ? (
                 <ConfirmDialog
-                    isOpen={isUnlinkDialogOpen}
-                    onClose={() => setIsUnlinkDialogOpen(false)}
+                    isOpen={isUnlinkGoogleDialogOpen}
+                    onClose={() => setIsUnlinkGoogleDialogOpen(false)}
                     onConfirm={handleUnlinkGoogle}
                     title="Disconnect Google Account"
-                    message="Are you sure you want to disconnect your Google account? You can still sign in with your email and password."
+                    message="Are you sure you want to disconnect your Google account? You can still sign in with your other authentication methods."
                     confirmText={isUnlinking ? "Disconnecting..." : "Disconnect"}
                     cancelText="Cancel"
                     variant="danger"
                 />
             ) : (
                 <ConfirmDialog
-                    isOpen={isUnlinkDialogOpen}
-                    onClose={() => setIsUnlinkDialogOpen(false)}
-                    onConfirm={() => setIsUnlinkDialogOpen(false)}
+                    isOpen={isUnlinkGoogleDialogOpen}
+                    onClose={() => setIsUnlinkGoogleDialogOpen(false)}
+                    onConfirm={() => setIsUnlinkGoogleDialogOpen(false)}
                     title="Cannot Disconnect Google"
-                    message="You cannot disconnect Google as it's your only sign-in method. Please set a password first."
+                    message="You cannot disconnect Google as it's your only sign-in method. Please set a password or connect another account first."
+                    confirmText="OK"
+                    variant="danger"
+                />
+            )}
+
+            {/* Microsoft Unlink Dialog */}
+            {canUnlinkMicrosoft ? (
+                <ConfirmDialog
+                    isOpen={isUnlinkMicrosoftDialogOpen}
+                    onClose={() => setIsUnlinkMicrosoftDialogOpen(false)}
+                    onConfirm={handleUnlinkMicrosoft}
+                    title="Disconnect Microsoft Account"
+                    message="Are you sure you want to disconnect your Microsoft account? You can still sign in with your other authentication methods."
+                    confirmText={isUnlinking ? "Disconnecting..." : "Disconnect"}
+                    cancelText="Cancel"
+                    variant="danger"
+                />
+            ) : (
+                <ConfirmDialog
+                    isOpen={isUnlinkMicrosoftDialogOpen}
+                    onClose={() => setIsUnlinkMicrosoftDialogOpen(false)}
+                    onConfirm={() => setIsUnlinkMicrosoftDialogOpen(false)}
+                    title="Cannot Disconnect Microsoft"
+                    message="You cannot disconnect Microsoft as it's your only sign-in method. Please set a password or connect another account first."
                     confirmText="OK"
                     variant="danger"
                 />

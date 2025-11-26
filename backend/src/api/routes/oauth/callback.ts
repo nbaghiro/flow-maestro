@@ -149,9 +149,9 @@ export async function callbackRoute(fastify: FastifyInstance) {
                     `Successfully exchanged code for ${actualProvider}, user: ${result.userId}`
                 );
 
-                // Check if this is authentication (google-auth) vs integration
+                // Check if this is authentication (google-auth, microsoft-auth) vs integration
                 if (actualProvider === "google-auth") {
-                    // AUTHENTICATION FLOW - Create/login user
+                    // GOOGLE AUTHENTICATION FLOW - Create/login user
                     const accountInfo = result.accountInfo as {
                         email?: string;
                         name?: string;
@@ -216,7 +216,88 @@ export async function callbackRoute(fastify: FastifyInstance) {
                             id: user.id,
                             email: user.email,
                             name: user.name || "",
-                            avatar_url: user.avatar_url || ""
+                            avatar_url: user.avatar_url || "",
+                            google_id: user.google_id,
+                            microsoft_id: user.microsoft_id,
+                            has_password: !!user.password_hash
+                        })
+                    );
+
+                    const redirectUrl = `${config.frontend.url}#auth_token=${token}&user_data=${userData}`;
+
+                    return reply.redirect(redirectUrl);
+                }
+
+                if (actualProvider === "microsoft-auth") {
+                    // MICROSOFT AUTHENTICATION FLOW - Create/login user
+                    const accountInfo = result.accountInfo as {
+                        email?: string;
+                        name?: string;
+                        picture?: string | null;
+                        userId?: string;
+                    };
+
+                    if (!accountInfo?.email || !accountInfo?.userId) {
+                        throw new Error("Microsoft user info missing required fields");
+                    }
+
+                    const userRepository = new UserRepository();
+
+                    // Check if user exists by microsoft_id or email
+                    let user = await userRepository.findByEmailOrMicrosoftId(
+                        accountInfo.email,
+                        accountInfo.userId
+                    );
+
+                    if (user) {
+                        // Existing user - link Microsoft account if not already linked
+                        if (!user.microsoft_id) {
+                            user = await userRepository.update(user.id, {
+                                microsoft_id: accountInfo.userId,
+                                avatar_url: accountInfo.picture || user.avatar_url,
+                                last_login_at: new Date()
+                            });
+                        } else {
+                            // Just update last login
+                            user = await userRepository.update(user.id, {
+                                last_login_at: new Date()
+                            });
+                        }
+
+                        if (!user) {
+                            throw new Error("Failed to update user");
+                        }
+
+                        fastify.log.info(`User ${user.id} logged in via Microsoft`);
+                    } else {
+                        // New user - create account
+                        user = await userRepository.create({
+                            email: accountInfo.email,
+                            name: accountInfo.name,
+                            microsoft_id: accountInfo.userId,
+                            auth_provider: "microsoft",
+                            avatar_url: accountInfo.picture || undefined
+                        });
+
+                        fastify.log.info(`New user ${user.id} created via Microsoft OAuth`);
+                    }
+
+                    // Generate JWT token
+                    const token = fastify.jwt.sign({
+                        id: user.id,
+                        email: user.email
+                    });
+
+                    // Redirect to frontend with token in URL hash
+                    const userData = encodeURIComponent(
+                        JSON.stringify({
+                            id: user.id,
+                            email: user.email,
+                            name: user.name || "",
+                            avatar_url: user.avatar_url || "",
+                            google_id: user.google_id,
+                            microsoft_id: user.microsoft_id,
+                            has_password: !!user.password_hash
                         })
                     );
 

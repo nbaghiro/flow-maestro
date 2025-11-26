@@ -153,6 +153,8 @@ LINEAR_CLIENT_ID=$(get_secret "flowmaestro-app-linear-client-id" "")
 LINEAR_CLIENT_SECRET=$(get_secret "flowmaestro-app-linear-client-secret" "")
 FIGMA_CLIENT_ID=$(get_secret "flowmaestro-app-figma-client-id" "")
 FIGMA_CLIENT_SECRET=$(get_secret "flowmaestro-app-figma-client-secret" "")
+MICROSOFT_CLIENT_ID=$(get_secret "flowmaestro-app-microsoft-client-id" "")
+MICROSOFT_CLIENT_SECRET=$(get_secret "flowmaestro-app-microsoft-client-secret" "")
 META_APP_ID=$(get_secret "flowmaestro-app-meta-app-id" "")
 META_APP_SECRET=$(get_secret "flowmaestro-app-meta-app-secret" "")
 META_CLIENT_TOKEN=$(get_secret "flowmaestro-app-meta-client-token" "")
@@ -340,6 +342,19 @@ else
     echo "# Figma" >> "$BACKEND_ENV_FILE"
     echo "FIGMA_CLIENT_ID=" >> "$BACKEND_ENV_FILE"
     echo "FIGMA_CLIENT_SECRET=" >> "$BACKEND_ENV_FILE"
+    echo "" >> "$BACKEND_ENV_FILE"
+fi
+
+# Microsoft OAuth (OneDrive, Excel, Word, Teams, Outlook, etc.)
+if [ -n "$MICROSOFT_CLIENT_ID" ] || [ -n "$MICROSOFT_CLIENT_SECRET" ]; then
+    echo "# Microsoft (OneDrive, Excel, Word, Teams, Outlook, etc.)" >> "$BACKEND_ENV_FILE"
+    echo "MICROSOFT_CLIENT_ID=${MICROSOFT_CLIENT_ID}" >> "$BACKEND_ENV_FILE"
+    echo "MICROSOFT_CLIENT_SECRET=${MICROSOFT_CLIENT_SECRET}" >> "$BACKEND_ENV_FILE"
+    echo "" >> "$BACKEND_ENV_FILE"
+else
+    echo "# Microsoft (OneDrive, Excel, Word, Teams, Outlook, etc.)" >> "$BACKEND_ENV_FILE"
+    echo "MICROSOFT_CLIENT_ID=" >> "$BACKEND_ENV_FILE"
+    echo "MICROSOFT_CLIENT_SECRET=" >> "$BACKEND_ENV_FILE"
     echo "" >> "$BACKEND_ENV_FILE"
 fi
 

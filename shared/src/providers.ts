@@ -108,20 +108,18 @@ export const ALL_PROVIDERS: MCPProvider[] = [
     {
         provider: "microsoft-excel",
         displayName: "Microsoft Excel",
-        description: "Spreadsheet application",
+        description: "Spreadsheet automation and data processing",
         logoUrl: getBrandLogo("microsoft.com/excel"),
         category: "Productivity",
-        methods: ["oauth2"],
-        comingSoon: true
+        methods: ["oauth2"]
     },
     {
         provider: "microsoft-word",
         displayName: "Microsoft Word",
-        description: "Document editing application",
+        description: "Document creation and editing",
         logoUrl: getBrandLogo("microsoft.com/word"),
         category: "Productivity",
-        methods: ["oauth2"],
-        comingSoon: true
+        methods: ["oauth2"]
     },
     {
         provider: "microsoft-powerpoint",
@@ -388,13 +386,12 @@ export const ALL_PROVIDERS: MCPProvider[] = [
         comingSoon: true
     },
     {
-        provider: "onedrive",
-        displayName: "OneDrive",
-        description: "Microsoft cloud storage",
+        provider: "microsoft-onedrive",
+        displayName: "Microsoft OneDrive",
+        description: "Cloud file storage and sync",
         logoUrl: getBrandLogo("onedrive.live.com"),
         category: "File Storage",
-        methods: ["oauth2"],
-        comingSoon: true
+        methods: ["oauth2"]
     },
 
     // Social Media

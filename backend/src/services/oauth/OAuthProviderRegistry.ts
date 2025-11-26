@@ -731,6 +731,253 @@ export const OAUTH_PROVIDERS: Record<string, OAuthProvider> = {
     },
 
     // ==========================================================================
+    // Microsoft Platform Services (OneDrive, Excel, Word, etc.)
+    // All use MICROSOFT_CLIENT_ID and MICROSOFT_CLIENT_SECRET credentials
+    // Uses Microsoft Graph API with common tenant for multi-tenant support
+    // ==========================================================================
+
+    "microsoft-auth": {
+        name: "microsoft-auth",
+        displayName: "Microsoft Sign-In",
+        authUrl: "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
+        tokenUrl: "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+        scopes: ["User.Read", "offline_access"],
+        authParams: {
+            response_mode: "query",
+            prompt: "consent"
+        },
+        clientId: process.env.MICROSOFT_CLIENT_ID || "",
+        clientSecret: process.env.MICROSOFT_CLIENT_SECRET || "",
+        redirectUri: `${process.env.API_URL || "http://localhost:3000"}/api/oauth/microsoft/callback`,
+        getUserInfo: async (accessToken: string) => {
+            try {
+                const response = await fetch("https://graph.microsoft.com/v1.0/me", {
+                    headers: {
+                        Authorization: `Bearer ${accessToken}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = (await response.json()) as {
+                    id?: string;
+                    displayName?: string;
+                    mail?: string;
+                    userPrincipalName?: string;
+                };
+
+                return {
+                    userId: data.id,
+                    email: data.mail || data.userPrincipalName,
+                    name: data.displayName,
+                    picture: null // Microsoft profile photos require separate API call
+                };
+            } catch (error) {
+                console.error("[OAuth] Failed to get Microsoft user info:", error);
+                return {
+                    email: "unknown@microsoft",
+                    name: "Microsoft User"
+                };
+            }
+        },
+        refreshable: true
+    },
+
+    microsoft: {
+        name: "microsoft",
+        displayName: "Microsoft 365",
+        authUrl: "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
+        tokenUrl: "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+        scopes: ["User.Read", "Files.ReadWrite.All", "Sites.ReadWrite.All", "offline_access"],
+        authParams: {
+            response_mode: "query",
+            prompt: "consent"
+        },
+        clientId: process.env.MICROSOFT_CLIENT_ID || "",
+        clientSecret: process.env.MICROSOFT_CLIENT_SECRET || "",
+        redirectUri: `${process.env.API_URL || "http://localhost:3000"}/api/oauth/microsoft/callback`,
+        getUserInfo: async (accessToken: string) => {
+            try {
+                const response = await fetch("https://graph.microsoft.com/v1.0/me", {
+                    headers: {
+                        Authorization: `Bearer ${accessToken}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = (await response.json()) as {
+                    id?: string;
+                    displayName?: string;
+                    mail?: string;
+                    userPrincipalName?: string;
+                };
+
+                return {
+                    userId: data.id,
+                    email: data.mail || data.userPrincipalName,
+                    name: data.displayName
+                };
+            } catch (error) {
+                console.error("[OAuth] Failed to get Microsoft 365 user info:", error);
+                return {
+                    email: "unknown@microsoft",
+                    name: "Microsoft User"
+                };
+            }
+        },
+        refreshable: true
+    },
+
+    "microsoft-onedrive": {
+        name: "microsoft-onedrive",
+        displayName: "Microsoft OneDrive",
+        authUrl: "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
+        tokenUrl: "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+        scopes: ["User.Read", "Files.ReadWrite", "offline_access"],
+        authParams: {
+            response_mode: "query",
+            prompt: "consent"
+        },
+        clientId: process.env.MICROSOFT_CLIENT_ID || "",
+        clientSecret: process.env.MICROSOFT_CLIENT_SECRET || "",
+        redirectUri: `${process.env.API_URL || "http://localhost:3000"}/api/oauth/microsoft/callback`,
+        getUserInfo: async (accessToken: string) => {
+            try {
+                const response = await fetch("https://graph.microsoft.com/v1.0/me", {
+                    headers: {
+                        Authorization: `Bearer ${accessToken}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = (await response.json()) as {
+                    id?: string;
+                    displayName?: string;
+                    mail?: string;
+                    userPrincipalName?: string;
+                };
+
+                return {
+                    userId: data.id,
+                    email: data.mail || data.userPrincipalName,
+                    name: data.displayName
+                };
+            } catch (error) {
+                console.error("[OAuth] Failed to get OneDrive user info:", error);
+                return {
+                    email: "unknown@microsoft",
+                    name: "Microsoft User"
+                };
+            }
+        },
+        refreshable: true
+    },
+
+    "microsoft-excel": {
+        name: "microsoft-excel",
+        displayName: "Microsoft Excel",
+        authUrl: "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
+        tokenUrl: "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+        scopes: ["User.Read", "Files.ReadWrite", "offline_access"],
+        authParams: {
+            response_mode: "query",
+            prompt: "consent"
+        },
+        clientId: process.env.MICROSOFT_CLIENT_ID || "",
+        clientSecret: process.env.MICROSOFT_CLIENT_SECRET || "",
+        redirectUri: `${process.env.API_URL || "http://localhost:3000"}/api/oauth/microsoft/callback`,
+        getUserInfo: async (accessToken: string) => {
+            try {
+                const response = await fetch("https://graph.microsoft.com/v1.0/me", {
+                    headers: {
+                        Authorization: `Bearer ${accessToken}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = (await response.json()) as {
+                    id?: string;
+                    displayName?: string;
+                    mail?: string;
+                    userPrincipalName?: string;
+                };
+
+                return {
+                    userId: data.id,
+                    email: data.mail || data.userPrincipalName,
+                    name: data.displayName
+                };
+            } catch (error) {
+                console.error("[OAuth] Failed to get Excel user info:", error);
+                return {
+                    email: "unknown@microsoft",
+                    name: "Microsoft User"
+                };
+            }
+        },
+        refreshable: true
+    },
+
+    "microsoft-word": {
+        name: "microsoft-word",
+        displayName: "Microsoft Word",
+        authUrl: "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
+        tokenUrl: "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+        scopes: ["User.Read", "Files.ReadWrite", "offline_access"],
+        authParams: {
+            response_mode: "query",
+            prompt: "consent"
+        },
+        clientId: process.env.MICROSOFT_CLIENT_ID || "",
+        clientSecret: process.env.MICROSOFT_CLIENT_SECRET || "",
+        redirectUri: `${process.env.API_URL || "http://localhost:3000"}/api/oauth/microsoft/callback`,
+        getUserInfo: async (accessToken: string) => {
+            try {
+                const response = await fetch("https://graph.microsoft.com/v1.0/me", {
+                    headers: {
+                        Authorization: `Bearer ${accessToken}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = (await response.json()) as {
+                    id?: string;
+                    displayName?: string;
+                    mail?: string;
+                    userPrincipalName?: string;
+                };
+
+                return {
+                    userId: data.id,
+                    email: data.mail || data.userPrincipalName,
+                    name: data.displayName
+                };
+            } catch (error) {
+                console.error("[OAuth] Failed to get Word user info:", error);
+                return {
+                    email: "unknown@microsoft",
+                    name: "Microsoft User"
+                };
+            }
+        },
+        refreshable: true
+    },
+
+    // ==========================================================================
     // Meta Platform Services (WhatsApp, Instagram, Messenger, Facebook Ads)
     // All use same META_APP_ID and META_APP_SECRET credentials
     // ==========================================================================

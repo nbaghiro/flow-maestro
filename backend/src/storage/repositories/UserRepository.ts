@@ -9,10 +9,11 @@ export class UserRepository {
                 password_hash,
                 name,
                 google_id,
+                microsoft_id,
                 auth_provider,
                 avatar_url
             )
-            VALUES ($1, $2, $3, $4, $5, $6)
+            VALUES ($1, $2, $3, $4, $5, $6, $7)
             RETURNING *
         `;
 
@@ -21,6 +22,7 @@ export class UserRepository {
             input.password_hash || null,
             input.name || null,
             input.google_id || null,
+            input.microsoft_id || null,
             input.auth_provider || "local",
             input.avatar_url || null
         ];
@@ -59,6 +61,16 @@ export class UserRepository {
         return result.rows.length > 0 ? this.mapRow(result.rows[0]) : null;
     }
 
+    async findByMicrosoftId(microsoftId: string): Promise<UserModel | null> {
+        const query = `
+            SELECT * FROM flowmaestro.users
+            WHERE microsoft_id = $1
+        `;
+
+        const result = await db.query<UserModel>(query, [microsoftId]);
+        return result.rows.length > 0 ? this.mapRow(result.rows[0]) : null;
+    }
+
     async findByEmailOrGoogleId(email: string, googleId: string): Promise<UserModel | null> {
         const query = `
             SELECT * FROM flowmaestro.users
@@ -67,6 +79,17 @@ export class UserRepository {
         `;
 
         const result = await db.query<UserModel>(query, [email, googleId]);
+        return result.rows.length > 0 ? this.mapRow(result.rows[0]) : null;
+    }
+
+    async findByEmailOrMicrosoftId(email: string, microsoftId: string): Promise<UserModel | null> {
+        const query = `
+            SELECT * FROM flowmaestro.users
+            WHERE email = $1 OR microsoft_id = $2
+            LIMIT 1
+        `;
+
+        const result = await db.query<UserModel>(query, [email, microsoftId]);
         return result.rows.length > 0 ? this.mapRow(result.rows[0]) : null;
     }
 
@@ -93,6 +116,11 @@ export class UserRepository {
         if (input.google_id !== undefined) {
             updates.push(`google_id = $${paramIndex++}`);
             values.push(input.google_id);
+        }
+
+        if (input.microsoft_id !== undefined) {
+            updates.push(`microsoft_id = $${paramIndex++}`);
+            values.push(input.microsoft_id);
         }
 
         if (input.avatar_url !== undefined) {
@@ -138,7 +166,8 @@ export class UserRepository {
             password_hash: string | null;
             name: string | null;
             google_id: string | null;
-            auth_provider: "local" | "google";
+            microsoft_id: string | null;
+            auth_provider: "local" | "google" | "microsoft";
             avatar_url: string | null;
             created_at: string | Date;
             updated_at: string | Date;
@@ -150,6 +179,7 @@ export class UserRepository {
             password_hash: r.password_hash,
             name: r.name,
             google_id: r.google_id,
+            microsoft_id: r.microsoft_id,
             auth_provider: r.auth_provider,
             avatar_url: r.avatar_url,
             created_at: new Date(r.created_at),

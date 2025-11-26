@@ -13,6 +13,7 @@ interface User {
     name?: string;
     avatar_url?: string;
     google_id?: string | null;
+    microsoft_id?: string | null;
     has_password?: boolean;
 }
 

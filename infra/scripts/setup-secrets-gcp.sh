@@ -275,6 +275,8 @@ EXISTING_LINEAR_CLIENT_ID=$(get_existing_gcp_secret "flowmaestro-app-linear-clie
 EXISTING_LINEAR_CLIENT_SECRET=$(get_existing_gcp_secret "flowmaestro-app-linear-client-secret")
 EXISTING_FIGMA_CLIENT_ID=$(get_existing_gcp_secret "flowmaestro-app-figma-client-id")
 EXISTING_FIGMA_CLIENT_SECRET=$(get_existing_gcp_secret "flowmaestro-app-figma-client-secret")
+EXISTING_MICROSOFT_CLIENT_ID=$(get_existing_gcp_secret "flowmaestro-app-microsoft-client-id")
+EXISTING_MICROSOFT_CLIENT_SECRET=$(get_existing_gcp_secret "flowmaestro-app-microsoft-client-secret")
 EXISTING_META_APP_ID=$(get_existing_gcp_secret "flowmaestro-app-meta-app-id")
 EXISTING_META_APP_SECRET=$(get_existing_gcp_secret "flowmaestro-app-meta-app-secret")
 EXISTING_META_CLIENT_TOKEN=$(get_existing_gcp_secret "flowmaestro-app-meta-client-token")
@@ -304,6 +306,7 @@ FOUND_COUNT=0
 [ -n "$EXISTING_GITHUB_CLIENT_ID" ] && ((FOUND_COUNT++))
 [ -n "$EXISTING_LINEAR_CLIENT_ID" ] && ((FOUND_COUNT++))
 [ -n "$EXISTING_FIGMA_CLIENT_ID" ] && ((FOUND_COUNT++))
+[ -n "$EXISTING_MICROSOFT_CLIENT_ID" ] && ((FOUND_COUNT++))
 [ -n "$EXISTING_META_APP_ID" ] && ((FOUND_COUNT++))
 
 if [ $FOUND_COUNT -gt 0 ]; then
@@ -320,6 +323,7 @@ if [ $FOUND_COUNT -gt 0 ]; then
     [ -n "$EXISTING_NOTION_CLIENT_ID" ] && print_info "  - Notion OAuth: configured"
     [ -n "$EXISTING_AIRTABLE_CLIENT_ID" ] && print_info "  - Airtable OAuth: configured"
     [ -n "$EXISTING_HUBSPOT_CLIENT_ID" ] && print_info "  - HubSpot OAuth: configured"
+    [ -n "$EXISTING_MICROSOFT_CLIENT_ID" ] && print_info "  - Microsoft OAuth: configured"
     echo ""
     if [ "$PROMPT_ALL" = false ]; then
         print_info "Mode: Only prompting for NON-EXISTING secrets"
@@ -679,6 +683,20 @@ else
     echo
 fi
 
+# Microsoft OAuth (OneDrive, Excel, Word, Teams, Outlook, etc.)
+if [ -n "$EXISTING_MICROSOFT_CLIENT_ID" ] && [ "$PROMPT_ALL" = false ]; then
+    print_info "Microsoft OAuth: already configured"
+    MICROSOFT_CLIENT_ID="$EXISTING_MICROSOFT_CLIENT_ID"
+    MICROSOFT_CLIENT_SECRET="$EXISTING_MICROSOFT_CLIENT_SECRET"
+elif [ -n "$EXISTING_MICROSOFT_CLIENT_ID" ]; then
+    prompt_with_existing "Microsoft Client ID" "$EXISTING_MICROSOFT_CLIENT_ID" "MICROSOFT_CLIENT_ID"
+    prompt_with_existing "Microsoft Client Secret" "$EXISTING_MICROSOFT_CLIENT_SECRET" "MICROSOFT_CLIENT_SECRET"
+else
+    read -p "Microsoft Client ID: " MICROSOFT_CLIENT_ID
+    read -p "Microsoft Client Secret: " -s MICROSOFT_CLIENT_SECRET
+    echo
+fi
+
 # Meta Platform OAuth (WhatsApp, Instagram, Messenger, Facebook Ads)
 if [ -n "$EXISTING_META_APP_ID" ] && [ "$PROMPT_ALL" = false ]; then
     print_info "Meta Platform OAuth: already configured"
@@ -731,6 +749,8 @@ create_or_update_secret "flowmaestro-app-linear-client-id" "$LINEAR_CLIENT_ID"
 create_or_update_secret "flowmaestro-app-linear-client-secret" "$LINEAR_CLIENT_SECRET"
 create_or_update_secret "flowmaestro-app-figma-client-id" "$FIGMA_CLIENT_ID"
 create_or_update_secret "flowmaestro-app-figma-client-secret" "$FIGMA_CLIENT_SECRET"
+create_or_update_secret "flowmaestro-app-microsoft-client-id" "$MICROSOFT_CLIENT_ID"
+create_or_update_secret "flowmaestro-app-microsoft-client-secret" "$MICROSOFT_CLIENT_SECRET"
 create_or_update_secret "flowmaestro-app-meta-app-id" "$META_APP_ID"
 create_or_update_secret "flowmaestro-app-meta-app-secret" "$META_APP_SECRET"
 create_or_update_secret "flowmaestro-app-meta-client-token" "$META_CLIENT_TOKEN"
