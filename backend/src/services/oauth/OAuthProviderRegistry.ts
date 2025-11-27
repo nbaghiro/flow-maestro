@@ -977,6 +977,66 @@ export const OAUTH_PROVIDERS: Record<string, OAuthProvider> = {
         refreshable: true
     },
 
+    "microsoft-teams": {
+        name: "microsoft-teams",
+        displayName: "Microsoft Teams",
+        authUrl: "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
+        tokenUrl: "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+        scopes: [
+            "User.Read",
+            "Team.ReadBasic.All",
+            "Channel.ReadBasic.All",
+            "Channel.Create",
+            "ChannelMessage.Send",
+            "ChannelMessage.Read.All",
+            "Chat.ReadWrite",
+            "ChatMessage.Send",
+            "ChatMessage.Read",
+            "ChatMember.Read",
+            "offline_access"
+        ],
+        authParams: {
+            response_mode: "query",
+            prompt: "consent"
+        },
+        clientId: process.env.MICROSOFT_CLIENT_ID || "",
+        clientSecret: process.env.MICROSOFT_CLIENT_SECRET || "",
+        redirectUri: `${process.env.API_URL || "http://localhost:3000"}/api/oauth/microsoft/callback`,
+        getUserInfo: async (accessToken: string) => {
+            try {
+                const response = await fetch("https://graph.microsoft.com/v1.0/me", {
+                    headers: {
+                        Authorization: `Bearer ${accessToken}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = (await response.json()) as {
+                    id?: string;
+                    displayName?: string;
+                    mail?: string;
+                    userPrincipalName?: string;
+                };
+
+                return {
+                    userId: data.id,
+                    email: data.mail || data.userPrincipalName,
+                    name: data.displayName
+                };
+            } catch (error) {
+                console.error("[OAuth] Failed to get Teams user info:", error);
+                return {
+                    email: "unknown@microsoft",
+                    name: "Microsoft User"
+                };
+            }
+        },
+        refreshable: true
+    },
+
     // ==========================================================================
     // Meta Platform Services (WhatsApp, Instagram, Messenger, Facebook Ads)
     // All use same META_APP_ID and META_APP_SECRET credentials

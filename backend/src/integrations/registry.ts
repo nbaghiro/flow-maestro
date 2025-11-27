@@ -248,6 +248,20 @@ const microsoftWordEntry: ProviderRegistryEntry = {
     }
 };
 
+// Register Microsoft Teams provider
+const microsoftTeamsEntry: ProviderRegistryEntry = {
+    name: "microsoft-teams",
+    displayName: "Microsoft Teams",
+    authMethod: "oauth2",
+    category: "communication",
+    loader: async () => {
+        const { MicrosoftTeamsProvider } = await import(
+            "./providers/microsoft-teams/MicrosoftTeamsProvider"
+        );
+        return new MicrosoftTeamsProvider();
+    }
+};
+
 // Register all providers
 providerRegistry.register(slackEntry);
 providerRegistry.register(codaEntry);
@@ -268,6 +282,7 @@ providerRegistry.register(facebookEntry);
 providerRegistry.register(microsoftOneDriveEntry);
 providerRegistry.register(microsoftExcelEntry);
 providerRegistry.register(microsoftWordEntry);
+providerRegistry.register(microsoftTeamsEntry);
 
 // Export for use in application
 export { providerRegistry };

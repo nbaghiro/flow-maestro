@@ -93,8 +93,7 @@ export const ALL_PROVIDERS: MCPProvider[] = [
         description: "Team collaboration and messaging",
         logoUrl: getBrandLogo("teams.microsoft.com"),
         category: "Communication",
-        methods: ["oauth2"],
-        comingSoon: true
+        methods: ["oauth2"]
     },
     {
         provider: "outlook",
