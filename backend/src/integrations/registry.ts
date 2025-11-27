@@ -274,6 +274,18 @@ const microsoftTeamsEntry: ProviderRegistryEntry = {
     }
 };
 
+// Register Zendesk provider
+const zendeskEntry: ProviderRegistryEntry = {
+    name: "zendesk",
+    displayName: "Zendesk",
+    authMethod: "oauth2",
+    category: "support",
+    loader: async () => {
+        const { ZendeskProvider } = await import("./providers/zendesk/ZendeskProvider");
+        return new ZendeskProvider();
+    }
+};
+
 // Register all providers
 providerRegistry.register(slackEntry);
 providerRegistry.register(codaEntry);
@@ -296,6 +308,7 @@ providerRegistry.register(microsoftOneDriveEntry);
 providerRegistry.register(microsoftExcelEntry);
 providerRegistry.register(microsoftWordEntry);
 providerRegistry.register(microsoftTeamsEntry);
+providerRegistry.register(zendeskEntry);
 
 // Export for use in application
 export { providerRegistry };

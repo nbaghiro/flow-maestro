@@ -159,6 +159,8 @@ META_APP_ID=$(get_secret "flowmaestro-app-meta-app-id" "")
 META_APP_SECRET=$(get_secret "flowmaestro-app-meta-app-secret" "")
 META_CLIENT_TOKEN=$(get_secret "flowmaestro-app-meta-client-token" "")
 META_WEBHOOK_VERIFY_TOKEN=$(get_secret "flowmaestro-app-meta-webhook-verify-token" "")
+ZENDESK_CLIENT_ID=$(get_secret "flowmaestro-app-zendesk-client-id" "")
+ZENDESK_CLIENT_SECRET=$(get_secret "flowmaestro-app-zendesk-client-secret" "")
 
 print_success "Developer secrets fetched successfully"
 
@@ -372,6 +374,19 @@ else
     echo "META_APP_SECRET=" >> "$BACKEND_ENV_FILE"
     echo "META_CLIENT_TOKEN=" >> "$BACKEND_ENV_FILE"
     echo "META_WEBHOOK_VERIFY_TOKEN=" >> "$BACKEND_ENV_FILE"
+    echo "" >> "$BACKEND_ENV_FILE"
+fi
+
+# Zendesk OAuth
+if [ -n "$ZENDESK_CLIENT_ID" ] || [ -n "$ZENDESK_CLIENT_SECRET" ]; then
+    echo "# Zendesk" >> "$BACKEND_ENV_FILE"
+    echo "ZENDESK_CLIENT_ID=${ZENDESK_CLIENT_ID}" >> "$BACKEND_ENV_FILE"
+    echo "ZENDESK_CLIENT_SECRET=${ZENDESK_CLIENT_SECRET}" >> "$BACKEND_ENV_FILE"
+    echo "" >> "$BACKEND_ENV_FILE"
+else
+    echo "# Zendesk" >> "$BACKEND_ENV_FILE"
+    echo "ZENDESK_CLIENT_ID=" >> "$BACKEND_ENV_FILE"
+    echo "ZENDESK_CLIENT_SECRET=" >> "$BACKEND_ENV_FILE"
     echo "" >> "$BACKEND_ENV_FILE"
 fi
 

@@ -71,8 +71,14 @@ export function useOAuth() {
      *
      * Opens a popup window with the OAuth authorization URL,
      * then waits for the callback to post a message back.
+     *
+     * @param provider - The OAuth provider name
+     * @param settings - Optional provider-specific settings (e.g., subdomain for Zendesk)
      */
-    const initiateOAuth = async (provider: string): Promise<OAuthConnection> => {
+    const initiateOAuth = async (
+        provider: string,
+        settings?: Record<string, string>
+    ): Promise<OAuthConnection> => {
         setLoading(true);
 
         try {
@@ -81,10 +87,18 @@ export function useOAuth() {
                 throw new Error("Not authenticated. Please log in first.");
             }
 
-            const apiUrl = `${API_BASE_URL}/api/oauth/${provider}/authorize`;
+            // Build URL with optional settings as query params
+            const url = new URL(`${API_BASE_URL}/api/oauth/${provider}/authorize`);
+            if (settings) {
+                Object.entries(settings).forEach(([key, value]) => {
+                    if (value) {
+                        url.searchParams.set(key, value);
+                    }
+                });
+            }
 
             // Get authorization URL from backend
-            const response = await fetch(apiUrl, {
+            const response = await fetch(url.toString(), {
                 headers: {
                     Authorization: `Bearer ${token}`
                 }

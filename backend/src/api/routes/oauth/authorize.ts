@@ -6,26 +6,45 @@ interface AuthorizeParams {
     provider: string;
 }
 
+interface AuthorizeQuerystring {
+    subdomain?: string;
+    // Add other provider-specific settings here as needed
+}
+
 /**
  * GET /oauth/:provider/authorize
  *
  * Generate OAuth authorization URL for the specified provider.
  * User will be redirected to this URL to grant permissions.
  *
+ * Query parameters can include provider-specific settings:
+ * - subdomain: Required for Zendesk (e.g., ?subdomain=mycompany)
+ *
  * Requires authentication.
  */
 export async function authorizeRoute(fastify: FastifyInstance) {
-    fastify.get<{ Params: AuthorizeParams }>(
+    fastify.get<{ Params: AuthorizeParams; Querystring: AuthorizeQuerystring }>(
         "/:provider/authorize",
         {
             preHandler: [authMiddleware]
         },
         async (request, reply) => {
             const { provider } = request.params;
+            const { subdomain } = request.query;
             const userId = request.user!.id;
 
             try {
-                const authUrl = oauthService.generateAuthUrl(provider, userId);
+                // Build options object from query params
+                const options: { subdomain?: string } = {};
+                if (subdomain) {
+                    options.subdomain = subdomain;
+                }
+
+                const authUrl = oauthService.generateAuthUrl(
+                    provider,
+                    userId,
+                    Object.keys(options).length > 0 ? options : undefined
+                );
 
                 return reply.send({
                     success: true,

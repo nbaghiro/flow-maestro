@@ -15,7 +15,7 @@ export interface OAuthProvider {
     // Optional customizations
     authParams?: Record<string, string>;
     tokenParams?: Record<string, string>;
-    getUserInfo?: (accessToken: string) => Promise<unknown>;
+    getUserInfo?: (accessToken: string, subdomain?: string) => Promise<unknown>;
     revokeUrl?: string;
     refreshable?: boolean;
     pkceEnabled?: boolean; // Enable PKCE (Proof Key for Code Exchange)
@@ -1402,6 +1402,81 @@ export const OAUTH_PROVIDERS: Record<string, OAuthProvider> = {
                 return {
                     userId: "unknown",
                     name: "Facebook Ads User"
+                };
+            }
+        },
+        refreshable: true
+    },
+
+    // ==========================================================================
+    // Zendesk Support
+    // NOTE: Zendesk requires subdomain in OAuth URLs. The {subdomain} placeholder
+    // is replaced at runtime based on user-provided subdomain.
+    // ==========================================================================
+
+    zendesk: {
+        name: "zendesk",
+        displayName: "Zendesk",
+        // Template URLs - {subdomain} must be replaced at runtime
+        authUrl: "https://{subdomain}.zendesk.com/oauth/authorizations/new",
+        tokenUrl: "https://{subdomain}.zendesk.com/oauth/tokens",
+        scopes: [
+            "read",
+            "write",
+            "tickets:read",
+            "tickets:write",
+            "users:read",
+            "users:write",
+            "hc:read",
+            "hc:write"
+        ],
+        clientId: process.env.ZENDESK_CLIENT_ID || "",
+        clientSecret: process.env.ZENDESK_CLIENT_SECRET || "",
+        redirectUri: `${process.env.API_URL || "http://localhost:3001"}/api/oauth/zendesk/callback`,
+        // PKCE required for Public OAuth clients in Zendesk
+        pkceEnabled: true,
+        getUserInfo: async (accessToken: string, subdomain?: string) => {
+            try {
+                if (!subdomain) {
+                    throw new Error("Zendesk subdomain is required");
+                }
+
+                const response = await fetch(
+                    `https://${subdomain}.zendesk.com/api/v2/users/me.json`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${accessToken}`
+                        }
+                    }
+                );
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = (await response.json()) as {
+                    user?: {
+                        id?: number;
+                        name?: string;
+                        email?: string;
+                        role?: string;
+                    };
+                };
+
+                return {
+                    userId: data.user?.id?.toString() || "unknown",
+                    name: data.user?.name || "Zendesk User",
+                    email: data.user?.email || "unknown@zendesk",
+                    role: data.user?.role || "end-user",
+                    subdomain
+                };
+            } catch (error) {
+                console.error("[OAuth] Failed to get Zendesk user info:", error);
+                return {
+                    userId: "unknown",
+                    name: "Zendesk User",
+                    email: "unknown@zendesk",
+                    subdomain
                 };
             }
         },

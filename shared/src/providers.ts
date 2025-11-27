@@ -5,6 +5,31 @@
 
 import type { ConnectionMethod } from "./connections";
 
+/**
+ * OAuth pre-auth field configuration
+ * Used to collect provider-specific settings before initiating OAuth flow
+ */
+export interface OAuthField {
+    /** Field name (used as key in settings object) */
+    name: string;
+    /** Display label */
+    label: string;
+    /** Placeholder text */
+    placeholder?: string;
+    /** Help text shown below the field */
+    helpText?: string;
+    /** Whether the field is required */
+    required: boolean;
+    /** Field type */
+    type: "text" | "select";
+    /** Options for select fields */
+    options?: { value: string; label: string }[];
+    /** Validation pattern (regex) */
+    pattern?: string;
+    /** Pattern validation error message */
+    patternError?: string;
+}
+
 export interface Provider {
     provider: string;
     displayName: string;
@@ -15,6 +40,8 @@ export interface Provider {
     comingSoon?: boolean;
     mcpServerUrl?: string; // HTTP URL for MCP server
     mcpAuthType?: "api_key" | "oauth2" | "none";
+    /** Fields to collect before initiating OAuth flow (e.g., subdomain for Zendesk) */
+    oauthSettings?: OAuthField[];
 }
 
 // Brandfetch Logo API client ID
@@ -668,7 +695,19 @@ export const ALL_PROVIDERS: Provider[] = [
         logoUrl: getBrandLogo("zendesk.com"),
         category: "Customer Support",
         methods: ["oauth2"],
-        comingSoon: true
+        oauthSettings: [
+            {
+                name: "subdomain",
+                label: "Zendesk Subdomain",
+                placeholder: "your-company",
+                helpText: "Enter your Zendesk subdomain (e.g., 'acme' from acme.zendesk.com)",
+                required: true,
+                type: "text",
+                pattern: "^[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]$|^[a-zA-Z0-9]$",
+                patternError:
+                    "Subdomain must start and end with a letter or number, and can contain hyphens"
+            }
+        ]
     },
     {
         provider: "intercom",
