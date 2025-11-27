@@ -15,6 +15,7 @@ import { errorHandler, requestContextMiddleware } from "./middleware";
 import { agentRoutes } from "./routes/agents";
 import { analyticsRoutes } from "./routes/analytics";
 import { authRoutes } from "./routes/auth";
+import { checkpointRoutes } from "./routes/checkpoints";
 import { connectionRoutes } from "./routes/connections";
 import { executionRoutes } from "./routes/executions";
 import { integrationRoutes } from "./routes/integrations";
@@ -127,6 +128,7 @@ export async function buildServer() {
     // Register routes
     await fastify.register(authRoutes, { prefix: "/api/auth" });
     await fastify.register(workflowRoutes, { prefix: "/api/workflows" });
+    await fastify.register(checkpointRoutes, { prefix: "/api/checkpoints" });
     await fastify.register(executionRoutes, { prefix: "/api/executions" });
     await fastify.register(connectionRoutes, { prefix: "/api/connections" });
     await fastify.register(integrationRoutes, { prefix: "/api/integrations" });

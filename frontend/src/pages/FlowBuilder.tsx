@@ -7,16 +7,26 @@ import { NodeLibrary } from "../canvas/panels/NodeLibrary";
 import { WorkflowCanvas } from "../canvas/WorkflowCanvas";
 import { AIGenerateButton } from "../components/AIGenerateButton";
 import { BuilderHeader } from "../components/BuilderHeader";
+import { CheckpointPanel } from "../components/CheckpointPanel";
 import { ExecutionPanel } from "../components/ExecutionPanel";
 import { WorkflowSettingsDialog } from "../components/WorkflowSettingsDialog";
 import { useKeyboardShortcuts } from "../hooks/useKeyboardShortcuts";
-import { getWorkflow, updateWorkflow } from "../lib/api";
+import {
+    getWorkflow,
+    updateWorkflow,
+    createCheckpoint,
+    deleteCheckpoint,
+    listCheckpoints,
+    restoreCheckpoint,
+    renameCheckpoint
+} from "../lib/api";
 import { generateId } from "../lib/utils";
 import {
     createWorkflowSnapshot,
     transformNodesToBackendMap,
     transformEdgesToBackend,
-    findEntryPoint
+    findEntryPoint,
+    compareWorkflowSnapshots
 } from "../lib/workflowTransformers";
 import { useHistoryStore, initializeHistoryTracking } from "../stores/historyStore";
 import { useWorkflowStore } from "../stores/workflowStore";
@@ -35,6 +45,14 @@ interface CopiedNode {
     position: { x: number; y: number };
 }
 
+interface Checkpoint {
+    id: string;
+    name: string | null;
+    createdAt: string;
+    snapshot: Record<string, unknown>;
+    formatted?: string;
+}
+
 export function FlowBuilder() {
     const { workflowId } = useParams<{ workflowId: string }>();
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -47,6 +65,9 @@ export function FlowBuilder() {
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [copiedNode, setCopiedNode] = useState<CopiedNode | null>(null);
     const reactFlowInstanceRef = useRef<ReturnType<typeof useReactFlow> | null>(null);
+    const [isCheckpointOpen, setIsCheckpointOpen] = useState(false);
+    const [checkpoints, setCheckpoints] = useState<Checkpoint[]>([]);
+    const [showMinorChangesDialog, setShowMinorChangesDialog] = useState(false);
 
     const {
         selectedNode,
@@ -63,6 +84,25 @@ export function FlowBuilder() {
     } = useWorkflowStore();
 
     const { undo, redo, canUndo, canRedo, clear } = useHistoryStore();
+
+    useEffect(() => {
+        if (workflowId) {
+            listCheckpoints(workflowId).then((cp) => {
+                const sorted = cp.sort(
+                    (a: Checkpoint, b: Checkpoint) =>
+                        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+                );
+                setCheckpoints(sorted);
+            });
+        }
+    }, [workflowId]);
+
+    // Close checkpoint panel when a node is selected
+    useEffect(() => {
+        if (selectedNode && isCheckpointOpen) {
+            setIsCheckpointOpen(false);
+        }
+    }, [selectedNode]);
 
     useEffect(() => {
         const unsubscribe = initializeHistoryTracking();
@@ -100,8 +140,11 @@ export function FlowBuilder() {
         if (!workflowId) return;
 
         try {
-            resetWorkflow();
             const response = await getWorkflow(workflowId);
+            console.log("[FRONTEND LOAD] workflow.definition =", response.data.definition);
+
+            const cp = await listCheckpoints(workflowId);
+            resetWorkflow();
 
             if (response.success && response.data) {
                 setWorkflowName(response.data.name);
@@ -152,6 +195,7 @@ export function FlowBuilder() {
                     }
                 }
             }
+            setCheckpoints(cp);
         } catch (error) {
             console.error("[FlowBuilder] Failed to load workflow:", error);
         } finally {
@@ -309,10 +353,67 @@ export function FlowBuilder() {
         }
     };
 
+    const handleDeleteCheckpoint = async (id: string) => {
+        const updated = await deleteCheckpoint(id, workflowId!);
+        setCheckpoints(updated);
+    };
+
+    const handleRestoreCheckpoint = async (id: string) => {
+        await restoreCheckpoint(id);
+        await loadWorkflow();
+
+        const updated: Checkpoint[] = (await listCheckpoints(workflowId!)).sort(
+            (a: Checkpoint, b: Checkpoint) =>
+                new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+        setCheckpoints(updated);
+    };
+
+    /**
+     * Check if there are significant changes compared to the latest checkpoint.
+     * Returns true if there are significant changes (or no checkpoints exist).
+     */
+    const checkForSignificantChanges = (): boolean => {
+        if (checkpoints.length === 0) return true;
+
+        const latestCheckpoint = checkpoints[0];
+        const currentNodesMap = transformNodesToBackendMap(nodes);
+        const currentEdgesBackend = transformEdgesToBackend(edges);
+
+        const comparison = compareWorkflowSnapshots(
+            currentNodesMap as Parameters<typeof compareWorkflowSnapshots>[0],
+            currentEdgesBackend as Parameters<typeof compareWorkflowSnapshots>[1],
+            latestCheckpoint.snapshot as unknown as Parameters<typeof compareWorkflowSnapshots>[2]
+        );
+
+        return comparison.hasSignificantChanges;
+    };
+
+    const handleCreateCheckpoint = async (name?: string) => {
+        // Save the workflow first to ensure checkpoint captures persisted state
+        await handleSave();
+
+        await createCheckpoint(workflowId!, name);
+
+        const updated: Checkpoint[] = (await listCheckpoints(workflowId!)).sort(
+            (a: Checkpoint, b: Checkpoint) =>
+                new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+        setCheckpoints(updated);
+    };
+
+    const handleRenameCheckpoint = async (id: string, newName: string) => {
+        await renameCheckpoint(id, newName);
+
+        const updated = await listCheckpoints(workflowId!);
+        setCheckpoints(updated);
+    };
+
     useKeyboardShortcuts({
         onSave: handleSave,
         onRun: handleRunWorkflow,
         onOpenSettings: () => setIsSettingsOpen(true),
+        onOpenCheckpoints: () => setIsCheckpointOpen((prev) => !prev),
         onUndo: undo,
         onRedo: redo,
         onDelete: handleDeleteNode,
@@ -348,6 +449,7 @@ export function FlowBuilder() {
                     onSave={handleSave}
                     onNameChange={handleNameChange}
                     onOpenSettings={() => setIsSettingsOpen(true)}
+                    onOpenCheckpoints={() => setIsCheckpointOpen((prev) => !prev)}
                 />
 
                 <WorkflowSettingsDialog
@@ -360,7 +462,7 @@ export function FlowBuilder() {
                     onSave={handleSettingsSave}
                 />
 
-                <div className="flex-1 flex overflow-hidden">
+                <div className="flex-1 flex overflow-hidden relative">
                     <NodeLibrary
                         isCollapsed={isSidebarCollapsed}
                         onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
@@ -382,6 +484,19 @@ export function FlowBuilder() {
                     </div>
 
                     {workflowId && <ExecutionPanel workflowId={workflowId} renderPanelOnly />}
+                    <CheckpointPanel
+                        open={isCheckpointOpen}
+                        onClose={() => setIsCheckpointOpen(false)}
+                        checkpoints={checkpoints}
+                        onRestore={handleRestoreCheckpoint}
+                        onDelete={handleDeleteCheckpoint}
+                        onRename={handleRenameCheckpoint}
+                        onCreate={handleCreateCheckpoint}
+                        onCheckChanges={checkForSignificantChanges}
+                        showMinorChangesDialog={showMinorChangesDialog}
+                        onShowMinorChangesDialog={() => setShowMinorChangesDialog(true)}
+                        onCloseMinorChangesDialog={() => setShowMinorChangesDialog(false)}
+                    />
                 </div>
             </div>
         </ReactFlowProvider>

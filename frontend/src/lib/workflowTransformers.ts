@@ -1,4 +1,5 @@
 import { Node, Edge } from "reactflow";
+import { deepEqual } from "./utils";
 
 /**
  * Backend workflow node format
@@ -121,4 +122,117 @@ export function createWorkflowSnapshot(workflowName: string, nodes: Node[], edge
         nodes: transformNodesForSnapshot(nodes),
         edges: transformEdgesForSnapshot(edges)
     });
+}
+
+// ============================================================================
+// CHECKPOINT COMPARISON UTILITIES
+// ============================================================================
+
+export interface WorkflowSnapshot {
+    nodes: Record<string, BackendNode>;
+    edges: BackendEdge[];
+}
+
+export interface WorkflowComparisonResult {
+    hasSignificantChanges: boolean;
+    changes: {
+        nodesAdded: string[];
+        nodesRemoved: string[];
+        nodesConfigChanged: string[];
+        edgesAdded: number;
+        edgesRemoved: number;
+    };
+}
+
+/**
+ * Compare two workflow snapshots for structural differences.
+ * Ignores position and style changes (minor/cosmetic).
+ * Detects structural changes: nodes added/removed, config changes, edges added/removed.
+ */
+export function compareWorkflowSnapshots(
+    currentNodes: Record<string, BackendNode>,
+    currentEdges: BackendEdge[],
+    previousSnapshot: WorkflowSnapshot | null
+): WorkflowComparisonResult {
+    // If no previous snapshot exists, there are always significant changes
+    if (!previousSnapshot) {
+        return {
+            hasSignificantChanges: true,
+            changes: {
+                nodesAdded: Object.keys(currentNodes),
+                nodesRemoved: [],
+                nodesConfigChanged: [],
+                edgesAdded: currentEdges.length,
+                edgesRemoved: 0
+            }
+        };
+    }
+
+    const previousNodes = previousSnapshot.nodes || {};
+    const previousEdges = previousSnapshot.edges || [];
+
+    const currentNodeIds = new Set(Object.keys(currentNodes));
+    const previousNodeIds = new Set(Object.keys(previousNodes));
+
+    // Find added and removed nodes
+    const nodesAdded = [...currentNodeIds].filter((id) => !previousNodeIds.has(id));
+    const nodesRemoved = [...previousNodeIds].filter((id) => !currentNodeIds.has(id));
+
+    // Find nodes with config changes (ignoring position and style)
+    const nodesConfigChanged: string[] = [];
+    for (const nodeId of currentNodeIds) {
+        if (!previousNodeIds.has(nodeId)) continue; // Skip added nodes
+
+        const currentNode = currentNodes[nodeId];
+        const previousNode = previousNodes[nodeId];
+
+        // Compare type
+        if (currentNode.type !== previousNode.type) {
+            nodesConfigChanged.push(nodeId);
+            continue;
+        }
+
+        // Compare name
+        if (currentNode.name !== previousNode.name) {
+            nodesConfigChanged.push(nodeId);
+            continue;
+        }
+
+        // Compare config (deep comparison)
+        if (!deepEqual(currentNode.config, previousNode.config)) {
+            nodesConfigChanged.push(nodeId);
+            continue;
+        }
+
+        // Compare onError config
+        if (!deepEqual(currentNode.onError, previousNode.onError)) {
+            nodesConfigChanged.push(nodeId);
+        }
+    }
+
+    // Compare edges (by source-target-sourceHandle combination)
+    const edgeKey = (e: BackendEdge) => `${e.source}->${e.target}:${e.sourceHandle || "default"}`;
+    const currentEdgeKeys = new Set(currentEdges.map(edgeKey));
+    const previousEdgeKeys = new Set(previousEdges.map(edgeKey));
+
+    const edgesAdded = [...currentEdgeKeys].filter((k) => !previousEdgeKeys.has(k)).length;
+    const edgesRemoved = [...previousEdgeKeys].filter((k) => !currentEdgeKeys.has(k)).length;
+
+    const hasSignificantChanges =
+        nodesAdded.length > 0 ||
+        nodesRemoved.length > 0 ||
+        nodesConfigChanged.length > 0 ||
+        edgesAdded > 0 ||
+        edgesRemoved > 0;
+
+    return {
+        hasSignificantChanges,
+        changes: {
+            nodesAdded,
+            nodesRemoved,
+            nodesConfigChanged,
+            edgesAdded,
+            edgesRemoved
+        }
+    };
 }

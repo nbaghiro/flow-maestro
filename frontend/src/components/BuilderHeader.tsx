@@ -1,4 +1,4 @@
-import { Save, Play, Loader2, CheckCircle, XCircle, Settings } from "lucide-react";
+import { Save, Play, Loader2, CheckCircle, XCircle, Settings, Layers } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { WorkflowTrigger } from "@flowmaestro/shared";
@@ -16,6 +16,7 @@ interface BuilderHeaderProps {
     onSave?: () => void;
     onNameChange?: (name: string) => void;
     onOpenSettings?: () => void;
+    onOpenCheckpoints?: () => void;
 }
 
 export function BuilderHeader({
@@ -25,7 +26,8 @@ export function BuilderHeader({
     saveStatus = "idle",
     onSave,
     onNameChange,
-    onOpenSettings
+    onOpenSettings,
+    onOpenCheckpoints
 }: BuilderHeaderProps) {
     const { startExecution, currentExecution, selectNode } = useWorkflowStore();
     const { setDrawerOpen } = useTriggerStore();
@@ -176,6 +178,14 @@ export function BuilderHeader({
 
                 {/* Right: Action Buttons */}
                 <div className="flex items-center gap-2">
+                    <Tooltip content="Checkpoints (⌘.)" position="bottom">
+                        <button
+                            onClick={onOpenCheckpoints}
+                            className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted border border-border rounded-lg transition-colors"
+                        >
+                            <Layers className="w-4 h-4" />
+                        </button>
+                    </Tooltip>
                     <Tooltip content="Workflow settings (⌘,)" position="bottom">
                         <button
                             onClick={onOpenSettings}
