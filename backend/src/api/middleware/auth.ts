@@ -12,10 +12,32 @@ declare module "@fastify/jwt" {
 
 export async function authMiddleware(request: FastifyRequest) {
     try {
-        // Verify JWT token
-        await request.jwtVerify();
+        // Try Authorization header first (standard approach)
+        const authHeader = request.headers.authorization;
+        if (authHeader && authHeader.startsWith("Bearer ")) {
+            // Verify JWT token (jwtVerify reads from Authorization header automatically)
+            await request.jwtVerify();
+        } else {
+            // Fallback: Try token query param (for EventSource/SSE which can't send headers)
+            const query = request.query as Record<string, string | string[] | undefined>;
+            const token =
+                typeof query.token === "string"
+                    ? query.token
+                    : Array.isArray(query.token)
+                      ? query.token[0]
+                      : undefined;
 
-        // Token payload is available in request.user (set by fastify-jwt)
+            if (token) {
+                // Manually verify token from query param
+                const decoded = request.server.jwt.verify(token) as { id: string; email: string };
+                // Set request.user manually since jwtVerify() wasn't called
+                request.user = decoded;
+            } else {
+                throw new UnauthorizedError("No authentication token provided");
+            }
+        }
+
+        // Token payload is available in request.user (set by fastify-jwt or manually)
         if (!request.user) {
             throw new UnauthorizedError("Invalid token");
         }
