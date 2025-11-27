@@ -98,6 +98,7 @@ export const outputs = {
     sheetsApiEnabled: apiOutputs.sheetsApiEnabled,
     driveApiEnabled: apiOutputs.driveApiEnabled,
     calendarApiEnabled: apiOutputs.calendarApiEnabled,
+    gmailApiEnabled: apiOutputs.gmailApiEnabled,
 
     // Temporal Configuration (self-hosted)
     temporalNamespace: infrastructureConfig.temporalNamespace,

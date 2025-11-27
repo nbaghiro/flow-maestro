@@ -170,6 +170,18 @@ const googleCalendarEntry: ProviderRegistryEntry = {
     }
 };
 
+// Register Gmail provider
+const gmailEntry: ProviderRegistryEntry = {
+    name: "gmail",
+    displayName: "Gmail",
+    authMethod: "oauth2",
+    category: "communication",
+    loader: async () => {
+        const { GmailProvider } = await import("./providers/gmail/GmailProvider");
+        return new GmailProvider();
+    }
+};
+
 // Register WhatsApp Business provider
 const whatsappEntry: ProviderRegistryEntry = {
     name: "whatsapp",
@@ -276,6 +288,7 @@ providerRegistry.register(figmaEntry);
 providerRegistry.register(googleSheetsEntry);
 providerRegistry.register(googleDriveEntry);
 providerRegistry.register(googleCalendarEntry);
+providerRegistry.register(gmailEntry);
 providerRegistry.register(whatsappEntry);
 providerRegistry.register(instagramEntry);
 providerRegistry.register(facebookEntry);

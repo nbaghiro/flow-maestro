@@ -1080,8 +1080,7 @@ export const ALL_PROVIDERS: MCPProvider[] = [
         description: "Email service and automation",
         logoUrl: getBrandLogo("gmail.com"),
         category: "Communication",
-        methods: ["oauth2"],
-        comingSoon: true
+        methods: ["oauth2"]
     },
     {
         provider: "google-calendar",

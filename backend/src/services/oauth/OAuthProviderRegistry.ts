@@ -730,6 +730,63 @@ export const OAUTH_PROVIDERS: Record<string, OAuthProvider> = {
         refreshable: true
     },
 
+    gmail: {
+        name: "gmail",
+        displayName: "Gmail",
+        authUrl: "https://accounts.google.com/o/oauth2/v2/auth",
+        tokenUrl: "https://oauth2.googleapis.com/token",
+        scopes: [
+            "https://www.googleapis.com/auth/gmail.modify",
+            "https://www.googleapis.com/auth/gmail.send",
+            "https://www.googleapis.com/auth/gmail.compose"
+        ],
+        authParams: {
+            access_type: "offline",
+            prompt: "consent"
+        },
+        clientId: process.env.GOOGLE_CLIENT_ID || "",
+        clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
+        redirectUri: `${process.env.API_URL || "http://localhost:3000"}/api/oauth/google/callback`,
+        getUserInfo: async (accessToken: string) => {
+            try {
+                // Use Gmail API to get user profile
+                const response = await fetch(
+                    "https://gmail.googleapis.com/gmail/v1/users/me/profile",
+                    {
+                        headers: {
+                            Authorization: `Bearer ${accessToken}`
+                        }
+                    }
+                );
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = (await response.json()) as {
+                    emailAddress?: string;
+                    messagesTotal?: number;
+                    threadsTotal?: number;
+                    historyId?: string;
+                };
+
+                return {
+                    email: data.emailAddress,
+                    name: data.emailAddress, // Gmail profile doesn't have display name
+                    userId: data.emailAddress
+                };
+            } catch (error) {
+                console.error("[OAuth] Failed to get Gmail user info:", error);
+                return {
+                    email: "unknown@gmail.com",
+                    name: "Gmail User"
+                };
+            }
+        },
+        revokeUrl: "https://oauth2.googleapis.com/revoke",
+        refreshable: true
+    },
+
     // ==========================================================================
     // Microsoft Platform Services (OneDrive, Excel, Word, etc.)
     // All use MICROSOFT_CLIENT_ID and MICROSOFT_CLIENT_SECRET credentials

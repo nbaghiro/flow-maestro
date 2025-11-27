@@ -124,6 +124,13 @@ export const calendarApi = new gcp.projects.Service("calendar-api", {
     disableOnDestroy: false
 });
 
+// Gmail API - Required for Gmail integration
+export const gmailApi = new gcp.projects.Service("gmail-api", {
+    service: "gmail.googleapis.com",
+    project: infrastructureConfig.project,
+    disableOnDestroy: false
+});
+
 // =============================================================================
 // Exports
 // =============================================================================
@@ -146,5 +153,6 @@ export const apiOutputs = {
     // Integration APIs
     sheetsApiEnabled: sheetsApi.service,
     driveApiEnabled: driveApi.service,
-    calendarApiEnabled: calendarApi.service
+    calendarApiEnabled: calendarApi.service,
+    gmailApiEnabled: gmailApi.service
 };
