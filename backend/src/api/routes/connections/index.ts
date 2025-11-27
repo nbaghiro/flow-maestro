@@ -3,9 +3,7 @@ import { createConnectionRoute } from "./create";
 import { deleteConnectionRoute } from "./delete";
 import { getConnectionRoute } from "./get";
 import { listConnectionsRoute } from "./list";
-import { mcpDiscoverRoute } from "./mcp-discover";
-import { mcpProvidersRoute } from "./mcp-providers";
-import { refreshToolsRoute } from "./refresh-tools";
+import { mcpToolsRoute } from "./mcp-tools";
 import { testConnectionRoute } from "./test";
 import { testBeforeSaveRoute } from "./test-before-save";
 import { updateConnectionRoute } from "./update";
@@ -22,8 +20,6 @@ export async function connectionRoutes(fastify: FastifyInstance) {
     await testConnectionRoute(fastify);
     await testBeforeSaveRoute(fastify);
 
-    // MCP-specific routes
-    await mcpProvidersRoute(fastify);
-    await mcpDiscoverRoute(fastify);
-    await refreshToolsRoute(fastify);
+    // MCP tools route
+    await mcpToolsRoute(fastify);
 }

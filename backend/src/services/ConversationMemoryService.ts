@@ -9,7 +9,7 @@ import {
     type SearchSimilarMessagesInput,
     type SimilarMessageResult
 } from "../storage/repositories/ConversationEmbeddingRepository";
-import { EmbeddingService } from "./embeddings";
+import { EmbeddingService } from "./EmbeddingService";
 import type { ConversationMessage } from "../storage/models/AgentExecution";
 
 export interface StoreConversationEmbeddingsInput {

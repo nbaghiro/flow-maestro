@@ -1,5 +1,5 @@
 import type { JsonObject } from "@flowmaestro/shared";
-import { EmbeddingService } from "../../../services/embeddings";
+import { EmbeddingService } from "../../../services/EmbeddingService";
 import { KnowledgeBaseRepository, KnowledgeChunkRepository } from "../../../storage/repositories";
 import { ExecuteNodeInput } from "./index";
 

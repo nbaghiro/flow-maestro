@@ -15,7 +15,6 @@ type Step = "method" | "provider" | "configure";
 const providersByMethod: Record<ConnectionMethod, string[]> = {
     api_key: ["openai", "anthropic", "google", "github", "cohere", "custom"],
     oauth2: ["slack", "google", "notion", "airtable", "hubspot", "github"],
-    mcp: ["filesystem", "postgres", "mongodb", "github", "custom"],
     basic_auth: ["custom"],
     custom: ["custom"]
 };
@@ -30,9 +29,6 @@ const providerLabels: Record<string, string> = {
     notion: "Notion",
     airtable: "Airtable",
     hubspot: "HubSpot",
-    filesystem: "Filesystem MCP",
-    postgres: "PostgreSQL MCP",
-    mongodb: "MongoDB MCP",
     custom: "Custom"
 };
 
@@ -133,25 +129,6 @@ export function AddConnectionDialog({
                 data.api_secret = config.apiSecret as string;
             }
             input.data = data as import("@flowmaestro/shared").JsonObject;
-        } else if (connectionMethod === "mcp") {
-            const data: Record<string, string> = {
-                server_url: (config.serverUrl as string) || "",
-                auth_type: (config.authType as string) || "none"
-            };
-            if (config.apiKey) {
-                data.api_key = config.apiKey as string;
-            }
-            if (config.bearerToken) {
-                data.bearer_token = config.bearerToken as string;
-            }
-            if (config.username) {
-                data.username = config.username as string;
-            }
-            if (config.password) {
-                data.password = config.password as string;
-            }
-            input.data = data as import("@flowmaestro/shared").JsonObject;
-            input.mcp_server_url = config.serverUrl as string | undefined;
         } else if (connectionMethod === "basic_auth") {
             input.data = {
                 username: (config.username as string) || "",
@@ -209,12 +186,6 @@ export function AddConnectionDialog({
                         description="Connect with OAuth 2.0 authorization"
                         icon="🔐"
                         onClick={() => handleMethodSelect("oauth2")}
-                    />
-                    <MethodOption
-                        title="MCP Server"
-                        description="Connect to a Model Context Protocol server"
-                        icon="🔌"
-                        onClick={() => handleMethodSelect("mcp")}
                     />
                 </div>
             )}
@@ -301,112 +272,6 @@ export function AddConnectionDialog({
                                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                                         />
                                     </div>
-                                )}
-                            </>
-                        )}
-
-                        {/* MCP Configuration */}
-                        {connectionMethod === "mcp" && (
-                            <>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        MCP Server URL
-                                    </label>
-                                    <input
-                                        type="url"
-                                        value={(config.serverUrl as string) || ""}
-                                        onChange={(e) =>
-                                            setConfig({ ...config, serverUrl: e.target.value })
-                                        }
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                                        placeholder="http://localhost:3100"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Authentication Type
-                                    </label>
-                                    <select
-                                        value={(config.authType as string) || "none"}
-                                        onChange={(e) =>
-                                            setConfig({ ...config, authType: e.target.value })
-                                        }
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                                    >
-                                        <option value="none">None</option>
-                                        <option value="api_key">API Key</option>
-                                        <option value="bearer">Bearer Token</option>
-                                        <option value="basic">Basic Auth</option>
-                                    </select>
-                                </div>
-                                {config.authType === "api_key" && (
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            API Key
-                                        </label>
-                                        <input
-                                            type="password"
-                                            value={(config.apiKey as string) || ""}
-                                            onChange={(e) =>
-                                                setConfig({ ...config, apiKey: e.target.value })
-                                            }
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                                        />
-                                    </div>
-                                )}
-                                {config.authType === "bearer" && (
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Bearer Token
-                                        </label>
-                                        <input
-                                            type="password"
-                                            value={(config.bearerToken as string) || ""}
-                                            onChange={(e) =>
-                                                setConfig({
-                                                    ...config,
-                                                    bearerToken: e.target.value
-                                                })
-                                            }
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                                        />
-                                    </div>
-                                )}
-                                {config.authType === "basic" && (
-                                    <>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                Username
-                                            </label>
-                                            <input
-                                                type="text"
-                                                value={(config.username as string) || ""}
-                                                onChange={(e) =>
-                                                    setConfig({
-                                                        ...config,
-                                                        username: e.target.value
-                                                    })
-                                                }
-                                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                Password
-                                            </label>
-                                            <input
-                                                type="password"
-                                                value={(config.password as string) || ""}
-                                                onChange={(e) =>
-                                                    setConfig({
-                                                        ...config,
-                                                        password: e.target.value
-                                                    })
-                                                }
-                                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                                            />
-                                        </div>
-                                    </>
                                 )}
                             </>
                         )}

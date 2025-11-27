@@ -102,16 +102,6 @@ export function Connections() {
         return connections.filter((c) => c.provider === provider);
     };
 
-    // Check if provider has MCP server
-    const hasMCPServer = (provider: Provider): boolean => {
-        return !!provider.mcpServerUrl;
-    };
-
-    // Get MCP server URL for provider
-    const getMCPServerUrl = (provider: Provider): string | undefined => {
-        return provider.mcpServerUrl;
-    };
-
     // Group providers by category with custom order (AI & ML first)
     const categoryOrder = [
         "AI & ML",
@@ -321,8 +311,6 @@ export function Connections() {
                     }}
                     supportsOAuth={selectedProvider.methods.includes("oauth2")}
                     supportsApiKey={selectedProvider.methods.includes("api_key")}
-                    supportsMCP={hasMCPServer(selectedProvider)}
-                    mcpServerUrl={getMCPServerUrl(selectedProvider)}
                 />
             )}
 

@@ -170,8 +170,6 @@ export function AddProviderDialog({ isOpen, onClose, onProviderAdded }: AddProvi
                     onSuccess={handleConnectionSuccess}
                     supportsOAuth={selectedProvider.methods.includes("oauth2")}
                     supportsApiKey={selectedProvider.methods.includes("api_key")}
-                    supportsMCP={!!selectedProvider.mcpServerUrl}
-                    mcpServerUrl={selectedProvider.mcpServerUrl}
                 />
             )}
         </>

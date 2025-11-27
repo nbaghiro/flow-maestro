@@ -1,5 +1,5 @@
 import OpenAI from "openai";
-import { ConnectionRepository } from "../../storage/repositories/ConnectionRepository";
+import { ConnectionRepository } from "../storage/repositories/ConnectionRepository";
 
 export interface EmbeddingConfig {
     model: string; // e.g., "text-embedding-3-small"

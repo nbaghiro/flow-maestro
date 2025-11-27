@@ -24,7 +24,7 @@
         "worker:voice:dev": "tsx src/voice-agent/worker.ts",
         "worker:voice:watch": "tsx watch src/voice-agent/worker.ts",
         "seed:test-workflows": "tsx tests/fixtures/workflows/seed-workflows.ts",
-        "analytics:aggregate": "tsx src/scripts/aggregate-analytics.ts"
+        "analytics:aggregate": "tsx src/services/AnalyticsService.ts"
     },
     "dependencies": {
         "@anthropic-ai/sdk": "^0.67.0",

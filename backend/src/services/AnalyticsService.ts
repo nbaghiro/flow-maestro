@@ -1,9 +1,19 @@
+#!/usr/bin/env tsx
 /**
- * Analytics Aggregation Service
- * Aggregates execution span data into analytics tables
+ * Analytics Service
+ * Aggregates execution span data into analytics tables and schedules periodic jobs
+ *
+ * CLI Usage:
+ *   npm run analytics:aggregate                    # Aggregate yesterday's data
+ *   npm run analytics:aggregate -- --backfill 30   # Backfill last 30 days
+ *   npm run analytics:aggregate -- --date 2024-01-15  # Aggregate specific date
  */
 
-import { db } from "../../storage/database";
+import { db } from "../storage/database";
+
+// ============================================================================
+// Analytics Aggregator
+// ============================================================================
 
 export class AnalyticsAggregator {
     /**
@@ -359,3 +369,251 @@ export class AnalyticsAggregator {
 }
 
 export const analyticsAggregator = new AnalyticsAggregator();
+
+// ============================================================================
+// Analytics Scheduler
+// ============================================================================
+
+export class AnalyticsScheduler {
+    private hourlyInterval: NodeJS.Timeout | null = null;
+    private dailyInterval: NodeJS.Timeout | null = null;
+    private isRunning = false;
+
+    /**
+     * Start the analytics scheduler
+     * - Runs hourly aggregation every hour
+     * - Runs daily aggregation every day at midnight
+     */
+    async start(): Promise<void> {
+        if (this.isRunning) {
+            console.log("[AnalyticsScheduler] Already running");
+            return;
+        }
+
+        console.log("[AnalyticsScheduler] Starting analytics scheduler");
+
+        // Run hourly aggregation every hour (at the top of the hour)
+        this.scheduleHourlyAggregation();
+
+        // Run daily aggregation every day at midnight
+        this.scheduleDailyAggregation();
+
+        // Run initial aggregation on startup (for the previous hour and day)
+        try {
+            console.log("[AnalyticsScheduler] Running initial aggregation on startup");
+            await analyticsAggregator.runHourlyAggregation();
+            await analyticsAggregator.runDailyAggregation();
+        } catch (error) {
+            console.error("[AnalyticsScheduler] Error during initial aggregation:", error);
+        }
+
+        this.isRunning = true;
+        console.log("[AnalyticsScheduler] Analytics scheduler started");
+    }
+
+    /**
+     * Stop the analytics scheduler
+     */
+    stop(): void {
+        if (!this.isRunning) {
+            console.log("[AnalyticsScheduler] Not running");
+            return;
+        }
+
+        console.log("[AnalyticsScheduler] Stopping analytics scheduler");
+
+        if (this.hourlyInterval) {
+            clearInterval(this.hourlyInterval);
+            this.hourlyInterval = null;
+        }
+
+        if (this.dailyInterval) {
+            clearInterval(this.dailyInterval);
+            this.dailyInterval = null;
+        }
+
+        this.isRunning = false;
+        console.log("[AnalyticsScheduler] Analytics scheduler stopped");
+    }
+
+    /**
+     * Schedule hourly aggregation to run every hour
+     */
+    private scheduleHourlyAggregation(): void {
+        // Calculate time until next hour
+        const now = new Date();
+        const nextHour = new Date(now);
+        nextHour.setHours(nextHour.getHours() + 1);
+        nextHour.setMinutes(0, 0, 0);
+        const msUntilNextHour = nextHour.getTime() - now.getTime();
+
+        console.log(
+            `[AnalyticsScheduler] Scheduling hourly aggregation (next run in ${Math.round(msUntilNextHour / 1000 / 60)} minutes)`
+        );
+
+        // Schedule first run at the next hour
+        setTimeout(() => {
+            this.runHourlyAggregation();
+
+            // Then run every hour
+            this.hourlyInterval = setInterval(
+                () => {
+                    this.runHourlyAggregation();
+                },
+                60 * 60 * 1000
+            ); // 1 hour
+        }, msUntilNextHour);
+    }
+
+    /**
+     * Schedule daily aggregation to run every day at midnight
+     */
+    private scheduleDailyAggregation(): void {
+        // Calculate time until midnight
+        const now = new Date();
+        const midnight = new Date(now);
+        midnight.setHours(24, 0, 0, 0);
+        const msUntilMidnight = midnight.getTime() - now.getTime();
+
+        console.log(
+            `[AnalyticsScheduler] Scheduling daily aggregation (next run in ${Math.round(msUntilMidnight / 1000 / 60 / 60)} hours)`
+        );
+
+        // Schedule first run at midnight
+        setTimeout(() => {
+            this.runDailyAggregation();
+
+            // Then run every day
+            this.dailyInterval = setInterval(
+                () => {
+                    this.runDailyAggregation();
+                },
+                24 * 60 * 60 * 1000
+            ); // 24 hours
+        }, msUntilMidnight);
+    }
+
+    /**
+     * Run hourly aggregation task
+     */
+    private async runHourlyAggregation(): Promise<void> {
+        try {
+            console.log("[AnalyticsScheduler] Running scheduled hourly aggregation");
+            await analyticsAggregator.runHourlyAggregation();
+        } catch (error) {
+            console.error("[AnalyticsScheduler] Error during hourly aggregation:", error);
+        }
+    }
+
+    /**
+     * Run daily aggregation task
+     */
+    private async runDailyAggregation(): Promise<void> {
+        try {
+            console.log("[AnalyticsScheduler] Running scheduled daily aggregation");
+            await analyticsAggregator.runDailyAggregation();
+        } catch (error) {
+            console.error("[AnalyticsScheduler] Error during daily aggregation:", error);
+        }
+    }
+}
+
+export const analyticsScheduler = new AnalyticsScheduler();
+
+// ============================================================================
+// CLI Execution
+// ============================================================================
+
+function showHelp(): void {
+    console.log(`
+Analytics Aggregation CLI
+
+Usage:
+  npm run analytics:aggregate                         # Aggregate yesterday's data
+  npm run analytics:aggregate -- --backfill <days>    # Backfill last N days
+  npm run analytics:aggregate -- --date YYYY-MM-DD    # Aggregate specific date
+
+Examples:
+  npm run analytics:aggregate                    # Aggregate yesterday
+  npm run analytics:aggregate -- --backfill 30   # Backfill last 30 days
+  npm run analytics:aggregate -- --date 2024-11-09  # Aggregate Nov 9, 2024
+
+Options:
+  --backfill <days>   Backfill analytics for the last N days
+  --date <YYYY-MM-DD> Aggregate analytics for a specific date
+  -h, --help          Show this help message
+    `);
+}
+
+async function runCLI(): Promise<void> {
+    const args = process.argv.slice(2);
+
+    // Show help if requested
+    if (args.includes("--help") || args.includes("-h")) {
+        showHelp();
+        process.exit(0);
+    }
+
+    try {
+        if (args.includes("--backfill")) {
+            // Backfill mode
+            const daysIndex = args.indexOf("--backfill") + 1;
+            const days = parseInt(args[daysIndex] || "30", 10);
+
+            const endDate = new Date();
+            endDate.setHours(0, 0, 0, 0);
+
+            const startDate = new Date(endDate);
+            startDate.setDate(startDate.getDate() - days);
+
+            console.log(`Backfilling analytics for the last ${days} days`);
+            console.log(`Start: ${startDate.toISOString()}`);
+            console.log(`End: ${endDate.toISOString()}`);
+
+            await analyticsAggregator.backfillDateRange(startDate, endDate);
+
+            console.log("✓ Backfill completed successfully");
+        } else if (args.includes("--date")) {
+            // Specific date mode
+            const dateIndex = args.indexOf("--date") + 1;
+            const dateStr = args[dateIndex];
+
+            if (!dateStr) {
+                throw new Error("Date argument is required. Format: YYYY-MM-DD");
+            }
+
+            const targetDate = new Date(dateStr);
+            if (Number.isNaN(targetDate.getTime())) {
+                throw new Error(`Invalid date format: ${dateStr}. Use YYYY-MM-DD`);
+            }
+
+            console.log(`Aggregating analytics for ${targetDate.toISOString()}`);
+
+            await analyticsAggregator.aggregateForDate(targetDate);
+
+            console.log("✓ Aggregation completed successfully");
+        } else {
+            // Default mode: aggregate yesterday's data
+            const yesterday = new Date();
+            yesterday.setDate(yesterday.getDate() - 1);
+            yesterday.setHours(0, 0, 0, 0);
+
+            console.log(`Aggregating analytics for yesterday (${yesterday.toISOString()})`);
+
+            await analyticsAggregator.aggregateForDate(yesterday);
+
+            console.log("✓ Aggregation completed successfully");
+        }
+    } catch (error) {
+        console.error("✗ Analytics aggregation failed:", error);
+        process.exit(1);
+    } finally {
+        // Close database connection
+        await db.close();
+    }
+}
+
+// Run CLI if this file is executed directly
+if (require.main === module) {
+    runCLI();
+}

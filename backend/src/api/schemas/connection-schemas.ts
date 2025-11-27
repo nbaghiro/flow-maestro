@@ -1,7 +1,7 @@
 import { z } from "zod";
 
-// Connection method enum (renamed from type)
-export const connectionMethodSchema = z.enum(["api_key", "oauth2", "mcp", "basic_auth", "custom"]);
+// Connection method enum
+export const connectionMethodSchema = z.enum(["api_key", "oauth2", "basic_auth", "custom"]);
 
 // Connection status enum
 export const connectionStatusSchema = z.enum(["active", "invalid", "expired", "revoked"]);
@@ -32,54 +32,13 @@ const customHeaderDataSchema = z.object({
     headers: z.record(z.string())
 });
 
-// MCP auth type schema
-const mcpAuthTypeSchema = z.enum(["none", "api_key", "bearer", "basic", "custom"]);
-
-// MCP connection data schema
-const mcpConnectionDataSchema = z.object({
-    server_url: z.string().url(),
-    auth_type: mcpAuthTypeSchema,
-    api_key: z.string().optional(),
-    bearer_token: z.string().optional(),
-    username: z.string().optional(),
-    password: z.string().optional(),
-    custom_headers: z.record(z.string()).optional(),
-    protocol: z.enum(["http", "https", "ws", "wss"]).optional(),
-    timeout: z.number().positive().optional()
-});
-
 // Union of all connection data types
 const connectionDataSchema = z.union([
     apiKeyDataSchema,
     oauth2TokenDataSchema,
     basicAuthDataSchema,
-    customHeaderDataSchema,
-    mcpConnectionDataSchema
+    customHeaderDataSchema
 ]);
-
-// MCP tool parameter schema
-const mcpToolParameterSchema = z.object({
-    name: z.string(),
-    type: z.string(),
-    description: z.string().optional(),
-    required: z.boolean().optional(),
-    default: z.any().optional(),
-    schema: z.record(z.any()).optional()
-});
-
-// MCP tool schema
-const mcpToolSchema = z.object({
-    name: z.string(),
-    description: z.string(),
-    parameters: z.array(mcpToolParameterSchema),
-    returns: z
-        .object({
-            type: z.string(),
-            description: z.string().optional(),
-            schema: z.record(z.any()).optional()
-        })
-        .optional()
-});
 
 // Connection metadata schema
 const connectionMetadataSchema = z
@@ -94,10 +53,7 @@ const connectionMetadataSchema = z
             })
             .catchall(z.any())
             .optional(),
-        provider_config: z.record(z.any()).optional(),
-        // MCP-specific metadata
-        mcp_version: z.string().optional(),
-        mcp_server_info: z.record(z.any()).optional()
+        provider_config: z.record(z.any()).optional()
     })
     .optional();
 
@@ -124,8 +80,6 @@ export const createConnectionSchema = z.object({
     data: connectionDataSchema,
     metadata: connectionMetadataSchema,
     status: connectionStatusSchema.optional(),
-    mcp_server_url: z.string().url().optional(),
-    mcp_tools: z.array(mcpToolSchema).optional(),
     capabilities: connectionCapabilitiesSchema
 });
 
@@ -135,7 +89,6 @@ export const updateConnectionSchema = z.object({
     data: connectionDataSchema.optional(),
     metadata: connectionMetadataSchema,
     status: connectionStatusSchema.optional(),
-    mcp_tools: z.array(mcpToolSchema).optional(),
     capabilities: connectionCapabilitiesSchema
 });
 
@@ -166,28 +119,8 @@ export const testConnectionSchema = z.object({
     test_endpoint: z.string().url().optional() // Optional custom endpoint to test against
 });
 
-// MCP discovery request (test before saving)
-export const mcpDiscoverySchema = z.object({
-    server_url: z.string().url(),
-    auth_type: mcpAuthTypeSchema,
-    api_key: z.string().optional(),
-    bearer_token: z.string().optional(),
-    username: z.string().optional(),
-    password: z.string().optional(),
-    custom_headers: z.record(z.string()).optional(),
-    timeout: z.number().positive().optional()
-});
-
-// MCP tool execution request
-export const mcpToolExecutionSchema = z.object({
-    tool: z.string(),
-    parameters: z.record(z.any())
-});
-
 export type CreateConnectionRequest = z.infer<typeof createConnectionSchema>;
 export type UpdateConnectionRequest = z.infer<typeof updateConnectionSchema>;
 export type ListConnectionsQuery = z.infer<typeof listConnectionsQuerySchema>;
 export type ConnectionIdParam = z.infer<typeof connectionIdParamSchema>;
 export type TestConnectionRequest = z.infer<typeof testConnectionSchema>;
-export type MCPDiscoveryRequest = z.infer<typeof mcpDiscoverySchema>;
-export type MCPToolExecutionRequest = z.infer<typeof mcpToolExecutionSchema>;

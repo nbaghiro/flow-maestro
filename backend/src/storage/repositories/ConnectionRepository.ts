@@ -8,7 +8,6 @@ import {
     ConnectionData,
     ConnectionMethod,
     ConnectionStatus,
-    MCPTool,
     ConnectionMetadata,
     ConnectionCapabilities
 } from "../models/Connection";
@@ -23,8 +22,6 @@ interface ConnectionRow {
     encrypted_data: string;
     metadata: ConnectionMetadata | string;
     status: ConnectionStatus;
-    mcp_server_url: string | null;
-    mcp_tools: MCPTool[] | string | null;
     capabilities: ConnectionCapabilities | string;
     last_tested_at: string | Date | null;
     last_used_at: string | Date | null;
@@ -51,11 +48,9 @@ export class ConnectionRepository {
                 encrypted_data,
                 metadata,
                 status,
-                mcp_server_url,
-                mcp_tools,
                 capabilities
             )
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
             RETURNING *
         `;
 
@@ -67,8 +62,6 @@ export class ConnectionRepository {
             encryptedData,
             JSON.stringify(input.metadata || {}),
             input.status || "active",
-            input.mcp_server_url || null,
-            input.mcp_tools ? JSON.stringify(input.mcp_tools) : null,
             JSON.stringify(input.capabilities || {})
         ];
 
@@ -231,11 +224,6 @@ export class ConnectionRepository {
             values.push(input.status);
         }
 
-        if (input.mcp_tools !== undefined) {
-            updates.push(`mcp_tools = $${paramIndex++}`);
-            values.push(JSON.stringify(input.mcp_tools));
-        }
-
         if (input.capabilities !== undefined) {
             updates.push(`capabilities = $${paramIndex++}`);
             values.push(JSON.stringify(input.capabilities));
@@ -294,19 +282,6 @@ export class ConnectionRepository {
         `;
 
         await db.query(query, [encryptedData, JSON.stringify(metadata), id]);
-    }
-
-    /**
-     * Update MCP tools (after discovering tools from server)
-     */
-    async updateMCPTools(id: string, tools: MCPTool[]): Promise<void> {
-        const query = `
-            UPDATE flowmaestro.connections
-            SET mcp_tools = $1, updated_at = CURRENT_TIMESTAMP
-            WHERE id = $2
-        `;
-
-        await db.query(query, [JSON.stringify(tools), id]);
     }
 
     /**
@@ -430,13 +405,6 @@ export class ConnectionRepository {
             provider: row.provider,
             status: row.status,
             metadata: typeof row.metadata === "string" ? JSON.parse(row.metadata) : row.metadata,
-            mcp_server_url: row.mcp_server_url,
-            mcp_tools:
-                row.mcp_tools !== null
-                    ? typeof row.mcp_tools === "string"
-                        ? JSON.parse(row.mcp_tools)
-                        : row.mcp_tools
-                    : null,
             capabilities:
                 typeof row.capabilities === "string"
                     ? JSON.parse(row.capabilities)

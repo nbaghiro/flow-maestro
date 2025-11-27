@@ -14,8 +14,8 @@ Complete architectural guide to the FlowMaestro AI agent system, covering memory
 6. [RAG (Knowledge Bases)](#rag-knowledge-bases)
 7. [Observability & Tracing](#observability--tracing)
 8. [Agent Builder UI](#agent-builder-ui)
-9. [MCP Integration](#mcp-integration)
-10. [Workflows as MCP Tools](#workflows-as-mcp-tools)
+9. [Provider MCP Tools](#provider-mcp-tools)
+10. [Workflows as MCP Tools](#workflows-as-mcp-tools) (Future)
 
 ---
 
@@ -24,7 +24,7 @@ Complete architectural guide to the FlowMaestro AI agent system, covering memory
 FlowMaestro agents are AI-powered conversational assistants that provide:
 
 - Multi-turn conversation context management
-- Tool execution (workflows, functions, knowledge bases, MCP)
+- Tool execution (workflows, functions, knowledge bases, provider MCP tools)
 - Real-time response streaming
 - Multi-provider LLM support (OpenAI, Anthropic, Google, Cohere)
 - Document search via RAG
@@ -35,7 +35,7 @@ FlowMaestro agents are AI-powered conversational assistants that provide:
 - **Memory Management**: Buffer, summary, and vector memory strategies
 - **Streaming**: Token-by-token response delivery via Server-Sent Events
 - **Multi-Provider**: Unified interface across LLM providers
-- **Tool Execution**: Four tool types (workflows, functions, knowledge bases, MCP)
+- **Tool Execution**: Four tool types (workflows, functions, knowledge bases, provider MCP tools)
 - **RAG System**: Complete document ingestion and semantic search pipeline
 - **Observability**: OpenTelemetry traces with Jaeger visualization
 - **Builder UI**: Visual agent configuration interface
@@ -339,21 +339,27 @@ Agents execute four types of tools with unified execution interface.
 
 ---
 
-### 4. MCP Tools
+### 4. Provider MCP Tools
 
-**Purpose**: Call external Model Context Protocol servers
+**Purpose**: Execute operations from connected OAuth integrations as MCP-compatible tools
+
+**How It Works**:
+
+- Each integration provider (Slack, Google, GitHub, etc.) has an MCP adapter
+- When a user connects an OAuth integration, its operations become available as MCP tools
+- Tools are auto-wrapped from provider operations with generated JSON schemas
 
 **Configuration**:
 
-- Server URL and authentication
-- Tool name and parameters
-- Protocol support (RESTful + JSON-RPC fallback)
+- References connected integration by connection ID
+- Tool name follows pattern: `{provider}_{operation}` (e.g., `slack_sendMessage`)
+- Parameters defined by provider operation schemas
 
 **Execution**:
 
-- Attempts RESTful endpoint first (`POST /tools/{name}/execute`)
-- Falls back to JSON-RPC if RESTful fails
-- Handles various auth types (API key, bearer token, basic auth)
+- ExecutionRouter routes to provider's MCP adapter
+- Adapter invokes the underlying provider operation
+- Same execution path as direct API calls (connection pooling, retry logic)
 
 ---
 
@@ -508,7 +514,7 @@ React components for visual agent configuration.
 - Workflow tools: Select from user's workflows
 - Function tools: Choose from built-in functions
 - Knowledge base tools: Select knowledge base
-- MCP tools: Configure server connection
+- Provider MCP tools: Select from connected OAuth integrations
 
 ### Streaming Chat Interface
 
@@ -529,35 +535,73 @@ React components for visual agent configuration.
 
 ---
 
-## MCP Integration
+## Provider MCP Tools
 
-Model Context Protocol support for external tool servers.
+FlowMaestro automatically exposes connected OAuth integrations as MCP-compatible tools for agents.
 
-### MCP Client
+### Architecture
 
-**Capabilities**:
+**How It Works**:
 
-- Connect to external MCP servers
-- Discover available tools
-- Execute tools with arguments
-- Handle authentication (API key, bearer token, basic auth)
+- Each integration provider implements an MCP adapter (e.g., `SlackMCPAdapter`)
+- The adapter wraps provider operations as MCP-compatible tools
+- When a user connects an OAuth integration, its tools become available to agents
 
-**Protocol Support**:
+**Key Components**:
 
-- RESTful endpoints (preferred)
-- JSON-RPC 2.0 fallback
-- Configurable timeouts
-- Error handling
+- **Provider MCP Adapter**: Converts provider operations to MCP tool format
+- **ExecutionRouter**: Routes MCP tool calls to the appropriate provider adapter
+- **ProviderRegistry**: Discovers and loads provider adapters on demand
 
-**Tool Discovery**: Automatic enumeration of server capabilities on connection
+### Tool Schema Generation
+
+**Automatic Schema Conversion**:
+
+- Provider operations define Zod schemas for validation
+- Adapters convert Zod schemas to JSON Schema format for MCP
+- Tool names follow pattern: `{provider}_{operation}`
+
+**Example Tool Definition**:
+
+```typescript
+{
+    name: "slack_sendMessage",
+    description: "Send a message to a Slack channel",
+    inputSchema: {
+        type: "object",
+        properties: {
+            channel: { type: "string", description: "Channel ID or name" },
+            text: { type: "string", description: "Message text" }
+        },
+        required: ["channel", "text"]
+    }
+}
+```
+
+### Execution Flow
+
+1. Agent requests available tools from connected integrations
+2. ExecutionRouter aggregates tools from all user's connected providers
+3. Agent invokes tool (e.g., `slack_sendMessage`)
+4. ExecutionRouter routes to SlackMCPAdapter
+5. Adapter validates parameters and invokes provider operation
+6. Result returned to agent
+
+**Benefits**:
+
+- Zero configuration required - tools auto-available when OAuth connected
+- Same execution path as workflow integrations (connection pooling, retry logic)
+- Type-safe with compile-time schema validation
 
 ---
 
-## Workflows as MCP Tools
+## Workflows as MCP Tools (Future)
 
-FlowMaestro exposes workflows as MCP-compatible tools for external agents.
+> **Note**: This feature is planned for future implementation.
 
-### MCP Server Implementation
+FlowMaestro can expose workflows as MCP-compatible tools for external agents (e.g., Claude Desktop, Cursor).
+
+### Planned Implementation
 
 **Endpoints**:
 
@@ -596,10 +640,10 @@ FlowMaestro's agent system provides:
 1. **Comprehensive Memory Management**: Three strategies for different conversation lengths and patterns
 2. **Real-time Streaming**: Token-by-token response delivery with unified provider interface
 3. **Multi-Provider Support**: Seamless integration with major LLM providers
-4. **Rich Tool Ecosystem**: Four tool types covering workflows, functions, knowledge, and external servers
+4. **Rich Tool Ecosystem**: Four tool types covering workflows, functions, knowledge bases, and provider MCP tools
 5. **Production-Grade RAG**: Complete document processing and semantic search pipeline
 6. **Full Observability**: OpenTelemetry tracing with visual debugging
 7. **Intuitive UI**: Visual agent builder and chat interface
-8. **MCP Compatibility**: Both client and server implementations
+8. **Auto-Wrapped MCP Tools**: Connected OAuth integrations automatically become available as agent tools
 
 The architecture cleanly separates concerns while providing a unified developer experience for building sophisticated AI agents without complex infrastructure management.

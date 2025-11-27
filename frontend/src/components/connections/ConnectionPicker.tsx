@@ -26,10 +26,6 @@ const methodBadgeConfig: Record<ConnectionMethod, { label: string; className: st
         label: "OAuth",
         className: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400"
     },
-    mcp: {
-        label: "MCP",
-        className: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400"
-    },
     basic_auth: {
         label: "Basic Auth",
         className: "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400"
@@ -159,14 +155,6 @@ export function ConnectionPicker({
                                 {methodBadgeConfig[selectedConnection.connection_method].label}
                             </span>
 
-                            {/* Show MCP tool count if applicable */}
-                            {selectedConnection.connection_method === "mcp" &&
-                                selectedConnection.mcp_tools && (
-                                    <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">
-                                        {selectedConnection.mcp_tools.length} tools
-                                    </span>
-                                )}
-
                             {/* OAuth expiry warning */}
                             {selectedConnection.connection_method === "oauth2" &&
                                 selectedConnection.metadata?.expires_at &&
@@ -225,8 +213,6 @@ export function ConnectionPicker({
                         }}
                         supportsOAuth={providerInfo.methods.includes("oauth2")}
                         supportsApiKey={providerInfo.methods.includes("api_key")}
-                        supportsMCP={providerInfo.methods.includes("mcp")}
-                        mcpServerUrl={providerInfo.mcpServerUrl}
                     />
                 );
             })()}

@@ -27,8 +27,6 @@ export async function testBeforeSaveRoute(fastify: FastifyInstance) {
                 data: body.data,
                 metadata: body.metadata || {},
                 status: body.status || "active",
-                mcp_server_url: body.mcp_server_url || null,
-                mcp_tools: body.mcp_tools || null,
                 capabilities: body.capabilities || {},
                 last_tested_at: null,
                 last_used_at: null,
