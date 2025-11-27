@@ -150,7 +150,7 @@ interface UserResponse {
 /**
  * Get auth token from localStorage
  */
-function getAuthToken(): string | null {
+export function getAuthToken(): string | null {
     return localStorage.getItem("auth_token");
 }
 

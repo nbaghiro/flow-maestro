@@ -16,10 +16,15 @@ export async function createVersionRoute(fastify: FastifyInstance) {
         },
         async (request, reply) => {
             const { id } = request.params as { id: string };
-            const { name } = request.body as CreateVersionRequest;
+            const { name, description } = request.body as CreateVersionRequest;
 
             const versionsRepository = new VersionsRepository();
-            const version = await versionsRepository.create(id, request.user!.id, name);
+            const version = await versionsRepository.create(
+                id,
+                request.user!.id,
+                name,
+                description
+            );
 
             return reply.status(201).send({
                 success: true,

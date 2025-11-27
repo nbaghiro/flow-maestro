@@ -3,6 +3,7 @@ import { createVersionRoute } from "./create";
 import { deleteVersionRoute } from "./delete";
 import { getVersionRoute } from "./get";
 import { listVersionRoute } from "./list";
+import { renameVersionRoute } from "./rename";
 import { revertVersionRoute } from "./revert";
 
 export async function versionRoutes(fastify: FastifyInstance) {
@@ -12,4 +13,5 @@ export async function versionRoutes(fastify: FastifyInstance) {
     await listVersionRoute(fastify);
     await deleteVersionRoute(fastify);
     await revertVersionRoute(fastify);
+    await renameVersionRoute(fastify);
 }

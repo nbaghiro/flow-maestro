@@ -4,31 +4,38 @@ import { useState } from "react";
 interface VersionPanelProps {
     open: boolean;
     onClose: () => void;
-    versions: { id: string; name: string | null; createdAt: string }[];
+    versions: { id: string; name: string | null; createdAt: string; formatted?: string }[];
+    currentVersion: Version | null;
     onRevert: (id: string) => void;
     onDelete: (id: string) => void;
     onRename: (id: string, newName: string) => void;
+    onCreate: (name?: string) => void;
 }
 
 interface Version {
     id: string;
     name: string | null;
     createdAt: string;
+    formatted?: string;
 }
 
 export function VersionPanel({
     open,
     onClose,
     versions,
+    currentVersion,
     onRevert,
     onDelete,
-    onRename
+    onRename,
+    onCreate
 }: VersionPanelProps) {
     const [showConfirm, setShowConfirm] = useState(false);
     const [confirmType, setConfirmType] = useState<"delete" | "revert" | null>(null);
     const [pendingVersion, setPendingVersion] = useState<Version | null>(null);
     const [editingId, setEditingId] = useState<string | null>(null);
     const [editingValue, setEditingValue] = useState("");
+    const [showNameDialog, setShowNameDialog] = useState(false);
+    const [nameValue, setNameValue] = useState("");
 
     if (!open) return null;
 
@@ -67,10 +74,10 @@ export function VersionPanel({
                         <p className="text-sm font-medium">Current Version</p>
                         <div>
                             <p className="text-xs text-muted-foreground">
-                                {versions[0]?.name || "Untitled Version"}
+                                {currentVersion?.name || "Untitled Version"}
                             </p>
                             <p className="text-xs text-muted-foreground">
-                                {versions[0]?.createdAt}
+                                {currentVersion?.formatted}
                             </p>
                         </div>
                     </div>
@@ -93,74 +100,83 @@ export function VersionPanel({
                     </div>
                 ) : (
                     <div>
-                        {versions.slice(1).map((v) => (
-                            <div
-                                key={v.id}
-                                className={
-                                    "p-3 border border-border rounded-lg bg-muted/20 hover:bg-muted/90 mb-2 cursor-pointer"
-                                }
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    triggerConfirm("revert", v);
-                                }}
-                            >
-                                <div className="flex justify-between items-center">
-                                    <div className="flex flex-col gap-1">
-                                        {editingId === v.id ? (
-                                            <input
-                                                autoFocus
-                                                value={editingValue}
-                                                onChange={(e) => setEditingValue(e.target.value)}
-                                                onBlur={() => {
-                                                    onRename(v.id, editingValue);
-                                                    setEditingId(null);
-                                                }}
-                                                onKeyDown={(e) => {
-                                                    if (e.key === "Enter") {
+                        {versions
+                            .filter((v) => v.id !== currentVersion?.id)
+                            .map((v) => (
+                                <div
+                                    key={v.id}
+                                    className={
+                                        "p-3 border border-border rounded-lg bg-muted/20 hover:bg-muted/90 mb-2 cursor-pointer"
+                                    }
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        triggerConfirm("revert", v);
+                                    }}
+                                >
+                                    <div className="flex justify-between items-center">
+                                        <div className="flex flex-col gap-1">
+                                            {editingId === v.id ? (
+                                                <input
+                                                    autoFocus
+                                                    value={editingValue}
+                                                    onChange={(e) =>
+                                                        setEditingValue(e.target.value)
+                                                    }
+                                                    onBlur={() => {
                                                         onRename(v.id, editingValue);
                                                         setEditingId(null);
-                                                    }
-                                                    if (e.key === "Escape") {
-                                                        setEditingId(null);
-                                                    }
-                                                }}
-                                                className="text-sm font-medium border px-1 py-0.5 rounded w-full bg-white"
-                                            />
-                                        ) : (
-                                            <span
-                                                className="font-medium cursor-text"
-                                                onClick={() => {
-                                                    setEditingId(v.id);
-                                                    setEditingValue(v.name || "");
-                                                }}
-                                            >
-                                                {v.name || "Untitled Version"}
-                                            </span>
-                                        )}
-                                        <p className="text-xs px-1 py-0.5 rounded bg-muted">
-                                            {v.createdAt}
-                                        </p>
+                                                    }}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === "Enter") {
+                                                            onRename(v.id, editingValue);
+                                                            setEditingId(null);
+                                                        }
+                                                        if (e.key === "Escape") {
+                                                            setEditingId(null);
+                                                        }
+                                                    }}
+                                                    className="text-sm font-medium border px-1 py-0.5 rounded w-full bg-white"
+                                                />
+                                            ) : (
+                                                <span
+                                                    className="font-medium cursor-text"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setEditingId(v.id);
+                                                        setEditingValue(v.name || "");
+                                                    }}
+                                                >
+                                                    {v.name || "Untitled Version"}
+                                                </span>
+                                            )}
+                                            <p className="text-xs px-1 py-0.5 rounded bg-muted">
+                                                {v.formatted}
+                                            </p>
+                                        </div>
+                                        <button
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                triggerConfirm("delete", v);
+                                            }}
+                                            className="p-1 text-muted-foreground hover:text-foreground hover:bg-muted"
+                                            title="Delete this version"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
                                     </div>
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            triggerConfirm("delete", v);
-                                        }}
-                                        className="p-1 text-muted-foreground hover:text-foreground hover:bg-muted"
-                                        title="Delete this version"
-                                    >
-                                        <Trash2 className="w-4 h-4" />
-                                    </button>
                                 </div>
-                            </div>
-                        ))}
+                            ))}
                     </div>
                 )}
             </div>
 
             {/* Confirmation Dialog */}
             {showConfirm && pendingVersion && (
-                <div className="absolute inset-0 bg-black/30 flex items-center justify-center z-50">
+                <div
+                    className="absolute inset-0 bg-black/30 flex items-center justify-center z-50"
+                    onClick={(e) => e.stopPropagation()}
+                >
                     <div className="bg-white p-5 rounded-lg shadow-lg w-[300px] space-y-4">
                         {confirmType === "delete" && (
                             <>
@@ -168,7 +184,7 @@ export function VersionPanel({
                                 <p className="text-xs text-muted-foreground border-l-2 pl-2">
                                     {pendingVersion.name || "Untitled Version"}
                                     <br />
-                                    {pendingVersion.createdAt}
+                                    {pendingVersion.formatted}
                                 </p>
                                 <p className="text-xs text-muted-foreground">
                                     This will revert the workflow to the previous saved version.
@@ -199,7 +215,8 @@ export function VersionPanel({
                             </button>
 
                             <button
-                                onClick={() => {
+                                onClick={(e) => {
+                                    e.preventDefault();
                                     if (confirmType === "delete") onDelete(pendingVersion.id);
                                     if (confirmType === "revert") onRevert(pendingVersion.id);
                                     setShowConfirm(false);
@@ -212,9 +229,50 @@ export function VersionPanel({
                     </div>
                 </div>
             )}
+            {showNameDialog && (
+                <div className="absolute inset-0 bg-black/30 flex items-center justify-center z-50">
+                    <div className="bg-white p-5 rounded-lg shadow-lg w-[300px] space-y-4">
+                        <p className="text-sm font-medium">Name this version</p>
+
+                        <input
+                            autoFocus
+                            value={nameValue}
+                            onChange={(e) => setNameValue(e.target.value)}
+                            className="text-sm border px-2 py-1 rounded w-full"
+                            placeholder="Optional name..."
+                        />
+
+                        <div className="flex justify-end gap-2">
+                            <button
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    setShowNameDialog(false);
+                                    setNameValue("");
+                                    onCreate();
+                                }}
+                                className="px-3 py-1 text-sm bg-muted rounded hover:bg-muted/70"
+                            >
+                                Skip
+                            </button>
+
+                            <button
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    setShowNameDialog(false);
+                                    onCreate(nameValue);
+                                    setNameValue("");
+                                }}
+                                className="px-3 py-1 text-sm bg-primary text-white rounded hover:bg-primary/90"
+                            >
+                                Save
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
             <div className="absolute bottom-0 w-full p-3 border-t border-border bg-white">
                 <button
-                    onClick={() => console.log("Save version")}
+                    onClick={() => setShowNameDialog(true)}
                     className="w-full py-1.5 text-sm bg-primary text-white rounded-md hover:bg-primary/90 transition-colors"
                 >
                     Save Version

@@ -14,6 +14,13 @@ import { useKeyboardShortcuts } from "../hooks/useKeyboardShortcuts";
 import { getWorkflow, updateWorkflow } from "../lib/api";
 import { generateId } from "../lib/utils";
 import {
+    createVersion,
+    deleteVersion,
+    listVersions,
+    revertVersion,
+    renameVersion
+} from "../lib/versions";
+import {
     createWorkflowSnapshot,
     transformNodesToBackendMap,
     transformEdgesToBackend,
@@ -36,6 +43,14 @@ interface CopiedNode {
     position: { x: number; y: number };
 }
 
+interface Version {
+    id: string;
+    name: string | null;
+    createdAt: string;
+    snapshot: Record<string, unknown>;
+    formatted?: string;
+}
+
 export function FlowBuilder() {
     const { workflowId } = useParams<{ workflowId: string }>();
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -49,12 +64,8 @@ export function FlowBuilder() {
     const [copiedNode, setCopiedNode] = useState<CopiedNode | null>(null);
     const reactFlowInstanceRef = useRef<ReturnType<typeof useReactFlow> | null>(null);
     const [isVersionOpen, setIsVersionOpen] = useState(false);
-
-    const mockVersions = [
-        { id: "1", name: "Initial version", createdAt: "Nov 21, 2025 – 10:22 AM" },
-        { id: "2", name: "Checkpoint A", createdAt: "Nov 22, 2025 – 3:10 PM" },
-        { id: "3", name: null, createdAt: "Nov 23, 2025 – 7:45 PM" }
-    ];
+    const [versions, setVersions] = useState<Version[]>([]);
+    const [currentVersion, setCurrentVersion] = useState<Version | null>(null);
 
     const {
         selectedNode,
@@ -71,6 +82,31 @@ export function FlowBuilder() {
     } = useWorkflowStore();
 
     const { undo, redo, canUndo, canRedo, clear } = useHistoryStore();
+
+    useEffect(() => {
+        if (workflowId) {
+            Promise.all([getWorkflow(workflowId), listVersions(workflowId)]).then(
+                ([workflow, v]) => {
+                    const sorted = v.sort(
+                        (a: Version, b: Version) =>
+                            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+                    );
+
+                    setVersions(sorted);
+
+                    const current = sorted.find((ver: Version) => {
+                        const match =
+                            JSON.stringify(workflow.data.definition) ===
+                            JSON.stringify(ver.snapshot);
+
+                        return match;
+                    });
+
+                    setCurrentVersion(current || null);
+                }
+            );
+        }
+    }, [workflowId]);
 
     useEffect(() => {
         const unsubscribe = initializeHistoryTracking();
@@ -108,8 +144,11 @@ export function FlowBuilder() {
         if (!workflowId) return;
 
         try {
-            resetWorkflow();
             const response = await getWorkflow(workflowId);
+            console.log("[FRONTEND LOAD] workflow.definition =", response.data.definition);
+
+            const v = await listVersions(workflowId);
+            resetWorkflow();
 
             if (response.success && response.data) {
                 setWorkflowName(response.data.name);
@@ -160,6 +199,14 @@ export function FlowBuilder() {
                     }
                 }
             }
+            setVersions(v);
+
+            const current = v.find(
+                (ver: Version) =>
+                    JSON.stringify(response.data.definition) === JSON.stringify(ver.snapshot)
+            );
+
+            setCurrentVersion(current || null);
         } catch (error) {
             console.error("[FlowBuilder] Failed to load workflow:", error);
         } finally {
@@ -317,8 +364,48 @@ export function FlowBuilder() {
         }
     };
 
-    const handleRenameVersion = (id: string, newName: string) => {
-        console.log("Rename version:", id, "->", newName);
+    const handleDeleteVersion = async (id: string) => {
+        const updated = await deleteVersion(id, workflowId!);
+
+        setVersions(updated);
+        setCurrentVersion(updated[0] ?? null);
+    };
+
+    const handleRevertVersion = async (id: string) => {
+        await revertVersion(id);
+        await loadWorkflow();
+
+        const updated: Version[] = (await listVersions(workflowId!)).sort(
+            (a: Version, b: Version) =>
+                new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+
+        const reverted = updated.find((v) => v.id === id) || null;
+
+        setCurrentVersion(reverted);
+        setVersions(updated);
+    };
+
+    const handleCreateVersion = async (name?: string) => {
+        await createVersion(workflowId!, name);
+        await loadWorkflow();
+
+        const updated: Version[] = (await listVersions(workflowId!)).sort(
+            (a: Version, b: Version) =>
+                new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+
+        setVersions(updated);
+        setCurrentVersion(updated[0] ?? null);
+    };
+
+    const handleRenameVersion = async (id: string, newName: string) => {
+        await renameVersion(id, newName);
+
+        const updated = await listVersions(workflowId!);
+        setVersions(updated);
+
+        setCurrentVersion((prev) => (prev?.id === id ? { ...prev, name: newName } : prev));
     };
 
     useKeyboardShortcuts({
@@ -398,10 +485,12 @@ export function FlowBuilder() {
                     <VersionPanel
                         open={isVersionOpen}
                         onClose={() => setIsVersionOpen(false)}
-                        versions={mockVersions}
-                        onRevert={(id) => console.log("revert", id)}
-                        onDelete={(id) => console.log("delete", id)}
+                        versions={versions}
+                        currentVersion={currentVersion}
+                        onRevert={handleRevertVersion}
+                        onDelete={handleDeleteVersion}
                         onRename={handleRenameVersion}
+                        onCreate={handleCreateVersion}
                     />
                 </div>
             </div>

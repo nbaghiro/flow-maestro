@@ -5,12 +5,11 @@
 CREATE TABLE IF NOT EXISTS flowmaestro.workflow_versions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     workflow_id UUID NOT NULL REFERENCES flowmaestro.workflows(id) ON DELETE CASCADE,
-    version_number INTEGER NOT NULL,
+    created_by UUID NOT NULL,
     name VARCHAR(255),
+    description TEXT,
     snapshot JSONB NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP WITH TIME ZONE
 );
 
--- Ensure one version number per workflow
-CREATE UNIQUE INDEX IF NOT EXISTS workflow_versions_unique_per_workflow
-ON flowmaestro.workflow_versions (workflow_id, version_number);

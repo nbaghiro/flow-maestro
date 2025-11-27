@@ -1,13 +1,13 @@
 import { VersionsRepository } from "../../../storage/repositories/VersionsRepository";
 import { authMiddleware, validateParams } from "../../middleware";
-import { workflowIdParamSchema } from "../../schemas/workflow-schemas";
+import { versionIdParamSchema } from "../../schemas/versions.schemas";
 import type { FastifyInstance } from "fastify";
 
 export async function getVersionRoute(fastify: FastifyInstance) {
     fastify.get(
         "/version/:id",
         {
-            preHandler: [authMiddleware, validateParams(workflowIdParamSchema)]
+            preHandler: [authMiddleware, validateParams(versionIdParamSchema)]
         },
         async (request, reply) => {
             const { id } = request.params as { id: string };
