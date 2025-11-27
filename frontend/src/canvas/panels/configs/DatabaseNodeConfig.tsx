@@ -1,11 +1,11 @@
 import { Plus } from "lucide-react";
 import { useState, useEffect } from "react";
+import { ALL_PROVIDERS } from "@flowmaestro/shared";
 import { CodeInput } from "../../../components/CodeInput";
 import { Select } from "../../../components/common/Select";
 import { ProviderConnectionDialog } from "../../../components/connections/ProviderConnectionDialog";
 import { FormField, FormSection } from "../../../components/FormField";
 import { OutputSettingsSection } from "../../../components/OutputSettingsSection";
-import { ALL_PROVIDERS } from "../../../lib/providers";
 import { useConnectionStore } from "../../../stores/connectionStore";
 
 interface DatabaseNodeConfigProps {

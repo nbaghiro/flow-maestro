@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
+import { ALL_PROVIDERS } from "@flowmaestro/shared";
 import { Select } from "../../../components/common/Select";
 import { ProviderConnectionDialog } from "../../../components/connections/ProviderConnectionDialog";
 import { FormField, FormSection } from "../../../components/FormField";
@@ -10,7 +11,6 @@ import {
     type OperationSummary,
     type OperationParameter
 } from "../../../lib/api";
-import { ALL_PROVIDERS } from "../../../lib/providers";
 import { useConnectionStore } from "../../../stores/connectionStore";
 
 interface IntegrationNodeConfigProps {

@@ -1,6 +1,6 @@
 import { X, Search, Plus, Check } from "lucide-react";
 import { useState, useEffect } from "react";
-import { ALL_PROVIDERS, type Provider } from "../../lib/providers";
+import { ALL_PROVIDERS, type Provider } from "@flowmaestro/shared";
 import { useConnectionStore } from "../../stores/connectionStore";
 import { Select } from "../common/Select";
 import { NewConnectionDialog } from "./NewConnectionDialog";

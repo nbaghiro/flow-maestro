@@ -1,10 +1,10 @@
 import { Loader2, Search } from "lucide-react";
 import { useEffect, useState } from "react";
+import { ALL_PROVIDERS, type Provider } from "@flowmaestro/shared";
 import { PageHeader } from "../components/common/PageHeader";
 import { Select } from "../components/common/Select";
 import { ConnectionDetailsDialog } from "../components/connections/ConnectionDetailsDialog";
 import { NewConnectionDialog } from "../components/connections/NewConnectionDialog";
-import { ALL_PROVIDERS, type Provider } from "../lib/providers";
 import { useConnectionStore } from "../stores/connectionStore";
 import type { Connection } from "../lib/api";
 

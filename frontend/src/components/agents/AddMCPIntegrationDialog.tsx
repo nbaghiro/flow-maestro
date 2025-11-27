@@ -1,7 +1,7 @@
 import { ArrowLeft, Check, Loader2, Plus, Search, X } from "lucide-react";
 import { useState, useEffect } from "react";
+import { ALL_PROVIDERS, type Provider } from "@flowmaestro/shared";
 import { getConnectionMCPTools } from "../../lib/api";
-import { ALL_PROVIDERS, type Provider } from "../../lib/providers";
 import { useConnectionStore } from "../../stores/connectionStore";
 import { Select } from "../common/Select";
 import { NewConnectionDialog } from "../connections/NewConnectionDialog";

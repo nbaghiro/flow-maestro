@@ -1,6 +1,6 @@
 import { X, Plus, Check, ExternalLink } from "lucide-react";
 import { useEffect } from "react";
-import { ALL_PROVIDERS } from "../../lib/providers";
+import { ALL_PROVIDERS } from "@flowmaestro/shared";
 import { useConnectionStore } from "../../stores/connectionStore";
 import type { Connection } from "../../lib/api";
 

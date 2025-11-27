@@ -16,16 +16,16 @@ import {
     Pencil
 } from "lucide-react";
 import { useState } from "react";
-import { getWebhookUrl, deleteTrigger, updateTrigger, executeTrigger } from "../../lib/api";
-import { cn } from "../../lib/utils";
-import { wsClient } from "../../lib/websocket";
-import { useWorkflowStore } from "../../stores/workflowStore";
-import {
+import type {
     WorkflowTrigger,
     ScheduleTriggerConfig,
     WebhookTriggerConfig,
     ManualTriggerConfig
-} from "../../types/trigger";
+} from "@flowmaestro/shared";
+import { getWebhookUrl, deleteTrigger, updateTrigger, executeTrigger } from "../../lib/api";
+import { cn } from "../../lib/utils";
+import { wsClient } from "../../lib/websocket";
+import { useWorkflowStore } from "../../stores/workflowStore";
 import { ConfirmDialog } from "../common/ConfirmDialog";
 import { Dialog } from "../common/Dialog";
 

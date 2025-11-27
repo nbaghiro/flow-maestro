@@ -1,6 +1,6 @@
 import { X, Search } from "lucide-react";
 import { useState } from "react";
-import { ALL_PROVIDERS, type Provider } from "../../lib/providers";
+import { ALL_PROVIDERS, type Provider } from "@flowmaestro/shared";
 import { NewConnectionDialog } from "./NewConnectionDialog";
 
 interface AddProviderDialogProps {

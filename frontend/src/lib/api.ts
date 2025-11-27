@@ -2,13 +2,16 @@
  * API Client for FlowMaestro Backend
  */
 
-import type { JsonObject, JsonValue, WorkflowNode, WorkflowEdge } from "@flowmaestro/shared";
 import type {
+    JsonObject,
+    JsonValue,
+    WorkflowNode,
+    WorkflowEdge,
     WorkflowTrigger,
     TriggerWithScheduleInfo,
     CreateTriggerInput,
     UpdateTriggerInput
-} from "../types/trigger";
+} from "@flowmaestro/shared";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 

@@ -1,12 +1,12 @@
 import { Save, Play, Loader2, CheckCircle, XCircle, Settings } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import type { WorkflowTrigger } from "@flowmaestro/shared";
 import { executeTrigger, createTrigger, getTriggers } from "../lib/api";
 import { wsClient } from "../lib/websocket";
 import { useTriggerStore } from "../stores/triggerStore";
 import { useWorkflowStore } from "../stores/workflowStore";
 import { Tooltip } from "./Tooltip";
-import type { WorkflowTrigger } from "../types/trigger";
 
 interface BuilderHeaderProps {
     workflowId?: string;

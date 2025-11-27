@@ -5,7 +5,7 @@
 
 import type { ConnectionMethod } from "./connections";
 
-export interface MCPProvider {
+export interface Provider {
     provider: string;
     displayName: string;
     description: string;
@@ -26,7 +26,7 @@ const getBrandLogo = (domain: string): string =>
  * All Providers - Available and Coming Soon
  * Centralized list of all integrations with MCP server URLs from Pipedream
  */
-export const ALL_PROVIDERS: MCPProvider[] = [
+export const ALL_PROVIDERS: Provider[] = [
     // AI & ML
     {
         provider: "openai",

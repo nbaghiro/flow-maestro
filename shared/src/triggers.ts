@@ -2,7 +2,7 @@
  * Trigger Types and Interfaces
  */
 
-import type { JsonObject, JsonValue } from "@flowmaestro/shared";
+import type { JsonObject, JsonValue } from "./types";
 
 export type TriggerType = "schedule" | "webhook" | "event" | "manual" | "phone_call";
 

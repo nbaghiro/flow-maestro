@@ -1,7 +1,7 @@
 import { Plus, Key, AlertCircle } from "lucide-react";
 import { useEffect, useState } from "react";
+import { ALL_PROVIDERS } from "@flowmaestro/shared";
 import { ConnectionMethod } from "../../lib/api";
-import { ALL_PROVIDERS } from "../../lib/providers";
 import { cn } from "../../lib/utils";
 import { useConnectionStore } from "../../stores/connectionStore";
 import { NewConnectionDialog } from "./NewConnectionDialog";
