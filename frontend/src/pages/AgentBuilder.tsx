@@ -14,7 +14,7 @@ import { Select } from "../components/common/Select";
 import { cn } from "../lib/utils";
 import { useAgentStore } from "../stores/agentStore";
 import { useConnectionStore } from "../stores/connectionStore";
-import type { CreateAgentRequest, UpdateAgentRequest, Tool } from "../lib/api";
+import type { CreateAgentRequest, UpdateAgentRequest, AddToolRequest, Tool } from "../lib/api";
 
 type AgentTab = "build" | "conversations" | "slack" | "settings";
 
@@ -233,6 +233,26 @@ export function AgentBuilder() {
         } catch (error) {
             console.error("Failed to add custom MCP:", error);
             setError(error instanceof Error ? error.message : "Failed to add custom MCP");
+        }
+    };
+
+    const handleAddMCPTools = async (toolsToAdd: AddToolRequest[]) => {
+        if (!currentAgent) return;
+
+        try {
+            // Add each MCP tool
+            for (const tool of toolsToAdd) {
+                await addTool(currentAgent.id, tool);
+            }
+
+            // Update local state from the updated agent
+            if (currentAgent) {
+                setTools(currentAgent.available_tools || []);
+            }
+        } catch (error) {
+            console.error("Failed to add MCP tools:", error);
+            setError(error instanceof Error ? error.message : "Failed to add MCP tools");
+            throw error; // Re-throw so the dialog can handle it
         }
     };
 
@@ -672,6 +692,7 @@ export function AgentBuilder() {
             <AddMCPIntegrationDialog
                 isOpen={isMCPDialogOpen}
                 onClose={() => setIsMCPDialogOpen(false)}
+                onAddTools={handleAddMCPTools}
             />
 
             <AddCustomMCPDialog

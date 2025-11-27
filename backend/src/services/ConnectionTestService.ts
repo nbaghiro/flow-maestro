@@ -1,13 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import OpenAI from "openai";
 import { getDefaultModelForProvider } from "@flowmaestro/shared";
-import {
-    ConnectionWithData,
-    ApiKeyData,
-    OAuth2TokenData,
-    MCPConnectionData
-} from "../storage/models/Connection";
-import { getMCPService } from "./mcp/MCPService";
+import { ConnectionWithData, ApiKeyData, OAuth2TokenData } from "../storage/models/Connection";
 
 export interface ConnectionTestResult {
     success: boolean;
@@ -20,18 +14,11 @@ export interface ConnectionTestResult {
  * Tests connections to verify they're valid and working
  */
 export class ConnectionTestService {
-    private mcpService = getMCPService();
-
     /**
      * Test a connection to verify it's valid
      */
     async testConnection(connection: ConnectionWithData): Promise<ConnectionTestResult> {
         try {
-            // Handle MCP connections
-            if (connection.connection_method === "mcp") {
-                return await this.testMCP(connection);
-            }
-
             // Handle provider-specific tests
             switch (connection.provider) {
                 case "openai":
@@ -67,49 +54,6 @@ export class ConnectionTestService {
                             ? error.message
                             : "Unknown error"
                         : "Unknown error",
-                details: error
-            };
-        }
-    }
-
-    /**
-     * Test MCP connection
-     */
-    private async testMCP(connection: ConnectionWithData): Promise<ConnectionTestResult> {
-        if (!connection.mcp_server_url) {
-            return {
-                success: false,
-                message: "MCP server URL is missing"
-            };
-        }
-
-        const auth = connection.data as MCPConnectionData;
-
-        try {
-            const serverInfo = await this.mcpService.testConnection(
-                connection.mcp_server_url,
-                auth
-            );
-
-            return {
-                success: true,
-                message: "MCP server connected successfully",
-                details: {
-                    server_name: serverInfo.name,
-                    server_version: serverInfo.version,
-                    protocol_version: serverInfo.protocol_version,
-                    capabilities: serverInfo.capabilities
-                }
-            };
-        } catch (error) {
-            return {
-                success: false,
-                message:
-                    error instanceof Error
-                        ? error instanceof Error
-                            ? error.message
-                            : "Unknown error"
-                        : "MCP connection failed",
                 details: error
             };
         }

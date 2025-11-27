@@ -3,9 +3,9 @@
  * These types are shared between frontend and backend for external service connections
  */
 
-import type { JsonSchema, JsonValue } from "./types";
+import type { JsonValue } from "./types";
 
-export type ConnectionMethod = "api_key" | "oauth2" | "mcp" | "basic_auth" | "custom";
+export type ConnectionMethod = "api_key" | "oauth2" | "basic_auth" | "custom";
 export type ConnectionStatus = "active" | "invalid" | "expired" | "revoked";
 
 /**
@@ -57,53 +57,6 @@ export interface CustomHeaderData {
 }
 
 /**
- * MCP (Model Context Protocol) server authentication data
- */
-export interface MCPAuthData {
-    auth_type: "none" | "api_key" | "bearer" | "basic" | "custom";
-    api_key?: string;
-    bearer_token?: string;
-    username?: string;
-    password?: string;
-    custom_headers?: Record<string, string>;
-}
-
-/**
- * MCP tool parameter schema
- */
-export interface MCPToolParameter {
-    name: string;
-    type: string; // "string", "number", "boolean", "object", "array"
-    description?: string;
-    required?: boolean;
-    default?: JsonValue;
-    schema?: JsonSchema; // JSON Schema for complex types
-}
-
-/**
- * MCP tool definition
- */
-export interface MCPTool {
-    name: string;
-    description: string;
-    parameters: MCPToolParameter[];
-    returns?: {
-        type: string;
-        description?: string;
-        schema?: JsonSchema;
-    };
-}
-
-/**
- * MCP server connection data
- */
-export interface MCPConnectionData extends MCPAuthData {
-    server_url: string;
-    protocol?: "http" | "https" | "ws" | "wss";
-    timeout?: number; // Connection timeout in ms
-}
-
-/**
  * Telnyx SIP provider connection data
  */
 export interface TelnyxConnectionData {
@@ -151,7 +104,6 @@ export type ConnectionData =
     | OAuth2TokenData
     | BasicAuthData
     | CustomHeaderData
-    | MCPConnectionData
     | TelnyxConnectionData
     | DatabaseConnectionData;
 
@@ -168,14 +120,6 @@ export interface ConnectionMetadata {
         [key: string]: JsonValue | undefined;
     };
     provider_config?: Record<string, JsonValue>;
-    // MCP-specific metadata
-    mcp_version?: string;
-    mcp_server_info?: {
-        name?: string;
-        version?: string;
-        description?: string;
-        [key: string]: JsonValue | undefined;
-    };
 }
 
 /**
@@ -201,20 +145,11 @@ export interface ConnectionSummary {
     provider: ConnectionProvider;
     status: ConnectionStatus;
     metadata: ConnectionMetadata;
-    mcp_server_url: string | null;
-    mcp_tools: MCPTool[] | null;
     capabilities: ConnectionCapabilities;
     last_tested_at: Date | null;
     last_used_at: Date | null;
     created_at: Date;
     updated_at: Date;
-}
-
-/**
- * Type guard to check if connection data is MCP
- */
-export function isMCPConnectionData(data: ConnectionData): data is MCPConnectionData {
-    return "server_url" in data;
 }
 
 /**

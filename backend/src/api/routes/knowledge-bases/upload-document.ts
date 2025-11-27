@@ -1,6 +1,6 @@
 import * as path from "path";
 import { FastifyInstance } from "fastify";
-import { getGCSStorageService } from "../../../services/storage/GCSStorageService";
+import { getGCSStorageService } from "../../../services/GCSStorageService";
 import { DocumentFileType } from "../../../storage/models/KnowledgeDocument";
 import {
     KnowledgeBaseRepository,

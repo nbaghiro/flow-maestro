@@ -43,12 +43,11 @@ These documents cover the main features of FlowMaestro:
 - Memory management (buffer, summary, vector memory with RAG)
 - Streaming infrastructure (SSE-based real-time token streaming)
 - LLM provider integration (OpenAI, Anthropic, Google, Cohere)
-- Tool execution system (workflows, functions, knowledge bases, MCP)
+- Tool execution system (workflows, functions, knowledge bases, provider MCP tools)
 - RAG system (document processing, chunking, semantic search)
 - Observability & tracing (OpenTelemetry + Jaeger)
 - Agent builder UI
-- MCP integration (client and server)
-- Workflows as MCP tools
+- Provider MCP adapters (auto-exposed tools from OAuth integrations)
 
 **When to read:** Working on agents, adding memory types, integrating LLM providers, building agent tools
 
@@ -64,9 +63,9 @@ These documents cover the main features of FlowMaestro:
 - Core abstractions (BaseProvider, BaseAPIClient, ExecutionRouter)
 - Provider implementation pattern (operations, client, MCP adapter)
 - Connection pooling and performance optimization
-- Authentication methods (API key, OAuth 2.0, MCP)
+- Authentication methods (API key, OAuth 2.0, basic auth, custom)
 - Direct API execution for workflows
-- MCP tool generation for agents
+- Auto-wrapped MCP tools from provider operations
 - Error handling and retry logic
 - Adding new providers (step-by-step guide)
 - Security (AES-256-GCM encryption, multi-tenancy)
@@ -222,7 +221,7 @@ iPaaS platform evaluation for replacing custom OAuth implementation
 | RAG           | [agents.md](./agents.md)                           | RAG (Knowledge Bases)    |
 | Observability | [agents.md](./agents.md)                           | Observability & Tracing  |
 | OAuth         | [integrations-system.md](./integrations-system.md) | Authentication Methods   |
-| MCP           | [integrations-system.md](./integrations-system.md) | Authentication Methods   |
+| MCP Tools     | [integrations-system.md](./integrations-system.md) | MCP Adapter Pattern      |
 | Temporal      | [temporal.md](./temporal.md)                       | All sections             |
 | Deployment    | [infra.md](./infra.md)                             | All sections             |
 | Voice         | [voicecalls.md](./voicecalls.md)                   | All sections             |

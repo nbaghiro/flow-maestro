@@ -7,7 +7,8 @@ import { Agents } from "./pages/Agents";
 import { Analytics } from "./pages/Analytics";
 import { Connections } from "./pages/Connections";
 import { FlowBuilder } from "./pages/FlowBuilder";
-import { KnowledgeBaseList, KnowledgeBaseDetail } from "./pages/KnowledgeBases";
+import { KnowledgeBaseDetail } from "./pages/KnowledgeBaseDetail";
+import { KnowledgeBases } from "./pages/KnowledgeBases";
 import { Login } from "./pages/Login";
 import { Register } from "./pages/Register";
 import { Settings } from "./pages/Settings";
@@ -35,7 +36,7 @@ function App() {
                 <Route path="agents" element={<Agents />} />
                 <Route path="analytics" element={<Analytics />} />
                 <Route path="connections" element={<Connections />} />
-                <Route path="knowledge-bases" element={<KnowledgeBaseList />} />
+                <Route path="knowledge-bases" element={<KnowledgeBases />} />
                 <Route path="knowledge-bases/:id" element={<KnowledgeBaseDetail />} />
                 <Route path="templates" element={<Templates />} />
                 <Route path="settings" element={<Settings />} />

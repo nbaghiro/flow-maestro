@@ -15,8 +15,8 @@ CREATE INDEX IF NOT EXISTS idx_users_google_id ON flowmaestro.users(google_id);
 CREATE INDEX IF NOT EXISTS idx_users_auth_provider ON flowmaestro.users(auth_provider);
 
 -- Make password_hash optional for OAuth users (they don't have passwords)
--- Note: This is a schema change comment - the column is already nullable in practice
--- but we document that OAuth users will have NULL password_hash
+ALTER TABLE flowmaestro.users
+    ALTER COLUMN password_hash DROP NOT NULL;
 
 -- Add check constraint to ensure OAuth users have google_id
 ALTER TABLE flowmaestro.users

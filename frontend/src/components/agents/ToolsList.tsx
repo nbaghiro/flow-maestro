@@ -21,6 +21,8 @@ export function ToolsList({ tools, onRemove, isRemoving }: ToolsListProps) {
                 return "Function";
             case "knowledge_base":
                 return "Knowledge Base";
+            case "mcp":
+                return "MCP";
         }
     };
 

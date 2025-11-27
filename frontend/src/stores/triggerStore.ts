@@ -4,7 +4,7 @@
  */
 
 import { create } from "zustand";
-import type { WorkflowTrigger } from "../types/trigger";
+import type { WorkflowTrigger } from "@flowmaestro/shared";
 
 const MIN_WIDTH = 400;
 const MAX_WIDTH = 800;

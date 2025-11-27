@@ -16,19 +16,38 @@ export async function registerRoute(fastify: FastifyInstance) {
 
             // Check if user already exists
             const existingUser = await userRepository.findByEmail(body.email);
-            if (existingUser) {
-                throw new ValidationError("Email already registered");
-            }
 
             // Hash password
             const passwordHash = await PasswordUtils.hash(body.password);
 
-            // Create user
-            const user = await userRepository.create({
-                email: body.email,
-                password_hash: passwordHash,
-                name: body.name
-            });
+            let user;
+
+            if (existingUser) {
+                // Check if this is a Google-only account (no password set)
+                if (existingUser.auth_provider === "google" && !existingUser.password_hash) {
+                    // Link password to existing Google account
+                    const updatedUser = await userRepository.update(existingUser.id, {
+                        password_hash: passwordHash,
+                        name: body.name || existingUser.name || undefined
+                    });
+
+                    if (!updatedUser) {
+                        throw new ValidationError("Failed to link password to account");
+                    }
+
+                    user = updatedUser;
+                } else {
+                    // User already has a password or is a local account
+                    throw new ValidationError("Email already registered");
+                }
+            } else {
+                // Create new user
+                user = await userRepository.create({
+                    email: body.email,
+                    password_hash: passwordHash,
+                    name: body.name
+                });
+            }
 
             // Generate JWT token
             const token = fastify.jwt.sign({

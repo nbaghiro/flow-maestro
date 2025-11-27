@@ -1,6 +1,6 @@
 import { X, Plus, Check, ExternalLink } from "lucide-react";
 import { useEffect } from "react";
-import { ALL_PROVIDERS } from "../../lib/providers";
+import { ALL_PROVIDERS } from "@flowmaestro/shared";
 import { useConnectionStore } from "../../stores/connectionStore";
 import type { Connection } from "../../lib/api";
 
@@ -217,12 +217,6 @@ function ConnectionCard({
                 {connection.metadata?.account_info?.email && (
                     <p className="text-xs text-gray-600 truncate">
                         {connection.metadata.account_info.email}
-                    </p>
-                )}
-
-                {connection.connection_method === "mcp" && connection.mcp_tools && (
-                    <p className="text-xs text-gray-600 mt-1">
-                        {connection.mcp_tools.length} tools available
                     </p>
                 )}
             </div>

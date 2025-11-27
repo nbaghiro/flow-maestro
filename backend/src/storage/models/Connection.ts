@@ -1,6 +1,6 @@
 /**
  * Connection Model
- * Represents stored connections for external services (API keys, OAuth tokens, MCP servers, etc.)
+ * Represents stored connections for external services (API keys, OAuth tokens, etc.)
  */
 
 import type {
@@ -10,10 +10,6 @@ import type {
     ApiKeyData,
     BasicAuthData,
     CustomHeaderData,
-    MCPAuthData,
-    MCPToolParameter,
-    MCPTool,
-    MCPConnectionData,
     TelnyxConnectionData,
     DatabaseConnectionData,
     ConnectionData,
@@ -21,7 +17,6 @@ import type {
     ConnectionCapabilities
 } from "@flowmaestro/shared";
 import {
-    isMCPConnectionData,
     isOAuth2TokenData,
     isApiKeyData,
     isBasicAuthData,
@@ -37,10 +32,6 @@ export type {
     ApiKeyData,
     BasicAuthData,
     CustomHeaderData,
-    MCPAuthData,
-    MCPToolParameter,
-    MCPTool,
-    MCPConnectionData,
     TelnyxConnectionData,
     DatabaseConnectionData,
     ConnectionData,
@@ -49,7 +40,6 @@ export type {
 };
 
 export {
-    isMCPConnectionData,
     isOAuth2TokenData,
     isApiKeyData,
     isBasicAuthData,
@@ -69,8 +59,6 @@ export interface ConnectionModel {
     encrypted_data: string; // Encrypted JSON string
     metadata: ConnectionMetadata;
     status: ConnectionStatus;
-    mcp_server_url: string | null; // Only for MCP connections
-    mcp_tools: MCPTool[] | null; // Discovered MCP tools
     capabilities: ConnectionCapabilities;
     last_tested_at: Date | null;
     last_used_at: Date | null;
@@ -96,8 +84,6 @@ export interface CreateConnectionInput {
     data: ConnectionData; // Will be encrypted before storage
     metadata?: ConnectionMetadata;
     status?: ConnectionStatus;
-    mcp_server_url?: string; // Required if connection_method === 'mcp'
-    mcp_tools?: MCPTool[];
     capabilities?: ConnectionCapabilities;
 }
 
@@ -109,7 +95,6 @@ export interface UpdateConnectionInput {
     data?: ConnectionData; // Will be encrypted before storage
     metadata?: ConnectionMetadata;
     status?: ConnectionStatus;
-    mcp_tools?: MCPTool[]; // Can update discovered tools
     capabilities?: ConnectionCapabilities;
 }
 
@@ -123,8 +108,6 @@ export interface ConnectionSummary {
     provider: string;
     status: ConnectionStatus;
     metadata: ConnectionMetadata;
-    mcp_server_url: string | null;
-    mcp_tools: MCPTool[] | null;
     capabilities: ConnectionCapabilities;
     last_tested_at: Date | null;
     last_used_at: Date | null;

@@ -153,6 +153,12 @@ LINEAR_CLIENT_ID=$(get_secret "flowmaestro-app-linear-client-id" "")
 LINEAR_CLIENT_SECRET=$(get_secret "flowmaestro-app-linear-client-secret" "")
 FIGMA_CLIENT_ID=$(get_secret "flowmaestro-app-figma-client-id" "")
 FIGMA_CLIENT_SECRET=$(get_secret "flowmaestro-app-figma-client-secret" "")
+MICROSOFT_CLIENT_ID=$(get_secret "flowmaestro-app-microsoft-client-id" "")
+MICROSOFT_CLIENT_SECRET=$(get_secret "flowmaestro-app-microsoft-client-secret" "")
+META_APP_ID=$(get_secret "flowmaestro-app-meta-app-id" "")
+META_APP_SECRET=$(get_secret "flowmaestro-app-meta-app-secret" "")
+META_CLIENT_TOKEN=$(get_secret "flowmaestro-app-meta-client-token" "")
+META_WEBHOOK_VERIFY_TOKEN=$(get_secret "flowmaestro-app-meta-webhook-verify-token" "")
 
 print_success "Developer secrets fetched successfully"
 
@@ -339,6 +345,36 @@ else
     echo "" >> "$BACKEND_ENV_FILE"
 fi
 
+# Microsoft OAuth (OneDrive, Excel, Word, Teams, Outlook, etc.)
+if [ -n "$MICROSOFT_CLIENT_ID" ] || [ -n "$MICROSOFT_CLIENT_SECRET" ]; then
+    echo "# Microsoft (OneDrive, Excel, Word, Teams, Outlook, etc.)" >> "$BACKEND_ENV_FILE"
+    echo "MICROSOFT_CLIENT_ID=${MICROSOFT_CLIENT_ID}" >> "$BACKEND_ENV_FILE"
+    echo "MICROSOFT_CLIENT_SECRET=${MICROSOFT_CLIENT_SECRET}" >> "$BACKEND_ENV_FILE"
+    echo "" >> "$BACKEND_ENV_FILE"
+else
+    echo "# Microsoft (OneDrive, Excel, Word, Teams, Outlook, etc.)" >> "$BACKEND_ENV_FILE"
+    echo "MICROSOFT_CLIENT_ID=" >> "$BACKEND_ENV_FILE"
+    echo "MICROSOFT_CLIENT_SECRET=" >> "$BACKEND_ENV_FILE"
+    echo "" >> "$BACKEND_ENV_FILE"
+fi
+
+# Meta Platform OAuth (WhatsApp, Instagram, Messenger, Facebook Ads)
+if [ -n "$META_APP_ID" ] || [ -n "$META_APP_SECRET" ]; then
+    echo "# Meta Platform (WhatsApp, Instagram, Messenger, Facebook Ads)" >> "$BACKEND_ENV_FILE"
+    echo "META_APP_ID=${META_APP_ID}" >> "$BACKEND_ENV_FILE"
+    echo "META_APP_SECRET=${META_APP_SECRET}" >> "$BACKEND_ENV_FILE"
+    echo "META_CLIENT_TOKEN=${META_CLIENT_TOKEN}" >> "$BACKEND_ENV_FILE"
+    echo "META_WEBHOOK_VERIFY_TOKEN=${META_WEBHOOK_VERIFY_TOKEN}" >> "$BACKEND_ENV_FILE"
+    echo "" >> "$BACKEND_ENV_FILE"
+else
+    echo "# Meta Platform (WhatsApp, Instagram, Messenger, Facebook Ads)" >> "$BACKEND_ENV_FILE"
+    echo "META_APP_ID=" >> "$BACKEND_ENV_FILE"
+    echo "META_APP_SECRET=" >> "$BACKEND_ENV_FILE"
+    echo "META_CLIENT_TOKEN=" >> "$BACKEND_ENV_FILE"
+    echo "META_WEBHOOK_VERIFY_TOKEN=" >> "$BACKEND_ENV_FILE"
+    echo "" >> "$BACKEND_ENV_FILE"
+fi
+
 cat >> "$BACKEND_ENV_FILE" << EOF
 
 # ==============================================================================
@@ -379,15 +415,64 @@ EOF
 
 print_success "backend/.env file created"
 
+# ==============================================================================
+# GCS Service Account Key Setup
+# ==============================================================================
+# Pulls the service account key from Secret Manager for local GCS access.
+# This avoids RAPT token expiration issues that occur with user credentials.
+# The key is created by Pulumi and stored in Secret Manager.
+
+print_header "Setting up GCS Authentication"
+
+GCS_KEY_SECRET_NAME="flowmaestro-storage-sa-key"
+GCS_KEY_FILE="${HOME}/.config/gcloud/flowmaestro-storage-key.json"
+
+# Try to pull the key from Secret Manager
+print_info "Fetching GCS service account key from Secret Manager..."
+
+GCS_KEY_JSON=$(gcloud secrets versions access latest \
+    --secret="${GCS_KEY_SECRET_NAME}" \
+    --project="${GCP_PROJECT}" 2>/dev/null || echo "")
+
+if [ -n "$GCS_KEY_JSON" ]; then
+    # Ensure the directory exists
+    mkdir -p "$(dirname "$GCS_KEY_FILE")"
+
+    # Write the key file
+    echo "$GCS_KEY_JSON" > "$GCS_KEY_FILE"
+    chmod 600 "$GCS_KEY_FILE"
+
+    print_success "Service account key saved to ${GCS_KEY_FILE}"
+
+    # Add GOOGLE_APPLICATION_CREDENTIALS to .env
+    echo "" >> "$BACKEND_ENV_FILE"
+    echo "# GCS Authentication (Service Account Key - avoids RAPT token expiration)" >> "$BACKEND_ENV_FILE"
+    echo "GOOGLE_APPLICATION_CREDENTIALS=${GCS_KEY_FILE}" >> "$BACKEND_ENV_FILE"
+
+    print_success "Added GOOGLE_APPLICATION_CREDENTIALS to .env"
+    GCS_KEY_CONFIGURED="true"
+else
+    print_warn "GCS service account key not found in Secret Manager"
+    print_info "The key will be created when you run 'pulumi up' in infra/pulumi"
+    print_info "After that, re-run this script to fetch the key"
+    print_info "For now, GCS will use 'gcloud auth application-default login' credentials"
+    GCS_KEY_CONFIGURED=""
+fi
+
 print_header "Secrets Sync Complete!"
 print_success "backend/.env created with:"
 echo "  • System secrets (database, JWT, encryption): Local defaults"
 echo "  • Developer secrets (LLM keys, OAuth): From ${GCP_PROJECT}"
+if [ -n "$GCS_KEY_CONFIGURED" ]; then
+    echo "  • GCS authentication: Service account key configured"
+else
+    echo "  • GCS authentication: Using gcloud credentials (may require re-auth)"
+fi
 echo ""
 print_info "Next steps:"
 echo "  1. Start your local infrastructure: npm run docker:up"
 echo "  2. Run database migrations: npm run db:migrate"
 echo "  3. Start the development servers: npm run dev"
 echo ""
-print_warn "Remember: Never commit .env files to git!"
+print_warn "Remember: Never commit .env files or service account keys to git!"
 echo ""

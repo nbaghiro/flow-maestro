@@ -1,5 +1,5 @@
 import { FastifyInstance } from "fastify";
-import { getGCSStorageService } from "../../../services/storage/GCSStorageService";
+import { getGCSStorageService } from "../../../services/GCSStorageService";
 import {
     KnowledgeBaseRepository,
     KnowledgeDocumentRepository

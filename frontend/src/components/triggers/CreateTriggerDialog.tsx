@@ -5,9 +5,9 @@
 
 import { X, Calendar, Webhook, Play, Phone } from "lucide-react";
 import { useState } from "react";
+import type { TriggerType, CreateTriggerInput } from "@flowmaestro/shared";
 import { createTrigger } from "../../lib/api";
 import { Select } from "../common/Select";
-import type { TriggerType, CreateTriggerInput } from "../../types/trigger";
 
 interface CreateTriggerDialogProps {
     workflowId: string;

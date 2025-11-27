@@ -3,8 +3,8 @@ import jwt from "@fastify/jwt";
 import multipart from "@fastify/multipart";
 import websocket from "@fastify/websocket";
 import Fastify from "fastify";
+import { analyticsScheduler } from "../services/AnalyticsService";
 import { credentialRefreshScheduler } from "../services/oauth/CredentialRefreshScheduler";
-import { analyticsScheduler } from "../shared/analytics/analytics-scheduler";
 import { config } from "../shared/config";
 import { redisEventBus } from "../shared/events/RedisEventBus";
 import { initializeSpanService, getSpanService } from "../shared/observability";
@@ -19,12 +19,12 @@ import { connectionRoutes } from "./routes/connections";
 import { executionRoutes } from "./routes/executions";
 import { integrationRoutes } from "./routes/integrations";
 import { knowledgeBaseRoutes } from "./routes/knowledge-bases";
-import { mcpRoutes } from "./routes/mcp";
 import { nodeRoutes } from "./routes/nodes";
 import { oauthRoutes } from "./routes/oauth";
 import { threadRoutes } from "./routes/threads";
 import { triggerRoutes } from "./routes/triggers";
 import { versionRoutes } from "./routes/versions";
+import { webhookRoutes } from "./routes/webhooks";
 import { websocketRoutes } from "./routes/websocket";
 import { workflowRoutes } from "./routes/workflows";
 
@@ -69,6 +69,16 @@ export async function buildServer() {
     await fastify.register(multipart, {
         limits: {
             fileSize: 50 * 1024 * 1024 // 50MB limit
+        }
+    });
+
+    // Configure JSON parser to allow empty bodies
+    fastify.addContentTypeParser("application/json", { parseAs: "string" }, (_req, body, done) => {
+        try {
+            const json = body === "" || body === "{}" ? {} : JSON.parse(body as string);
+            done(null, json);
+        } catch (err) {
+            done(err as Error, undefined);
         }
     });
 
@@ -127,8 +137,8 @@ export async function buildServer() {
     await fastify.register(knowledgeBaseRoutes, { prefix: "/api/knowledge-bases" });
     await fastify.register(agentRoutes, { prefix: "/api/agents" });
     await fastify.register(threadRoutes, { prefix: "/api/threads" });
-    await fastify.register(mcpRoutes, { prefix: "/api/mcp" });
     await fastify.register(triggerRoutes, { prefix: "/api" });
+    await fastify.register(webhookRoutes, { prefix: "/api/webhooks" });
     await fastify.register(analyticsRoutes);
     await fastify.register(websocketRoutes);
 

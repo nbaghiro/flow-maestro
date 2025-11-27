@@ -6,10 +6,7 @@ import {
     updateConnection,
     deleteConnection,
     testConnectionBeforeSave,
-    discoverMCPTools,
-    refreshMCPTools,
-    CreateConnectionInput,
-    MCPDiscoveryRequest
+    CreateConnectionInput
 } from "../lib/api";
 import type { Connection, ConnectionMethod, ConnectionStatus } from "../lib/api";
 
@@ -32,12 +29,6 @@ interface ConnectionStore {
     getByProvider: (provider: string) => Connection[];
     getByMethod: (method: ConnectionMethod) => Connection[];
     clearError: () => void;
-
-    // MCP-specific actions
-    discoverMCPTools: (
-        request: MCPDiscoveryRequest
-    ) => Promise<{ tools: unknown[]; server_info: unknown }>;
-    refreshMCPToolsById: (id: string) => Promise<void>;
 }
 
 export const useConnectionStore = create<ConnectionStore>((set, get) => ({
@@ -176,46 +167,6 @@ export const useConnectionStore = create<ConnectionStore>((set, get) => ({
 
     getByMethod: (method) => {
         return get().connections.filter((conn) => conn.connection_method === method);
-    },
-
-    discoverMCPTools: async (request) => {
-        try {
-            const response = await discoverMCPTools(request);
-            if (response.success && response.data) {
-                return {
-                    tools: response.data.tools,
-                    server_info: response.data.server_info
-                };
-            }
-            throw new Error("Failed to discover MCP tools");
-        } catch (error) {
-            set({
-                error: error instanceof Error ? error.message : "Failed to discover MCP tools"
-            });
-            throw error;
-        }
-    },
-
-    refreshMCPToolsById: async (id) => {
-        set({ loading: true, error: null });
-        try {
-            const response = await refreshMCPTools(id);
-            if (response.success && response.data) {
-                // Update the connection with refreshed tools
-                set((state) => ({
-                    connections: state.connections.map((conn) =>
-                        conn.id === id ? { ...conn, mcp_tools: response.data.tools } : conn
-                    ),
-                    loading: false
-                }));
-            }
-        } catch (error) {
-            set({
-                error: error instanceof Error ? error.message : "Failed to refresh MCP tools",
-                loading: false
-            });
-            throw error;
-        }
     },
 
     clearError: () => set({ error: null })

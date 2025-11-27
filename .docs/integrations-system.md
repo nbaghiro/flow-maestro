@@ -64,7 +64,7 @@ backend/src/integrations/core/
 
 - Single entry point for all executions
 - Context-aware routing (workflow vs agent)
-- Handles native MCP servers and SDK providers
+- Routes to SDK provider MCP adapters for agent tool execution
 
 ---
 
@@ -195,21 +195,6 @@ interface OperationDefinition {
 
 ---
 
-### Native MCP Server Path
-
-For connections with `mcp_server_url` (postgres, filesystem, custom):
-
-```
-1. ExecutionRouter detects native MCP connection
-2. Routes to MCPService.executeTool()
-3. Makes HTTP/WebSocket call to external MCP server
-4. Returns result
-```
-
-No provider SDK needed - just proxies to external server.
-
----
-
 ## Connection Storage
 
 ### Database Schema
@@ -219,16 +204,14 @@ CREATE TABLE flowmaestro.connections (
     id UUID PRIMARY KEY,
     user_id UUID NOT NULL REFERENCES users(id),
     name VARCHAR(255) NOT NULL,
-    connection_method VARCHAR(50) NOT NULL,  -- 'api_key', 'oauth2', 'mcp'
+    connection_method VARCHAR(50) NOT NULL,  -- 'api_key', 'oauth2', 'basic_auth', 'custom'
     provider VARCHAR(100) NOT NULL,          -- 'slack', 'openai', 'coda', etc.
     encrypted_data TEXT NOT NULL,            -- AES-256-GCM encrypted JSON
     metadata JSONB DEFAULT '{}',
     status VARCHAR(50) DEFAULT 'active',
+    capabilities JSONB DEFAULT '{}',
 
-    -- MCP-specific (nullable)
-    mcp_server_url TEXT,
-    mcp_tools JSONB,
-
+    last_tested_at TIMESTAMP,
     last_used_at TIMESTAMP,
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW(),
@@ -260,11 +243,15 @@ interface OAuth2TokenData {
     scope: string[];
 }
 
-// MCP
-interface MCPConnectionData {
-    server_url: string;
-    auth_type: "none" | "api_key" | "bearer" | "basic";
-    // Auth credentials based on type
+// Basic Auth
+interface BasicAuthData {
+    username: string;
+    password: string;
+}
+
+// Custom Headers
+interface CustomHeaderData {
+    headers: Record<string, string>;
 }
 ```
 
@@ -591,36 +578,6 @@ GOOGLE_CLIENT_SECRET=xxxxx
 
 ---
 
-### Model Context Protocol (MCP)
-
-**For tool servers, NOT AI providers**
-
-**Data structure:**
-
-```typescript
-{
-    server_url: string;
-    auth_type: "none" | "api_key" | "bearer" | "basic";
-    // Auth credentials based on type
-}
-```
-
-**Supported servers:** Filesystem, PostgreSQL, MongoDB, GitHub, custom
-
-**Tool discovery:**
-
-- Connect to MCP server
-- Discover available tools
-- Store in `mcp_tools` JSONB column
-- Refresh on demand
-
-**Execution:**
-
-- RESTful: `POST /tools/{toolName}/execute`
-- JSON-RPC: `POST /rpc` with `{"method": "tools.execute"}`
-
----
-
 ## Usage in Workflows
 
 Connections referenced by ID in node configurations:
@@ -674,13 +631,18 @@ Agents configured with default LLM connection:
 
 ### Agent Tools with Connections
 
-**MCP Tool:**
+Agents can use provider MCP adapters to access tools from connected integrations:
+
+**Provider Tool:**
 
 ```typescript
 {
-    type: "mcp",
-    name: "query_database",
-    config: { connectionId: "postgres-mcp-uuid" }
+    type: "provider_mcp",
+    name: "slack_sendMessage",
+    config: {
+        provider: "slack",
+        connectionId: "uuid"
+    }
 }
 ```
 
@@ -688,7 +650,8 @@ Agents configured with default LLM connection:
 
 ```typescript
 const connection = await connectionRepo.findByIdWithData(tool.config.connectionId);
-return await mcpService.executeTool(connection, toolCall.name, toolCall.arguments);
+const provider = providerRegistry.getProvider(tool.config.provider);
+return await provider.executeMCPTool(tool.name, toolCall.arguments, connection);
 ```
 
 ---
@@ -794,14 +757,6 @@ POST /api/oauth/:provider/revoke         # Revoke token
 GET /api/oauth/providers                 # List OAuth providers
 GET /api/oauth/scheduler/status          # Get refresh scheduler status
 POST /api/oauth/scheduler/refresh        # Trigger manual refresh cycle
-```
-
-### MCP Endpoints
-
-```http
-POST /api/connections/mcp/discover       # Discover tools
-GET /api/connections/mcp/providers       # List MCP providers
-POST /api/connections/:id/refresh-tools  # Refresh tools
 ```
 
 ---

@@ -53,6 +53,7 @@ export async function loginRoute(fastify: FastifyInstance) {
                         name: user.name,
                         avatar_url: user.avatar_url,
                         google_id: user.google_id,
+                        microsoft_id: user.microsoft_id,
                         has_password: !!user.password_hash
                     },
                     token

@@ -3,7 +3,11 @@ import { ReactNode, useState, useEffect } from "react";
 import { Handle, Position, useNodeId, useStore } from "reactflow";
 import { NodeExecutionPopover } from "../../components/execution/NodeExecutionPopover";
 import { cn } from "../../lib/utils";
-import { useWorkflowStore } from "../../stores/workflowStore";
+import {
+    useWorkflowStore,
+    INITIAL_NODE_WIDTH,
+    INITIAL_NODE_HEIGHT
+} from "../../stores/workflowStore";
 
 export type NodeStatus = "idle" | "pending" | "running" | "success" | "error";
 
@@ -19,9 +23,6 @@ interface BaseNodeProps {
     customHandles?: ReactNode;
     onStatusClick?: () => void;
 }
-
-const INITIAL_NODE_WIDTH = 260;
-const INITIAL_NODE_HEIGHT = 140;
 
 const statusConfig: Record<NodeStatus, { color: string; label: string }> = {
     idle: { color: "bg-gray-300", label: "Idle" },

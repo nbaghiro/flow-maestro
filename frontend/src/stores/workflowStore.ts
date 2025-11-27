@@ -5,8 +5,8 @@ import { getErrorMessage } from "@flowmaestro/shared";
 import { executeWorkflow as executeWorkflowAPI, generateWorkflow } from "../lib/api";
 import { convertToReactFlowFormat } from "../lib/workflowLayout";
 
-const INITIAL_NODE_WIDTH = 260;
-const INITIAL_NODE_HEIGHT = 140;
+export const INITIAL_NODE_WIDTH = 260;
+export const INITIAL_NODE_HEIGHT = 160;
 
 export type NodeExecutionStatus = "idle" | "pending" | "running" | "success" | "error" | "skipped";
 

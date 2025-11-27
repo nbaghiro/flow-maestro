@@ -5,7 +5,7 @@
 
 import type { ConnectionMethod } from "./connections";
 
-export interface MCPProvider {
+export interface Provider {
     provider: string;
     displayName: string;
     description: string;
@@ -26,7 +26,7 @@ const getBrandLogo = (domain: string): string =>
  * All Providers - Available and Coming Soon
  * Centralized list of all integrations with MCP server URLs from Pipedream
  */
-export const ALL_PROVIDERS: MCPProvider[] = [
+export const ALL_PROVIDERS: Provider[] = [
     // AI & ML
     {
         provider: "openai",
@@ -93,8 +93,7 @@ export const ALL_PROVIDERS: MCPProvider[] = [
         description: "Team collaboration and messaging",
         logoUrl: getBrandLogo("teams.microsoft.com"),
         category: "Communication",
-        methods: ["oauth2"],
-        comingSoon: true
+        methods: ["oauth2"]
     },
     {
         provider: "outlook",
@@ -108,20 +107,18 @@ export const ALL_PROVIDERS: MCPProvider[] = [
     {
         provider: "microsoft-excel",
         displayName: "Microsoft Excel",
-        description: "Spreadsheet application",
+        description: "Spreadsheet automation and data processing",
         logoUrl: getBrandLogo("microsoft.com/excel"),
         category: "Productivity",
-        methods: ["oauth2"],
-        comingSoon: true
+        methods: ["oauth2"]
     },
     {
         provider: "microsoft-word",
         displayName: "Microsoft Word",
-        description: "Document editing application",
+        description: "Document creation and editing",
         logoUrl: getBrandLogo("microsoft.com/word"),
         category: "Productivity",
-        methods: ["oauth2"],
-        comingSoon: true
+        methods: ["oauth2"]
     },
     {
         provider: "microsoft-powerpoint",
@@ -138,8 +135,7 @@ export const ALL_PROVIDERS: MCPProvider[] = [
         description: "Send WhatsApp messages via API",
         logoUrl: getBrandLogo("whatsapp.com"),
         category: "Communication",
-        methods: ["api_key"],
-        comingSoon: true
+        methods: ["oauth2"]
     },
 
     // Productivity & Collaboration
@@ -389,13 +385,12 @@ export const ALL_PROVIDERS: MCPProvider[] = [
         comingSoon: true
     },
     {
-        provider: "onedrive",
-        displayName: "OneDrive",
-        description: "Microsoft cloud storage",
+        provider: "microsoft-onedrive",
+        displayName: "Microsoft OneDrive",
+        description: "Cloud file storage and sync",
         logoUrl: getBrandLogo("onedrive.live.com"),
         category: "File Storage",
-        methods: ["oauth2"],
-        comingSoon: true
+        methods: ["oauth2"]
     },
 
     // Social Media
@@ -420,20 +415,18 @@ export const ALL_PROVIDERS: MCPProvider[] = [
     {
         provider: "facebook",
         displayName: "Facebook",
-        description: "Post and manage pages",
+        description: "Send messages and manage pages via Messenger",
         logoUrl: getBrandLogo("facebook.com"),
         category: "Social Media",
-        methods: ["oauth2"],
-        comingSoon: true
+        methods: ["oauth2"]
     },
     {
         provider: "instagram",
         displayName: "Instagram",
-        description: "Post content and manage account",
+        description: "Send messages and publish content",
         logoUrl: getBrandLogo("instagram.com"),
         category: "Social Media",
-        methods: ["oauth2"],
-        comingSoon: true
+        methods: ["oauth2"]
     },
 
     // Analytics
@@ -1087,8 +1080,7 @@ export const ALL_PROVIDERS: MCPProvider[] = [
         description: "Email service and automation",
         logoUrl: getBrandLogo("gmail.com"),
         category: "Communication",
-        methods: ["oauth2"],
-        comingSoon: true
+        methods: ["oauth2"]
     },
     {
         provider: "google-calendar",
@@ -1463,8 +1455,7 @@ export const ALL_PROVIDERS: MCPProvider[] = [
         description: "NoSQL database platform",
         logoUrl: getBrandLogo("mongodb.com"),
         category: "Databases",
-        methods: ["api_key"],
-        comingSoon: true
+        methods: ["api_key"]
     },
     {
         provider: "postgresql",

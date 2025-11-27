@@ -844,7 +844,7 @@ async function executeKnowledgeBaseTool(input: ExecuteKnowledgeBaseToolInput): P
     const { KnowledgeChunkRepository } = await import(
         "../../../storage/repositories/KnowledgeChunkRepository"
     );
-    const { EmbeddingService } = await import("../../../services/embeddings/EmbeddingService");
+    const { EmbeddingService } = await import("../../../services/EmbeddingService");
 
     const kbRepo = new KnowledgeBaseRepository();
     const chunkRepo = new KnowledgeChunkRepository();

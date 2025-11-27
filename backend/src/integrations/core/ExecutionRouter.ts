@@ -6,17 +6,13 @@ import type {
     ExecutionContext,
     OperationSummary
 } from "./types";
-import type { MCPService } from "../../services/mcp/MCPService";
 import type { ConnectionWithData } from "../../storage/models/Connection";
 
 /**
  * Execution Router - intelligently routes requests to direct API or MCP
  */
 export class ExecutionRouter {
-    constructor(
-        private providerRegistry: ProviderRegistry,
-        private mcpService?: MCPService
-    ) {}
+    constructor(private providerRegistry: ProviderRegistry) {}
 
     /**
      * Execute operation (direct API or MCP based on context)
@@ -55,7 +51,7 @@ export class ExecutionRouter {
     }
 
     /**
-     * Execute via MCP (for agents or native MCP connections)
+     * Execute via MCP (for agents using provider's MCP adapter)
      */
     private async executeMCP(
         provider: IProvider,
@@ -63,26 +59,14 @@ export class ExecutionRouter {
         params: Record<string, unknown>,
         connection: ConnectionWithData
     ): Promise<OperationResult> {
-        // Check if this is a native MCP server connection
-        if (connection.mcp_server_url && this.mcpService) {
-            // Call external MCP server
-            const toolName = `${provider.name}_${operationId}`;
-            const result = await this.mcpService.executeTool(connection, toolName, params);
+        // Use provider's MCP adapter (in-process)
+        const toolName = `${provider.name}_${operationId}`;
+        const result = await provider.executeMCPTool(toolName, params, connection);
 
-            return {
-                success: true,
-                data: result
-            };
-        } else {
-            // Use provider's MCP adapter (in-process)
-            const toolName = `${provider.name}_${operationId}`;
-            const result = await provider.executeMCPTool(toolName, params, connection);
-
-            return {
-                success: true,
-                data: result
-            };
-        }
+        return {
+            success: true,
+            data: result
+        };
     }
 
     /**
@@ -90,14 +74,9 @@ export class ExecutionRouter {
      */
     private shouldUseMCP(
         provider: IProvider,
-        connection: ConnectionWithData,
+        _connection: ConnectionWithData,
         context: ExecutionContext
     ): boolean {
-        // Use MCP if connection is a native MCP server
-        if (connection.mcp_server_url) {
-            return true;
-        }
-
         // Use MCP if context is agent-based
         if (context.mode === "agent") {
             return true;

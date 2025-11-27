@@ -1,4 +1,4 @@
-import { ArrowLeft, X, Eye, EyeOff, Shield, Key, Blocks } from "lucide-react";
+import { ArrowLeft, X, Eye, EyeOff, Shield, Key } from "lucide-react";
 import React, { useState, useEffect, useCallback } from "react";
 import type { JsonObject } from "@flowmaestro/shared";
 import { useOAuth } from "../../hooks/useOAuth";
@@ -14,11 +14,9 @@ interface NewConnectionDialogProps {
     onSuccess?: () => void;
     supportsOAuth?: boolean;
     supportsApiKey?: boolean;
-    supportsMCP?: boolean;
-    mcpServerUrl?: string;
 }
 
-type DialogStep = "method-selection" | "api-key-form" | "mcp-form" | "database-form";
+type DialogStep = "method-selection" | "api-key-form" | "database-form";
 
 /**
  * New Connection Dialog with StackAI-style design
@@ -35,18 +33,14 @@ export function NewConnectionDialog({
     providerIcon,
     onSuccess,
     supportsOAuth = true,
-    supportsApiKey = true,
-    supportsMCP = false,
-    mcpServerUrl
+    supportsApiKey = true
 }: NewConnectionDialogProps) {
     const [step, setStep] = useState<DialogStep>("method-selection");
     const [connectionName, setConnectionName] = useState<string>(
         `${providerDisplayName} Connection`
     );
     const [apiKey, setApiKey] = useState<string>("");
-    const [mcpAuthKey, setMcpAuthKey] = useState<string>("");
     const [showApiKey, setShowApiKey] = useState<boolean>(false);
-    const [showMcpAuthKey, setShowMcpAuthKey] = useState<boolean>(false);
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
     const [oauthInitiated, setOauthInitiated] = useState<boolean>(false);
@@ -72,9 +66,7 @@ export function NewConnectionDialog({
         setStep("method-selection");
         setConnectionName(`${providerDisplayName} Connection`);
         setApiKey("");
-        setMcpAuthKey("");
         setShowApiKey(false);
-        setShowMcpAuthKey(false);
         setError(null);
         setIsSubmitting(false);
         setOauthInitiated(false);
@@ -139,20 +131,16 @@ export function NewConnectionDialog({
             return;
         }
 
-        const methodCount =
-            (supportsOAuth ? 1 : 0) + (supportsApiKey ? 1 : 0) + (supportsMCP ? 1 : 0);
+        const methodCount = (supportsOAuth ? 1 : 0) + (supportsApiKey ? 1 : 0);
 
         // If only one method is supported, auto-select it (but don't auto-trigger OAuth)
         if (methodCount === 1) {
-            if (supportsOAuth && !supportsApiKey && !supportsMCP) {
+            if (supportsOAuth && !supportsApiKey) {
                 // Show OAuth button (don't auto-trigger popup)
                 setStep("method-selection");
-            } else if (supportsApiKey && !supportsOAuth && !supportsMCP) {
+            } else if (supportsApiKey && !supportsOAuth) {
                 // Auto-show API Key form
                 setStep("api-key-form");
-            } else if (supportsMCP && !supportsOAuth && !supportsApiKey) {
-                // Auto-show MCP form
-                setStep("mcp-form");
             }
         } else {
             // Multiple methods supported, show selection
@@ -160,14 +148,10 @@ export function NewConnectionDialog({
         }
 
         return;
-    }, [isOpen, supportsOAuth, supportsApiKey, supportsMCP, oauthInitiated, isDatabaseProvider]);
+    }, [isOpen, supportsOAuth, supportsApiKey, oauthInitiated, isDatabaseProvider]);
 
     const handleApiKeySelect = () => {
         setStep("api-key-form");
-    };
-
-    const handleMCPSelect = () => {
-        setStep("mcp-form");
     };
 
     const handleDatabaseSelect = () => {
@@ -218,44 +202,6 @@ export function NewConnectionDialog({
             handleClose();
         } catch (err) {
             setError(err instanceof Error ? err.message : "Failed to create connection");
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
-
-    const handleMCPSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-
-        if (!connectionName.trim()) {
-            setError("Connection name is required");
-            return;
-        }
-
-        setIsSubmitting(true);
-        setError(null);
-
-        try {
-            const data: JsonObject = {
-                server_url: mcpServerUrl || ""
-            };
-
-            // Only include auth_key if it's provided
-            if (mcpAuthKey.trim()) {
-                data.auth_key = mcpAuthKey.trim();
-            }
-
-            const input: CreateConnectionInput = {
-                name: connectionName,
-                connection_method: "mcp",
-                provider,
-                data
-            };
-
-            await addConnection(input);
-            if (onSuccess) onSuccess();
-            handleClose();
-        } catch (err) {
-            setError(err instanceof Error ? err.message : "Failed to create MCP connection");
         } finally {
             setIsSubmitting(false);
         }
@@ -340,7 +286,7 @@ export function NewConnectionDialog({
                 {/* Header */}
                 <div className="flex items-center justify-between p-6 pb-4 border-b border-gray-200">
                     <div className="flex items-center gap-3">
-                        {(step === "api-key-form" || step === "mcp-form") && (
+                        {step === "api-key-form" && (
                             <button
                                 onClick={handleBackToMethodSelection}
                                 className="text-gray-600 hover:text-gray-900 transition-colors"
@@ -445,33 +391,6 @@ export function NewConnectionDialog({
                                     </div>
                                 </button>
                             )}
-
-                            {supportsMCP && (
-                                <button
-                                    onClick={handleMCPSelect}
-                                    className="w-full p-4 text-left border border-gray-200 rounded-lg hover:border-purple-500 hover:bg-purple-50 transition-colors"
-                                    type="button"
-                                >
-                                    <div className="flex items-start gap-3">
-                                        <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                                            <Blocks className="w-5 h-5 text-purple-700" />
-                                        </div>
-                                        <div className="flex-1">
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <span className="font-medium text-gray-900">
-                                                    MCP Server
-                                                </span>
-                                                <span className="px-2 py-0.5 text-xs font-medium text-purple-700 bg-purple-100 rounded border border-purple-200">
-                                                    MCP
-                                                </span>
-                                            </div>
-                                            <p className="text-sm text-gray-600">
-                                                Connect to Model Context Protocol server
-                                            </p>
-                                        </div>
-                                    </div>
-                                </button>
-                            )}
                         </div>
                     )}
 
@@ -565,91 +484,6 @@ export function NewConnectionDialog({
                                     className="px-6 py-2 text-sm font-medium text-white bg-black rounded-md hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                 >
                                     {isSubmitting ? "Creating..." : "Create connection"}
-                                </button>
-                            </div>
-                        </form>
-                    )}
-
-                    {/* MCP Form */}
-                    {step === "mcp-form" && (
-                        <form onSubmit={handleMCPSubmit} className="space-y-4">
-                            {/* Connection Name */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Connection Name <span className="text-red-500">*</span>
-                                </label>
-                                <p className="text-xs text-gray-500 mb-2">
-                                    Give your MCP connection a friendly name
-                                </p>
-                                <input
-                                    type="text"
-                                    value={connectionName}
-                                    onChange={(e) => setConnectionName(e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition-colors"
-                                    placeholder={`${providerDisplayName} MCP Connection`}
-                                    required
-                                />
-                            </div>
-
-                            {/* MCP Server URL (read-only) */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    MCP Server URL
-                                </label>
-                                <p className="text-xs text-gray-500 mb-2">
-                                    Server URL from MCP registry
-                                </p>
-                                <input
-                                    type="text"
-                                    value={mcpServerUrl || ""}
-                                    readOnly
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-600"
-                                />
-                            </div>
-
-                            {/* Authentication Key (Optional) */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Authentication Key{" "}
-                                    <span className="text-gray-400">(Optional)</span>
-                                </label>
-                                <div className="relative">
-                                    <input
-                                        type={showMcpAuthKey ? "text" : "password"}
-                                        value={mcpAuthKey}
-                                        onChange={(e) => setMcpAuthKey(e.target.value)}
-                                        className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition-colors"
-                                        placeholder="Enter authentication key if required"
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowMcpAuthKey(!showMcpAuthKey)}
-                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-                                    >
-                                        {showMcpAuthKey ? (
-                                            <EyeOff className="w-4 h-4" />
-                                        ) : (
-                                            <Eye className="w-4 h-4" />
-                                        )}
-                                    </button>
-                                </div>
-                            </div>
-
-                            {/* Error Message */}
-                            {error && (
-                                <div className="p-3 bg-red-50 border border-red-200 rounded-md">
-                                    <p className="text-sm text-red-800">{error}</p>
-                                </div>
-                            )}
-
-                            {/* Submit Button */}
-                            <div className="flex justify-end pt-2">
-                                <button
-                                    type="submit"
-                                    disabled={isSubmitting}
-                                    className="px-6 py-2 text-sm font-medium text-white bg-purple-600 rounded-md hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                                >
-                                    {isSubmitting ? "Creating..." : "Create MCP connection"}
                                 </button>
                             </div>
                         </form>

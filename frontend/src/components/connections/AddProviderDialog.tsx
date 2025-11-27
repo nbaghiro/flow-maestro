@@ -1,6 +1,6 @@
 import { X, Search } from "lucide-react";
 import { useState } from "react";
-import { ALL_PROVIDERS, type Provider } from "../../lib/providers";
+import { ALL_PROVIDERS, type Provider } from "@flowmaestro/shared";
 import { NewConnectionDialog } from "./NewConnectionDialog";
 
 interface AddProviderDialogProps {
@@ -170,8 +170,6 @@ export function AddProviderDialog({ isOpen, onClose, onProviderAdded }: AddProvi
                     onSuccess={handleConnectionSuccess}
                     supportsOAuth={selectedProvider.methods.includes("oauth2")}
                     supportsApiKey={selectedProvider.methods.includes("api_key")}
-                    supportsMCP={!!selectedProvider.mcpServerUrl}
-                    mcpServerUrl={selectedProvider.mcpServerUrl}
                 />
             )}
         </>

@@ -1,8 +1,26 @@
 import * as gcp from "@pulumi/gcp";
+import * as pulumi from "@pulumi/pulumi";
 import { infrastructureConfig, resourceName, resourceLabels } from "../utils/config";
 
 // Note: Frontend and marketing are served from Kubernetes, not Cloud Storage
 // This file creates buckets for user-uploaded files and assets
+
+// =============================================================================
+// Service Account for GCS Storage Access
+// =============================================================================
+// This service account is used for GCS storage operations.
+// - In GKE: Use Workload Identity (bind to K8s service account)
+// - For local dev: Download a key file and set GOOGLE_APPLICATION_CREDENTIALS
+//
+// To create a key for local development:
+//   gcloud iam service-accounts keys create ~/.config/gcloud/flowmaestro-storage-key.json \
+//       --iam-account=$(pulumi stack output storageServiceAccountEmail)
+
+export const storageServiceAccount = new gcp.serviceaccount.Account(resourceName("storage-sa"), {
+    accountId: resourceName("storage-sa"),
+    displayName: "FlowMaestro Storage Service Account",
+    description: "Service account for GCS storage operations (local dev and production)"
+});
 
 // Create bucket for user uploads (PDFs, images, etc.)
 export const uploadsBucket = new gcp.storage.Bucket(resourceName("uploads"), {
@@ -98,6 +116,76 @@ export const knowledgeDocsBucket = new gcp.storage.Bucket(resourceName("knowledg
     labels: resourceLabels()
 });
 
+// =============================================================================
+// IAM Bindings for Storage Service Account
+// =============================================================================
+// Grant Storage Object Admin role on all buckets
+
+new gcp.storage.BucketIAMMember(
+    resourceName("storage-sa-uploads"),
+    {
+        bucket: uploadsBucket.name,
+        role: "roles/storage.objectAdmin",
+        member: pulumi.interpolate`serviceAccount:${storageServiceAccount.email}`
+    },
+    { dependsOn: [uploadsBucket, storageServiceAccount] }
+);
+
+new gcp.storage.BucketIAMMember(
+    resourceName("storage-sa-artifacts"),
+    {
+        bucket: artifactsBucket.name,
+        role: "roles/storage.objectAdmin",
+        member: pulumi.interpolate`serviceAccount:${storageServiceAccount.email}`
+    },
+    { dependsOn: [artifactsBucket, storageServiceAccount] }
+);
+
+new gcp.storage.BucketIAMMember(
+    resourceName("storage-sa-knowledge-docs"),
+    {
+        bucket: knowledgeDocsBucket.name,
+        role: "roles/storage.objectAdmin",
+        member: pulumi.interpolate`serviceAccount:${storageServiceAccount.email}`
+    },
+    { dependsOn: [knowledgeDocsBucket, storageServiceAccount] }
+);
+
+// Note: For GKE deployments, the k8s-sa (defined in gke-cluster.ts) already has
+// storage permissions via Workload Identity. This storage-sa is primarily for
+// local development where a key file is needed to avoid RAPT token expiration.
+
+// =============================================================================
+// Service Account Key for Local Development
+// =============================================================================
+// Create a key for the storage service account and store it in Secret Manager.
+// This allows the sync-secrets-local.sh script to pull the key automatically.
+
+export const storageServiceAccountKey = new gcp.serviceaccount.Key(resourceName("storage-sa-key"), {
+    serviceAccountId: storageServiceAccount.name
+});
+
+// Store the key in Secret Manager for easy retrieval during local development
+const storageKeySecret = new gcp.secretmanager.Secret(resourceName("storage-sa-key"), {
+    secretId: resourceName("storage-sa-key"),
+    replication: {
+        auto: {}
+    },
+    labels: {
+        app: "flowmaestro",
+        environment: infrastructureConfig.environment,
+        purpose: "local-development"
+    }
+});
+
+new gcp.secretmanager.SecretVersion(resourceName("storage-sa-key-version"), {
+    secret: storageKeySecret.id,
+    // The privateKey is base64-encoded, decode it for storage
+    secretData: storageServiceAccountKey.privateKey.apply((key) =>
+        Buffer.from(key, "base64").toString("utf-8")
+    )
+});
+
 // Export storage outputs
 export const storageOutputs = {
     uploadsBucketName: uploadsBucket.name,
@@ -105,5 +193,7 @@ export const storageOutputs = {
     artifactsBucketName: artifactsBucket.name,
     artifactsBucketUrl: artifactsBucket.url,
     knowledgeDocsBucketName: knowledgeDocsBucket.name,
-    knowledgeDocsBucketUrl: knowledgeDocsBucket.url
+    knowledgeDocsBucketUrl: knowledgeDocsBucket.url,
+    storageServiceAccountEmail: storageServiceAccount.email,
+    storageServiceAccountName: storageServiceAccount.name
 };

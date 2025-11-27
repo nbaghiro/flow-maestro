@@ -80,6 +80,18 @@ const postgresqlEntry: ProviderRegistryEntry = {
     }
 };
 
+// Register MongoDB provider
+const mongodbEntry: ProviderRegistryEntry = {
+    name: "mongodb",
+    displayName: "MongoDB",
+    authMethod: "api_key",
+    category: "database",
+    loader: async () => {
+        const { MongoDBProvider } = await import("./providers/mongodb/MongoDBProvider");
+        return new MongoDBProvider();
+    }
+};
+
 // Register GitHub provider
 const githubEntry: ProviderRegistryEntry = {
     name: "github",
@@ -158,6 +170,110 @@ const googleCalendarEntry: ProviderRegistryEntry = {
     }
 };
 
+// Register Gmail provider
+const gmailEntry: ProviderRegistryEntry = {
+    name: "gmail",
+    displayName: "Gmail",
+    authMethod: "oauth2",
+    category: "communication",
+    loader: async () => {
+        const { GmailProvider } = await import("./providers/gmail/GmailProvider");
+        return new GmailProvider();
+    }
+};
+
+// Register WhatsApp Business provider
+const whatsappEntry: ProviderRegistryEntry = {
+    name: "whatsapp",
+    displayName: "WhatsApp Business",
+    authMethod: "oauth2",
+    category: "communication",
+    loader: async () => {
+        const { WhatsAppProvider } = await import("./providers/whatsapp/WhatsAppProvider");
+        return new WhatsAppProvider();
+    }
+};
+
+// Register Instagram provider
+const instagramEntry: ProviderRegistryEntry = {
+    name: "instagram",
+    displayName: "Instagram",
+    authMethod: "oauth2",
+    category: "communication",
+    loader: async () => {
+        const { InstagramProvider } = await import("./providers/instagram/InstagramProvider");
+        return new InstagramProvider();
+    }
+};
+
+// Register Facebook provider
+const facebookEntry: ProviderRegistryEntry = {
+    name: "facebook",
+    displayName: "Facebook",
+    authMethod: "oauth2",
+    category: "communication",
+    loader: async () => {
+        const { FacebookProvider } = await import("./providers/facebook/FacebookProvider");
+        return new FacebookProvider();
+    }
+};
+
+// Register Microsoft OneDrive provider
+const microsoftOneDriveEntry: ProviderRegistryEntry = {
+    name: "microsoft-onedrive",
+    displayName: "Microsoft OneDrive",
+    authMethod: "oauth2",
+    category: "file_storage",
+    loader: async () => {
+        const { MicrosoftOneDriveProvider } = await import(
+            "./providers/microsoft-onedrive/MicrosoftOneDriveProvider"
+        );
+        return new MicrosoftOneDriveProvider();
+    }
+};
+
+// Register Microsoft Excel provider
+const microsoftExcelEntry: ProviderRegistryEntry = {
+    name: "microsoft-excel",
+    displayName: "Microsoft Excel",
+    authMethod: "oauth2",
+    category: "productivity",
+    loader: async () => {
+        const { MicrosoftExcelProvider } = await import(
+            "./providers/microsoft-excel/MicrosoftExcelProvider"
+        );
+        return new MicrosoftExcelProvider();
+    }
+};
+
+// Register Microsoft Word provider
+const microsoftWordEntry: ProviderRegistryEntry = {
+    name: "microsoft-word",
+    displayName: "Microsoft Word",
+    authMethod: "oauth2",
+    category: "productivity",
+    loader: async () => {
+        const { MicrosoftWordProvider } = await import(
+            "./providers/microsoft-word/MicrosoftWordProvider"
+        );
+        return new MicrosoftWordProvider();
+    }
+};
+
+// Register Microsoft Teams provider
+const microsoftTeamsEntry: ProviderRegistryEntry = {
+    name: "microsoft-teams",
+    displayName: "Microsoft Teams",
+    authMethod: "oauth2",
+    category: "communication",
+    loader: async () => {
+        const { MicrosoftTeamsProvider } = await import(
+            "./providers/microsoft-teams/MicrosoftTeamsProvider"
+        );
+        return new MicrosoftTeamsProvider();
+    }
+};
+
 // Register all providers
 providerRegistry.register(slackEntry);
 providerRegistry.register(codaEntry);
@@ -165,12 +281,21 @@ providerRegistry.register(notionEntry);
 providerRegistry.register(airtableEntry);
 providerRegistry.register(hubspotEntry);
 providerRegistry.register(postgresqlEntry);
+providerRegistry.register(mongodbEntry);
 providerRegistry.register(githubEntry);
 providerRegistry.register(linearEntry);
 providerRegistry.register(figmaEntry);
 providerRegistry.register(googleSheetsEntry);
 providerRegistry.register(googleDriveEntry);
 providerRegistry.register(googleCalendarEntry);
+providerRegistry.register(gmailEntry);
+providerRegistry.register(whatsappEntry);
+providerRegistry.register(instagramEntry);
+providerRegistry.register(facebookEntry);
+providerRegistry.register(microsoftOneDriveEntry);
+providerRegistry.register(microsoftExcelEntry);
+providerRegistry.register(microsoftWordEntry);
+providerRegistry.register(microsoftTeamsEntry);
 
 // Export for use in application
 export { providerRegistry };

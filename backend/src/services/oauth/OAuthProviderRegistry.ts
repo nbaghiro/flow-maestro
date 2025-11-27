@@ -728,6 +728,684 @@ export const OAUTH_PROVIDERS: Record<string, OAuthProvider> = {
         },
         revokeUrl: "https://oauth2.googleapis.com/revoke",
         refreshable: true
+    },
+
+    gmail: {
+        name: "gmail",
+        displayName: "Gmail",
+        authUrl: "https://accounts.google.com/o/oauth2/v2/auth",
+        tokenUrl: "https://oauth2.googleapis.com/token",
+        scopes: [
+            "https://www.googleapis.com/auth/gmail.modify",
+            "https://www.googleapis.com/auth/gmail.send",
+            "https://www.googleapis.com/auth/gmail.compose"
+        ],
+        authParams: {
+            access_type: "offline",
+            prompt: "consent"
+        },
+        clientId: process.env.GOOGLE_CLIENT_ID || "",
+        clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
+        redirectUri: `${process.env.API_URL || "http://localhost:3000"}/api/oauth/google/callback`,
+        getUserInfo: async (accessToken: string) => {
+            try {
+                // Use Gmail API to get user profile
+                const response = await fetch(
+                    "https://gmail.googleapis.com/gmail/v1/users/me/profile",
+                    {
+                        headers: {
+                            Authorization: `Bearer ${accessToken}`
+                        }
+                    }
+                );
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = (await response.json()) as {
+                    emailAddress?: string;
+                    messagesTotal?: number;
+                    threadsTotal?: number;
+                    historyId?: string;
+                };
+
+                return {
+                    email: data.emailAddress,
+                    name: data.emailAddress, // Gmail profile doesn't have display name
+                    userId: data.emailAddress
+                };
+            } catch (error) {
+                console.error("[OAuth] Failed to get Gmail user info:", error);
+                return {
+                    email: "unknown@gmail.com",
+                    name: "Gmail User"
+                };
+            }
+        },
+        revokeUrl: "https://oauth2.googleapis.com/revoke",
+        refreshable: true
+    },
+
+    // ==========================================================================
+    // Microsoft Platform Services (OneDrive, Excel, Word, etc.)
+    // All use MICROSOFT_CLIENT_ID and MICROSOFT_CLIENT_SECRET credentials
+    // Uses Microsoft Graph API with common tenant for multi-tenant support
+    // ==========================================================================
+
+    "microsoft-auth": {
+        name: "microsoft-auth",
+        displayName: "Microsoft Sign-In",
+        authUrl: "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
+        tokenUrl: "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+        scopes: ["User.Read", "offline_access"],
+        authParams: {
+            response_mode: "query",
+            prompt: "consent"
+        },
+        clientId: process.env.MICROSOFT_CLIENT_ID || "",
+        clientSecret: process.env.MICROSOFT_CLIENT_SECRET || "",
+        redirectUri: `${process.env.API_URL || "http://localhost:3000"}/api/oauth/microsoft/callback`,
+        getUserInfo: async (accessToken: string) => {
+            try {
+                const response = await fetch("https://graph.microsoft.com/v1.0/me", {
+                    headers: {
+                        Authorization: `Bearer ${accessToken}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = (await response.json()) as {
+                    id?: string;
+                    displayName?: string;
+                    mail?: string;
+                    userPrincipalName?: string;
+                };
+
+                return {
+                    userId: data.id,
+                    email: data.mail || data.userPrincipalName,
+                    name: data.displayName,
+                    picture: null // Microsoft profile photos require separate API call
+                };
+            } catch (error) {
+                console.error("[OAuth] Failed to get Microsoft user info:", error);
+                return {
+                    email: "unknown@microsoft",
+                    name: "Microsoft User"
+                };
+            }
+        },
+        refreshable: true
+    },
+
+    microsoft: {
+        name: "microsoft",
+        displayName: "Microsoft 365",
+        authUrl: "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
+        tokenUrl: "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+        scopes: ["User.Read", "Files.ReadWrite.All", "Sites.ReadWrite.All", "offline_access"],
+        authParams: {
+            response_mode: "query",
+            prompt: "consent"
+        },
+        clientId: process.env.MICROSOFT_CLIENT_ID || "",
+        clientSecret: process.env.MICROSOFT_CLIENT_SECRET || "",
+        redirectUri: `${process.env.API_URL || "http://localhost:3000"}/api/oauth/microsoft/callback`,
+        getUserInfo: async (accessToken: string) => {
+            try {
+                const response = await fetch("https://graph.microsoft.com/v1.0/me", {
+                    headers: {
+                        Authorization: `Bearer ${accessToken}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = (await response.json()) as {
+                    id?: string;
+                    displayName?: string;
+                    mail?: string;
+                    userPrincipalName?: string;
+                };
+
+                return {
+                    userId: data.id,
+                    email: data.mail || data.userPrincipalName,
+                    name: data.displayName
+                };
+            } catch (error) {
+                console.error("[OAuth] Failed to get Microsoft 365 user info:", error);
+                return {
+                    email: "unknown@microsoft",
+                    name: "Microsoft User"
+                };
+            }
+        },
+        refreshable: true
+    },
+
+    "microsoft-onedrive": {
+        name: "microsoft-onedrive",
+        displayName: "Microsoft OneDrive",
+        authUrl: "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
+        tokenUrl: "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+        scopes: ["User.Read", "Files.ReadWrite", "offline_access"],
+        authParams: {
+            response_mode: "query",
+            prompt: "consent"
+        },
+        clientId: process.env.MICROSOFT_CLIENT_ID || "",
+        clientSecret: process.env.MICROSOFT_CLIENT_SECRET || "",
+        redirectUri: `${process.env.API_URL || "http://localhost:3000"}/api/oauth/microsoft/callback`,
+        getUserInfo: async (accessToken: string) => {
+            try {
+                const response = await fetch("https://graph.microsoft.com/v1.0/me", {
+                    headers: {
+                        Authorization: `Bearer ${accessToken}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = (await response.json()) as {
+                    id?: string;
+                    displayName?: string;
+                    mail?: string;
+                    userPrincipalName?: string;
+                };
+
+                return {
+                    userId: data.id,
+                    email: data.mail || data.userPrincipalName,
+                    name: data.displayName
+                };
+            } catch (error) {
+                console.error("[OAuth] Failed to get OneDrive user info:", error);
+                return {
+                    email: "unknown@microsoft",
+                    name: "Microsoft User"
+                };
+            }
+        },
+        refreshable: true
+    },
+
+    "microsoft-excel": {
+        name: "microsoft-excel",
+        displayName: "Microsoft Excel",
+        authUrl: "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
+        tokenUrl: "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+        scopes: ["User.Read", "Files.ReadWrite", "offline_access"],
+        authParams: {
+            response_mode: "query",
+            prompt: "consent"
+        },
+        clientId: process.env.MICROSOFT_CLIENT_ID || "",
+        clientSecret: process.env.MICROSOFT_CLIENT_SECRET || "",
+        redirectUri: `${process.env.API_URL || "http://localhost:3000"}/api/oauth/microsoft/callback`,
+        getUserInfo: async (accessToken: string) => {
+            try {
+                const response = await fetch("https://graph.microsoft.com/v1.0/me", {
+                    headers: {
+                        Authorization: `Bearer ${accessToken}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = (await response.json()) as {
+                    id?: string;
+                    displayName?: string;
+                    mail?: string;
+                    userPrincipalName?: string;
+                };
+
+                return {
+                    userId: data.id,
+                    email: data.mail || data.userPrincipalName,
+                    name: data.displayName
+                };
+            } catch (error) {
+                console.error("[OAuth] Failed to get Excel user info:", error);
+                return {
+                    email: "unknown@microsoft",
+                    name: "Microsoft User"
+                };
+            }
+        },
+        refreshable: true
+    },
+
+    "microsoft-word": {
+        name: "microsoft-word",
+        displayName: "Microsoft Word",
+        authUrl: "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
+        tokenUrl: "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+        scopes: ["User.Read", "Files.ReadWrite", "offline_access"],
+        authParams: {
+            response_mode: "query",
+            prompt: "consent"
+        },
+        clientId: process.env.MICROSOFT_CLIENT_ID || "",
+        clientSecret: process.env.MICROSOFT_CLIENT_SECRET || "",
+        redirectUri: `${process.env.API_URL || "http://localhost:3000"}/api/oauth/microsoft/callback`,
+        getUserInfo: async (accessToken: string) => {
+            try {
+                const response = await fetch("https://graph.microsoft.com/v1.0/me", {
+                    headers: {
+                        Authorization: `Bearer ${accessToken}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = (await response.json()) as {
+                    id?: string;
+                    displayName?: string;
+                    mail?: string;
+                    userPrincipalName?: string;
+                };
+
+                return {
+                    userId: data.id,
+                    email: data.mail || data.userPrincipalName,
+                    name: data.displayName
+                };
+            } catch (error) {
+                console.error("[OAuth] Failed to get Word user info:", error);
+                return {
+                    email: "unknown@microsoft",
+                    name: "Microsoft User"
+                };
+            }
+        },
+        refreshable: true
+    },
+
+    "microsoft-teams": {
+        name: "microsoft-teams",
+        displayName: "Microsoft Teams",
+        authUrl: "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
+        tokenUrl: "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+        scopes: [
+            "User.Read",
+            "Team.ReadBasic.All",
+            "Channel.ReadBasic.All",
+            "Channel.Create",
+            "ChannelMessage.Send",
+            "ChannelMessage.Read.All",
+            "Chat.ReadWrite",
+            "ChatMessage.Send",
+            "ChatMessage.Read",
+            "ChatMember.Read",
+            "offline_access"
+        ],
+        authParams: {
+            response_mode: "query",
+            prompt: "consent"
+        },
+        clientId: process.env.MICROSOFT_CLIENT_ID || "",
+        clientSecret: process.env.MICROSOFT_CLIENT_SECRET || "",
+        redirectUri: `${process.env.API_URL || "http://localhost:3000"}/api/oauth/microsoft/callback`,
+        getUserInfo: async (accessToken: string) => {
+            try {
+                const response = await fetch("https://graph.microsoft.com/v1.0/me", {
+                    headers: {
+                        Authorization: `Bearer ${accessToken}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = (await response.json()) as {
+                    id?: string;
+                    displayName?: string;
+                    mail?: string;
+                    userPrincipalName?: string;
+                };
+
+                return {
+                    userId: data.id,
+                    email: data.mail || data.userPrincipalName,
+                    name: data.displayName
+                };
+            } catch (error) {
+                console.error("[OAuth] Failed to get Teams user info:", error);
+                return {
+                    email: "unknown@microsoft",
+                    name: "Microsoft User"
+                };
+            }
+        },
+        refreshable: true
+    },
+
+    // ==========================================================================
+    // Meta Platform Services (WhatsApp, Instagram, Messenger, Facebook Ads)
+    // All use same META_APP_ID and META_APP_SECRET credentials
+    // ==========================================================================
+
+    whatsapp: {
+        name: "whatsapp",
+        displayName: "WhatsApp Business",
+        authUrl: "https://www.facebook.com/v21.0/dialog/oauth",
+        tokenUrl: "https://graph.facebook.com/v21.0/oauth/access_token",
+        scopes: [
+            "whatsapp_business_management",
+            "whatsapp_business_messaging",
+            "business_management"
+        ],
+        authParams: {
+            ...(process.env.META_WHATSAPP_CONFIG_ID
+                ? { config_id: process.env.META_WHATSAPP_CONFIG_ID }
+                : {})
+        },
+        clientId: process.env.META_APP_ID || "",
+        clientSecret: process.env.META_APP_SECRET || "",
+        redirectUri: `${process.env.API_URL || "http://localhost:3000"}/api/oauth/meta/callback`,
+        getUserInfo: async (accessToken: string) => {
+            try {
+                // Get the WhatsApp Business Account info
+                const response = await fetch("https://graph.facebook.com/v21.0/me?fields=id,name", {
+                    headers: {
+                        Authorization: `Bearer ${accessToken}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = (await response.json()) as {
+                    id?: string;
+                    name?: string;
+                };
+
+                return {
+                    userId: data.id || "unknown",
+                    name: data.name || "WhatsApp Business User"
+                };
+            } catch (error) {
+                console.error("[OAuth] Failed to get WhatsApp user info:", error);
+                return {
+                    userId: "unknown",
+                    name: "WhatsApp Business User"
+                };
+            }
+        },
+        refreshable: true
+    },
+
+    instagram: {
+        name: "instagram",
+        displayName: "Instagram",
+        authUrl: "https://www.facebook.com/v21.0/dialog/oauth",
+        tokenUrl: "https://graph.facebook.com/v21.0/oauth/access_token",
+        scopes: [
+            "instagram_basic",
+            "instagram_manage_messages",
+            "instagram_content_publish",
+            "pages_show_list",
+            "pages_read_engagement",
+            "pages_messaging"
+        ],
+        clientId: process.env.META_APP_ID || "",
+        clientSecret: process.env.META_APP_SECRET || "",
+        redirectUri: `${process.env.API_URL || "http://localhost:3000"}/api/oauth/meta/callback`,
+        getUserInfo: async (accessToken: string) => {
+            try {
+                // Get basic user info
+                const userResponse = await fetch(
+                    "https://graph.facebook.com/v21.0/me?fields=id,name",
+                    {
+                        headers: {
+                            Authorization: `Bearer ${accessToken}`
+                        }
+                    }
+                );
+
+                if (!userResponse.ok) {
+                    throw new Error(`HTTP ${userResponse.status}: ${userResponse.statusText}`);
+                }
+
+                const userData = (await userResponse.json()) as {
+                    id?: string;
+                    name?: string;
+                };
+
+                // Get pages with Instagram business accounts
+                const pagesResponse = await fetch(
+                    "https://graph.facebook.com/v21.0/me/accounts?fields=id,name,access_token,instagram_business_account{id,username,name,profile_picture_url}",
+                    {
+                        headers: {
+                            Authorization: `Bearer ${accessToken}`
+                        }
+                    }
+                );
+
+                if (!pagesResponse.ok) {
+                    throw new Error(`Failed to fetch pages: HTTP ${pagesResponse.status}`);
+                }
+
+                const pagesData = (await pagesResponse.json()) as {
+                    data?: Array<{
+                        id: string;
+                        name: string;
+                        access_token: string;
+                        instagram_business_account?: {
+                            id: string;
+                            username?: string;
+                            name?: string;
+                            profile_picture_url?: string;
+                        };
+                    }>;
+                };
+
+                // Find pages with Instagram business accounts
+                const pagesWithInstagram = (pagesData.data || []).filter(
+                    (page) => page.instagram_business_account
+                );
+
+                if (pagesWithInstagram.length === 0) {
+                    console.warn("[OAuth] No Instagram Business Account found linked to any page");
+                }
+
+                // Exchange for long-lived page tokens
+                const pages = await Promise.all(
+                    pagesWithInstagram.map(async (page) => {
+                        // Page tokens derived from long-lived user tokens are automatically long-lived
+                        return {
+                            pageId: page.id,
+                            pageName: page.name,
+                            pageAccessToken: page.access_token,
+                            instagramAccountId: page.instagram_business_account?.id,
+                            instagramUsername: page.instagram_business_account?.username,
+                            instagramName: page.instagram_business_account?.name,
+                            instagramProfilePicture:
+                                page.instagram_business_account?.profile_picture_url
+                        };
+                    })
+                );
+
+                // Use the first page with Instagram as primary
+                const primaryPage = pages[0];
+
+                return {
+                    userId: userData.id || "unknown",
+                    name: userData.name || "Instagram User",
+                    user: primaryPage?.instagramUsername || userData.name || "Instagram Account",
+                    pages,
+                    // Primary account info for easy access
+                    pageId: primaryPage?.pageId,
+                    pageName: primaryPage?.pageName,
+                    pageAccessToken: primaryPage?.pageAccessToken,
+                    instagramAccountId: primaryPage?.instagramAccountId,
+                    instagramUsername: primaryPage?.instagramUsername
+                };
+            } catch (error) {
+                console.error("[OAuth] Failed to get Instagram user info:", error);
+                return {
+                    userId: "unknown",
+                    name: "Instagram User"
+                };
+            }
+        },
+        refreshable: true
+    },
+
+    facebook: {
+        name: "facebook",
+        displayName: "Facebook",
+        authUrl: "https://www.facebook.com/v21.0/dialog/oauth",
+        tokenUrl: "https://graph.facebook.com/v21.0/oauth/access_token",
+        scopes: [
+            "pages_messaging",
+            "pages_manage_metadata",
+            "pages_read_engagement",
+            "pages_show_list"
+        ],
+        clientId: process.env.META_APP_ID || "",
+        clientSecret: process.env.META_APP_SECRET || "",
+        redirectUri: `${process.env.API_URL || "http://localhost:3000"}/api/oauth/meta/callback`,
+        getUserInfo: async (accessToken: string) => {
+            try {
+                // Get basic user info
+                const userResponse = await fetch(
+                    "https://graph.facebook.com/v21.0/me?fields=id,name",
+                    {
+                        headers: {
+                            Authorization: `Bearer ${accessToken}`
+                        }
+                    }
+                );
+
+                if (!userResponse.ok) {
+                    throw new Error(`HTTP ${userResponse.status}: ${userResponse.statusText}`);
+                }
+
+                const userData = (await userResponse.json()) as {
+                    id?: string;
+                    name?: string;
+                };
+
+                // Get pages the user manages (Facebook uses Pages for Messenger communication)
+                const pagesResponse = await fetch(
+                    "https://graph.facebook.com/v21.0/me/accounts?fields=id,name,access_token,category,picture{url}",
+                    {
+                        headers: {
+                            Authorization: `Bearer ${accessToken}`
+                        }
+                    }
+                );
+
+                if (!pagesResponse.ok) {
+                    throw new Error(`Failed to fetch pages: HTTP ${pagesResponse.status}`);
+                }
+
+                const pagesData = (await pagesResponse.json()) as {
+                    data?: Array<{
+                        id: string;
+                        name: string;
+                        access_token: string;
+                        category?: string;
+                        picture?: {
+                            data?: {
+                                url?: string;
+                            };
+                        };
+                    }>;
+                };
+
+                if (!pagesData.data || pagesData.data.length === 0) {
+                    console.warn("[OAuth] No Facebook Pages found");
+                }
+
+                // Map pages with their access tokens
+                const pages = (pagesData.data || []).map((page) => ({
+                    pageId: page.id,
+                    pageName: page.name,
+                    pageAccessToken: page.access_token,
+                    category: page.category,
+                    pictureUrl: page.picture?.data?.url
+                }));
+
+                // Use the first page as primary
+                const primaryPage = pages[0];
+
+                return {
+                    userId: userData.id || "unknown",
+                    name: userData.name || "Facebook User",
+                    user: primaryPage?.pageName || userData.name || "Facebook Page",
+                    pages,
+                    // Primary page info for easy access
+                    pageId: primaryPage?.pageId,
+                    pageName: primaryPage?.pageName,
+                    pageAccessToken: primaryPage?.pageAccessToken
+                };
+            } catch (error) {
+                console.error("[OAuth] Failed to get Facebook user info:", error);
+                return {
+                    userId: "unknown",
+                    name: "Facebook User"
+                };
+            }
+        },
+        refreshable: true
+    },
+
+    "facebook-ads": {
+        name: "facebook-ads",
+        displayName: "Facebook Ads",
+        authUrl: "https://www.facebook.com/v21.0/dialog/oauth",
+        tokenUrl: "https://graph.facebook.com/v21.0/oauth/access_token",
+        scopes: ["ads_management", "ads_read", "business_management"],
+        clientId: process.env.META_APP_ID || "",
+        clientSecret: process.env.META_APP_SECRET || "",
+        redirectUri: `${process.env.API_URL || "http://localhost:3000"}/api/oauth/meta/callback`,
+        getUserInfo: async (accessToken: string) => {
+            try {
+                const response = await fetch("https://graph.facebook.com/v21.0/me?fields=id,name", {
+                    headers: {
+                        Authorization: `Bearer ${accessToken}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = (await response.json()) as {
+                    id?: string;
+                    name?: string;
+                };
+
+                return {
+                    userId: data.id || "unknown",
+                    name: data.name || "Facebook Ads User"
+                };
+            } catch (error) {
+                console.error("[OAuth] Failed to get Facebook Ads user info:", error);
+                return {
+                    userId: "unknown",
+                    name: "Facebook Ads User"
+                };
+            }
+        },
+        refreshable: true
     }
 };
 

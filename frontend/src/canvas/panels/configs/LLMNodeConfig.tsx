@@ -1,12 +1,15 @@
 import { Plus } from "lucide-react";
 import { useState, useEffect } from "react";
-import { LLM_MODELS_BY_PROVIDER, getDefaultModelForProvider } from "@flowmaestro/shared";
+import {
+    LLM_MODELS_BY_PROVIDER,
+    getDefaultModelForProvider,
+    ALL_PROVIDERS
+} from "@flowmaestro/shared";
 import { Select } from "../../../components/common/Select";
 import { ProviderConnectionDialog } from "../../../components/connections/ProviderConnectionDialog";
 import { FormField, FormSection } from "../../../components/FormField";
 import { OutputSettingsSection } from "../../../components/OutputSettingsSection";
 import { Slider } from "../../../components/Slider";
-import { ALL_PROVIDERS } from "../../../lib/providers";
 import { useConnectionStore } from "../../../stores/connectionStore";
 
 interface LLMNodeConfigProps {

@@ -2,13 +2,16 @@
  * API Client for FlowMaestro Backend
  */
 
-import type { JsonObject, JsonValue, WorkflowNode, WorkflowEdge } from "@flowmaestro/shared";
 import type {
+    JsonObject,
+    JsonValue,
+    WorkflowNode,
+    WorkflowEdge,
     WorkflowTrigger,
     TriggerWithScheduleInfo,
     CreateTriggerInput,
     UpdateTriggerInput
-} from "../types/trigger";
+} from "@flowmaestro/shared";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
@@ -82,6 +85,8 @@ export interface UpdateKnowledgeBaseInput {
 
 export interface QueryKnowledgeBaseInput {
     query: string;
+    top_k?: number;
+    similarity_threshold?: number;
 }
 
 export interface ApiResponse<T = unknown> {
@@ -754,19 +759,8 @@ export async function submitUserInput(
 
 // ===== Connection API Functions =====
 
-export type ConnectionMethod = "api_key" | "oauth2" | "mcp" | "basic_auth" | "custom";
+export type ConnectionMethod = "api_key" | "oauth2" | "basic_auth" | "custom";
 export type ConnectionStatus = "active" | "invalid" | "expired" | "revoked";
-
-export interface MCPTool {
-    name: string;
-    description: string;
-    parameters: Array<{
-        name: string;
-        type: string;
-        description?: string;
-        required?: boolean;
-    }>;
-}
 
 export interface Connection {
     id: string;
@@ -782,11 +776,7 @@ export interface Connection {
             username?: string;
             workspace?: string;
         };
-        mcp_version?: string;
-        mcp_server_info?: JsonObject;
     };
-    mcp_server_url: string | null;
-    mcp_tools: MCPTool[] | null;
     capabilities: JsonObject;
     last_tested_at: string | null;
     last_used_at: string | null;
@@ -801,15 +791,11 @@ export interface CreateConnectionInput {
     data: JsonObject & {
         api_key?: string;
         api_secret?: string;
-        server_url?: string;
-        auth_type?: string;
         bearer_token?: string;
         username?: string;
         password?: string;
     };
     metadata?: JsonObject;
-    mcp_server_url?: string;
-    mcp_tools?: MCPTool[];
     capabilities?: JsonObject;
 }
 
@@ -1004,90 +990,18 @@ export async function deleteConnection(
     return response.json();
 }
 
-// ===== MCP-Specific Connection Functions =====
-
-export interface MCPProvider {
-    name: string;
-    displayName: string;
-    description: string;
-    category: string;
-    requiresAuth: boolean;
-    configured: boolean;
-}
-
-export interface MCPDiscoveryRequest {
-    server_url: string;
-    auth_type: "none" | "api_key" | "bearer" | "basic";
-    api_key?: string;
-    bearer_token?: string;
-    username?: string;
-    password?: string;
-    timeout?: number;
-}
-
 /**
- * Get list of known MCP providers
+ * Get MCP tools available from a connection's provider
  */
-export async function getMCPProviders(): Promise<{
+export async function getConnectionMCPTools(connectionId: string): Promise<{
     success: boolean;
-    data: MCPProvider[];
+    data: ConnectionMCPToolsResponse;
     error?: string;
 }> {
-    const response = await fetch(`${API_BASE_URL}/api/connections/mcp/providers`, {
+    const token = getAuthToken();
+
+    const response = await fetch(`${API_BASE_URL}/api/connections/${connectionId}/mcp-tools`, {
         method: "GET",
-        headers: {
-            "Content-Type": "application/json"
-        }
-    });
-
-    if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
-    }
-
-    return response.json();
-}
-
-/**
- * Discover MCP tools from a server before saving
- */
-export async function discoverMCPTools(request: MCPDiscoveryRequest): Promise<{
-    success: boolean;
-    data: { server_info: JsonObject; tools: MCPTool[]; tool_count: number };
-    error?: string;
-}> {
-    const token = getAuthToken();
-
-    const response = await fetch(`${API_BASE_URL}/api/connections/mcp/discover`, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            ...(token && { Authorization: `Bearer ${token}` })
-        },
-        body: JSON.stringify(request)
-    });
-
-    if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
-    }
-
-    return response.json();
-}
-
-/**
- * Refresh MCP tools for an existing connection
- */
-export async function refreshMCPTools(connectionId: string): Promise<{
-    success: boolean;
-    data: { connection_id: string; tools: MCPTool[]; tool_count: number };
-    message?: string;
-    error?: string;
-}> {
-    const token = getAuthToken();
-
-    const response = await fetch(`${API_BASE_URL}/api/connections/${connectionId}/refresh-tools`, {
-        method: "POST",
         headers: {
             "Content-Type": "application/json",
             ...(token && { Authorization: `Bearer ${token}` })
@@ -1171,7 +1085,7 @@ export interface Tool {
     id: string;
     name: string;
     description: string;
-    type: "workflow" | "function" | "knowledge_base";
+    type: "workflow" | "function" | "knowledge_base" | "mcp";
     schema: JsonObject;
     config: ToolConfig;
 }
@@ -1180,6 +1094,28 @@ export interface ToolConfig {
     workflowId?: string;
     functionName?: string;
     knowledgeBaseId?: string;
+    connectionId?: string; // For MCP tools - references the connection
+    provider?: string; // For MCP tools - provider name for display
+}
+
+/**
+ * MCP Tool from a provider
+ */
+export interface MCPTool {
+    name: string;
+    description: string;
+    inputSchema: JsonObject;
+    executeRef?: string;
+}
+
+/**
+ * Response from GET /api/connections/:id/mcp-tools
+ */
+export interface ConnectionMCPToolsResponse {
+    connectionId: string;
+    provider: string;
+    connectionName: string;
+    tools: MCPTool[];
 }
 
 export interface MemoryConfig {
@@ -1521,7 +1457,7 @@ export async function getAgentExecution(
  * Add a tool to an agent
  */
 export interface AddToolRequest {
-    type: "workflow" | "function" | "knowledge_base";
+    type: "workflow" | "function" | "knowledge_base" | "mcp";
     name: string;
     description: string;
     schema: JsonObject;
@@ -1761,68 +1697,6 @@ export async function unarchiveThread(
     }
 
     return response.json();
-}
-
-// ===== MCP Registry API Functions =====
-
-export interface MCPRegistryServer {
-    id: string;
-    name: string;
-    description: string;
-    serverUrl: string;
-    authType: string;
-    capabilities?: string[];
-    version?: string;
-    provider?: string;
-}
-
-export interface MCPRegistryResponse {
-    servers: MCPRegistryServer[];
-    total: number;
-    query?: string;
-}
-
-/**
- * Get all MCP servers from the public registry
- */
-export async function getMCPRegistryServers(): Promise<MCPRegistryServer[]> {
-    const response = await fetch(`${API_BASE_URL}/api/mcp/registry/servers`, {
-        method: "GET",
-        headers: {
-            "Content-Type": "application/json"
-        }
-    });
-
-    if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    return data.data.servers || [];
-}
-
-/**
- * Search MCP servers in the registry
- */
-export async function searchMCPRegistry(query: string): Promise<MCPRegistryServer[]> {
-    const response = await fetch(
-        `${API_BASE_URL}/api/mcp/registry/search?q=${encodeURIComponent(query)}`,
-        {
-            method: "GET",
-            headers: {
-                "Content-Type": "application/json"
-            }
-        }
-    );
-
-    if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    return data.data.servers || [];
 }
 
 // ===== Knowledge Base API Functions =====
@@ -2071,13 +1945,18 @@ export async function addUrlToKnowledgeBase(
 ): Promise<ApiResponse> {
     const token = getAuthToken();
 
+    const body: { url: string; name?: string } = { url: url.trim() };
+    if (name && name.trim()) {
+        body.name = name.trim();
+    }
+
     const response = await fetch(`${API_BASE_URL}/api/knowledge-bases/${id}/documents/url`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
             ...(token && { Authorization: `Bearer ${token}` })
         },
-        body: JSON.stringify({ url, name })
+        body: JSON.stringify(body)
     });
 
     if (!response.ok) {

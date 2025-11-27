@@ -1,10 +1,10 @@
 import { Loader2, Search } from "lucide-react";
 import { useEffect, useState } from "react";
+import { ALL_PROVIDERS, type Provider } from "@flowmaestro/shared";
 import { PageHeader } from "../components/common/PageHeader";
 import { Select } from "../components/common/Select";
 import { ConnectionDetailsDialog } from "../components/connections/ConnectionDetailsDialog";
 import { NewConnectionDialog } from "../components/connections/NewConnectionDialog";
-import { ALL_PROVIDERS, type Provider } from "../lib/providers";
 import { useConnectionStore } from "../stores/connectionStore";
 import type { Connection } from "../lib/api";
 
@@ -100,16 +100,6 @@ export function Connections() {
     // Get connections for a specific provider
     const getConnectionsForProvider = (provider: string) => {
         return connections.filter((c) => c.provider === provider);
-    };
-
-    // Check if provider has MCP server
-    const hasMCPServer = (provider: Provider): boolean => {
-        return !!provider.mcpServerUrl;
-    };
-
-    // Get MCP server URL for provider
-    const getMCPServerUrl = (provider: Provider): string | undefined => {
-        return provider.mcpServerUrl;
     };
 
     // Group providers by category with custom order (AI & ML first)
@@ -321,8 +311,6 @@ export function Connections() {
                     }}
                     supportsOAuth={selectedProvider.methods.includes("oauth2")}
                     supportsApiKey={selectedProvider.methods.includes("api_key")}
-                    supportsMCP={hasMCPServer(selectedProvider)}
-                    mcpServerUrl={getMCPServerUrl(selectedProvider)}
                 />
             )}
 

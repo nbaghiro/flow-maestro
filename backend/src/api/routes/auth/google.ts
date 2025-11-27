@@ -55,11 +55,12 @@ export async function googleAuthRoutes(fastify: FastifyInstance) {
                     });
                 }
 
-                // Don't allow unlinking if user doesn't have a password (OAuth-only account)
-                if (!user.password_hash) {
+                // Don't allow unlinking if user doesn't have another auth method
+                const hasOtherAuthMethod = !!user.password_hash || !!user.microsoft_id;
+                if (!hasOtherAuthMethod) {
                     return reply.status(400).send({
                         success: false,
-                        error: "Cannot unlink Google account. Please set a password first to ensure you can still access your account."
+                        error: "Cannot unlink Google account. Please set a password or connect another account first."
                     });
                 }
 
