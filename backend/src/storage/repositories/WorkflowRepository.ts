@@ -1,4 +1,4 @@
-import type { JsonValue } from "@flowmaestro/shared";
+import type { JsonValue, WorkflowDefinition } from "@flowmaestro/shared";
 import { db } from "../database";
 import { WorkflowModel, CreateWorkflowInput, UpdateWorkflowInput } from "../models/Workflow";
 
@@ -129,18 +129,16 @@ export class WorkflowRepository {
         return result.rows.length > 0 ? this.mapRow(result.rows[0] as WorkflowRow) : null;
     }
 
-    async updateSnapshot(id: string, definition: Record<string, JsonValue>) {
-        console.log("[UPDATE SNAPSHOT] INPUT definition =", definition);
+    async updateSnapshot(id: string, definition: WorkflowDefinition) {
         const result = await db.query(
             `
             UPDATE flowmaestro.workflows
-            SET definition = $2
+            SET definition = $2, updated_at = NOW()
             WHERE id = $1
             RETURNING *
             `,
             [id, JSON.stringify(definition)]
         );
-        console.log("[UPDATE SNAPSHOT] DB returned =", result.rows[0]?.definition);
 
         return this.mapRow(result.rows[0] as WorkflowRow);
     }

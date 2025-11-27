@@ -7,24 +7,26 @@ import { NodeLibrary } from "../canvas/panels/NodeLibrary";
 import { WorkflowCanvas } from "../canvas/WorkflowCanvas";
 import { AIGenerateButton } from "../components/AIGenerateButton";
 import { BuilderHeader } from "../components/BuilderHeader";
+import { CheckpointPanel } from "../components/CheckpointPanel";
 import { ExecutionPanel } from "../components/ExecutionPanel";
-import { VersionPanel } from "../components/VersionPanel";
 import { WorkflowSettingsDialog } from "../components/WorkflowSettingsDialog";
 import { useKeyboardShortcuts } from "../hooks/useKeyboardShortcuts";
-import { getWorkflow, updateWorkflow } from "../lib/api";
-import { generateId } from "../lib/utils";
 import {
-    createVersion,
-    deleteVersion,
-    listVersions,
-    revertVersion,
-    renameVersion
-} from "../lib/versions";
+    getWorkflow,
+    updateWorkflow,
+    createCheckpoint,
+    deleteCheckpoint,
+    listCheckpoints,
+    restoreCheckpoint,
+    renameCheckpoint
+} from "../lib/api";
+import { generateId } from "../lib/utils";
 import {
     createWorkflowSnapshot,
     transformNodesToBackendMap,
     transformEdgesToBackend,
-    findEntryPoint
+    findEntryPoint,
+    compareWorkflowSnapshots
 } from "../lib/workflowTransformers";
 import { useHistoryStore, initializeHistoryTracking } from "../stores/historyStore";
 import { useWorkflowStore } from "../stores/workflowStore";
@@ -43,7 +45,7 @@ interface CopiedNode {
     position: { x: number; y: number };
 }
 
-interface Version {
+interface Checkpoint {
     id: string;
     name: string | null;
     createdAt: string;
@@ -63,9 +65,9 @@ export function FlowBuilder() {
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [copiedNode, setCopiedNode] = useState<CopiedNode | null>(null);
     const reactFlowInstanceRef = useRef<ReturnType<typeof useReactFlow> | null>(null);
-    const [isVersionOpen, setIsVersionOpen] = useState(false);
-    const [versions, setVersions] = useState<Version[]>([]);
-    const [currentVersion, setCurrentVersion] = useState<Version | null>(null);
+    const [isCheckpointOpen, setIsCheckpointOpen] = useState(false);
+    const [checkpoints, setCheckpoints] = useState<Checkpoint[]>([]);
+    const [showMinorChangesDialog, setShowMinorChangesDialog] = useState(false);
 
     const {
         selectedNode,
@@ -85,28 +87,22 @@ export function FlowBuilder() {
 
     useEffect(() => {
         if (workflowId) {
-            Promise.all([getWorkflow(workflowId), listVersions(workflowId)]).then(
-                ([workflow, v]) => {
-                    const sorted = v.sort(
-                        (a: Version, b: Version) =>
-                            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-                    );
-
-                    setVersions(sorted);
-
-                    const current = sorted.find((ver: Version) => {
-                        const match =
-                            JSON.stringify(workflow.data.definition) ===
-                            JSON.stringify(ver.snapshot);
-
-                        return match;
-                    });
-
-                    setCurrentVersion(current || null);
-                }
-            );
+            listCheckpoints(workflowId).then((cp) => {
+                const sorted = cp.sort(
+                    (a: Checkpoint, b: Checkpoint) =>
+                        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+                );
+                setCheckpoints(sorted);
+            });
         }
     }, [workflowId]);
+
+    // Close checkpoint panel when a node is selected
+    useEffect(() => {
+        if (selectedNode && isCheckpointOpen) {
+            setIsCheckpointOpen(false);
+        }
+    }, [selectedNode]);
 
     useEffect(() => {
         const unsubscribe = initializeHistoryTracking();
@@ -147,7 +143,7 @@ export function FlowBuilder() {
             const response = await getWorkflow(workflowId);
             console.log("[FRONTEND LOAD] workflow.definition =", response.data.definition);
 
-            const v = await listVersions(workflowId);
+            const cp = await listCheckpoints(workflowId);
             resetWorkflow();
 
             if (response.success && response.data) {
@@ -199,14 +195,7 @@ export function FlowBuilder() {
                     }
                 }
             }
-            setVersions(v);
-
-            const current = v.find(
-                (ver: Version) =>
-                    JSON.stringify(response.data.definition) === JSON.stringify(ver.snapshot)
-            );
-
-            setCurrentVersion(current || null);
+            setCheckpoints(cp);
         } catch (error) {
             console.error("[FlowBuilder] Failed to load workflow:", error);
         } finally {
@@ -364,54 +353,67 @@ export function FlowBuilder() {
         }
     };
 
-    const handleDeleteVersion = async (id: string) => {
-        const updated = await deleteVersion(id, workflowId!);
-
-        setVersions(updated);
-        setCurrentVersion(updated[0] ?? null);
+    const handleDeleteCheckpoint = async (id: string) => {
+        const updated = await deleteCheckpoint(id, workflowId!);
+        setCheckpoints(updated);
     };
 
-    const handleRevertVersion = async (id: string) => {
-        await revertVersion(id);
+    const handleRestoreCheckpoint = async (id: string) => {
+        await restoreCheckpoint(id);
         await loadWorkflow();
 
-        const updated: Version[] = (await listVersions(workflowId!)).sort(
-            (a: Version, b: Version) =>
+        const updated: Checkpoint[] = (await listCheckpoints(workflowId!)).sort(
+            (a: Checkpoint, b: Checkpoint) =>
                 new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         );
-
-        const reverted = updated.find((v) => v.id === id) || null;
-
-        setCurrentVersion(reverted);
-        setVersions(updated);
+        setCheckpoints(updated);
     };
 
-    const handleCreateVersion = async (name?: string) => {
-        await createVersion(workflowId!, name);
-        await loadWorkflow();
+    /**
+     * Check if there are significant changes compared to the latest checkpoint.
+     * Returns true if there are significant changes (or no checkpoints exist).
+     */
+    const checkForSignificantChanges = (): boolean => {
+        if (checkpoints.length === 0) return true;
 
-        const updated: Version[] = (await listVersions(workflowId!)).sort(
-            (a: Version, b: Version) =>
-                new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        const latestCheckpoint = checkpoints[0];
+        const currentNodesMap = transformNodesToBackendMap(nodes);
+        const currentEdgesBackend = transformEdgesToBackend(edges);
+
+        const comparison = compareWorkflowSnapshots(
+            currentNodesMap as Parameters<typeof compareWorkflowSnapshots>[0],
+            currentEdgesBackend as Parameters<typeof compareWorkflowSnapshots>[1],
+            latestCheckpoint.snapshot as unknown as Parameters<typeof compareWorkflowSnapshots>[2]
         );
 
-        setVersions(updated);
-        setCurrentVersion(updated[0] ?? null);
+        return comparison.hasSignificantChanges;
     };
 
-    const handleRenameVersion = async (id: string, newName: string) => {
-        await renameVersion(id, newName);
+    const handleCreateCheckpoint = async (name?: string) => {
+        // Save the workflow first to ensure checkpoint captures persisted state
+        await handleSave();
 
-        const updated = await listVersions(workflowId!);
-        setVersions(updated);
+        await createCheckpoint(workflowId!, name);
 
-        setCurrentVersion((prev) => (prev?.id === id ? { ...prev, name: newName } : prev));
+        const updated: Checkpoint[] = (await listCheckpoints(workflowId!)).sort(
+            (a: Checkpoint, b: Checkpoint) =>
+                new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+        setCheckpoints(updated);
+    };
+
+    const handleRenameCheckpoint = async (id: string, newName: string) => {
+        await renameCheckpoint(id, newName);
+
+        const updated = await listCheckpoints(workflowId!);
+        setCheckpoints(updated);
     };
 
     useKeyboardShortcuts({
         onSave: handleSave,
         onRun: handleRunWorkflow,
         onOpenSettings: () => setIsSettingsOpen(true),
+        onOpenCheckpoints: () => setIsCheckpointOpen((prev) => !prev),
         onUndo: undo,
         onRedo: redo,
         onDelete: handleDeleteNode,
@@ -447,7 +449,7 @@ export function FlowBuilder() {
                     onSave={handleSave}
                     onNameChange={handleNameChange}
                     onOpenSettings={() => setIsSettingsOpen(true)}
-                    onOpenVersion={() => setIsVersionOpen(true)}
+                    onOpenCheckpoints={() => setIsCheckpointOpen((prev) => !prev)}
                 />
 
                 <WorkflowSettingsDialog
@@ -482,15 +484,18 @@ export function FlowBuilder() {
                     </div>
 
                     {workflowId && <ExecutionPanel workflowId={workflowId} renderPanelOnly />}
-                    <VersionPanel
-                        open={isVersionOpen}
-                        onClose={() => setIsVersionOpen(false)}
-                        versions={versions}
-                        currentVersion={currentVersion}
-                        onRevert={handleRevertVersion}
-                        onDelete={handleDeleteVersion}
-                        onRename={handleRenameVersion}
-                        onCreate={handleCreateVersion}
+                    <CheckpointPanel
+                        open={isCheckpointOpen}
+                        onClose={() => setIsCheckpointOpen(false)}
+                        checkpoints={checkpoints}
+                        onRestore={handleRestoreCheckpoint}
+                        onDelete={handleDeleteCheckpoint}
+                        onRename={handleRenameCheckpoint}
+                        onCreate={handleCreateCheckpoint}
+                        onCheckChanges={checkForSignificantChanges}
+                        showMinorChangesDialog={showMinorChangesDialog}
+                        onShowMinorChangesDialog={() => setShowMinorChangesDialog(true)}
+                        onCloseMinorChangesDialog={() => setShowMinorChangesDialog(false)}
                     />
                 </div>
             </div>

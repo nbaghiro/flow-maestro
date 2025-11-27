@@ -1,18 +1,18 @@
-import { VersionsRepository } from "../../../storage/repositories/VersionsRepository";
+import { CheckpointsRepository } from "../../../storage/repositories/CheckpointsRepository";
 import { authMiddleware, validateParams } from "../../middleware";
-import { versionIdParamSchema } from "../../schemas/versions.schemas";
+import { checkpointIdParamSchema } from "../../schemas/checkpoint-schemas";
 import type { FastifyInstance } from "fastify";
 
-export async function deleteVersionRoute(fastify: FastifyInstance) {
+export async function deleteCheckpointRoute(fastify: FastifyInstance) {
     fastify.delete(
         "/:id",
         {
-            preHandler: [authMiddleware, validateParams(versionIdParamSchema)]
+            preHandler: [authMiddleware, validateParams(checkpointIdParamSchema)]
         },
         async (request, reply) => {
             const { id } = request.params as { id: string };
 
-            const repo = new VersionsRepository();
+            const repo = new CheckpointsRepository();
             await repo.delete(id, request.user!.id);
 
             return reply.status(204).send();

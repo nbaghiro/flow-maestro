@@ -4,6 +4,7 @@ export interface KeyboardShortcutHandlers {
     onSave: () => void;
     onRun?: () => void;
     onOpenSettings: () => void;
+    onOpenCheckpoints?: () => void;
     onUndo: () => void;
     onRedo: () => void;
     onDelete: () => void;
@@ -27,6 +28,7 @@ export function useKeyboardShortcuts(handlers: KeyboardShortcutHandlers): void {
         onSave,
         onRun,
         onOpenSettings,
+        onOpenCheckpoints,
         onUndo,
         onRedo,
         onDelete,
@@ -72,6 +74,13 @@ export function useKeyboardShortcuts(handlers: KeyboardShortcutHandlers): void {
             if (modifier && event.key === ",") {
                 event.preventDefault();
                 onOpenSettings();
+                return;
+            }
+
+            // Cmd+. / Ctrl+. - Open checkpoints
+            if (modifier && event.key === "." && onOpenCheckpoints) {
+                event.preventDefault();
+                onOpenCheckpoints();
                 return;
             }
 
@@ -155,6 +164,7 @@ export function useKeyboardShortcuts(handlers: KeyboardShortcutHandlers): void {
         onSave,
         onRun,
         onOpenSettings,
+        onOpenCheckpoints,
         onUndo,
         onRedo,
         onDelete,

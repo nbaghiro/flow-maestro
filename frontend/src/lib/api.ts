@@ -2249,3 +2249,126 @@ export async function getModelAnalytics(params?: {
 
     return response.json();
 }
+
+// ===== Checkpoint API Functions =====
+
+interface CheckpointRow {
+    id: string;
+    name: string | null;
+    created_at: string;
+    snapshot: Record<string, unknown>;
+    description?: string | null;
+}
+
+export interface Checkpoint {
+    id: string;
+    name: string | null;
+    createdAt: string;
+    snapshot: Record<string, unknown>;
+    formatted: string;
+}
+
+/**
+ * List checkpoints for a workflow
+ */
+export async function listCheckpoints(workflowId: string): Promise<Checkpoint[]> {
+    const token = getAuthToken();
+
+    const response = await fetch(`${API_BASE_URL}/api/checkpoints/workflow/${workflowId}`, {
+        headers: {
+            Authorization: `Bearer ${token}`
+        }
+    });
+
+    if (!response.ok) throw new Error("Failed to fetch checkpoints");
+    const json = await response.json();
+    return json.data.map((cp: CheckpointRow) => ({
+        id: cp.id,
+        name: cp.name,
+        createdAt: cp.created_at,
+        snapshot: cp.snapshot,
+        formatted: new Date(cp.created_at).toLocaleString("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+            hour: "numeric",
+            minute: "2-digit"
+        })
+    }));
+}
+
+/**
+ * Create a checkpoint for a workflow
+ */
+export async function createCheckpoint(workflowId: string, name?: string) {
+    const token = getAuthToken();
+
+    const response = await fetch(`${API_BASE_URL}/api/checkpoints/${workflowId}`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ name })
+    });
+
+    if (!response.ok) throw new Error("Failed to create checkpoint");
+    return response.json();
+}
+
+/**
+ * Restore a checkpoint
+ */
+export async function restoreCheckpoint(checkpointId: string) {
+    const token = getAuthToken();
+
+    const response = await fetch(`${API_BASE_URL}/api/checkpoints/restore/${checkpointId}`, {
+        method: "POST",
+        headers: {
+            Authorization: `Bearer ${token}`
+        }
+    });
+
+    if (!response.ok) throw new Error("Failed to restore checkpoint");
+    return response.json();
+}
+
+/**
+ * Delete a checkpoint
+ */
+export async function deleteCheckpoint(
+    checkpointId: string,
+    workflowId: string
+): Promise<Checkpoint[]> {
+    const token = getAuthToken();
+
+    const response = await fetch(`${API_BASE_URL}/api/checkpoints/${checkpointId}`, {
+        method: "DELETE",
+        headers: {
+            Authorization: `Bearer ${token}`
+        }
+    });
+
+    if (!response.ok) throw new Error("Failed to delete checkpoint");
+
+    return listCheckpoints(workflowId);
+}
+
+/**
+ * Rename a checkpoint
+ */
+export async function renameCheckpoint(id: string, newName: string) {
+    const token = getAuthToken();
+
+    const response = await fetch(`${API_BASE_URL}/api/checkpoints/rename/${id}`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ name: newName })
+    });
+
+    if (!response.ok) throw new Error("Failed to rename checkpoint");
+    return response.json();
+}

@@ -1,25 +1,28 @@
-import { VersionsRepository } from "../../../storage/repositories/VersionsRepository";
+import { CheckpointsRepository } from "../../../storage/repositories/CheckpointsRepository";
 import { authMiddleware, validateParams, validateRequest } from "../../middleware";
-import { createVersionSchema, type CreateVersionRequest } from "../../schemas/versions.schemas";
+import {
+    createCheckpointSchema,
+    type CreateCheckpointRequest
+} from "../../schemas/checkpoint-schemas";
 import { workflowIdParamSchema } from "../../schemas/workflow-schemas";
 import type { FastifyInstance } from "fastify";
 
-export async function createVersionRoute(fastify: FastifyInstance) {
+export async function createCheckpointRoute(fastify: FastifyInstance) {
     fastify.post(
         "/:id",
         {
             preHandler: [
                 authMiddleware,
                 validateParams(workflowIdParamSchema),
-                validateRequest(createVersionSchema)
+                validateRequest(createCheckpointSchema)
             ]
         },
         async (request, reply) => {
             const { id } = request.params as { id: string };
-            const { name, description } = request.body as CreateVersionRequest;
+            const { name, description } = request.body as CreateCheckpointRequest;
 
-            const versionsRepository = new VersionsRepository();
-            const version = await versionsRepository.create(
+            const checkpointsRepository = new CheckpointsRepository();
+            const checkpoint = await checkpointsRepository.create(
                 id,
                 request.user!.id,
                 name,
@@ -28,7 +31,7 @@ export async function createVersionRoute(fastify: FastifyInstance) {
 
             return reply.status(201).send({
                 success: true,
-                data: version
+                data: checkpoint
             });
         }
     );

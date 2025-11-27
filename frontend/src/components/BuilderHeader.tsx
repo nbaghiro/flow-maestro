@@ -16,7 +16,7 @@ interface BuilderHeaderProps {
     onSave?: () => void;
     onNameChange?: (name: string) => void;
     onOpenSettings?: () => void;
-    onOpenVersion?: () => void;
+    onOpenCheckpoints?: () => void;
 }
 
 export function BuilderHeader({
@@ -27,7 +27,7 @@ export function BuilderHeader({
     onSave,
     onNameChange,
     onOpenSettings,
-    onOpenVersion
+    onOpenCheckpoints
 }: BuilderHeaderProps) {
     const { startExecution, currentExecution, selectNode } = useWorkflowStore();
     const { setDrawerOpen } = useTriggerStore();
@@ -178,9 +178,9 @@ export function BuilderHeader({
 
                 {/* Right: Action Buttons */}
                 <div className="flex items-center gap-2">
-                    <Tooltip content="Versions" position="bottom">
+                    <Tooltip content="Checkpoints (⌘.)" position="bottom">
                         <button
-                            onClick={onOpenVersion}
+                            onClick={onOpenCheckpoints}
                             className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted border border-border rounded-lg transition-colors"
                         >
                             <Layers className="w-4 h-4" />

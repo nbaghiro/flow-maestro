@@ -1,26 +1,26 @@
-import { VersionsRepository } from "../../../storage/repositories/VersionsRepository";
+import { CheckpointsRepository } from "../../../storage/repositories/CheckpointsRepository";
 import { WorkflowRepository } from "../../../storage/repositories/WorkflowRepository";
 import { authMiddleware, validateParams } from "../../middleware";
-import { versionIdParamSchema } from "../../schemas/versions.schemas";
+import { checkpointIdParamSchema } from "../../schemas/checkpoint-schemas";
 import type { FastifyInstance } from "fastify";
 
-export async function revertVersionRoute(fastify: FastifyInstance) {
+export async function restoreCheckpointRoute(fastify: FastifyInstance) {
     fastify.post(
-        "/revert/:id",
+        "/restore/:id",
         {
-            preHandler: [authMiddleware, validateParams(versionIdParamSchema)]
+            preHandler: [authMiddleware, validateParams(checkpointIdParamSchema)]
         },
         async (request, reply) => {
             const { id } = request.params as { id: string };
 
-            const versionRepo = new VersionsRepository();
+            const checkpointRepo = new CheckpointsRepository();
             const workflowRepo = new WorkflowRepository();
 
-            const version = await versionRepo.get(id, request.user!.id);
+            const checkpoint = await checkpointRepo.get(id, request.user!.id);
 
             const updatedWorkflow = await workflowRepo.updateSnapshot(
-                version.workflow_id,
-                version.snapshot
+                checkpoint.workflow_id,
+                checkpoint.snapshot
             );
 
             return reply.send({
