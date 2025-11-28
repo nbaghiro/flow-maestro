@@ -5,6 +5,31 @@
 
 import type { ConnectionMethod } from "./connections";
 
+/**
+ * OAuth pre-auth field configuration
+ * Used to collect provider-specific settings before initiating OAuth flow
+ */
+export interface OAuthField {
+    /** Field name (used as key in settings object) */
+    name: string;
+    /** Display label */
+    label: string;
+    /** Placeholder text */
+    placeholder?: string;
+    /** Help text shown below the field */
+    helpText?: string;
+    /** Whether the field is required */
+    required: boolean;
+    /** Field type */
+    type: "text" | "select";
+    /** Options for select fields */
+    options?: { value: string; label: string }[];
+    /** Validation pattern (regex) */
+    pattern?: string;
+    /** Pattern validation error message */
+    patternError?: string;
+}
+
 export interface Provider {
     provider: string;
     displayName: string;
@@ -13,8 +38,8 @@ export interface Provider {
     category: string;
     methods: ConnectionMethod[];
     comingSoon?: boolean;
-    mcpServerUrl?: string; // HTTP URL for MCP server
-    mcpAuthType?: "api_key" | "oauth2" | "none";
+    /** Fields to collect before initiating OAuth flow (e.g., subdomain for Zendesk) */
+    oauthSettings?: OAuthField[];
 }
 
 // Brandfetch Logo API client ID
@@ -24,7 +49,7 @@ const getBrandLogo = (domain: string): string =>
 
 /**
  * All Providers - Available and Coming Soon
- * Centralized list of all integrations with MCP server URLs from Pipedream
+ * Centralized list of all integrations
  */
 export const ALL_PROVIDERS: Provider[] = [
     // AI & ML
@@ -61,9 +86,7 @@ export const ALL_PROVIDERS: Provider[] = [
         description: "Send messages and manage channels",
         logoUrl: getBrandLogo("slack.com"),
         category: "Communication",
-        methods: ["oauth2"],
-        mcpServerUrl: "https://mcp.pipedream.com/app/slack",
-        mcpAuthType: "oauth2"
+        methods: ["oauth2"]
     },
     {
         provider: "discord",
@@ -72,9 +95,7 @@ export const ALL_PROVIDERS: Provider[] = [
         logoUrl: getBrandLogo("discord.com"),
         category: "Communication",
         methods: ["api_key"],
-        comingSoon: true,
-        mcpServerUrl: "https://mcp.pipedream.com/app/discord",
-        mcpAuthType: "api_key"
+        comingSoon: true
     },
     {
         provider: "telegram",
@@ -83,9 +104,7 @@ export const ALL_PROVIDERS: Provider[] = [
         logoUrl: getBrandLogo("telegram.org"),
         category: "Communication",
         methods: ["api_key"],
-        comingSoon: true,
-        mcpServerUrl: "https://mcp.pipedream.com/app/telegram",
-        mcpAuthType: "api_key"
+        comingSoon: true
     },
     {
         provider: "microsoft-teams",
@@ -153,9 +172,7 @@ export const ALL_PROVIDERS: Provider[] = [
         description: "Manage records, bases, and collaborate in Airtable",
         logoUrl: getBrandLogo("airtable.com"),
         category: "Productivity",
-        methods: ["oauth2"],
-        mcpServerUrl: "https://mcp.pipedream.com/app/airtable",
-        mcpAuthType: "oauth2"
+        methods: ["oauth2"]
     },
     {
         provider: "coda",
@@ -173,9 +190,7 @@ export const ALL_PROVIDERS: Provider[] = [
         description: "Manage repos, issues, and pull requests",
         logoUrl: getBrandLogo("github.com"),
         category: "Developer Tools",
-        methods: ["api_key", "oauth2"],
-        mcpServerUrl: "https://mcp.pipedream.com/app/github",
-        mcpAuthType: "oauth2"
+        methods: ["api_key", "oauth2"]
     },
     {
         provider: "gitlab",
@@ -184,9 +199,7 @@ export const ALL_PROVIDERS: Provider[] = [
         logoUrl: getBrandLogo("gitlab.com"),
         category: "Developer Tools",
         methods: ["api_key", "oauth2"],
-        comingSoon: true,
-        mcpServerUrl: "https://mcp.pipedream.com/app/gitlab",
-        mcpAuthType: "oauth2"
+        comingSoon: true
     },
     {
         provider: "bitbucket",
@@ -204,9 +217,7 @@ export const ALL_PROVIDERS: Provider[] = [
         logoUrl: getBrandLogo("atlassian.com/jira"),
         category: "Developer Tools",
         methods: ["api_key", "oauth2"],
-        comingSoon: true,
-        mcpServerUrl: "https://mcp.pipedream.com/app/jira",
-        mcpAuthType: "oauth2"
+        comingSoon: true
     },
 
     // Project Management
@@ -217,9 +228,7 @@ export const ALL_PROVIDERS: Provider[] = [
         logoUrl: getBrandLogo("asana.com"),
         category: "Project Management",
         methods: ["api_key", "oauth2"],
-        comingSoon: true,
-        mcpServerUrl: "https://mcp.pipedream.com/app/asana",
-        mcpAuthType: "oauth2"
+        comingSoon: true
     },
     {
         provider: "trello",
@@ -228,9 +237,7 @@ export const ALL_PROVIDERS: Provider[] = [
         logoUrl: getBrandLogo("trello.com"),
         category: "Project Management",
         methods: ["api_key", "oauth2"],
-        comingSoon: true,
-        mcpServerUrl: "https://mcp.pipedream.com/app/trello",
-        mcpAuthType: "oauth2"
+        comingSoon: true
     },
     {
         provider: "monday",
@@ -294,8 +301,7 @@ export const ALL_PROVIDERS: Provider[] = [
         description: "Manage leads, contacts, and opportunities",
         logoUrl: getBrandLogo("salesforce.com"),
         category: "CRM & Sales",
-        methods: ["oauth2"],
-        comingSoon: true
+        methods: ["oauth2"]
     },
     {
         provider: "hubspot",
@@ -303,9 +309,7 @@ export const ALL_PROVIDERS: Provider[] = [
         description: "Manage contacts, companies, deals, and more",
         logoUrl: getBrandLogo("hubspot.com"),
         category: "CRM & Sales",
-        methods: ["oauth2"],
-        mcpServerUrl: "https://mcp.pipedream.com/app/hubspot",
-        mcpAuthType: "oauth2"
+        methods: ["oauth2"]
     },
     {
         provider: "pipedrive",
@@ -325,9 +329,7 @@ export const ALL_PROVIDERS: Provider[] = [
         logoUrl: getBrandLogo("shopify.com"),
         category: "E-commerce",
         methods: ["api_key", "oauth2"],
-        comingSoon: true,
-        mcpServerUrl: "https://mcp.pipedream.com/app/shopify",
-        mcpAuthType: "oauth2"
+        comingSoon: true
     },
 
     // Marketing & Email
@@ -338,9 +340,7 @@ export const ALL_PROVIDERS: Provider[] = [
         logoUrl: getBrandLogo("mailchimp.com"),
         category: "Marketing",
         methods: ["api_key", "oauth2"],
-        comingSoon: true,
-        mcpServerUrl: "https://mcp.pipedream.com/app/mailchimp",
-        mcpAuthType: "oauth2"
+        comingSoon: true
     },
     {
         provider: "sendgrid",
@@ -349,9 +349,7 @@ export const ALL_PROVIDERS: Provider[] = [
         logoUrl: getBrandLogo("sendgrid.com"),
         category: "Marketing",
         methods: ["api_key"],
-        comingSoon: true,
-        mcpServerUrl: "https://mcp.pipedream.com/app/sendgrid",
-        mcpAuthType: "api_key"
+        comingSoon: true
     },
     {
         provider: "twilio",
@@ -360,9 +358,7 @@ export const ALL_PROVIDERS: Provider[] = [
         logoUrl: getBrandLogo("twilio.com"),
         category: "Marketing",
         methods: ["api_key"],
-        comingSoon: true,
-        mcpServerUrl: "https://mcp.pipedream.com/app/twilio",
-        mcpAuthType: "api_key"
+        comingSoon: true
     },
 
     // File Storage
@@ -668,7 +664,19 @@ export const ALL_PROVIDERS: Provider[] = [
         logoUrl: getBrandLogo("zendesk.com"),
         category: "Customer Support",
         methods: ["oauth2"],
-        comingSoon: true
+        oauthSettings: [
+            {
+                name: "subdomain",
+                label: "Zendesk Subdomain",
+                placeholder: "your-company",
+                helpText: "Enter your Zendesk subdomain (e.g., 'acme' from acme.zendesk.com)",
+                required: true,
+                type: "text",
+                pattern: "^[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]$|^[a-zA-Z0-9]$",
+                patternError:
+                    "Subdomain must start and end with a letter or number, and can contain hyphens"
+            }
+        ]
     },
     {
         provider: "intercom",
@@ -1044,9 +1052,7 @@ export const ALL_PROVIDERS: Provider[] = [
         description: "Cloud file storage and sharing",
         logoUrl: getBrandLogo("drive.google.com"),
         category: "File Storage",
-        methods: ["oauth2"],
-        mcpServerUrl: "https://mcp.pipedream.com/app/google-drive",
-        mcpAuthType: "oauth2"
+        methods: ["oauth2"]
     },
     {
         provider: "google-sheets",

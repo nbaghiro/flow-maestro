@@ -281,6 +281,8 @@ EXISTING_META_APP_ID=$(get_existing_gcp_secret "flowmaestro-app-meta-app-id")
 EXISTING_META_APP_SECRET=$(get_existing_gcp_secret "flowmaestro-app-meta-app-secret")
 EXISTING_META_CLIENT_TOKEN=$(get_existing_gcp_secret "flowmaestro-app-meta-client-token")
 EXISTING_META_WEBHOOK_VERIFY_TOKEN=$(get_existing_gcp_secret "flowmaestro-app-meta-webhook-verify-token")
+EXISTING_ZENDESK_CLIENT_ID=$(get_existing_gcp_secret "flowmaestro-app-zendesk-client-id")
+EXISTING_ZENDESK_CLIENT_SECRET=$(get_existing_gcp_secret "flowmaestro-app-zendesk-client-secret")
 
 # Try to get from Pulumi outputs as fallback for infrastructure values
 if [ -z "$EXISTING_DB_HOST" ]; then
@@ -308,6 +310,7 @@ FOUND_COUNT=0
 [ -n "$EXISTING_FIGMA_CLIENT_ID" ] && ((FOUND_COUNT++))
 [ -n "$EXISTING_MICROSOFT_CLIENT_ID" ] && ((FOUND_COUNT++))
 [ -n "$EXISTING_META_APP_ID" ] && ((FOUND_COUNT++))
+[ -n "$EXISTING_ZENDESK_CLIENT_ID" ] && ((FOUND_COUNT++))
 
 if [ $FOUND_COUNT -gt 0 ]; then
     print_success "Found $FOUND_COUNT existing secret(s)!"
@@ -324,6 +327,7 @@ if [ $FOUND_COUNT -gt 0 ]; then
     [ -n "$EXISTING_AIRTABLE_CLIENT_ID" ] && print_info "  - Airtable OAuth: configured"
     [ -n "$EXISTING_HUBSPOT_CLIENT_ID" ] && print_info "  - HubSpot OAuth: configured"
     [ -n "$EXISTING_MICROSOFT_CLIENT_ID" ] && print_info "  - Microsoft OAuth: configured"
+    [ -n "$EXISTING_ZENDESK_CLIENT_ID" ] && print_info "  - Zendesk OAuth: configured"
     echo ""
     if [ "$PROMPT_ALL" = false ]; then
         print_info "Mode: Only prompting for NON-EXISTING secrets"
@@ -717,6 +721,20 @@ else
     read -p "Meta Webhook Verify Token: " META_WEBHOOK_VERIFY_TOKEN
 fi
 
+# Zendesk OAuth
+if [ -n "$EXISTING_ZENDESK_CLIENT_ID" ] && [ "$PROMPT_ALL" = false ]; then
+    print_info "Zendesk OAuth: already configured"
+    ZENDESK_CLIENT_ID="$EXISTING_ZENDESK_CLIENT_ID"
+    ZENDESK_CLIENT_SECRET="$EXISTING_ZENDESK_CLIENT_SECRET"
+elif [ -n "$EXISTING_ZENDESK_CLIENT_ID" ]; then
+    prompt_with_existing "Zendesk Client ID" "$EXISTING_ZENDESK_CLIENT_ID" "ZENDESK_CLIENT_ID"
+    prompt_with_existing "Zendesk Client Secret" "$EXISTING_ZENDESK_CLIENT_SECRET" "ZENDESK_CLIENT_SECRET"
+else
+    read -p "Zendesk Client ID: " ZENDESK_CLIENT_ID
+    read -p "Zendesk Client Secret: " -s ZENDESK_CLIENT_SECRET
+    echo
+fi
+
 print_header "Creating/Updating Secrets in GCP Secret Manager"
 
 # Create/update all secrets
@@ -755,6 +773,8 @@ create_or_update_secret "flowmaestro-app-meta-app-id" "$META_APP_ID"
 create_or_update_secret "flowmaestro-app-meta-app-secret" "$META_APP_SECRET"
 create_or_update_secret "flowmaestro-app-meta-client-token" "$META_CLIENT_TOKEN"
 create_or_update_secret "flowmaestro-app-meta-webhook-verify-token" "$META_WEBHOOK_VERIFY_TOKEN"
+create_or_update_secret "flowmaestro-app-zendesk-client-id" "$ZENDESK_CLIENT_ID"
+create_or_update_secret "flowmaestro-app-zendesk-client-secret" "$ZENDESK_CLIENT_SECRET"
 
 print_header "Setup Complete!"
 print_success "All secrets have been created/updated in ${GCP_PROJECT}"

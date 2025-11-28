@@ -487,6 +487,7 @@ export function AddMCPIntegrationDialog({
                     onSuccess={handleConnectionCreated}
                     supportsOAuth={currentProvider.methods.includes("oauth2")}
                     supportsApiKey={currentProvider.methods.includes("api_key")}
+                    oauthSettings={currentProvider.oauthSettings}
                 />
             )}
         </>

@@ -10,6 +10,7 @@ interface StateTokenData {
     provider: string; // Track which service initiated the OAuth flow
     expiresAt: number;
     codeVerifier?: string; // PKCE code verifier
+    subdomain?: string; // For providers like Zendesk that require per-connection subdomain
 }
 
 /**
@@ -37,6 +38,7 @@ export interface OAuthTokenResult {
         scope?: string;
     };
     accountInfo: unknown;
+    subdomain?: string; // For providers like Zendesk that require per-connection subdomain
 }
 
 /**
@@ -57,9 +59,22 @@ export class OAuthService {
     /**
      * Generate authorization URL for user to visit
      * GENERIC - works for all OAuth providers
+     *
+     * @param provider - The OAuth provider name
+     * @param userId - The user ID initiating the OAuth flow
+     * @param options - Optional parameters (e.g., subdomain for Zendesk)
      */
-    generateAuthUrl(provider: string, userId: string): string {
+    generateAuthUrl(provider: string, userId: string, options?: { subdomain?: string }): string {
         const config = getOAuthProvider(provider);
+
+        // Handle providers that require subdomain (like Zendesk)
+        let authUrl = config.authUrl;
+        if (provider === "zendesk") {
+            if (!options?.subdomain) {
+                throw new Error("Zendesk requires a subdomain to initiate OAuth flow");
+            }
+            authUrl = authUrl.replace("{subdomain}", options.subdomain);
+        }
 
         // Generate PKCE parameters if provider supports it
         let codeVerifier: string | undefined;
@@ -71,8 +86,8 @@ export class OAuthService {
             codeChallenge = pkce.codeChallenge;
         }
 
-        // Generate CSRF state token (store code_verifier if using PKCE)
-        const state = this.generateStateToken(userId, provider, codeVerifier);
+        // Generate CSRF state token (store code_verifier and subdomain if using PKCE)
+        const state = this.generateStateToken(userId, provider, codeVerifier, options?.subdomain);
 
         // Build authorization URL with parameters
         const params = new URLSearchParams({
@@ -94,10 +109,10 @@ export class OAuthService {
             params.set("scope", config.scopes.join(" "));
         }
 
-        const authUrl = `${config.authUrl}?${params.toString()}`;
-        console.log(`[OAuth] Generated auth URL for ${provider}:`, authUrl);
+        const finalAuthUrl = `${authUrl}?${params.toString()}`;
+        console.log(`[OAuth] Generated auth URL for ${provider}:`, finalAuthUrl);
 
-        return authUrl;
+        return finalAuthUrl;
     }
 
     /**
@@ -124,7 +139,13 @@ export class OAuthService {
 
         try {
             // Exchange code for token (with PKCE verifier if applicable)
-            const tokenData = await this.performTokenExchange(config, code, stateData.codeVerifier);
+            // For Zendesk, pass the subdomain for token URL resolution
+            const tokenData = await this.performTokenExchange(
+                config,
+                code,
+                stateData.codeVerifier,
+                stateData.subdomain
+            );
 
             console.log(`[OAuth] Token exchange successful for ${actualProvider}`);
 
@@ -132,7 +153,11 @@ export class OAuthService {
             let accountInfo: Record<string, unknown> = {};
             if (config.getUserInfo) {
                 try {
-                    const userInfo = await config.getUserInfo(tokenData.access_token);
+                    // Pass subdomain for providers that need it (like Zendesk)
+                    const userInfo = await config.getUserInfo(
+                        tokenData.access_token,
+                        stateData.subdomain
+                    );
                     accountInfo = userInfo as Record<string, unknown>;
                     console.log(`[OAuth] Retrieved user info for ${actualProvider}:`, accountInfo);
                 } catch (error: unknown) {
@@ -151,7 +176,8 @@ export class OAuthService {
                     expires_in: tokenData.expires_in,
                     scope: tokenData.scope
                 },
-                accountInfo
+                accountInfo,
+                subdomain: stateData.subdomain // Include subdomain for providers like Zendesk
             };
         } catch (error: unknown) {
             const errorMsg = error instanceof Error ? error.message : "Unknown error";
@@ -270,7 +296,8 @@ export class OAuthService {
     private async performTokenExchange(
         config: OAuthProvider,
         code: string,
-        codeVerifier?: string
+        codeVerifier?: string,
+        subdomain?: string
     ): Promise<OAuthToken> {
         const params: Record<string, string> = {
             client_id: config.clientId,
@@ -308,7 +335,13 @@ export class OAuthService {
             delete params.client_secret;
         }
 
-        const response = await fetch(config.tokenUrl, {
+        // Handle providers with dynamic subdomain (like Zendesk)
+        let tokenUrl = config.tokenUrl;
+        if (config.name === "zendesk" && subdomain) {
+            tokenUrl = tokenUrl.replace("{subdomain}", subdomain);
+        }
+
+        const response = await fetch(tokenUrl, {
             method: "POST",
             headers,
             body: new URLSearchParams(params).toString()
@@ -328,14 +361,20 @@ export class OAuthService {
     /**
      * Generate a secure state token for CSRF protection
      */
-    private generateStateToken(userId: string, provider: string, codeVerifier?: string): string {
+    private generateStateToken(
+        userId: string,
+        provider: string,
+        codeVerifier?: string,
+        subdomain?: string
+    ): string {
         const state = randomBytes(32).toString("hex");
 
         this.stateStore.set(state, {
             userId,
             provider, // Store which service initiated the flow
             expiresAt: Date.now() + 5 * 60 * 1000, // 5 minutes expiry
-            codeVerifier // Store PKCE verifier if using PKCE
+            codeVerifier, // Store PKCE verifier if using PKCE
+            subdomain // Store subdomain for providers like Zendesk
         });
 
         // Cleanup expired states periodically

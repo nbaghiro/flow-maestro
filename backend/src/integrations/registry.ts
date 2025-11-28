@@ -68,6 +68,18 @@ const hubspotEntry: ProviderRegistryEntry = {
     }
 };
 
+// Register Salesforce provider
+const salesforceEntry: ProviderRegistryEntry = {
+    name: "salesforce",
+    displayName: "Salesforce",
+    authMethod: "oauth2",
+    category: "crm",
+    loader: async () => {
+        const { SalesforceProvider } = await import("./providers/salesforce/SalesforceProvider");
+        return new SalesforceProvider();
+    }
+};
+
 // Register PostgreSQL provider
 const postgresqlEntry: ProviderRegistryEntry = {
     name: "postgresql",
@@ -274,12 +286,25 @@ const microsoftTeamsEntry: ProviderRegistryEntry = {
     }
 };
 
+// Register Zendesk provider
+const zendeskEntry: ProviderRegistryEntry = {
+    name: "zendesk",
+    displayName: "Zendesk",
+    authMethod: "oauth2",
+    category: "support",
+    loader: async () => {
+        const { ZendeskProvider } = await import("./providers/zendesk/ZendeskProvider");
+        return new ZendeskProvider();
+    }
+};
+
 // Register all providers
 providerRegistry.register(slackEntry);
 providerRegistry.register(codaEntry);
 providerRegistry.register(notionEntry);
 providerRegistry.register(airtableEntry);
 providerRegistry.register(hubspotEntry);
+providerRegistry.register(salesforceEntry);
 providerRegistry.register(postgresqlEntry);
 providerRegistry.register(mongodbEntry);
 providerRegistry.register(githubEntry);
@@ -296,6 +321,7 @@ providerRegistry.register(microsoftOneDriveEntry);
 providerRegistry.register(microsoftExcelEntry);
 providerRegistry.register(microsoftWordEntry);
 providerRegistry.register(microsoftTeamsEntry);
+providerRegistry.register(zendeskEntry);
 
 // Export for use in application
 export { providerRegistry };

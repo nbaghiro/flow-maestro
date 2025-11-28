@@ -213,6 +213,7 @@ export function ConnectionPicker({
                         }}
                         supportsOAuth={providerInfo.methods.includes("oauth2")}
                         supportsApiKey={providerInfo.methods.includes("api_key")}
+                        oauthSettings={providerInfo.oauthSettings}
                     />
                 );
             })()}

@@ -23,7 +23,10 @@
         "worker:voice": "npm run build && node dist/backend/src/voice-agent/worker.js",
         "worker:voice:dev": "tsx src/voice-agent/worker.ts",
         "worker:voice:watch": "tsx watch src/voice-agent/worker.ts",
-        "seed:test-workflows": "tsx tests/fixtures/workflows/seed-workflows.ts",
+        "db:seed:test-workflows": "tsx tests/fixtures/workflows/seed-workflows.ts",
+        "db:seed:agent-templates": "tsx scripts/seed-agent-templates.ts",
+        "db:seed:templates": "tsx scripts/seed-templates.ts",
+        "db:seed": "npm run db:seed:templates && npm run db:seed:agent-templates",
         "analytics:aggregate": "tsx src/services/AnalyticsService.ts"
     },
     "dependencies": {

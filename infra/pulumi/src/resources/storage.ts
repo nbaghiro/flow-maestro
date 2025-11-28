@@ -104,11 +104,19 @@ export const knowledgeDocsBucket = new gcp.storage.Bucket(resourceName("knowledg
     ],
     cors: [
         {
+            // Production origins
             origins: [
                 `https://api.${infrastructureConfig.domain}`,
                 `https://app.${infrastructureConfig.domain}`
             ],
             methods: ["GET", "POST", "PUT", "DELETE"],
+            responseHeaders: ["Content-Type", "Content-Length"],
+            maxAgeSeconds: 3600
+        },
+        {
+            // Development origins - allows local development to access GCS directly
+            origins: ["http://localhost:3000", "http://localhost:3001"],
+            methods: ["GET"],
             responseHeaders: ["Content-Type", "Content-Length"],
             maxAgeSeconds: 3600
         }

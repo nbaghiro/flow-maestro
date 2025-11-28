@@ -26,6 +26,7 @@ This document provides coding standards, architectural context, and best practic
     - `noImplicitThis: true` - `this` expressions must have explicit types
 - **Type Definitions**: Export interfaces and types for shared data structures
 - **Type Imports**: Use `import type` for type-only imports
+- **Shared Types**: All types that are used across frontend and backend MUST be defined in the `@flowmaestro/shared` package (`shared/src/`), not in frontend or backend. Import from `@flowmaestro/shared`.
 - **Generic Constraints**: Use proper generic constraints instead of `any`
 - **Compilation Checks**: ALWAYS run TypeScript compiler before committing changes
 

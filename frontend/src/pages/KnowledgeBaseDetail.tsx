@@ -1,4 +1,4 @@
-import { BookOpen, ArrowLeft, Loader2, Trash2 } from "lucide-react";
+import { BookOpen, ArrowLeft, Loader2, Trash2, FileText, Search, Settings } from "lucide-react";
 import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
@@ -6,11 +6,16 @@ import {
     DeleteDocumentModal,
     DeleteKnowledgeBaseModal,
     DocumentList,
+    DocumentViewerPanel,
+    KBSettingsSection,
     SearchSection,
     UploadSection
 } from "../components/knowledgebases";
 import { wsClient } from "../lib/websocket";
 import { useKnowledgeBaseStore } from "../stores/knowledgeBaseStore";
+import type { KnowledgeDocument } from "../lib/api";
+
+type TabType = "documents" | "search" | "settings";
 
 function formatFileSize(bytes: number) {
     if (bytes === 0) return "0 B";
@@ -39,12 +44,15 @@ export function KnowledgeBaseDetail() {
         deleteKB
     } = useKnowledgeBaseStore();
 
+    const [activeTab, setActiveTab] = useState<TabType>("documents");
     const [showUrlModal, setShowUrlModal] = useState(false);
     const [uploading, setUploading] = useState(false);
     const [deleteConfirmDocId, setDeleteConfirmDocId] = useState<string | null>(null);
     const [processingDocId, setProcessingDocId] = useState<string | null>(null);
     const [showDeleteKBModal, setShowDeleteKBModal] = useState(false);
     const [deletingKB, setDeletingKB] = useState(false);
+    const [selectedDocument, setSelectedDocument] = useState<KnowledgeDocument | null>(null);
+    const [viewerWidth, setViewerWidth] = useState(450);
 
     const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -175,12 +183,28 @@ export function KnowledgeBaseDetail() {
         }
     };
 
+    const handleDocumentClick = (doc: KnowledgeDocument) => {
+        if (doc.status === "ready") {
+            setSelectedDocument(doc);
+        }
+    };
+
+    const handleCloseViewer = () => {
+        setSelectedDocument(null);
+    };
+
+    const tabs: { id: TabType; label: string; icon: typeof FileText }[] = [
+        { id: "documents", label: "Documents", icon: FileText },
+        { id: "search", label: "Search", icon: Search },
+        { id: "settings", label: "Settings", icon: Settings }
+    ];
+
     if (loading && !currentKB) {
         return (
-            <div className="p-6">
-                <div className="text-center py-12">
-                    <Loader2 className="w-8 h-8 mx-auto animate-spin text-primary" />
-                    <p className="text-muted-foreground mt-2">Loading knowledge base...</p>
+            <div className="h-screen flex items-center justify-center bg-background">
+                <div className="flex flex-col items-center gap-3">
+                    <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                    <p className="text-sm text-muted-foreground">Loading knowledge base...</p>
                 </div>
             </div>
         );
@@ -188,12 +212,12 @@ export function KnowledgeBaseDetail() {
 
     if (!currentKB) {
         return (
-            <div className="p-6">
-                <div className="text-center py-12">
-                    <p className="text-red-600">Knowledge base not found</p>
+            <div className="h-screen flex items-center justify-center bg-background">
+                <div className="text-center">
+                    <p className="text-destructive mb-4">Knowledge base not found</p>
                     <button
                         onClick={() => navigate("/knowledge-bases")}
-                        className="mt-4 text-primary hover:underline"
+                        className="text-sm text-primary hover:underline"
                     >
                         Back to Knowledge Bases
                     </button>
@@ -203,78 +227,117 @@ export function KnowledgeBaseDetail() {
     }
 
     return (
-        <div className="p-6">
+        <div className="h-screen flex flex-col bg-background">
             {/* Header */}
-            <div className="mb-6">
-                <button
-                    onClick={() => navigate("/knowledge-bases")}
-                    className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-4"
-                >
-                    <ArrowLeft className="w-4 h-4" />
-                    Back to Knowledge Bases
-                </button>
-
-                <div className="flex items-start justify-between">
-                    <div>
-                        <div className="flex items-center gap-2 mb-2">
-                            <BookOpen className="w-6 h-6 text-primary" />
-                            <h1 className="text-2xl font-bold">{currentKB.name}</h1>
-                        </div>
-                        {currentKB.description && (
-                            <p className="text-muted-foreground">{currentKB.description}</p>
-                        )}
-                    </div>
+            <div className="h-16 border-b border-border bg-white flex items-center justify-between px-6 flex-shrink-0">
+                {/* Left: Back + Title */}
+                <div className="flex items-center gap-4">
                     <button
-                        onClick={() => setShowDeleteKBModal(true)}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                        title="Delete knowledge base"
+                        onClick={() => navigate("/knowledge-bases")}
+                        className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
+                        title="Back to Knowledge Bases"
                     >
-                        <Trash2 className="w-5 h-5" />
+                        <ArrowLeft className="w-4 h-4" />
                     </button>
+                    <div className="flex items-center gap-2">
+                        <BookOpen className="w-5 h-5 text-primary" />
+                        <h1 className="text-lg font-semibold text-foreground">{currentKB.name}</h1>
+                    </div>
                 </div>
+
+                {/* Center: Stats badges */}
+                {currentStats && (
+                    <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground bg-muted px-2.5 py-1 rounded-md">
+                            {currentStats.document_count} docs
+                        </span>
+                        <span className="text-xs text-muted-foreground bg-muted px-2.5 py-1 rounded-md">
+                            {currentStats.chunk_count} chunks
+                        </span>
+                        <span className="text-xs text-muted-foreground bg-muted px-2.5 py-1 rounded-md">
+                            {formatFileSize(currentStats.total_size_bytes)}
+                        </span>
+                    </div>
+                )}
+
+                {/* Right: Delete */}
+                <button
+                    onClick={() => setShowDeleteKBModal(true)}
+                    className="p-2 text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
+                    title="Delete knowledge base"
+                >
+                    <Trash2 className="w-4 h-4" />
+                </button>
             </div>
 
-            {/* Stats Cards */}
-            {currentStats && (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                    <div className="border border-border rounded-lg p-4">
-                        <div className="text-sm text-muted-foreground mb-1">Documents</div>
-                        <div className="text-2xl font-bold">{currentStats.document_count}</div>
-                    </div>
-                    <div className="border border-border rounded-lg p-4">
-                        <div className="text-sm text-muted-foreground mb-1">Chunks</div>
-                        <div className="text-2xl font-bold">{currentStats.chunk_count}</div>
-                    </div>
-                    <div className="border border-border rounded-lg p-4">
-                        <div className="text-sm text-muted-foreground mb-1">Total Size</div>
-                        <div className="text-2xl font-bold">
-                            {formatFileSize(currentStats.total_size_bytes)}
-                        </div>
+            {/* Main Content */}
+            <div className="flex-1 flex overflow-hidden">
+                {/* Left Sidebar */}
+                <div className="w-56 border-r border-border bg-white flex-shrink-0">
+                    <nav className="p-4 space-y-1">
+                        {tabs.map((tab) => {
+                            const Icon = tab.icon;
+                            return (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => setActiveTab(tab.id)}
+                                    className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm rounded-lg transition-colors ${
+                                        activeTab === tab.id
+                                            ? "bg-primary/10 text-primary font-medium"
+                                            : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                                    }`}
+                                >
+                                    <Icon className="w-4 h-4" />
+                                    {tab.label}
+                                </button>
+                            );
+                        })}
+                    </nav>
+                </div>
+
+                {/* Center Panel */}
+                <div className="flex-1 overflow-auto bg-muted/30">
+                    <div className="max-w-4xl mx-auto p-6">
+                        {activeTab === "documents" && (
+                            <div className="space-y-6">
+                                <UploadSection
+                                    onFileUpload={handleFileUpload}
+                                    onAddUrlClick={() => setShowUrlModal(true)}
+                                    isUploading={uploading}
+                                />
+                                <DocumentList
+                                    documents={currentDocuments}
+                                    onDeleteClick={setDeleteConfirmDocId}
+                                    onReprocess={handleReprocessDocument}
+                                    processingDocId={processingDocId}
+                                    onDocumentClick={handleDocumentClick}
+                                    selectedDocumentId={selectedDocument?.id}
+                                />
+                            </div>
+                        )}
+
+                        {activeTab === "search" && (
+                            <SearchSection
+                                knowledgeBaseId={id || ""}
+                                documents={currentDocuments}
+                                onSearch={handleSearch}
+                            />
+                        )}
+
+                        {activeTab === "settings" && <KBSettingsSection kb={currentKB} />}
                     </div>
                 </div>
-            )}
 
-            {/* Search Section */}
-            <SearchSection
-                knowledgeBaseId={id || ""}
-                documents={currentDocuments}
-                onSearch={handleSearch}
-            />
-
-            {/* Upload Section */}
-            <UploadSection
-                onFileUpload={handleFileUpload}
-                onAddUrlClick={() => setShowUrlModal(true)}
-                isUploading={uploading}
-            />
-
-            {/* Documents List */}
-            <DocumentList
-                documents={currentDocuments}
-                onDeleteClick={setDeleteConfirmDocId}
-                onReprocess={handleReprocessDocument}
-                processingDocId={processingDocId}
-            />
+                {/* Document Viewer Panel */}
+                <DocumentViewerPanel
+                    doc={selectedDocument}
+                    knowledgeBaseId={id || ""}
+                    isOpen={selectedDocument !== null}
+                    onClose={handleCloseViewer}
+                    width={viewerWidth}
+                    onWidthChange={setViewerWidth}
+                />
+            </div>
 
             {/* Modals */}
             <AddUrlModal

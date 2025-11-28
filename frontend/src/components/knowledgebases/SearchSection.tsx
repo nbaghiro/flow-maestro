@@ -157,11 +157,11 @@ export function SearchSection({ knowledgeBaseId, documents, onSearch }: SearchSe
     };
 
     return (
-        <div className="border border-border rounded-lg p-6 mb-6">
+        <div className="bg-white border border-border rounded-lg p-6">
             <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                     <Search className="w-5 h-5 text-primary" />
-                    <h2 className="text-lg font-semibold">Search Knowledge Base</h2>
+                    <h2 className="text-lg font-semibold text-foreground">Search Knowledge Base</h2>
                 </div>
                 <div className="flex items-center gap-2">
                     {searchHistory.length > 0 && (

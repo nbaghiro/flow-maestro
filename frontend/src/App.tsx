@@ -37,12 +37,21 @@ function App() {
                 <Route path="analytics" element={<Analytics />} />
                 <Route path="connections" element={<Connections />} />
                 <Route path="knowledge-bases" element={<KnowledgeBases />} />
-                <Route path="knowledge-bases/:id" element={<KnowledgeBaseDetail />} />
                 <Route path="templates" element={<Templates />} />
                 <Route path="settings" element={<Settings />} />
                 <Route path="account" element={<Account />} />
                 <Route path="workspace" element={<Workspace />} />
             </Route>
+
+            {/* Full-screen knowledge base detail without sidebar */}
+            <Route
+                path="/knowledge-bases/:id"
+                element={
+                    <ProtectedRoute>
+                        <KnowledgeBaseDetail />
+                    </ProtectedRoute>
+                }
+            />
 
             {/* Full-screen builder without sidebar */}
             <Route
