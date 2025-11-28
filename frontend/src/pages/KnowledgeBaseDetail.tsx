@@ -6,12 +6,14 @@ import {
     DeleteDocumentModal,
     DeleteKnowledgeBaseModal,
     DocumentList,
+    DocumentViewerPanel,
     KBSettingsSection,
     SearchSection,
     UploadSection
 } from "../components/knowledgebases";
 import { wsClient } from "../lib/websocket";
 import { useKnowledgeBaseStore } from "../stores/knowledgeBaseStore";
+import type { KnowledgeDocument } from "../lib/api";
 
 type TabType = "documents" | "search" | "settings";
 
@@ -49,6 +51,8 @@ export function KnowledgeBaseDetail() {
     const [processingDocId, setProcessingDocId] = useState<string | null>(null);
     const [showDeleteKBModal, setShowDeleteKBModal] = useState(false);
     const [deletingKB, setDeletingKB] = useState(false);
+    const [selectedDocument, setSelectedDocument] = useState<KnowledgeDocument | null>(null);
+    const [viewerWidth, setViewerWidth] = useState(450);
 
     const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -179,6 +183,16 @@ export function KnowledgeBaseDetail() {
         }
     };
 
+    const handleDocumentClick = (doc: KnowledgeDocument) => {
+        if (doc.status === "ready") {
+            setSelectedDocument(doc);
+        }
+    };
+
+    const handleCloseViewer = () => {
+        setSelectedDocument(null);
+    };
+
     const tabs: { id: TabType; label: string; icon: typeof FileText }[] = [
         { id: "documents", label: "Documents", icon: FileText },
         { id: "search", label: "Search", icon: Search },
@@ -296,6 +310,8 @@ export function KnowledgeBaseDetail() {
                                     onDeleteClick={setDeleteConfirmDocId}
                                     onReprocess={handleReprocessDocument}
                                     processingDocId={processingDocId}
+                                    onDocumentClick={handleDocumentClick}
+                                    selectedDocumentId={selectedDocument?.id}
                                 />
                             </div>
                         )}
@@ -311,6 +327,16 @@ export function KnowledgeBaseDetail() {
                         {activeTab === "settings" && <KBSettingsSection kb={currentKB} />}
                     </div>
                 </div>
+
+                {/* Document Viewer Panel */}
+                <DocumentViewerPanel
+                    doc={selectedDocument}
+                    knowledgeBaseId={id || ""}
+                    isOpen={selectedDocument !== null}
+                    onClose={handleCloseViewer}
+                    width={viewerWidth}
+                    onWidthChange={setViewerWidth}
+                />
             </div>
 
             {/* Modals */}

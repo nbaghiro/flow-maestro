@@ -6,6 +6,8 @@ interface DocumentListProps {
     onDeleteClick: (docId: string) => void;
     onReprocess: (docId: string) => Promise<void>;
     processingDocId: string | null;
+    onDocumentClick?: (doc: KnowledgeDocument) => void;
+    selectedDocumentId?: string | null;
 }
 
 function getStatusIcon(status: string) {
@@ -50,7 +52,9 @@ export function DocumentList({
     documents,
     onDeleteClick,
     onReprocess,
-    processingDocId
+    processingDocId,
+    onDocumentClick,
+    selectedDocumentId
 }: DocumentListProps) {
     return (
         <div className="bg-white border border-border rounded-lg">
@@ -68,83 +72,110 @@ export function DocumentList({
                 </div>
             ) : (
                 <div className="divide-y divide-border">
-                    {documents.map((doc) => (
-                        <div key={doc.id} className="p-4 hover:bg-muted/50 transition-colors">
-                            <div className="flex items-start justify-between">
-                                <div className="flex-1">
-                                    <div className="flex items-center gap-2 mb-1">
-                                        <FileText className="w-4 h-4 text-muted-foreground" />
-                                        <span className="font-medium">
-                                            {doc.source_type === "url" && doc.source_url
-                                                ? doc.source_url
-                                                : doc.name}
-                                        </span>
-                                        <span className="text-xs text-muted-foreground uppercase">
-                                            {doc.file_type}
-                                        </span>
-                                    </div>
+                    {documents.map((doc) => {
+                        const isSelected = selectedDocumentId === doc.id;
+                        const isClickable = doc.status === "ready" && onDocumentClick;
 
-                                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                                        <span>
-                                            {doc.file_size
-                                                ? formatFileSize(Number(doc.file_size))
-                                                : "N/A"}
-                                        </span>
-                                        <span>{new Date(doc.created_at).toLocaleDateString()}</span>
-                                        {doc.source_type === "url" && doc.source_url && (
-                                            <a
-                                                href={doc.source_url}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="text-primary hover:underline"
-                                                onClick={(e) => e.stopPropagation()}
-                                            >
-                                                View Source
-                                            </a>
+                        return (
+                            <div
+                                key={doc.id}
+                                className={`p-4 transition-colors ${
+                                    isSelected
+                                        ? "bg-primary/10 border-l-2 border-l-primary"
+                                        : "hover:bg-muted/50"
+                                } ${isClickable ? "cursor-pointer" : ""}`}
+                                onClick={() => {
+                                    if (isClickable) {
+                                        onDocumentClick(doc);
+                                    }
+                                }}
+                            >
+                                <div className="flex items-start justify-between">
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <FileText className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                                            <span className="font-medium truncate">
+                                                {doc.source_type === "url" && doc.source_url
+                                                    ? doc.source_url
+                                                    : doc.name}
+                                            </span>
+                                            <span className="text-xs text-muted-foreground uppercase flex-shrink-0">
+                                                {doc.file_type}
+                                            </span>
+                                        </div>
+
+                                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                                            <span>
+                                                {doc.file_size
+                                                    ? formatFileSize(Number(doc.file_size))
+                                                    : "N/A"}
+                                            </span>
+                                            <span>
+                                                {new Date(doc.created_at).toLocaleDateString()}
+                                            </span>
+                                            {doc.source_type === "url" && doc.source_url && (
+                                                <a
+                                                    href={doc.source_url}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="text-primary hover:underline"
+                                                    onClick={(e) => e.stopPropagation()}
+                                                >
+                                                    View Source
+                                                </a>
+                                            )}
+                                        </div>
+
+                                        {doc.error_message && (
+                                            <p className="text-sm text-red-600 mt-1">
+                                                {doc.error_message}
+                                            </p>
                                         )}
                                     </div>
 
-                                    {doc.error_message && (
-                                        <p className="text-sm text-red-600 mt-1">
-                                            {doc.error_message}
-                                        </p>
-                                    )}
-                                </div>
+                                    <div className="flex items-center gap-3 ml-4 flex-shrink-0">
+                                        <div className="flex items-center gap-2">
+                                            {getStatusIcon(doc.status)}
+                                            <span className="text-sm">
+                                                {getStatusText(doc.status)}
+                                            </span>
+                                        </div>
 
-                                <div className="flex items-center gap-3 ml-4">
-                                    <div className="flex items-center gap-2">
-                                        {getStatusIcon(doc.status)}
-                                        <span className="text-sm">{getStatusText(doc.status)}</span>
-                                    </div>
-
-                                    <div className="flex items-center gap-1">
-                                        {doc.status === "failed" && (
+                                        <div className="flex items-center gap-1">
+                                            {doc.status === "failed" && (
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        onReprocess(doc.id);
+                                                    }}
+                                                    disabled={processingDocId === doc.id}
+                                                    className="p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    title="Reprocess document"
+                                                >
+                                                    {processingDocId === doc.id ? (
+                                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                                    ) : (
+                                                        <RefreshCw className="w-4 h-4" />
+                                                    )}
+                                                </button>
+                                            )}
                                             <button
-                                                onClick={() => onReprocess(doc.id)}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    onDeleteClick(doc.id);
+                                                }}
                                                 disabled={processingDocId === doc.id}
-                                                className="p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                                title="Reprocess document"
+                                                className="p-2 text-red-600 hover:bg-red-50 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                                title="Delete document"
                                             >
-                                                {processingDocId === doc.id ? (
-                                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                                ) : (
-                                                    <RefreshCw className="w-4 h-4" />
-                                                )}
+                                                <Trash2 className="w-4 h-4" />
                                             </button>
-                                        )}
-                                        <button
-                                            onClick={() => onDeleteClick(doc.id)}
-                                            disabled={processingDocId === doc.id}
-                                            className="p-2 text-red-600 hover:bg-red-50 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                            title="Delete document"
-                                        >
-                                            <Trash2 className="w-4 h-4" />
-                                        </button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
             )}
         </div>
