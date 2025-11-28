@@ -84,11 +84,25 @@ export async function emitAgentExecutionStarted(
  */
 export async function emitAgentMessage(input: EmitAgentMessageInput): Promise<void> {
     const { executionId, threadId, message } = input;
+
+    // Normalize timestamp to ISO string regardless of whether it's a Date,
+    // string, or numeric epoch. This avoids runtime errors when message
+    // has already been serialized/deserialized.
+    const isoTimestamp =
+        message.timestamp instanceof Date
+            ? message.timestamp.toISOString()
+            : typeof message.timestamp === "string"
+              ? message.timestamp
+              : new Date(
+                    // Support numeric epoch values or fall back to "now"
+                    typeof message.timestamp === "number" ? message.timestamp : Date.now()
+                ).toISOString();
+
     const serializedMessage: JsonObject = {
         id: message.id,
         role: message.role,
         content: message.content,
-        timestamp: message.timestamp.toISOString(),
+        timestamp: isoTimestamp,
         ...(message.tool_calls && {
             tool_calls: message.tool_calls.map((tc) => ({
                 id: tc.id,

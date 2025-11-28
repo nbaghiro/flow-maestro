@@ -1,5 +1,6 @@
 import { Send, X, Loader2, Bot, User } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
+import * as api from "../../lib/api";
 import { cn } from "../../lib/utils";
 import { wsClient } from "../../lib/websocket";
 import { useAgentStore } from "../../stores/agentStore";
@@ -11,7 +12,7 @@ interface AgentChatProps {
 }
 
 export function AgentChat({ agent }: AgentChatProps) {
-    const { currentExecution, executeAgent, sendMessage, clearExecution, updateExecutionStatus } =
+    const { currentExecution, executeAgent, sendMessage, createNewThread, updateExecutionStatus } =
         useAgentStore();
 
     const [input, setInput] = useState("");
@@ -28,6 +29,49 @@ export function AgentChat({ agent }: AgentChatProps) {
 
     // Track previous thread_id to preserve messages when continuing in same thread
     const prevThreadIdRef = useRef<string | undefined>(undefined);
+    const { currentThread } = useAgentStore();
+
+    // Load all messages from thread when component mounts or thread changes (for reopening chat)
+    useEffect(() => {
+        const loadThreadMessages = async () => {
+            if (currentThread && currentThread.id) {
+                try {
+                    const response = await api.getThreadMessages(currentThread.id);
+                    if (response.success && response.data.messages) {
+                        // Sort by timestamp with tie-breaker (same as conversations pane)
+                        const sortedMessages = [...response.data.messages].sort((a, b) => {
+                            const timeA = new Date(a.timestamp).getTime();
+                            const timeB = new Date(b.timestamp).getTime();
+                            if (timeA === timeB) {
+                                if (a.role === "user" && b.role === "assistant") return -1;
+                                if (a.role === "assistant" && b.role === "user") return 1;
+                            }
+                            return timeA - timeB;
+                        });
+                        setMessages(sortedMessages);
+                    } else {
+                        // No messages in thread, ensure empty state
+                        setMessages([]);
+                    }
+                } catch (error) {
+                    console.error("Failed to load thread messages:", error);
+                    setMessages([]);
+                }
+            } else {
+                // No thread means empty state (user explicitly cleared or new agent)
+                setMessages([]);
+            }
+        };
+
+        // Load messages when we have a thread but no current execution (reopening scenario)
+        // Also load on initial mount if thread exists
+        if (currentThread && !currentExecution) {
+            loadThreadMessages();
+        } else if (!currentThread && !currentExecution) {
+            // No thread and no execution = empty state
+            setMessages([]);
+        }
+    }, [currentThread?.id, currentExecution?.id]);
 
     // Sync messages from execution when execution ID changes
     // Preserve existing messages if we're continuing in the same thread
@@ -46,17 +90,38 @@ export function AgentChat({ agent }: AgentChatProps) {
                     const existingMessageIds = new Set(prev.map((m) => m.id));
                     const newMessages = history.filter((m) => !existingMessageIds.has(m.id));
                     // Add new messages from the execution (typically just the new user message)
-                    return newMessages.length > 0 ? [...prev, ...newMessages] : prev;
+                    const combined = newMessages.length > 0 ? [...prev, ...newMessages] : prev;
+                    // Sort by timestamp with tie-breaker (same as conversations pane)
+                    return combined.sort((a, b) => {
+                        const timeA = new Date(a.timestamp).getTime();
+                        const timeB = new Date(b.timestamp).getTime();
+                        if (timeA === timeB) {
+                            if (a.role === "user" && b.role === "assistant") return -1;
+                            if (a.role === "assistant" && b.role === "user") return 1;
+                        }
+                        return timeA - timeB;
+                    });
                 }
 
-                // New thread or no previous messages - use execution history
-                return history;
+                // New thread or no previous messages - use execution history, sorted with tie-breaker
+                return history.sort((a, b) => {
+                    const timeA = new Date(a.timestamp).getTime();
+                    const timeB = new Date(b.timestamp).getTime();
+                    if (timeA === timeB) {
+                        if (a.role === "user" && b.role === "assistant") return -1;
+                        if (a.role === "assistant" && b.role === "user") return 1;
+                    }
+                    return timeA - timeB;
+                });
             });
         } else {
             prevThreadIdRef.current = undefined;
-            setMessages([]);
+            // Don't clear messages if we have a thread (they're loaded from thread)
+            if (!currentThread) {
+                setMessages([]);
+            }
         }
-    }, [currentExecution?.id]);
+    }, [currentExecution?.id, currentThread]);
 
     // Subscribe to execution WebSocket events
     useEffect(() => {
@@ -123,6 +188,30 @@ export function AgentChat({ agent }: AgentChatProps) {
             if (data.message.role === "user") return; // Skip user messages
 
             store.addMessageToExecution(data.executionId, data.message);
+
+            // Update local messages state, replacing streaming message with final message
+            setMessages((prev) => {
+                // Remove any streaming message for this execution
+                const filtered = prev.filter((m) => m.id !== `streaming-${data.executionId}`);
+
+                // Check if this message already exists (avoid duplicates)
+                const existingIds = new Set(filtered.map((m) => m.id));
+                if (existingIds.has(data.message!.id)) {
+                    return filtered; // Already exists, just return filtered (streaming removed)
+                }
+
+                // Add the final message and sort by timestamp with tie-breaker
+                const updated = [...filtered, data.message!];
+                return updated.sort((a, b) => {
+                    const timeA = new Date(a.timestamp).getTime();
+                    const timeB = new Date(b.timestamp).getTime();
+                    if (timeA === timeB) {
+                        if (a.role === "user" && b.role === "assistant") return -1;
+                        if (a.role === "assistant" && b.role === "user") return 1;
+                    }
+                    return timeA - timeB;
+                });
+            });
         };
 
         const handleCompleted = (event: unknown) => {
@@ -135,24 +224,10 @@ export function AgentChat({ agent }: AgentChatProps) {
             )
                 return;
 
-            // Finalize streaming message
-            const accumulated = tokenAccumulatorRef.current.get(data.executionId);
-            if (accumulated) {
-                const finalMessage: ConversationMessage = {
-                    id: `asst-${data.executionId}-${Date.now()}`,
-                    role: "assistant",
-                    content: data.finalMessage || accumulated,
-                    timestamp: new Date().toISOString()
-                };
-
-                setMessages((prev) => {
-                    const filtered = prev.filter((m) => m.id !== `streaming-${data.executionId}`);
-                    return [...filtered, finalMessage];
-                });
-
-                store.addMessageToExecution(data.executionId, finalMessage);
-                tokenAccumulatorRef.current.delete(data.executionId);
-            }
+            // Just clear streaming state - the final message will come from handleMessage WebSocket event
+            // Remove streaming message if it still exists
+            setMessages((prev) => prev.filter((m) => m.id !== `streaming-${data.executionId}`));
+            tokenAccumulatorRef.current.delete(data.executionId);
 
             setIsSending(false);
             updateExecutionStatus(data.executionId, "completed");
@@ -237,7 +312,14 @@ export function AgentChat({ agent }: AgentChatProps) {
     };
 
     const handleClear = () => {
-        clearExecution();
+        // If already empty, just return
+        if (messages.length === 0 && !currentExecution) {
+            setShowClearConfirm(false);
+            return;
+        }
+
+        // Start a brand new conversation for this agent and clear remembered thread
+        createNewThread();
         setMessages([]);
         setShowClearConfirm(false);
     };
@@ -257,15 +339,20 @@ export function AgentChat({ agent }: AgentChatProps) {
                         </p>
                     </div>
                 </div>
-                {currentExecution && (
-                    <button
-                        onClick={() => setShowClearConfirm(true)}
-                        className="p-2 hover:bg-muted rounded-lg transition-colors"
-                        title="Start new conversation"
-                    >
-                        <X className="w-4 h-4" />
-                    </button>
-                )}
+                <button
+                    onClick={() => {
+                        // If empty, just clear without confirmation
+                        if (messages.length === 0 && !currentExecution) {
+                            handleClear();
+                        } else {
+                            setShowClearConfirm(true);
+                        }
+                    }}
+                    className="p-2 hover:bg-muted rounded-lg transition-colors"
+                    title="Start new conversation"
+                >
+                    <X className="w-4 h-4" />
+                </button>
             </div>
 
             {/* Messages - Scrollable */}
@@ -279,55 +366,65 @@ export function AgentChat({ agent }: AgentChatProps) {
                     </div>
                 ) : (
                     <>
-                        {messages.map((message) => (
-                            <div
-                                key={message.id}
-                                className={cn(
-                                    "flex gap-3",
-                                    message.role === "user" ? "justify-end" : "justify-start"
-                                )}
-                            >
-                                {message.role !== "user" && message.role !== "system" && (
-                                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                                        <Bot className="w-4 h-4 text-primary" />
-                                    </div>
-                                )}
+                        {messages
+                            .sort((a, b) => {
+                                const timeA = new Date(a.timestamp).getTime();
+                                const timeB = new Date(b.timestamp).getTime();
+                                if (timeA === timeB) {
+                                    if (a.role === "user" && b.role === "assistant") return -1;
+                                    if (a.role === "assistant" && b.role === "user") return 1;
+                                }
+                                return timeA - timeB;
+                            })
+                            .map((message) => (
                                 <div
+                                    key={message.id}
                                     className={cn(
-                                        "max-w-[80%] rounded-lg px-4 py-3",
-                                        message.role === "user"
-                                            ? "bg-primary text-primary-foreground"
-                                            : message.role === "system"
-                                              ? "bg-muted/50 text-muted-foreground text-sm italic"
-                                              : "bg-muted text-foreground"
+                                        "flex gap-3",
+                                        message.role === "user" ? "justify-end" : "justify-start"
                                     )}
                                 >
-                                    <div className="whitespace-pre-wrap break-words">
-                                        {message.content}
+                                    {message.role !== "user" && message.role !== "system" && (
+                                        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                                            <Bot className="w-4 h-4 text-primary" />
+                                        </div>
+                                    )}
+                                    <div
+                                        className={cn(
+                                            "max-w-[80%] rounded-lg px-4 py-3",
+                                            message.role === "user"
+                                                ? "bg-primary text-primary-foreground"
+                                                : message.role === "system"
+                                                  ? "bg-muted/50 text-muted-foreground text-sm italic"
+                                                  : "bg-muted text-foreground"
+                                        )}
+                                    >
+                                        <div className="whitespace-pre-wrap break-words">
+                                            {message.content}
+                                        </div>
+                                        {message.tool_calls && message.tool_calls.length > 0 && (
+                                            <div className="mt-2 pt-2 border-t border-border/50">
+                                                <p className="text-xs text-muted-foreground mb-1">
+                                                    Using tools:
+                                                </p>
+                                                {message.tool_calls.map((tool, idx) => (
+                                                    <div
+                                                        key={idx}
+                                                        className="text-xs bg-background/50 rounded px-2 py-1 mt-1"
+                                                    >
+                                                        {tool.name}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
-                                    {message.tool_calls && message.tool_calls.length > 0 && (
-                                        <div className="mt-2 pt-2 border-t border-border/50">
-                                            <p className="text-xs text-muted-foreground mb-1">
-                                                Using tools:
-                                            </p>
-                                            {message.tool_calls.map((tool, idx) => (
-                                                <div
-                                                    key={idx}
-                                                    className="text-xs bg-background/50 rounded px-2 py-1 mt-1"
-                                                >
-                                                    {tool.name}
-                                                </div>
-                                            ))}
+                                    {message.role === "user" && (
+                                        <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center flex-shrink-0">
+                                            <User className="w-4 h-4 text-secondary-foreground" />
                                         </div>
                                     )}
                                 </div>
-                                {message.role === "user" && (
-                                    <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center flex-shrink-0">
-                                        <User className="w-4 h-4 text-secondary-foreground" />
-                                    </div>
-                                )}
-                            </div>
-                        ))}
+                            ))}
                         {isSending &&
                             currentExecution &&
                             !messages.some((m) => m.id === `streaming-${currentExecution.id}`) && (
