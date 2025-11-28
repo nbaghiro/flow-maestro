@@ -22,6 +22,7 @@ import { integrationRoutes } from "./routes/integrations";
 import { knowledgeBaseRoutes } from "./routes/knowledge-bases";
 import { nodeRoutes } from "./routes/nodes";
 import { oauthRoutes } from "./routes/oauth";
+import { templateRoutes } from "./routes/templates";
 import { threadRoutes } from "./routes/threads";
 import { triggerRoutes } from "./routes/triggers";
 import { webhookRoutes } from "./routes/webhooks";
@@ -128,6 +129,7 @@ export async function buildServer() {
     // Register routes
     await fastify.register(authRoutes, { prefix: "/api/auth" });
     await fastify.register(workflowRoutes, { prefix: "/api/workflows" });
+    await fastify.register(templateRoutes, { prefix: "/api/templates" });
     await fastify.register(checkpointRoutes, { prefix: "/api/checkpoints" });
     await fastify.register(executionRoutes, { prefix: "/api/executions" });
     await fastify.register(connectionRoutes, { prefix: "/api/connections" });

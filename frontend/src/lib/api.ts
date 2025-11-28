@@ -10,7 +10,13 @@ import type {
     WorkflowTrigger,
     TriggerWithScheduleInfo,
     CreateTriggerInput,
-    UpdateTriggerInput
+    UpdateTriggerInput,
+    Template,
+    TemplateListParams,
+    TemplateListResponse,
+    CategoryInfo,
+    CopyTemplateResponse,
+    TemplateCategory
 } from "@flowmaestro/shared";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
@@ -2370,5 +2376,115 @@ export async function renameCheckpoint(id: string, newName: string) {
     });
 
     if (!response.ok) throw new Error("Failed to rename checkpoint");
+    return response.json();
+}
+
+// ===== Template API Functions =====
+
+export type { Template, TemplateListParams, TemplateListResponse, CategoryInfo, TemplateCategory };
+
+/**
+ * Get list of workflow templates with optional filters
+ */
+export async function getTemplates(
+    params?: TemplateListParams
+): Promise<{ success: boolean; data: TemplateListResponse; error?: string }> {
+    const queryParams = new URLSearchParams();
+
+    if (params?.category) queryParams.set("category", params.category);
+    if (params?.tags && params.tags.length > 0) queryParams.set("tags", params.tags.join(","));
+    if (params?.featured !== undefined) queryParams.set("featured", params.featured.toString());
+    if (params?.search) queryParams.set("search", params.search);
+    if (params?.limit) queryParams.set("limit", params.limit.toString());
+    if (params?.offset) queryParams.set("offset", params.offset.toString());
+
+    const url = `${API_BASE_URL}/api/templates${queryParams.toString() ? `?${queryParams.toString()}` : ""}`;
+
+    const response = await fetch(url, {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json"
+        }
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    return response.json();
+}
+
+/**
+ * Get template categories with counts
+ */
+export async function getTemplateCategories(): Promise<{
+    success: boolean;
+    data: CategoryInfo[];
+    error?: string;
+}> {
+    const response = await fetch(`${API_BASE_URL}/api/templates/categories`, {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json"
+        }
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    return response.json();
+}
+
+/**
+ * Get a specific template by ID
+ */
+export async function getTemplate(
+    templateId: string
+): Promise<{ success: boolean; data: Template; error?: string }> {
+    const response = await fetch(`${API_BASE_URL}/api/templates/${templateId}`, {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json"
+        }
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    return response.json();
+}
+
+/**
+ * Copy a template to user's workspace
+ */
+export async function copyTemplate(
+    templateId: string,
+    name?: string
+): Promise<{ success: boolean; data: CopyTemplateResponse; error?: string }> {
+    const token = getAuthToken();
+
+    if (!token) {
+        throw new Error("Authentication required to copy templates");
+    }
+
+    const response = await fetch(`${API_BASE_URL}/api/templates/${templateId}/copy`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ name })
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+    }
+
     return response.json();
 }

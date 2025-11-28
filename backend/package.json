@@ -24,6 +24,8 @@
         "worker:voice:dev": "tsx src/voice-agent/worker.ts",
         "worker:voice:watch": "tsx watch src/voice-agent/worker.ts",
         "seed:test-workflows": "tsx tests/fixtures/workflows/seed-workflows.ts",
+        "db:seed:templates": "tsx scripts/seed-templates.ts",
+        "db:seed": "npm run db:seed:templates",
         "analytics:aggregate": "tsx src/services/AnalyticsService.ts"
     },
     "dependencies": {

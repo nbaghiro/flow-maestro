@@ -9,3 +9,4 @@ export * from "./TriggerRepository";
 export * from "./CallExecutionRepository";
 export * from "./WorkingMemoryRepository";
 export * from "./ConversationEmbeddingRepository";
+export * from "./TemplateRepository";
