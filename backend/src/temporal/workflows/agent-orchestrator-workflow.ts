@@ -229,6 +229,7 @@ export async function agentOrchestratorWorkflow(
 
                 await emitAgentExecutionFailed({
                     executionId,
+                    threadId,
                     error: `Input blocked by safety check: ${blockReasons}`
                 });
 
@@ -319,7 +320,7 @@ export async function agentOrchestratorWorkflow(
         }
 
         // Emit thinking event
-        await emitAgentThinking({ executionId });
+        await emitAgentThinking({ executionId, threadId });
 
         // Create MODEL_GENERATION span for LLM call
         const modelGenContext = await createSpan({
@@ -352,7 +353,8 @@ export async function agentOrchestratorWorkflow(
                 messages: messageState.messages,
                 tools: agent.available_tools,
                 temperature: agent.temperature,
-                maxTokens: agent.max_tokens
+                maxTokens: agent.max_tokens,
+                executionId: input.executionId
             });
 
             // End MODEL_GENERATION span with success and token usage
@@ -394,6 +396,7 @@ export async function agentOrchestratorWorkflow(
 
             await emitAgentExecutionFailed({
                 executionId,
+                threadId,
                 error: errorMessage
             });
 
@@ -440,6 +443,7 @@ export async function agentOrchestratorWorkflow(
 
             await emitAgentExecutionFailed({
                 executionId,
+                threadId,
                 error: `Output blocked by safety check: ${blockReasons}`
             });
 
@@ -471,6 +475,7 @@ export async function agentOrchestratorWorkflow(
         // Emit message event
         await emitAgentMessage({
             executionId,
+            threadId,
             message: assistantMessage
         });
 
@@ -490,6 +495,7 @@ export async function agentOrchestratorWorkflow(
                     const timeoutError = "User input timeout after 5 minutes";
                     await emitAgentExecutionFailed({
                         executionId,
+                        threadId,
                         error: timeoutError
                     });
 
@@ -544,6 +550,7 @@ export async function agentOrchestratorWorkflow(
 
                     await emitAgentExecutionFailed({
                         executionId,
+                        threadId,
                         error: `User message blocked by safety check: ${blockReasons}`
                     });
 
@@ -587,6 +594,7 @@ export async function agentOrchestratorWorkflow(
 
                 await emitAgentMessage({
                     executionId,
+                    threadId,
                     message: userMessage
                 });
 
@@ -609,13 +617,24 @@ export async function agentOrchestratorWorkflow(
                 continue;
             }
 
-            // Agent is done - save any unsaved messages
+            // Agent is done - save any unsaved messages (including the final assistant message)
             const unsavedMessages = getUnsavedMessages(messageState);
             if (unsavedMessages.length > 0) {
                 await saveConversationIncremental({
                     executionId,
                     threadId,
-                    messages: unsavedMessages
+                    messages: unsavedMessages,
+                    markCompleted: true // Mark execution as completed after saving
+                });
+                // Mark all as saved
+                unsavedMessages.forEach((msg) => messageState.savedMessageIds.push(msg.id));
+            } else {
+                // Even if no new messages, mark execution as completed
+                await saveConversationIncremental({
+                    executionId,
+                    threadId,
+                    messages: [],
+                    markCompleted: true
                 });
             }
 
@@ -623,6 +642,7 @@ export async function agentOrchestratorWorkflow(
 
             await emitAgentExecutionCompleted({
                 executionId,
+                threadId,
                 finalMessage: llmResponse.content,
                 iterations: currentIterations
             });
@@ -669,6 +689,7 @@ export async function agentOrchestratorWorkflow(
 
             await emitAgentToolCallStarted({
                 executionId,
+                threadId,
                 toolName: toolCall.name,
                 arguments: toolCall.arguments
             });
@@ -723,6 +744,7 @@ export async function agentOrchestratorWorkflow(
 
                 await emitAgentToolCallCompleted({
                     executionId,
+                    threadId,
                     toolName: toolCall.name,
                     result: toolResult
                 });
@@ -752,6 +774,7 @@ export async function agentOrchestratorWorkflow(
 
                 await emitAgentToolCallFailed({
                     executionId,
+                    threadId,
                     toolName: toolCall.name,
                     error: errorMessage
                 });
@@ -802,6 +825,7 @@ export async function agentOrchestratorWorkflow(
 
     await emitAgentExecutionFailed({
         executionId,
+        threadId,
         error: maxIterError
     });
 

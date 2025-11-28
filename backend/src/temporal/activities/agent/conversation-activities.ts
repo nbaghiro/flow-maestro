@@ -42,12 +42,13 @@ export interface SaveConversationIncrementalInput {
     executionId: string;
     threadId: string; // Thread ID for message persistence
     messages: ConversationMessage[];
+    markCompleted?: boolean; // If true, mark execution as completed after saving
 }
 
 export async function saveConversationIncremental(
     input: SaveConversationIncrementalInput
 ): Promise<{ saved: number }> {
-    const { executionId, threadId, messages } = input;
+    const { executionId, threadId, messages, markCompleted } = input;
 
     if (messages.length === 0) {
         return { saved: 0 };
@@ -105,8 +106,16 @@ export async function saveConversationIncremental(
     // This allows messages to persist across multiple executions in the same thread
     await executionRepo.saveMessagesToThread(threadId, executionId, messages);
 
+    // Optionally mark execution as completed
+    if (markCompleted) {
+        await executionRepo.update(executionId, {
+            status: "completed",
+            completed_at: new Date()
+        });
+    }
+
     console.log(
-        `[ConversationActivity] Saved ${messages.length} new messages for execution ${executionId} in thread ${threadId}`
+        `[ConversationActivity] Saved ${messages.length} new messages for execution ${executionId} in thread ${threadId}${markCompleted ? " (marked as completed)" : ""}`
     );
 
     return { saved: messages.length };

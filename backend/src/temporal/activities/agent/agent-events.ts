@@ -15,11 +15,13 @@ export interface EmitAgentExecutionStartedInput {
 
 export interface EmitAgentMessageInput {
     executionId: string;
+    threadId: string;
     message: ConversationMessage;
 }
 
 export interface EmitAgentThinkingInput {
     executionId: string;
+    threadId: string;
 }
 
 export interface EmitAgentTokenInput {
@@ -29,30 +31,35 @@ export interface EmitAgentTokenInput {
 
 export interface EmitAgentToolCallStartedInput {
     executionId: string;
+    threadId: string;
     toolName: string;
     arguments: JsonObject;
 }
 
 export interface EmitAgentToolCallCompletedInput {
     executionId: string;
+    threadId: string;
     toolName: string;
     result: JsonObject;
 }
 
 export interface EmitAgentToolCallFailedInput {
     executionId: string;
+    threadId: string;
     toolName: string;
     error: string;
 }
 
 export interface EmitAgentExecutionCompletedInput {
     executionId: string;
+    threadId: string;
     finalMessage: string;
     iterations: number;
 }
 
 export interface EmitAgentExecutionFailedInput {
     executionId: string;
+    threadId: string;
     error: string;
 }
 
@@ -76,7 +83,7 @@ export async function emitAgentExecutionStarted(
  * Emit new message event (user, assistant, or tool)
  */
 export async function emitAgentMessage(input: EmitAgentMessageInput): Promise<void> {
-    const { executionId, message } = input;
+    const { executionId, threadId, message } = input;
     const serializedMessage: JsonObject = {
         id: message.id,
         role: message.role,
@@ -97,6 +104,7 @@ export async function emitAgentMessage(input: EmitAgentMessageInput): Promise<vo
         type: "agent:message:new",
         timestamp: Date.now(),
         executionId,
+        threadId,
         message: serializedMessage
     });
 }
@@ -105,11 +113,12 @@ export async function emitAgentMessage(input: EmitAgentMessageInput): Promise<vo
  * Emit agent thinking event
  */
 export async function emitAgentThinking(input: EmitAgentThinkingInput): Promise<void> {
-    const { executionId } = input;
+    const { executionId, threadId } = input;
     await redisEventBus.publish("agent:events:thinking", {
         type: "agent:thinking",
         timestamp: Date.now(),
-        executionId
+        executionId,
+        threadId
     });
 }
 
@@ -118,12 +127,17 @@ export async function emitAgentThinking(input: EmitAgentThinkingInput): Promise<
  */
 export async function emitAgentToken(input: EmitAgentTokenInput): Promise<void> {
     const { executionId, token } = input;
-    await redisEventBus.publish("agent:events:token", {
+    const event = {
         type: "agent:token",
         timestamp: Date.now(),
         executionId,
         token
-    } as unknown as WebSocketEvent);
+    } as unknown as WebSocketEvent;
+    console.log(
+        `[Agent Events] Publishing token to agent:events:token for execution ${executionId}:`,
+        token
+    );
+    await redisEventBus.publish("agent:events:token", event);
 }
 
 /**
@@ -132,11 +146,12 @@ export async function emitAgentToken(input: EmitAgentTokenInput): Promise<void> 
 export async function emitAgentToolCallStarted(
     input: EmitAgentToolCallStartedInput
 ): Promise<void> {
-    const { executionId, toolName, arguments: args } = input;
+    const { executionId, threadId, toolName, arguments: args } = input;
     await redisEventBus.publish("agent:events:tool:call:started", {
         type: "agent:tool:call:started",
         timestamp: Date.now(),
         executionId,
+        threadId,
         toolName,
         arguments: args
     });
@@ -148,11 +163,12 @@ export async function emitAgentToolCallStarted(
 export async function emitAgentToolCallCompleted(
     input: EmitAgentToolCallCompletedInput
 ): Promise<void> {
-    const { executionId, toolName, result } = input;
+    const { executionId, threadId, toolName, result } = input;
     await redisEventBus.publish("agent:events:tool:call:completed", {
         type: "agent:tool:call:completed",
         timestamp: Date.now(),
         executionId,
+        threadId,
         toolName,
         result
     });
@@ -162,11 +178,12 @@ export async function emitAgentToolCallCompleted(
  * Emit tool call failed event
  */
 export async function emitAgentToolCallFailed(input: EmitAgentToolCallFailedInput): Promise<void> {
-    const { executionId, toolName, error } = input;
+    const { executionId, threadId, toolName, error } = input;
     await redisEventBus.publish("agent:events:tool:call:failed", {
         type: "agent:tool:call:failed",
         timestamp: Date.now(),
         executionId,
+        threadId,
         toolName,
         error
     });
@@ -178,11 +195,12 @@ export async function emitAgentToolCallFailed(input: EmitAgentToolCallFailedInpu
 export async function emitAgentExecutionCompleted(
     input: EmitAgentExecutionCompletedInput
 ): Promise<void> {
-    const { executionId, finalMessage, iterations } = input;
+    const { executionId, threadId, finalMessage, iterations } = input;
     await redisEventBus.publish("agent:events:execution:completed", {
         type: "agent:execution:completed",
         timestamp: Date.now(),
         executionId,
+        threadId,
         status: "completed",
         finalMessage,
         iterations
@@ -195,11 +213,12 @@ export async function emitAgentExecutionCompleted(
 export async function emitAgentExecutionFailed(
     input: EmitAgentExecutionFailedInput
 ): Promise<void> {
-    const { executionId, error } = input;
+    const { executionId, threadId, error } = input;
     await redisEventBus.publish("agent:events:execution:failed", {
         type: "agent:execution:failed",
         timestamp: Date.now(),
         executionId,
+        threadId,
         status: "failed",
         error
     });

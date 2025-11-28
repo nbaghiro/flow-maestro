@@ -5,6 +5,7 @@ import { createThreadHandler } from "./create";
 import { deleteThreadHandler } from "./delete";
 import { getThreadHandler } from "./get";
 import { listThreadsHandler } from "./list";
+import { getThreadMessagesHandler } from "./messages";
 import { updateThreadHandler } from "./update";
 
 export async function threadRoutes(fastify: FastifyInstance) {
@@ -15,6 +16,7 @@ export async function threadRoutes(fastify: FastifyInstance) {
     fastify.post("/", createThreadHandler);
     fastify.get("/", listThreadsHandler);
     fastify.get("/:id", getThreadHandler);
+    fastify.get("/:id/messages", getThreadMessagesHandler);
     fastify.put("/:id", updateThreadHandler);
     fastify.delete("/:id", deleteThreadHandler);
 

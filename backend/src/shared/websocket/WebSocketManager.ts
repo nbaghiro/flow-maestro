@@ -112,7 +112,8 @@ export class WebSocketManager {
             // Broadcast to all connections
             console.log(`Broadcasting ${event.type} to all connections`);
             this.connections.forEach((connection) => {
-                if (connection.socket.readyState === WebSocket.OPEN) {
+                // 1 is the OPEN state for ws-based WebSocket implementations
+                if (connection.socket.readyState === 1) {
                     connection.socket.send(message);
                 }
             });
@@ -131,7 +132,8 @@ export class WebSocketManager {
 
         subscribers.forEach((connectionId) => {
             const connection = this.connections.get(connectionId);
-            if (connection && connection.socket.readyState === WebSocket.OPEN) {
+            // 1 is the OPEN state for ws-based WebSocket implementations
+            if (connection && connection.socket.readyState === 1) {
                 connection.socket.send(message);
             }
         });
@@ -141,7 +143,8 @@ export class WebSocketManager {
         const message = JSON.stringify(event);
 
         this.connections.forEach((connection) => {
-            if (connection.userId === userId && connection.socket.readyState === WebSocket.OPEN) {
+            // 1 is the OPEN state for ws-based WebSocket implementations
+            if (connection.userId === userId && connection.socket.readyState === 1) {
                 connection.socket.send(message);
             }
         });

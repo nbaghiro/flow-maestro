@@ -269,6 +269,24 @@ export class AgentExecutionRepository {
         return result.rows.map((row) => this.mapMessageRow(row as AgentMessageRow));
     }
 
+    async getMessagesByThread(
+        threadId: string,
+        options: { limit?: number; offset?: number } = {}
+    ): Promise<AgentMessageModel[]> {
+        const limit = options.limit || 1000;
+        const offset = options.offset || 0;
+
+        const query = `
+            SELECT * FROM flowmaestro.agent_messages
+            WHERE thread_id = $1
+            ORDER BY created_at ASC
+            LIMIT $2 OFFSET $3
+        `;
+
+        const result = await db.query<AgentMessageRow>(query, [threadId, limit, offset]);
+        return result.rows.map((row) => this.mapMessageRow(row as AgentMessageRow));
+    }
+
     async deleteExecution(id: string): Promise<boolean> {
         // This will cascade delete messages
         const query = `

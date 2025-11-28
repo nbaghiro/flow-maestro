@@ -11,80 +11,183 @@ interface AgentChatProps {
 }
 
 export function AgentChat({ agent }: AgentChatProps) {
-    const { currentExecution, executeAgent, sendMessage, clearExecution } = useAgentStore();
+    const { currentExecution, executeAgent, sendMessage, clearExecution, updateExecutionStatus } =
+        useAgentStore();
 
     const [input, setInput] = useState("");
     const [isSending, setIsSending] = useState(false);
     const [messages, setMessages] = useState<ConversationMessage[]>([]);
     const [showClearConfirm, setShowClearConfirm] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const tokenAccumulatorRef = useRef<Map<string, string>>(new Map());
 
     // Scroll to bottom when messages change
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages]);
 
-    // Update messages from execution
+    // Track previous thread_id to preserve messages when continuing in same thread
+    const prevThreadIdRef = useRef<string | undefined>(undefined);
+
+    // Sync messages from execution when execution ID changes
+    // Preserve existing messages if we're continuing in the same thread
     useEffect(() => {
         if (currentExecution) {
-            setMessages(currentExecution.conversation_history);
+            const currentThreadId = currentExecution.thread_id;
+            const isSameThread = prevThreadIdRef.current === currentThreadId;
+            const history = currentExecution.conversation_history || [];
+
+            // Update thread reference
+            prevThreadIdRef.current = currentThreadId;
+
+            setMessages((prev) => {
+                // If same thread and we have existing messages, preserve them and add new ones
+                if (isSameThread && prev.length > 0) {
+                    const existingMessageIds = new Set(prev.map((m) => m.id));
+                    const newMessages = history.filter((m) => !existingMessageIds.has(m.id));
+                    // Add new messages from the execution (typically just the new user message)
+                    return newMessages.length > 0 ? [...prev, ...newMessages] : prev;
+                }
+
+                // New thread or no previous messages - use execution history
+                return history;
+            });
         } else {
+            prevThreadIdRef.current = undefined;
             setMessages([]);
         }
-    }, [currentExecution]);
+    }, [currentExecution?.id]);
 
-    // Listen for WebSocket events
+    // Subscribe to execution WebSocket events
     useEffect(() => {
         if (!currentExecution) return;
 
-        const handleMessage = (event: unknown) => {
-            const data = event as {
-                executionId?: string;
-                message?: ConversationMessage;
-            };
-            if (data.executionId === currentExecution.id) {
-                if (data.message) {
-                    setMessages((prev) => [...prev, data.message!]);
-                }
+        const executionId = currentExecution.id;
+        wsClient.subscribeToExecution(executionId);
+
+        return () => {
+            wsClient.unsubscribeFromExecution(executionId);
+        };
+    }, [currentExecution?.id]);
+
+    // Handle WebSocket events
+    useEffect(() => {
+        const handleToken = (event: unknown) => {
+            const data = event as { executionId?: string; token?: string };
+            if (!data.executionId || !data.token) return;
+
+            const executionId = data.executionId; // TypeScript now knows it's defined
+            const store = useAgentStore.getState();
+            if (!store.currentExecution || executionId !== store.currentExecution.id) return;
+
+            if (isSending) {
+                setIsSending(false);
             }
+
+            // Accumulate tokens
+            const current = tokenAccumulatorRef.current.get(executionId) || "";
+            tokenAccumulatorRef.current.set(executionId, current + data.token);
+
+            // Update streaming message
+            setMessages((prev) => {
+                const lastMessage = prev[prev.length - 1];
+                const accumulated = tokenAccumulatorRef.current.get(executionId) || "";
+                const streamingId = `streaming-${executionId}`;
+
+                if (
+                    lastMessage &&
+                    lastMessage.role === "assistant" &&
+                    lastMessage.id === streamingId
+                ) {
+                    return [...prev.slice(0, -1), { ...lastMessage, content: accumulated }];
+                } else {
+                    return [
+                        ...prev,
+                        {
+                            id: streamingId,
+                            role: "assistant" as const,
+                            content: accumulated,
+                            timestamp: new Date().toISOString()
+                        }
+                    ];
+                }
+            });
         };
 
-        const handleThinking = (event: unknown) => {
-            const data = event as { executionId?: string };
-            if (data.executionId === currentExecution.id) {
-                // Could show a "thinking..." indicator
-                console.log("Agent is thinking...");
-            }
+        const handleMessage = (event: unknown) => {
+            const data = event as { executionId?: string; message?: ConversationMessage };
+            if (!data.executionId || !data.message) return;
+
+            const store = useAgentStore.getState();
+            if (!store.currentExecution || data.executionId !== store.currentExecution.id) return;
+            if (data.message.role === "user") return; // Skip user messages
+
+            store.addMessageToExecution(data.executionId, data.message);
         };
 
         const handleCompleted = (event: unknown) => {
-            const data = event as { executionId?: string };
-            if (data.executionId === currentExecution.id) {
-                setIsSending(false);
+            const data = event as { executionId?: string; finalMessage?: string };
+            const store = useAgentStore.getState();
+            if (
+                !store.currentExecution ||
+                !data.executionId ||
+                data.executionId !== store.currentExecution.id
+            )
+                return;
+
+            // Finalize streaming message
+            const accumulated = tokenAccumulatorRef.current.get(data.executionId);
+            if (accumulated) {
+                const finalMessage: ConversationMessage = {
+                    id: `asst-${data.executionId}-${Date.now()}`,
+                    role: "assistant",
+                    content: data.finalMessage || accumulated,
+                    timestamp: new Date().toISOString()
+                };
+
+                setMessages((prev) => {
+                    const filtered = prev.filter((m) => m.id !== `streaming-${data.executionId}`);
+                    return [...filtered, finalMessage];
+                });
+
+                store.addMessageToExecution(data.executionId, finalMessage);
+                tokenAccumulatorRef.current.delete(data.executionId);
             }
+
+            setIsSending(false);
+            updateExecutionStatus(data.executionId, "completed");
         };
 
         const handleFailed = (event: unknown) => {
             const data = event as { executionId?: string; error?: unknown };
-            if (data.executionId === currentExecution.id) {
-                setIsSending(false);
-                // Could show error message
-                console.error("Agent failed:", data.error);
+            const store = useAgentStore.getState();
+            if (!store.currentExecution || data.executionId !== store.currentExecution.id) return;
+
+            if (data.executionId) {
+                setMessages((prev) => prev.filter((m) => m.id !== `streaming-${data.executionId}`));
+                tokenAccumulatorRef.current.delete(data.executionId);
             }
+
+            setIsSending(false);
+            updateExecutionStatus(store.currentExecution.id, "failed");
         };
 
+        wsClient.on("agent:token", handleToken);
         wsClient.on("agent:message:new", handleMessage);
-        wsClient.on("agent:thinking", handleThinking);
         wsClient.on("agent:execution:completed", handleCompleted);
         wsClient.on("agent:execution:failed", handleFailed);
 
         return () => {
+            wsClient.off("agent:token", handleToken);
             wsClient.off("agent:message:new", handleMessage);
-            wsClient.off("agent:thinking", handleThinking);
             wsClient.off("agent:execution:completed", handleCompleted);
             wsClient.off("agent:execution:failed", handleFailed);
+
+            if (currentExecution?.id) {
+                tokenAccumulatorRef.current.delete(currentExecution.id);
+            }
         };
-    }, [currentExecution]);
+    }, [currentExecution?.id, isSending, updateExecutionStatus]);
 
     const handleSend = async () => {
         if (!input.trim() || isSending) return;
@@ -94,12 +197,31 @@ export function AgentChat({ agent }: AgentChatProps) {
         setIsSending(true);
 
         try {
-            if (!currentExecution) {
-                // Start new execution
-                await executeAgent(agent.id, message);
+            const store = useAgentStore.getState();
+            const exec = store.currentExecution;
+
+            if (!exec || exec.status !== "running") {
+                // Start new execution (or new one in same thread if previous completed)
+                await executeAgent(agent.id, message, exec?.thread_id);
             } else {
-                // Continue existing execution
-                await sendMessage(message);
+                // Try to continue existing execution
+                // If it fails (execution completed), start new one in same thread
+                try {
+                    await sendMessage(message);
+                } catch (error) {
+                    // Any error from sendMessage means execution is not running anymore
+                    // This is expected when execution completes between status check and send
+                    // Silently handle it and start a new execution in the same thread
+                    const errorMessage = error instanceof Error ? error.message : String(error);
+                    // Only log if it's not the expected "already completed" error
+                    if (
+                        !errorMessage.includes("already completed") &&
+                        !errorMessage.includes("400")
+                    ) {
+                        console.warn("[AgentChat] Unexpected error sending message:", errorMessage);
+                    }
+                    await executeAgent(agent.id, message, exec.thread_id);
+                }
             }
         } catch (error) {
             console.error("Failed to send message:", error);
@@ -206,16 +328,18 @@ export function AgentChat({ agent }: AgentChatProps) {
                                 )}
                             </div>
                         ))}
-                        {isSending && (
-                            <div className="flex gap-3">
-                                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                                    <Bot className="w-4 h-4 text-primary" />
+                        {isSending &&
+                            currentExecution &&
+                            !messages.some((m) => m.id === `streaming-${currentExecution.id}`) && (
+                                <div className="flex gap-3">
+                                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                                        <Bot className="w-4 h-4 text-primary" />
+                                    </div>
+                                    <div className="bg-muted text-foreground rounded-lg px-4 py-3">
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                    </div>
                                 </div>
-                                <div className="bg-muted text-foreground rounded-lg px-4 py-3">
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                </div>
-                            </div>
-                        )}
+                            )}
                         <div ref={messagesEndRef} />
                     </>
                 )}
