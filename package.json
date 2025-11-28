@@ -61,5 +61,8 @@
         ]
     },
     "author": "FlowMaestro Team",
-    "license": "MIT"
+    "license": "MIT",
+    "dependencies": {
+        "react-pdf": "^10.2.0"
+    }
 }
