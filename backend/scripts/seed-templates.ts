@@ -11,8 +11,8 @@ import * as path from "path";
 import * as dotenv from "dotenv";
 import { Pool } from "pg";
 
-// Load .env from project root
-dotenv.config({ path: path.resolve(__dirname, "../../.env") });
+// Load .env from backend root
+dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
 // Template-specific node type (React Flow compatible)
 interface TemplateNode {

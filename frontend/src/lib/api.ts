@@ -16,7 +16,11 @@ import type {
     TemplateListResponse,
     CategoryInfo,
     CopyTemplateResponse,
-    TemplateCategory
+    TemplateCategory,
+    AgentTemplate,
+    AgentTemplateListParams,
+    AgentTemplateListResponse,
+    CopyAgentTemplateResponse
 } from "@flowmaestro/shared";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
@@ -2473,6 +2477,116 @@ export async function copyTemplate(
     }
 
     const response = await fetch(`${API_BASE_URL}/api/templates/${templateId}/copy`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ name })
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    return response.json();
+}
+
+// ===== Agent Template API Functions =====
+
+export type { AgentTemplate, AgentTemplateListParams, AgentTemplateListResponse };
+
+/**
+ * Get list of agent templates with optional filters
+ */
+export async function getAgentTemplates(
+    params?: AgentTemplateListParams
+): Promise<{ success: boolean; data: AgentTemplateListResponse; error?: string }> {
+    const queryParams = new URLSearchParams();
+
+    if (params?.category) queryParams.set("category", params.category);
+    if (params?.tags && params.tags.length > 0) queryParams.set("tags", params.tags.join(","));
+    if (params?.featured !== undefined) queryParams.set("featured", params.featured.toString());
+    if (params?.search) queryParams.set("search", params.search);
+    if (params?.limit) queryParams.set("limit", params.limit.toString());
+    if (params?.offset) queryParams.set("offset", params.offset.toString());
+
+    const url = `${API_BASE_URL}/api/agent-templates${queryParams.toString() ? `?${queryParams.toString()}` : ""}`;
+
+    const response = await fetch(url, {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json"
+        }
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    return response.json();
+}
+
+/**
+ * Get agent template categories with counts
+ */
+export async function getAgentTemplateCategories(): Promise<{
+    success: boolean;
+    data: CategoryInfo[];
+    error?: string;
+}> {
+    const response = await fetch(`${API_BASE_URL}/api/agent-templates/categories`, {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json"
+        }
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    return response.json();
+}
+
+/**
+ * Get a specific agent template by ID
+ */
+export async function getAgentTemplate(
+    templateId: string
+): Promise<{ success: boolean; data: AgentTemplate; error?: string }> {
+    const response = await fetch(`${API_BASE_URL}/api/agent-templates/${templateId}`, {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json"
+        }
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    return response.json();
+}
+
+/**
+ * Copy an agent template to user's agents
+ */
+export async function copyAgentTemplate(
+    templateId: string,
+    name?: string
+): Promise<{ success: boolean; data: CopyAgentTemplateResponse; error?: string }> {
+    const token = getAuthToken();
+
+    if (!token) {
+        throw new Error("Authentication required to copy agent templates");
+    }
+
+    const response = await fetch(`${API_BASE_URL}/api/agent-templates/${templateId}/copy`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",

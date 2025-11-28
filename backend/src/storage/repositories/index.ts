@@ -10,3 +10,6 @@ export * from "./CallExecutionRepository";
 export * from "./WorkingMemoryRepository";
 export * from "./ConversationEmbeddingRepository";
 export * from "./TemplateRepository";
+export * from "./AgentTemplateRepository";
+export * from "./AgentRepository";
+export * from "./AgentExecutionRepository";

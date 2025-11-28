@@ -1,35 +1,55 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Search, Loader2, FileText, AlertCircle } from "lucide-react";
+import { Search, Loader2, FileText, AlertCircle, Bot } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import type { Template, TemplateCategory, CategoryInfo } from "@flowmaestro/shared";
+import type { Template, TemplateCategory, CategoryInfo, AgentTemplate } from "@flowmaestro/shared";
 import { TEMPLATE_CATEGORY_META } from "@flowmaestro/shared";
 import { PageHeader } from "../components/common/PageHeader";
+import { AgentTemplateCard } from "../components/templates/AgentTemplateCard";
+import { AgentTemplatePreviewDialog } from "../components/templates/AgentTemplatePreviewDialog";
 import { CategoryFilter } from "../components/templates/CategoryFilter";
 import { TemplateCard } from "../components/templates/TemplateCard";
 import { TemplatePreviewDialog } from "../components/templates/TemplatePreviewDialog";
-import { getTemplates, getTemplateCategories, copyTemplate } from "../lib/api";
+import { TemplateTypeToggle, type TemplateType } from "../components/templates/TemplateTypeToggle";
+import {
+    getTemplates,
+    getTemplateCategories,
+    copyTemplate,
+    getAgentTemplates,
+    getAgentTemplateCategories,
+    copyAgentTemplate
+} from "../lib/api";
 
 export function Templates() {
     const navigate = useNavigate();
     const queryClient = useQueryClient();
 
     // State
+    const [templateType, setTemplateType] = useState<TemplateType>("workflows");
     const [selectedCategory, setSelectedCategory] = useState<TemplateCategory | null>(null);
     const [searchQuery, setSearchQuery] = useState("");
     const [previewTemplate, setPreviewTemplate] = useState<Template | null>(null);
+    const [previewAgentTemplate, setPreviewAgentTemplate] = useState<AgentTemplate | null>(null);
 
-    // Fetch categories
-    const { data: categoriesData, isLoading: categoriesLoading } = useQuery({
+    // Fetch workflow categories
+    const { data: workflowCategoriesData, isLoading: workflowCategoriesLoading } = useQuery({
         queryKey: ["template-categories"],
-        queryFn: getTemplateCategories
+        queryFn: getTemplateCategories,
+        enabled: templateType === "workflows"
     });
 
-    // Fetch templates
+    // Fetch agent categories
+    const { data: agentCategoriesData, isLoading: agentCategoriesLoading } = useQuery({
+        queryKey: ["agent-template-categories"],
+        queryFn: getAgentTemplateCategories,
+        enabled: templateType === "agents"
+    });
+
+    // Fetch workflow templates
     const {
-        data: templatesData,
-        isLoading: templatesLoading,
-        error: templatesError
+        data: workflowTemplatesData,
+        isLoading: workflowTemplatesLoading,
+        error: workflowTemplatesError
     } = useQuery({
         queryKey: ["templates", selectedCategory, searchQuery],
         queryFn: () =>
@@ -37,44 +57,91 @@ export function Templates() {
                 category: selectedCategory || undefined,
                 search: searchQuery || undefined,
                 limit: 50
-            })
+            }),
+        enabled: templateType === "workflows"
     });
 
-    // Copy template mutation
-    const copyMutation = useMutation({
+    // Fetch agent templates
+    const {
+        data: agentTemplatesData,
+        isLoading: agentTemplatesLoading,
+        error: agentTemplatesError
+    } = useQuery({
+        queryKey: ["agent-templates", selectedCategory, searchQuery],
+        queryFn: () =>
+            getAgentTemplates({
+                category: selectedCategory || undefined,
+                search: searchQuery || undefined,
+                limit: 50
+            }),
+        enabled: templateType === "agents"
+    });
+
+    // Copy workflow template mutation
+    const copyWorkflowMutation = useMutation({
         mutationFn: (template: Template) => copyTemplate(template.id),
         onSuccess: (data) => {
-            // Navigate to the workflow builder
             if (data.data?.workflowId) {
                 navigate(`/builder/${data.data.workflowId}`);
             }
-            // Invalidate templates to update use counts
             queryClient.invalidateQueries({ queryKey: ["templates"] });
+        }
+    });
+
+    // Copy agent template mutation
+    const copyAgentMutation = useMutation({
+        mutationFn: (template: AgentTemplate) => copyAgentTemplate(template.id),
+        onSuccess: (data) => {
+            if (data.data?.agentId) {
+                navigate(`/agents/${data.data.agentId}`);
+            }
+            queryClient.invalidateQueries({ queryKey: ["agent-templates"] });
         }
     });
 
     // Parse categories with fallback - filter to only known categories
     const categories: CategoryInfo[] = useMemo(() => {
-        if (!categoriesData?.data) return [];
-        // Filter to only include categories we know about
-        return categoriesData.data.filter(
-            (cat: CategoryInfo) => TEMPLATE_CATEGORY_META[cat.category]
-        );
-    }, [categoriesData]);
+        const data = templateType === "workflows" ? workflowCategoriesData : agentCategoriesData;
+        if (!data?.data) return [];
+        return data.data.filter((cat: CategoryInfo) => TEMPLATE_CATEGORY_META[cat.category]);
+    }, [templateType, workflowCategoriesData, agentCategoriesData]);
 
     // Parse templates with fallback - filter to only known categories
-    const templates: Template[] = useMemo(() => {
-        if (!templatesData?.data?.items) return [];
-        return templatesData.data.items.filter((t: Template) => TEMPLATE_CATEGORY_META[t.category]);
-    }, [templatesData]);
+    const workflowTemplates: Template[] = useMemo(() => {
+        if (!workflowTemplatesData?.data?.items) return [];
+        return workflowTemplatesData.data.items.filter(
+            (t: Template) => TEMPLATE_CATEGORY_META[t.category]
+        );
+    }, [workflowTemplatesData]);
+
+    const agentTemplates: AgentTemplate[] = useMemo(() => {
+        if (!agentTemplatesData?.data?.items) return [];
+        return agentTemplatesData.data.items.filter(
+            (t: AgentTemplate) => TEMPLATE_CATEGORY_META[t.category]
+        );
+    }, [agentTemplatesData]);
 
     // Handlers
-    const handleCardClick = (template: Template) => {
+    const handleTemplateTypeChange = (type: TemplateType) => {
+        setTemplateType(type);
+        setSelectedCategory(null);
+        setSearchQuery("");
+    };
+
+    const handleWorkflowCardClick = (template: Template) => {
         setPreviewTemplate(template);
     };
 
-    const handleUse = async (template: Template) => {
-        copyMutation.mutate(template);
+    const handleAgentCardClick = (template: AgentTemplate) => {
+        setPreviewAgentTemplate(template);
+    };
+
+    const handleUseWorkflow = async (template: Template) => {
+        copyWorkflowMutation.mutate(template);
+    };
+
+    const handleUseAgent = async (template: AgentTemplate) => {
+        copyAgentMutation.mutate(template);
     };
 
     const handleCategoryChange = (category: TemplateCategory | null) => {
@@ -85,14 +152,28 @@ export function Templates() {
         setSearchQuery(e.target.value);
     };
 
+    const categoriesLoading =
+        templateType === "workflows" ? workflowCategoriesLoading : agentCategoriesLoading;
+    const templatesLoading =
+        templateType === "workflows" ? workflowTemplatesLoading : agentTemplatesLoading;
+    const templatesError =
+        templateType === "workflows" ? workflowTemplatesError : agentTemplatesError;
     const isLoading = categoriesLoading || templatesLoading;
+
+    const templates = templateType === "workflows" ? workflowTemplates : agentTemplates;
+    const templateCount = templates.length;
 
     return (
         <div className="max-w-7xl mx-auto px-6 py-8">
             <PageHeader
-                title="Workflow Templates"
-                description="Browse and use pre-built workflow templates to get started quickly"
+                title="Templates"
+                description="Browse and use pre-built workflow and agent templates to get started quickly"
             />
+
+            {/* Template Type Toggle */}
+            <div className="mb-6">
+                <TemplateTypeToggle value={templateType} onChange={handleTemplateTypeChange} />
+            </div>
 
             {/* Search and Filters */}
             <div className="space-y-4 mb-8">
@@ -101,7 +182,7 @@ export function Templates() {
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                     <input
                         type="text"
-                        placeholder="Search templates..."
+                        placeholder={`Search ${templateType === "workflows" ? "workflow" : "agent"} templates...`}
                         value={searchQuery}
                         onChange={handleSearchChange}
                         className="w-full pl-10 pr-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-full bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
@@ -121,7 +202,9 @@ export function Templates() {
             {isLoading ? (
                 <div className="flex flex-col items-center justify-center py-20">
                     <Loader2 className="w-8 h-8 text-blue-500 animate-spin mb-4" />
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Loading templates...</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                        Loading {templateType === "workflows" ? "workflow" : "agent"} templates...
+                    </p>
                 </div>
             ) : templatesError ? (
                 <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed border-red-200 dark:border-red-900 rounded-lg bg-red-50 dark:bg-red-900/20">
@@ -135,11 +218,15 @@ export function Templates() {
                             : "An error occurred"}
                     </p>
                 </div>
-            ) : templates.length === 0 ? (
+            ) : templateCount === 0 ? (
                 <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800">
-                    <FileText className="w-12 h-12 text-gray-400 dark:text-gray-500 mb-4" />
+                    {templateType === "workflows" ? (
+                        <FileText className="w-12 h-12 text-gray-400 dark:text-gray-500 mb-4" />
+                    ) : (
+                        <Bot className="w-12 h-12 text-gray-400 dark:text-gray-500 mb-4" />
+                    )}
                     <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                        No templates found
+                        No {templateType === "workflows" ? "workflow" : "agent"} templates found
                     </h3>
                     <p className="text-sm text-gray-500 dark:text-gray-400 text-center max-w-md">
                         {searchQuery
@@ -153,7 +240,8 @@ export function Templates() {
                 <>
                     {/* Results count */}
                     <div className="mb-6 text-sm text-gray-500 dark:text-gray-400">
-                        {templates.length} template{templates.length !== 1 ? "s" : ""}
+                        {templateCount} {templateType === "workflows" ? "workflow" : "agent"}{" "}
+                        template{templateCount !== 1 ? "s" : ""}
                         {selectedCategory &&
                             TEMPLATE_CATEGORY_META[selectedCategory] &&
                             ` in ${TEMPLATE_CATEGORY_META[selectedCategory].label}`}
@@ -162,24 +250,41 @@ export function Templates() {
 
                     {/* Template grid - 3 columns for wider cards */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {templates.map((template) => (
-                            <TemplateCard
-                                key={template.id}
-                                template={template}
-                                onClick={handleCardClick}
-                            />
-                        ))}
+                        {templateType === "workflows"
+                            ? workflowTemplates.map((template) => (
+                                  <TemplateCard
+                                      key={template.id}
+                                      template={template}
+                                      onClick={handleWorkflowCardClick}
+                                  />
+                              ))
+                            : agentTemplates.map((template) => (
+                                  <AgentTemplateCard
+                                      key={template.id}
+                                      template={template}
+                                      onClick={handleAgentCardClick}
+                                  />
+                              ))}
                     </div>
                 </>
             )}
 
-            {/* Preview Dialog */}
+            {/* Workflow Preview Dialog */}
             <TemplatePreviewDialog
                 template={previewTemplate}
                 isOpen={previewTemplate !== null}
                 onClose={() => setPreviewTemplate(null)}
-                onUse={handleUse}
-                isUsing={copyMutation.isPending}
+                onUse={handleUseWorkflow}
+                isUsing={copyWorkflowMutation.isPending}
+            />
+
+            {/* Agent Preview Dialog */}
+            <AgentTemplatePreviewDialog
+                template={previewAgentTemplate}
+                isOpen={previewAgentTemplate !== null}
+                onClose={() => setPreviewAgentTemplate(null)}
+                onUse={handleUseAgent}
+                isUsing={copyAgentMutation.isPending}
             />
         </div>
     );
