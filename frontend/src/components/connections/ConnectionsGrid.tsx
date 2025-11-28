@@ -8,16 +8,9 @@ interface ProviderCardProps {
     connections: Connection[];
     onConnect: () => void;
     onViewDetails?: (connection: Connection) => void;
-    hasMCPServer?: boolean;
 }
 
-function ProviderCard({
-    provider,
-    connections,
-    onConnect,
-    onViewDetails,
-    hasMCPServer
-}: ProviderCardProps) {
+function ProviderCard({ provider, connections, onConnect, onViewDetails }: ProviderCardProps) {
     // Only show active connections
     const activeConnections = connections.filter((c) => c.status === "active");
     const isConnected = activeConnections.length > 0;
@@ -55,11 +48,6 @@ function ProviderCard({
                     <h3 className="font-medium text-sm text-foreground truncate">
                         {provider.displayName}
                     </h3>
-                    {hasMCPServer && (
-                        <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-purple-50 text-purple-700 rounded border border-purple-200">
-                            MCP
-                        </span>
-                    )}
                 </div>
                 <p className="text-xs text-muted-foreground line-clamp-2">{provider.description}</p>
                 {isConnected && connection && (
@@ -118,11 +106,6 @@ export function ConnectionsGrid({
     ]
 }: ConnectionsGridProps) {
     const { connections, loading, error } = useConnectionStore();
-
-    // Check if provider has MCP server
-    const hasMCPServer = (provider: Provider) => {
-        return !!provider.mcpServerUrl;
-    };
 
     // Get connections for a specific provider
     const getConnectionsForProvider = (provider: string) => {
@@ -193,7 +176,6 @@ export function ConnectionsGrid({
                                 connections={getConnectionsForProvider(provider.provider)}
                                 onConnect={() => handleConnect(provider)}
                                 onViewDetails={onViewDetails}
-                                hasMCPServer={hasMCPServer(provider)}
                             />
                         ))}
                     </div>

@@ -68,6 +68,18 @@ const hubspotEntry: ProviderRegistryEntry = {
     }
 };
 
+// Register Salesforce provider
+const salesforceEntry: ProviderRegistryEntry = {
+    name: "salesforce",
+    displayName: "Salesforce",
+    authMethod: "oauth2",
+    category: "crm",
+    loader: async () => {
+        const { SalesforceProvider } = await import("./providers/salesforce/SalesforceProvider");
+        return new SalesforceProvider();
+    }
+};
+
 // Register PostgreSQL provider
 const postgresqlEntry: ProviderRegistryEntry = {
     name: "postgresql",
@@ -292,6 +304,7 @@ providerRegistry.register(codaEntry);
 providerRegistry.register(notionEntry);
 providerRegistry.register(airtableEntry);
 providerRegistry.register(hubspotEntry);
+providerRegistry.register(salesforceEntry);
 providerRegistry.register(postgresqlEntry);
 providerRegistry.register(mongodbEntry);
 providerRegistry.register(githubEntry);

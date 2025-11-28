@@ -1414,6 +1414,110 @@ export const OAUTH_PROVIDERS: Record<string, OAuthProvider> = {
     // is replaced at runtime based on user-provided subdomain.
     // ==========================================================================
 
+    // ==========================================================================
+    // Salesforce CRM
+    // Uses OAuth 2.0 Web Server Flow with production login endpoint
+    // ==========================================================================
+
+    salesforce: {
+        name: "salesforce",
+        displayName: "Salesforce",
+        authUrl: "https://login.salesforce.com/services/oauth2/authorize",
+        tokenUrl: "https://login.salesforce.com/services/oauth2/token",
+        scopes: ["api", "refresh_token", "id"],
+        authParams: {
+            prompt: "consent" // Force consent to ensure we get refresh token
+        },
+        clientId: process.env.SALESFORCE_CLIENT_ID || "",
+        clientSecret: process.env.SALESFORCE_CLIENT_SECRET || "",
+        redirectUri: `${process.env.API_URL || "http://localhost:3000"}/api/oauth/salesforce/callback`,
+        getUserInfo: async (accessToken: string) => {
+            try {
+                // Use Salesforce's userinfo endpoint which returns instance URLs
+                const response = await fetch(
+                    "https://login.salesforce.com/services/oauth2/userinfo",
+                    {
+                        headers: {
+                            Authorization: `Bearer ${accessToken}`
+                        }
+                    }
+                );
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = (await response.json()) as {
+                    sub?: string;
+                    user_id?: string;
+                    organization_id?: string;
+                    name?: string;
+                    email?: string;
+                    nickname?: string;
+                    picture?: string;
+                    urls?: {
+                        enterprise?: string;
+                        metadata?: string;
+                        partner?: string;
+                        rest?: string;
+                        sobjects?: string;
+                        search?: string;
+                        query?: string;
+                        profile?: string;
+                        custom_domain?: string;
+                    };
+                };
+
+                // Extract instance URL from the urls object
+                // The 'rest' URL format is: https://instance.salesforce.com/services/data/v{version}/
+                let instanceUrl = "";
+                if (data.urls?.rest) {
+                    // Extract base URL (everything before /services/)
+                    const restUrl = data.urls.rest;
+                    const servicesIndex = restUrl.indexOf("/services/");
+                    if (servicesIndex > 0) {
+                        instanceUrl = restUrl.substring(0, servicesIndex);
+                    }
+                } else if (data.urls?.profile) {
+                    // Fallback: extract from profile URL
+                    // Format: https://instance.salesforce.com/005xxxxx
+                    const profileUrl = data.urls.profile;
+                    const match = profileUrl.match(/^(https:\/\/[^/]+)/);
+                    if (match) {
+                        instanceUrl = match[1];
+                    }
+                }
+
+                return {
+                    userId: data.user_id || "unknown",
+                    organizationId: data.organization_id,
+                    name: data.name || "Salesforce User",
+                    email: data.email || "unknown@salesforce",
+                    nickname: data.nickname,
+                    picture: data.picture,
+                    instanceUrl, // Critical: needed for all API calls
+                    urls: data.urls
+                };
+            } catch (error) {
+                console.error("[OAuth] Failed to get Salesforce user info:", error);
+                return {
+                    userId: "unknown",
+                    name: "Salesforce User",
+                    email: "unknown@salesforce",
+                    instanceUrl: ""
+                };
+            }
+        },
+        revokeUrl: "https://login.salesforce.com/services/oauth2/revoke",
+        refreshable: true
+    },
+
+    // ==========================================================================
+    // Zendesk Support
+    // NOTE: Zendesk requires subdomain in OAuth URLs. The {subdomain} placeholder
+    // is replaced at runtime based on user-provided subdomain.
+    // ==========================================================================
+
     zendesk: {
         name: "zendesk",
         displayName: "Zendesk",
