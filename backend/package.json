@@ -45,7 +45,6 @@
         "@opentelemetry/sdk-node": "^0.208.0",
         "@opentelemetry/sdk-trace-node": "^2.2.0",
         "@opentelemetry/semantic-conventions": "^1.38.0",
-        "@swc/core": "^1.15.0",
         "@temporalio/activity": "^1.13.1",
         "@temporalio/client": "^1.13.1",
         "@temporalio/common": "^1.13.1",
