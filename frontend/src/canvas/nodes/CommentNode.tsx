@@ -15,6 +15,15 @@ function CommentNode({ id, data, selected }: NodeProps) {
     const [didResize, setDidResize] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const selectionRef = useRef<Range | null>(null);
+    const [activeFormats, setActiveFormats] = useState<string[]>([]);
+
+    const refreshFormatState = () => {
+        const next: string[] = [];
+        if (document.queryCommandState("bold")) next.push("bold");
+        if (document.queryCommandState("italic")) next.push("italic");
+        if (document.queryCommandState("underline")) next.push("underline");
+        setActiveFormats(next);
+    };
 
     const updateNodeStyle = useWorkflowStore((s) => s.updateNodeStyle);
     const updateNode = useWorkflowStore((s) => s.updateNode);
@@ -62,11 +71,11 @@ function CommentNode({ id, data, selected }: NodeProps) {
     const exec = (cmd: string, value?: string) => {
         restoreSelection();
         document.execCommand(cmd, false, value);
-        // Save the updated selection so subsequent clicks keep formatting context.
         const sel = window.getSelection();
         if (sel && sel.rangeCount > 0) {
             selectionRef.current = sel.getRangeAt(0).cloneRange();
         }
+        setTimeout(refreshFormatState, 0);
     };
 
     const runFormatting = (cmd: string, value?: string) => {
@@ -75,45 +84,25 @@ function CommentNode({ id, data, selected }: NodeProps) {
         requestAnimationFrame(() => exec(cmd, value));
     };
 
-    const onBold = () => runFormatting("bold");
-    const onItalic = () => runFormatting("italic");
-    const onUnderline = () => runFormatting("underline");
-    const onList = () => {
-        setIsEditing(true);
-        requestAnimationFrame(() => {
-            const el = focusContent();
-            if (!el) return;
-
-            restoreSelection();
-            const success = document.execCommand("insertUnorderedList", false);
-
-            // If execCommand failed or no list was inserted, do a simple fallback.
-            const hasList = el.querySelector("ul");
-            if (!success || !hasList) {
-                const current = el.innerHTML.trim();
-                const content = current || "<br>";
-                el.innerHTML = `<ul><li>${content}</li></ul>`;
-                updateNode(id, { content: el.innerHTML });
-
-                const li = el.querySelector("li");
-                if (li) {
-                    const range = document.createRange();
-                    range.selectNodeContents(li);
-                    range.collapse(false);
-                    const sel = window.getSelection();
-                    sel?.removeAllRanges();
-                    sel?.addRange(range);
-                    selectionRef.current = range.cloneRange();
-                }
-                return;
-            }
-
-            // Save updated selection after successful exec.
-            const sel = window.getSelection();
-            if (sel && sel.rangeCount > 0) {
-                selectionRef.current = sel.getRangeAt(0).cloneRange();
-            }
-        });
+    const onBold = () => {
+        setActiveFormats((prev) =>
+            prev.includes("bold") ? prev.filter((f) => f !== "bold") : [...prev, "bold"]
+        );
+        runFormatting("bold");
+    };
+    const onItalic = () => {
+        setActiveFormats((prev) =>
+            prev.includes("italic") ? prev.filter((f) => f !== "italic") : [...prev, "italic"]
+        );
+        runFormatting("italic");
+    };
+    const onUnderline = () => {
+        setActiveFormats((prev) =>
+            prev.includes("underline")
+                ? prev.filter((f) => f !== "underline")
+                : [...prev, "underline"]
+        );
+        runFormatting("underline");
     };
 
     // Color updates
@@ -196,7 +185,7 @@ function CommentNode({ id, data, selected }: NodeProps) {
                 e.stopPropagation();
                 setIsEditing(true);
             }}
-            className={`w-full h-full rounded-md p-3 text-sm shadow-sm relative ${
+            className={`w-full h-full rounded-md p-3 text-sm shadow-md relative ${
                 selected ? "ring-2 ring-blue-500" : ""
             } ${isEditing ? "" : "cursor-grab active:cursor-grabbing"}`}
             style={{
@@ -205,14 +194,18 @@ function CommentNode({ id, data, selected }: NodeProps) {
             }}
         >
             {/* Toolbar */}
-            {selected && (
+            {selected && isEditing && (
                 <CommentNodeToolbar
                     onBold={onBold}
                     onItalic={onItalic}
                     onUnderline={onUnderline}
-                    onList={onList}
                     onSetBg={onSetBg}
                     onSetText={onSetText}
+                    activeBg={backgroundColor}
+                    activeText={textColor}
+                    activeBold={activeFormats.includes("bold")}
+                    activeItalic={activeFormats.includes("italic")}
+                    activeUnderline={activeFormats.includes("underline")}
                 />
             )}
 
@@ -225,6 +218,7 @@ function CommentNode({ id, data, selected }: NodeProps) {
                 onStopEditing={() => setIsEditing(false)}
                 onSelectionChange={(range) => {
                     selectionRef.current = range;
+                    refreshFormatState();
                 }}
                 onStartEditing={() => setIsEditing(true)}
             />

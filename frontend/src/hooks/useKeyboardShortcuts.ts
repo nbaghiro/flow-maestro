@@ -55,6 +55,16 @@ export function useKeyboardShortcuts(handlers: KeyboardShortcutHandlers): void {
             const key = event.key.toLowerCase();
             const modifier = event.metaKey || event.ctrlKey;
 
+            // Escape - Deselect / exit edit mode (even while typing)
+            if (event.key === "Escape") {
+                event.preventDefault();
+                if (target && typeof (target as HTMLElement).blur === "function") {
+                    (target as HTMLElement).blur();
+                }
+                onDeselectAll();
+                return;
+            }
+
             // Cmd+S / Ctrl+S - Save (works even when typing)
             if (modifier && key === "s") {
                 event.preventDefault();
@@ -139,13 +149,6 @@ export function useKeyboardShortcuts(handlers: KeyboardShortcutHandlers): void {
             if (modifier && key === "a") {
                 event.preventDefault();
                 onSelectAll();
-                return;
-            }
-
-            // Escape - Deselect all
-            if (event.key === "Escape") {
-                event.preventDefault();
-                onDeselectAll();
                 return;
             }
 

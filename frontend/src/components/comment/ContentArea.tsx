@@ -21,6 +21,7 @@ function ContentArea({
     onStartEditing
 }: Props) {
     const updateNode = useWorkflowStore((s) => s.updateNode);
+    const updateNodeStyle = useWorkflowStore((s) => s.updateNodeStyle);
     const divRef = useRef<HTMLDivElement>(null);
 
     // Keep DOM in sync when external content changes (e.g., undo/redo, remote updates).
@@ -55,6 +56,27 @@ function ContentArea({
         return el.innerHTML;
     }, []);
 
+    const adjustHeight = useCallback(() => {
+        const el = divRef.current;
+        if (!el) return;
+
+        const parent = el.closest(`[data-id="${nodeId}"]`) as HTMLElement | null;
+        if (!parent) return;
+
+        const fallbackMin = 120;
+        const currentHeight =
+            parseFloat(parent.style.height || "0") ||
+            parent.getBoundingClientRect().height ||
+            fallbackMin;
+        // Add padding buffer so outer node padding doesn't clip the first line.
+        const paddingBuffer = 32;
+        const targetHeight = Math.max(el.scrollHeight + paddingBuffer, fallbackMin);
+
+        if (targetHeight > currentHeight + 1) {
+            updateNodeStyle(nodeId, { height: targetHeight });
+        }
+    }, [nodeId, updateNodeStyle]);
+
     const handleInput = useCallback(() => {
         const el = divRef.current;
         if (!el) return;
@@ -62,7 +84,14 @@ function ContentArea({
         updateNode(nodeId, {
             content: readContent(el)
         });
-    }, [nodeId, updateNode, readContent]);
+
+        requestAnimationFrame(adjustHeight);
+    }, [nodeId, updateNode, readContent, adjustHeight]);
+
+    useEffect(() => {
+        // Recompute height when external content changes (undo/redo, load).
+        requestAnimationFrame(adjustHeight);
+    }, [content, adjustHeight]);
 
     const handleSelectionChange = useCallback(() => {
         const el = divRef.current;
@@ -110,7 +139,7 @@ function ContentArea({
     return (
         <div
             ref={divRef}
-            className={`outline-none w-full h-full [&:empty]:before:content-[attr(data-placeholder)] [&:empty]:before:text-gray-400 ${
+            className={`pr-6 pt-1 pb-2 outline-none w-full h-full [&:empty]:before:content-[attr(data-placeholder)] [&:empty]:before:text-gray-400 [&_*]:bg-transparent ${
                 isEditing ? "cursor-text nodrag" : "cursor-grab active:cursor-grabbing"
             }`}
             tabIndex={0}
@@ -123,7 +152,15 @@ function ContentArea({
             onKeyUp={handleSelectionChange}
             style={{
                 color: textColor,
-                background: "transparent"
+                background: "transparent",
+                height: "auto",
+                minHeight: "96px",
+                maxHeight: "100%",
+                overflow: "hidden",
+                overflowWrap: "anywhere",
+                wordBreak: "break-word",
+                whiteSpace: "pre-wrap",
+                boxSizing: "border-box"
             }}
             data-role="comment-content"
             data-placeholder="Add a note..."
