@@ -1,15 +1,251 @@
-import { memo } from "react";
+import { GripHorizontal } from "lucide-react";
+import { memo, useState, useEffect, useRef } from "react";
 import { NodeProps } from "reactflow";
+import CommentNodeToolbar from "../../components/comment/CommentNodeToolbar";
+import ContentArea from "../../components/comment/ContentArea";
+import { useWorkflowStore } from "../../stores/workflowStore";
 
-function CommentNode({ data, selected }: NodeProps) {
+function CommentNode({ id, data, selected }: NodeProps) {
     const { content, backgroundColor, textColor } = data;
+
+    const [isResizing, setIsResizing] = useState(false);
+    const [startPos, setStartPos] = useState<{ x: number; y: number } | null>(null);
+    const [startWidth, setStartWidth] = useState<number | null>(null);
+    const [startHeight, setStartHeight] = useState<number | null>(null);
+    const [didResize, setDidResize] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);
+    const selectionRef = useRef<Range | null>(null);
+
+    const updateNodeStyle = useWorkflowStore((s) => s.updateNodeStyle);
+    const updateNode = useWorkflowStore((s) => s.updateNode);
+
+    // Ensure formatting targets the active content area.
+    const focusContent = () => {
+        const el = document.querySelector(
+            `[data-id="${id}"] [data-role="comment-content"]`
+        ) as HTMLDivElement | null;
+        if (el) el.focus();
+        return el;
+    };
+
+    const restoreSelection = () => {
+        const sel = window.getSelection();
+        const el = focusContent();
+        if (!sel || !el) return;
+
+        sel.removeAllRanges();
+        if (selectionRef.current) {
+            sel.addRange(selectionRef.current);
+            return;
+        }
+
+        // Create a caret inside the contentEditable when no prior selection exists.
+        const range = document.createRange();
+        const firstTextNode = el.firstChild as ChildNode | null;
+        if (firstTextNode && firstTextNode.nodeType === Node.TEXT_NODE) {
+            range.setStart(firstTextNode, (firstTextNode.textContent || "").length);
+        } else if (firstTextNode) {
+            range.setStart(
+                firstTextNode,
+                firstTextNode.textContent ? firstTextNode.textContent.length : 0
+            );
+        } else {
+            const textNode = document.createTextNode("");
+            el.appendChild(textNode);
+            range.setStart(textNode, 0);
+        }
+        range.collapse(true);
+        sel.addRange(range);
+        selectionRef.current = range;
+    };
+
+    const exec = (cmd: string, value?: string) => {
+        restoreSelection();
+        document.execCommand(cmd, false, value);
+        // Save the updated selection so subsequent clicks keep formatting context.
+        const sel = window.getSelection();
+        if (sel && sel.rangeCount > 0) {
+            selectionRef.current = sel.getRangeAt(0).cloneRange();
+        }
+    };
+
+    const runFormatting = (cmd: string, value?: string) => {
+        // Ensure contentEditable is enabled before executing.
+        setIsEditing(true);
+        requestAnimationFrame(() => exec(cmd, value));
+    };
+
+    const onBold = () => runFormatting("bold");
+    const onItalic = () => runFormatting("italic");
+    const onUnderline = () => runFormatting("underline");
+    const onList = () => {
+        setIsEditing(true);
+        requestAnimationFrame(() => {
+            const el = focusContent();
+            if (!el) return;
+
+            restoreSelection();
+            const success = document.execCommand("insertUnorderedList", false);
+
+            // If execCommand failed or no list was inserted, do a simple fallback.
+            const hasList = el.querySelector("ul");
+            if (!success || !hasList) {
+                const current = el.innerHTML.trim();
+                const content = current || "<br>";
+                el.innerHTML = `<ul><li>${content}</li></ul>`;
+                updateNode(id, { content: el.innerHTML });
+
+                const li = el.querySelector("li");
+                if (li) {
+                    const range = document.createRange();
+                    range.selectNodeContents(li);
+                    range.collapse(false);
+                    const sel = window.getSelection();
+                    sel?.removeAllRanges();
+                    sel?.addRange(range);
+                    selectionRef.current = range.cloneRange();
+                }
+                return;
+            }
+
+            // Save updated selection after successful exec.
+            const sel = window.getSelection();
+            if (sel && sel.rangeCount > 0) {
+                selectionRef.current = sel.getRangeAt(0).cloneRange();
+            }
+        });
+    };
+
+    // Color updates
+    const onSetBg = (c: string) => {
+        updateNode(id, { backgroundColor: c });
+    };
+
+    const onSetText = (c: string) => {
+        updateNode(id, { textColor: c });
+    };
+
+    // --- Resize logic (same as BaseNode) ---
+    const onResizeMouseDown = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        e.preventDefault();
+
+        const el = document.querySelector(`[data-id="${id}"]`) as HTMLElement;
+        if (!el) return;
+
+        const width = parseFloat(el.style.width || "200");
+        const height = parseFloat(el.style.height || "140");
+
+        setIsResizing(true);
+        setStartPos({ x: e.clientX, y: e.clientY });
+        setStartWidth(width);
+        setStartHeight(height);
+        setDidResize(false);
+    };
+
+    const handleMouseMove = (e: MouseEvent) => {
+        if (!isResizing || !startPos || startWidth == null || startHeight == null) return;
+
+        const dx = e.clientX - startPos.x;
+        const dy = e.clientY - startPos.y;
+
+        if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+            setDidResize(true);
+        }
+
+        const newWidth = Math.max(150, startWidth + dx);
+        const newHeight = Math.max(100, startHeight + dy);
+
+        const el = document.querySelector(`[data-id="${id}"]`) as HTMLElement;
+        el.style.width = `${newWidth}px`;
+        el.style.height = `${newHeight}px`;
+    };
+
+    const handleMouseUp = () => {
+        if (!isResizing) return;
+
+        const el = document.querySelector(`[data-id="${id}"]`) as HTMLElement;
+        if (el) {
+            updateNodeStyle(id, {
+                width: parseFloat(el.style.width),
+                height: parseFloat(el.style.height)
+            });
+        }
+
+        setIsResizing(false);
+        setStartPos(null);
+        setStartWidth(null);
+        setStartHeight(null);
+    };
+
+    useEffect(() => {
+        if (isResizing) {
+            window.addEventListener("mousemove", handleMouseMove);
+            window.addEventListener("mouseup", handleMouseUp);
+        }
+        return () => {
+            window.removeEventListener("mousemove", handleMouseMove);
+            window.removeEventListener("mouseup", handleMouseUp);
+        };
+    }, [isResizing]);
 
     return (
         <div
-            className={`rounded-md p-3 text-sm shadow-sm select-none ${selected ? "ring-2 ring-blue-500" : ""}`}
-            style={{ backgroundColor: backgroundColor, color: textColor }}
+            data-id={id}
+            onDoubleClick={(e) => {
+                e.stopPropagation();
+                setIsEditing(true);
+            }}
+            className={`w-full h-full rounded-md p-3 text-sm shadow-sm relative ${
+                selected ? "ring-2 ring-blue-500" : ""
+            } ${isEditing ? "" : "cursor-grab active:cursor-grabbing"}`}
+            style={{
+                backgroundColor,
+                color: textColor
+            }}
         >
-            {content || "Add a note..."}
+            {/* Toolbar */}
+            {selected && (
+                <CommentNodeToolbar
+                    onBold={onBold}
+                    onItalic={onItalic}
+                    onUnderline={onUnderline}
+                    onList={onList}
+                    onSetBg={onSetBg}
+                    onSetText={onSetText}
+                />
+            )}
+
+            {/* Editable Content */}
+            <ContentArea
+                nodeId={id}
+                content={content}
+                textColor={textColor}
+                isEditing={isEditing}
+                onStopEditing={() => setIsEditing(false)}
+                onSelectionChange={(range) => {
+                    selectionRef.current = range;
+                }}
+                onStartEditing={() => setIsEditing(true)}
+            />
+
+            {/* Resize Handle */}
+            <div
+                onMouseDown={onResizeMouseDown}
+                onClick={(e) => {
+                    if (didResize) e.stopPropagation();
+                    setDidResize(false);
+                }}
+                className="
+                    nodrag
+                    absolute bottom-1 right-1
+                    w-4 h-4
+                    cursor-se-resize z-20
+                    rotate-45 text-gray-400
+                "
+            >
+                <GripHorizontal className="w-3 h-3" />
+            </div>
         </div>
     );
 }

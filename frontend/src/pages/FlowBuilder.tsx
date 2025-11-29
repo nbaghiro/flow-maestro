@@ -464,6 +464,8 @@ export function FlowBuilder() {
         );
     }
 
+    const selectedNodeObj = nodes.find((n) => n.id === selectedNode);
+    const selectedNodeType = selectedNodeObj?.type;
     return (
         <ReactFlowProvider>
             <div className="h-screen flex flex-col bg-gray-50">
@@ -498,7 +500,7 @@ export function FlowBuilder() {
                             onInit={(instance) => (reactFlowInstanceRef.current = instance)}
                         />
                     </div>
-                    {selectedNode && <NodeInspector />}
+                    {selectedNode && selectedNodeType !== "comment" && <NodeInspector />}
 
                     <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40">
                         <div className="flex items-center gap-2">
