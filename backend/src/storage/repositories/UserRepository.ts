@@ -159,6 +159,29 @@ export class UserRepository {
         return (result.rowCount || 0) > 0;
     }
 
+    async updateEmailVerification(userId: string): Promise<void> {
+        const query = `
+            UPDATE flowmaestro.users
+            SET email_verified = TRUE,
+                email_verified_at = NOW(),
+                updated_at = NOW()
+            WHERE id = $1
+        `;
+
+        await db.query(query, [userId]);
+    }
+
+    async updatePassword(userId: string, passwordHash: string): Promise<void> {
+        const query = `
+            UPDATE flowmaestro.users
+            SET password_hash = $2,
+                updated_at = NOW()
+            WHERE id = $1
+        `;
+
+        await db.query(query, [userId, passwordHash]);
+    }
+
     private mapRow(row: unknown): UserModel {
         const r = row as {
             id: string;
@@ -169,6 +192,8 @@ export class UserRepository {
             microsoft_id: string | null;
             auth_provider: "local" | "google" | "microsoft";
             avatar_url: string | null;
+            email_verified: boolean;
+            email_verified_at: string | Date | null;
             created_at: string | Date;
             updated_at: string | Date;
             last_login_at: string | Date | null;
@@ -182,6 +207,8 @@ export class UserRepository {
             microsoft_id: r.microsoft_id,
             auth_provider: r.auth_provider,
             avatar_url: r.avatar_url,
+            email_verified: r.email_verified,
+            email_verified_at: r.email_verified_at ? new Date(r.email_verified_at) : null,
             created_at: new Date(r.created_at),
             updated_at: new Date(r.updated_at),
             last_login_at: r.last_login_at ? new Date(r.last_login_at) : null

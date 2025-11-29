@@ -258,6 +258,95 @@ export async function register(
 }
 
 /**
+ * Request password reset email
+ */
+export async function forgotPassword(email: string): Promise<ApiResponse<{ message: string }>> {
+    const response = await fetch(`${API_BASE_URL}/api/auth/forgot-password`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ email })
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    return response.json();
+}
+
+/**
+ * Reset password with token
+ */
+export async function resetPassword(
+    token: string,
+    password: string
+): Promise<ApiResponse<{ message: string }>> {
+    const response = await fetch(`${API_BASE_URL}/api/auth/reset-password`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ token, password })
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    return response.json();
+}
+
+/**
+ * Verify email with token
+ */
+export async function verifyEmail(token: string): Promise<ApiResponse<{ message: string }>> {
+    const response = await fetch(`${API_BASE_URL}/api/auth/verify-email`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ token })
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    return response.json();
+}
+
+/**
+ * Resend email verification
+ */
+export async function resendVerificationEmail(): Promise<ApiResponse<{ message: string }>> {
+    const token = getAuthToken();
+
+    if (!token) {
+        throw new Error("No authentication token found");
+    }
+
+    const response = await fetch(`${API_BASE_URL}/api/auth/resend-verification`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`
+        }
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    return response.json();
+}
+
+/**
  * Get current user info (validates token)
  */
 export async function getCurrentUser(): Promise<UserResponse> {

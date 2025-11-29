@@ -7,12 +7,15 @@ import { Agents } from "./pages/Agents";
 import { Analytics } from "./pages/Analytics";
 import { Connections } from "./pages/Connections";
 import { FlowBuilder } from "./pages/FlowBuilder";
+import { ForgotPassword } from "./pages/ForgotPassword";
 import { KnowledgeBaseDetail } from "./pages/KnowledgeBaseDetail";
 import { KnowledgeBases } from "./pages/KnowledgeBases";
 import { Login } from "./pages/Login";
 import { Register } from "./pages/Register";
+import { ResetPassword } from "./pages/ResetPassword";
 import { Settings } from "./pages/Settings";
 import { Templates } from "./pages/Templates";
+import { VerifyEmail } from "./pages/VerifyEmail";
 import { Workflows } from "./pages/Workflows";
 import { Workspace } from "./pages/Workspace";
 
@@ -22,6 +25,9 @@ function App() {
             {/* Auth routes */}
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/verify-email" element={<VerifyEmail />} />
 
             {/* Protected routes with sidebar layout */}
             <Route

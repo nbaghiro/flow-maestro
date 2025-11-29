@@ -7,6 +7,8 @@ export interface UserModel {
     microsoft_id: string | null;
     auth_provider: "local" | "google" | "microsoft";
     avatar_url: string | null;
+    email_verified: boolean;
+    email_verified_at: Date | null;
     created_at: Date;
     updated_at: Date;
     last_login_at: Date | null;

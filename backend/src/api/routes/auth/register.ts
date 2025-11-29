@@ -1,6 +1,9 @@
 import { FastifyInstance } from "fastify";
+import { emailService } from "../../../services/email/EmailService";
 import { PasswordUtils } from "../../../shared/utils/password";
+import { TokenUtils } from "../../../shared/utils/token";
 import { UserRepository } from "../../../storage/repositories";
+import { EmailVerificationTokenRepository } from "../../../storage/repositories/EmailVerificationTokenRepository";
 import { validateRequest, ValidationError } from "../../middleware";
 import { registerSchema, RegisterRequest } from "../../schemas/auth-schemas";
 
@@ -47,6 +50,38 @@ export async function registerRoute(fastify: FastifyInstance) {
                     password_hash: passwordHash,
                     name: body.name
                 });
+
+                // Generate verification token for new local users
+                const verificationToken = TokenUtils.generate();
+                const tokenHash = TokenUtils.hash(verificationToken);
+                const expiresAt = TokenUtils.generateExpiryDate();
+
+                // Store verification token in database
+                const verificationTokenRepo = new EmailVerificationTokenRepository();
+                await verificationTokenRepo.create({
+                    userId: user.id,
+                    email: user.email,
+                    tokenHash,
+                    expiresAt,
+                    ipAddress: request.ip,
+                    userAgent: request.headers["user-agent"]
+                });
+
+                // Send verification email
+                try {
+                    await emailService.sendEmailVerification(
+                        user.email,
+                        verificationToken,
+                        user.name || undefined
+                    );
+                    fastify.log.info(`Verification email sent to: ${user.email}`);
+                } catch (error) {
+                    const errorMsg = error instanceof Error ? error.message : String(error);
+                    fastify.log.error(
+                        `Failed to send verification email to ${user.email}: ${errorMsg}`
+                    );
+                    // Don't fail registration if email fails
+                }
             }
 
             // Generate JWT token
@@ -64,7 +99,8 @@ export async function registerRoute(fastify: FastifyInstance) {
                         name: user.name,
                         avatar_url: user.avatar_url,
                         google_id: user.google_id,
-                        has_password: !!user.password_hash
+                        has_password: !!user.password_hash,
+                        email_verified: user.email_verified
                     },
                     token
                 }

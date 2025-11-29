@@ -39,6 +39,24 @@ export const config = {
     frontend: {
         url: process.env.FRONTEND_URL || "http://localhost:3000"
     },
+    resend: {
+        apiKey: process.env.RESEND_API_KEY || "",
+        fromEmail: process.env.RESEND_FROM_EMAIL || "FlowMaestro <noreply@flowmaestro.com>"
+    },
+    tokens: {
+        passwordResetExpiryMinutes: 30,
+        emailVerificationExpiryMinutes: 30
+    },
+    rateLimit: {
+        passwordReset: {
+            maxRequests: 10,
+            windowMinutes: 60
+        },
+        emailVerification: {
+            maxRequests: 10,
+            windowMinutes: 60
+        }
+    },
     env: process.env.NODE_ENV || "development",
     logLevel: process.env.LOG_LEVEL || "info"
 };
