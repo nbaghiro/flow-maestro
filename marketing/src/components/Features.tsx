@@ -54,23 +54,36 @@ const FeatureCard: React.FC<{ feature: Feature; index: number }> = ({ feature, i
     return (
         <motion.div
             ref={ref}
-            initial={{ opacity: 0, y: 50 }}
+            initial={{ opacity: 0, y: 20 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.6, delay: index * 0.1 }}
+            transition={{ duration: 0.4, delay: index * 0.05 }}
             className="relative group"
         >
-            <div className="relative p-8 rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 hover:bg-white/10 transition-all duration-300 h-full">
-                {/* Icon */}
-                <div className="inline-flex p-3 rounded-xl bg-primary-500/10 text-primary-400 mb-4 group-hover:bg-primary-500/20 transition-colors">
-                    {feature.icon}
-                </div>
+            <div className="relative p-8 rounded-lg border border-gray-800 hover:border-gray-700 transition-all duration-300 h-full">
+                {/* Animated Icon Container */}
+                <motion.div
+                    className="inline-flex p-4 rounded-2xl bg-gray-900/50 border border-gray-800 mb-6"
+                    whileHover={{ scale: 1.1, rotate: [0, -5, 5, 0] }}
+                    transition={{ duration: 0.3 }}
+                >
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0 }}
+                        animate={isInView ? { opacity: 1, scale: 1 } : {}}
+                        transition={{ duration: 0.5, delay: index * 0.1 + 0.2 }}
+                    >
+                        {React.cloneElement(feature.icon as React.ReactElement, {
+                            className: "w-7 h-7 text-white",
+                            strokeWidth: 1.5
+                        })}
+                    </motion.div>
+                </motion.div>
 
                 {/* Content */}
-                <h3 className="text-xl font-semibold mb-3">{feature.title}</h3>
-                <p className="text-gray-400 leading-relaxed">{feature.description}</p>
+                <h3 className="text-lg font-semibold mb-3 text-white">{feature.title}</h3>
+                <p className="text-sm text-gray-400 leading-relaxed">{feature.description}</p>
 
-                {/* Gradient Border Effect */}
-                <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-primary-500/0 via-accent-500/0 to-primary-500/0 group-hover:from-primary-500/20 group-hover:via-accent-500/20 group-hover:to-primary-500/20 transition-all duration-500 -z-10"></div>
+                {/* Subtle glow effect on hover */}
+                <div className="absolute inset-0 rounded-lg bg-white/0 group-hover:bg-white/[0.02] transition-colors duration-300 pointer-events-none"></div>
             </div>
         </motion.div>
     );
@@ -85,16 +98,15 @@ export const Features: React.FC = () => {
             <div className="max-w-7xl mx-auto">
                 {/* Section Header */}
                 <motion.div
-                    initial={{ opacity: 0, y: 30 }}
+                    initial={{ opacity: 0, y: 20 }}
                     animate={isInView ? { opacity: 1, y: 0 } : {}}
-                    transition={{ duration: 0.6 }}
+                    transition={{ duration: 0.4 }}
                     className="text-center mb-16"
                 >
-                    <h2 className="text-4xl sm:text-5xl font-bold mb-4">
-                        Workflows + Agents
-                        <span className="gradient-text"> Working Together</span>
+                    <h2 className="text-3xl sm:text-4xl font-semibold mb-4">
+                        Workflows + Agents Working Together
                     </h2>
-                    <p className="text-xl text-gray-400 max-w-2xl mx-auto">
+                    <p className="text-lg text-gray-400 max-w-2xl mx-auto">
                         Combine the reliability of structured workflows with the intelligence of
                         autonomous agents.
                     </p>

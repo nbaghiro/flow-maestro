@@ -208,7 +208,7 @@ gather_config() {
 
             if confirm "Use this configuration for redeployment?"; then
                 # Secrets already loaded from stack
-                REGISTRY="$GCP_REGION-docker.pkg.dev/$GCP_PROJECT/flowmaestro-images"
+                REGISTRY="$GCP_REGION-docker.pkg.dev/$GCP_PROJECT/flowmaestro"
                 # Remember the selected stack name for Pulumi
                 PULUMI_STACK="$SELECTED_STACK"
                 return 0

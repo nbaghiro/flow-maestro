@@ -2,10 +2,6 @@ import * as Tabs from "@radix-ui/react-tabs";
 import { useInView, motion } from "framer-motion";
 import { BarChart, Users, Cog, GitBranch, CheckCircle2, ArrowRight } from "lucide-react";
 import React from "react";
-import { AgentAnimation } from "./animations/AgentAnimation";
-import { EnterpriseAnimation } from "./animations/EnterpriseAnimation";
-import { HybridAnimation } from "./animations/HybridAnimation";
-import { WorkflowAnimation } from "./animations/WorkflowAnimation";
 
 interface UseCase {
     id: string;
@@ -32,7 +28,7 @@ const useCases: UseCase[] = [
             "Schedule recurring workflows",
             "Real-time monitoring and debugging"
         ],
-        gradient: "from-blue-500/20 to-cyan-500/20"
+        gradient: "from-gray-900/50 to-gray-800/50"
     },
     {
         id: "agent-deployment",
@@ -48,7 +44,7 @@ const useCases: UseCase[] = [
             "Learning from execution history",
             "Agent-to-agent communication"
         ],
-        gradient: "from-purple-500/20 to-pink-500/20"
+        gradient: "from-gray-900/50 to-gray-800/50"
     },
     {
         id: "hybrid-systems",
@@ -64,7 +60,7 @@ const useCases: UseCase[] = [
             "Unified monitoring and observability",
             "Fallback from agent to workflow when needed"
         ],
-        gradient: "from-green-500/20 to-emerald-500/20"
+        gradient: "from-gray-900/50 to-gray-800/50"
     },
     {
         id: "enterprise-scale",
@@ -80,7 +76,7 @@ const useCases: UseCase[] = [
             "Multi-tenant isolation",
             "SOC 2 compliance ready"
         ],
-        gradient: "from-orange-500/20 to-red-500/20"
+        gradient: "from-gray-900/50 to-gray-800/50"
     }
 ];
 
@@ -97,16 +93,15 @@ export const UseCases: React.FC = () => {
             <div className="max-w-7xl mx-auto">
                 {/* Section Header */}
                 <motion.div
-                    initial={{ opacity: 0, y: 30 }}
+                    initial={{ opacity: 0, y: 20 }}
                     animate={isInView ? { opacity: 1, y: 0 } : {}}
-                    transition={{ duration: 0.6 }}
+                    transition={{ duration: 0.4 }}
                     className="text-center mb-16"
                 >
-                    <h2 className="text-4xl sm:text-5xl font-bold mb-4">
-                        Choose Your
-                        <span className="gradient-text"> Execution Model</span>
+                    <h2 className="text-3xl sm:text-4xl font-semibold mb-4">
+                        Choose Your Execution Model
                     </h2>
-                    <p className="text-xl text-gray-400 max-w-2xl mx-auto">
+                    <p className="text-lg text-gray-400 max-w-2xl mx-auto">
                         Deterministic workflows, autonomous agents, or both working together. You
                         decide what fits your use case.
                     </p>
@@ -125,13 +120,13 @@ export const UseCases: React.FC = () => {
                                 <Tabs.Trigger
                                     key={useCase.id}
                                     value={useCase.id}
-                                    className="group relative px-6 py-3 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 data-[state=active]:bg-primary-500/20 data-[state=active]:border-primary-500/50 transition-all duration-300"
+                                    className="group relative px-6 py-3 rounded-lg border border-gray-800 hover:border-gray-700 data-[state=active]:bg-gray-800 data-[state=active]:border-gray-700 transition-all duration-200"
                                 >
                                     <div className="flex items-center gap-2">
-                                        <span className="text-gray-400 group-data-[state=active]:text-primary-400 transition-colors">
+                                        <span className="text-gray-400 group-data-[state=active]:text-gray-300 transition-colors">
                                             {useCase.icon}
                                         </span>
-                                        <span className="font-medium text-gray-300 group-data-[state=active]:text-white">
+                                        <span className="font-medium text-gray-400 group-data-[state=active]:text-white">
                                             {useCase.label}
                                         </span>
                                     </div>
@@ -148,55 +143,44 @@ export const UseCases: React.FC = () => {
                             className="focus:outline-none"
                         >
                             <motion.div
-                                initial={{ opacity: 0, y: 20 }}
+                                initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                transition={{ duration: 0.5 }}
-                                className={`relative rounded-2xl bg-gradient-to-br ${useCase.gradient} p-12 backdrop-blur-sm border border-white/10`}
+                                transition={{ duration: 0.3 }}
+                                className={`relative rounded-lg bg-gradient-to-br ${useCase.gradient} p-8 border border-gray-800`}
                             >
-                                <div className="grid lg:grid-cols-2 gap-12 items-center">
+                                <div className="grid lg:grid-cols-2 gap-8 items-start">
                                     {/* Left: Content */}
                                     <div>
-                                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 border border-white/20 mb-6">
-                                            {useCase.icon}
-                                            <span className="text-sm font-medium">
-                                                {useCase.label}
-                                            </span>
-                                        </div>
+                                        <h3 className="text-2xl font-semibold mb-3">
+                                            {useCase.title}
+                                        </h3>
 
-                                        <h3 className="text-3xl font-bold mb-4">{useCase.title}</h3>
+                                        <p className="text-gray-400 mb-6">{useCase.description}</p>
 
-                                        <p className="text-gray-300 text-lg mb-8">
-                                            {useCase.description}
-                                        </p>
-
-                                        <ul className="space-y-4 mb-8">
+                                        <ul className="space-y-3 mb-6">
                                             {useCase.features.map((feature, index) => (
                                                 <li key={index} className="flex items-start gap-3">
-                                                    <CheckCircle2 className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
-                                                    <span className="text-gray-300">{feature}</span>
+                                                    <CheckCircle2 className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5" />
+                                                    <span className="text-sm text-gray-400">
+                                                        {feature}
+                                                    </span>
                                                 </li>
                                             ))}
                                         </ul>
 
-                                        <button className="group inline-flex items-center gap-2 px-6 py-3 bg-white text-black font-semibold rounded-lg hover:bg-gray-100 transition-colors">
+                                        <button className="group inline-flex items-center gap-2 px-5 py-2 bg-white text-black text-sm font-medium rounded-md hover:bg-gray-100 transition-colors">
                                             Explore Examples
-                                            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                                            <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
                                         </button>
                                     </div>
 
-                                    {/* Right: Animated Visual */}
+                                    {/* Right: Simplified Visual placeholder */}
                                     <div className="relative">
-                                        <div className="aspect-square rounded-2xl bg-black/30 backdrop-blur-md border border-white/10 flex items-center justify-center p-8">
-                                            {useCase.id === "workflow-orchestration" && (
-                                                <WorkflowAnimation />
-                                            )}
-                                            {useCase.id === "agent-deployment" && (
-                                                <AgentAnimation />
-                                            )}
-                                            {useCase.id === "hybrid-systems" && <HybridAnimation />}
-                                            {useCase.id === "enterprise-scale" && (
-                                                <EnterpriseAnimation />
-                                            )}
+                                        <div className="aspect-square rounded-lg bg-gray-900 border border-gray-800 flex items-center justify-center p-8">
+                                            <div className="text-center text-gray-600">
+                                                <div className="text-4xl mb-2">{useCase.icon}</div>
+                                                <div className="text-sm">{useCase.label}</div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
