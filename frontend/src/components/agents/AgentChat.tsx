@@ -12,8 +12,15 @@ interface AgentChatProps {
 }
 
 export function AgentChat({ agent }: AgentChatProps) {
-    const { currentExecution, executeAgent, sendMessage, createNewThread, updateExecutionStatus } =
-        useAgentStore();
+    const {
+        currentExecution,
+        executeAgent,
+        sendMessage,
+        createNewThread,
+        updateExecutionStatus,
+        currentThread,
+        setCurrentThread
+    } = useAgentStore();
 
     const [input, setInput] = useState("");
     const [isSending, setIsSending] = useState(false);
@@ -29,7 +36,62 @@ export function AgentChat({ agent }: AgentChatProps) {
 
     // Track previous thread_id to preserve messages when continuing in same thread
     const prevThreadIdRef = useRef<string | undefined>(undefined);
-    const { currentThread } = useAgentStore();
+
+    // Always check for the most recent thread and switch to it if it's newer
+    // This ensures we show the latest conversation when reopening the chat
+    useEffect(() => {
+        // Skip if there's an active execution (don't interrupt ongoing conversation)
+        const store = useAgentStore.getState();
+        if (store.currentExecution && store.currentExecution.status === "running") {
+            return;
+        }
+
+        const checkAndUpdateMostRecentThread = async () => {
+            try {
+                // Fetch the most recent thread for this agent
+                const response = await api.getThreads({
+                    agent_id: agent.id,
+                    status: "active",
+                    limit: 1
+                });
+
+                if (response.success && response.data.threads.length > 0) {
+                    const mostRecentThread = response.data.threads[0];
+                    const currentThreadState = useAgentStore.getState().currentThread;
+
+                    // If no current thread, or if the most recent thread is newer, switch to it
+                    if (!currentThreadState) {
+                        setCurrentThread(mostRecentThread);
+                    } else {
+                        const currentThreadCreatedAt = new Date(
+                            currentThreadState.created_at
+                        ).getTime();
+                        const mostRecentThreadCreatedAt = new Date(
+                            mostRecentThread.created_at
+                        ).getTime();
+
+                        // Switch to most recent thread if it's newer (or if it's a different thread)
+                        if (
+                            mostRecentThreadCreatedAt > currentThreadCreatedAt ||
+                            mostRecentThread.id !== currentThreadState.id
+                        ) {
+                            setCurrentThread(mostRecentThread);
+                        }
+                    }
+                } else {
+                    const currentThreadState = useAgentStore.getState().currentThread;
+                    if (currentThreadState) {
+                        // No threads exist, clear current thread
+                        setCurrentThread(null);
+                    }
+                }
+            } catch (error) {
+                console.error("Failed to fetch most recent thread:", error);
+            }
+        };
+
+        checkAndUpdateMostRecentThread();
+    }, [agent.id, setCurrentThread]);
 
     // Load all messages from thread when component mounts or thread changes (for reopening chat)
     useEffect(() => {
@@ -63,29 +125,56 @@ export function AgentChat({ agent }: AgentChatProps) {
             }
         };
 
-        // Load messages when we have a thread but no current execution (reopening scenario)
-        // Also load on initial mount if thread exists
-        if (currentThread && !currentExecution) {
+        // Load messages when we have a thread but no active execution (reopening scenario)
+        // Only use execution history when execution is actively running
+        // When execution is completed or doesn't exist, load full conversation from thread
+        const hasActiveExecution = currentExecution && currentExecution.status === "running";
+
+        if (currentThread && !hasActiveExecution) {
+            // Reopening chat or execution completed - load full conversation from thread
             loadThreadMessages();
         } else if (!currentThread && !currentExecution) {
             // No thread and no execution = empty state
             setMessages([]);
         }
-    }, [currentThread?.id, currentExecution?.id]);
+    }, [currentThread?.id, currentExecution?.id, currentExecution?.status]);
 
     // Sync messages from execution when execution ID changes
-    // Preserve existing messages if we're continuing in the same thread
+    // Only update messages when execution is actively running
+    // When execution completes, the first useEffect will reload full conversation from thread
     useEffect(() => {
-        if (currentExecution) {
+        // Only sync from execution if it's actively running
+        // Completed executions should not overwrite full thread messages
+        if (currentExecution && currentExecution.status === "running") {
             const currentThreadId = currentExecution.thread_id;
             const isSameThread = prevThreadIdRef.current === currentThreadId;
+            const isSameThreadAsCurrent = currentThread?.id === currentThreadId;
             const history = currentExecution.conversation_history || [];
 
             // Update thread reference
             prevThreadIdRef.current = currentThreadId;
 
             setMessages((prev) => {
-                // If same thread and we have existing messages, preserve them and add new ones
+                // If this execution is in the same thread as currentThread, preserve existing messages
+                // This handles the case where we loaded full thread messages and then start a new execution
+                if (isSameThreadAsCurrent && prev.length > 0) {
+                    const existingMessageIds = new Set(prev.map((m) => m.id));
+                    const newMessages = history.filter((m) => !existingMessageIds.has(m.id));
+                    // Add new messages from the execution (typically just the new user message)
+                    const combined = newMessages.length > 0 ? [...prev, ...newMessages] : prev;
+                    // Sort by timestamp with tie-breaker (same as conversations pane)
+                    return combined.sort((a, b) => {
+                        const timeA = new Date(a.timestamp).getTime();
+                        const timeB = new Date(b.timestamp).getTime();
+                        if (timeA === timeB) {
+                            if (a.role === "user" && b.role === "assistant") return -1;
+                            if (a.role === "assistant" && b.role === "user") return 1;
+                        }
+                        return timeA - timeB;
+                    });
+                }
+
+                // If same thread as previous execution and we have existing messages, preserve them
                 if (isSameThread && prev.length > 0) {
                     const existingMessageIds = new Set(prev.map((m) => m.id));
                     const newMessages = history.filter((m) => !existingMessageIds.has(m.id));
@@ -116,12 +205,13 @@ export function AgentChat({ agent }: AgentChatProps) {
             });
         } else {
             prevThreadIdRef.current = undefined;
-            // Don't clear messages if we have a thread (they're loaded from thread)
-            if (!currentThread) {
+            // Don't clear messages if we have a thread (they're loaded from thread in first useEffect)
+            // Only clear if there's no thread and no execution
+            if (!currentThread && !currentExecution) {
                 setMessages([]);
             }
         }
-    }, [currentExecution?.id, currentThread]);
+    }, [currentExecution?.id, currentExecution?.status, currentThread]);
 
     // Subscribe to execution WebSocket events
     useEffect(() => {
