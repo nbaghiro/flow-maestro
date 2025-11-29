@@ -15,6 +15,7 @@ interface User {
     google_id?: string | null;
     microsoft_id?: string | null;
     has_password?: boolean;
+    email_verified?: boolean;
 }
 
 interface AuthContextType {

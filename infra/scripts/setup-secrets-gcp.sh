@@ -735,6 +735,32 @@ else
     echo
 fi
 
+# Email Service (Resend)
+echo ""
+print_info "Email Service Configuration (Resend)"
+EXISTING_RESEND_API_KEY=$(get_existing_gcp_secret "flowmaestro-app-resend-api-key")
+EXISTING_RESEND_FROM_EMAIL=$(get_existing_gcp_secret "flowmaestro-app-resend-from-email")
+
+if [ -n "$EXISTING_RESEND_API_KEY" ] && [ "$PROMPT_ALL" = false ]; then
+    print_info "Resend API Key: already exists ($(mask_secret "$EXISTING_RESEND_API_KEY"))"
+    RESEND_API_KEY="$EXISTING_RESEND_API_KEY"
+elif [ -n "$EXISTING_RESEND_API_KEY" ]; then
+    prompt_with_existing "Resend API Key" "$EXISTING_RESEND_API_KEY" "RESEND_API_KEY"
+else
+    read -p "Resend API Key: " RESEND_API_KEY
+fi
+
+if [ -n "$EXISTING_RESEND_FROM_EMAIL" ] && [ "$PROMPT_ALL" = false ]; then
+    print_info "Resend From Email: $EXISTING_RESEND_FROM_EMAIL (using existing)"
+    RESEND_FROM_EMAIL="$EXISTING_RESEND_FROM_EMAIL"
+elif [ -n "$EXISTING_RESEND_FROM_EMAIL" ]; then
+    read -p "Resend From Email [current: $EXISTING_RESEND_FROM_EMAIL]: " RESEND_FROM_EMAIL
+    RESEND_FROM_EMAIL=${RESEND_FROM_EMAIL:-$EXISTING_RESEND_FROM_EMAIL}
+else
+    read -p "Resend From Email [noreply@flowmaestro.ai]: " RESEND_FROM_EMAIL
+    RESEND_FROM_EMAIL=${RESEND_FROM_EMAIL:-noreply@flowmaestro.ai}
+fi
+
 print_header "Creating/Updating Secrets in GCP Secret Manager"
 
 # Create/update all secrets
@@ -775,6 +801,10 @@ create_or_update_secret "flowmaestro-app-meta-client-token" "$META_CLIENT_TOKEN"
 create_or_update_secret "flowmaestro-app-meta-webhook-verify-token" "$META_WEBHOOK_VERIFY_TOKEN"
 create_or_update_secret "flowmaestro-app-zendesk-client-id" "$ZENDESK_CLIENT_ID"
 create_or_update_secret "flowmaestro-app-zendesk-client-secret" "$ZENDESK_CLIENT_SECRET"
+
+# Email Service (Resend)
+create_or_update_secret "flowmaestro-app-resend-api-key" "$RESEND_API_KEY"
+create_or_update_secret "flowmaestro-app-resend-from-email" "$RESEND_FROM_EMAIL"
 
 print_header "Setup Complete!"
 print_success "All secrets have been created/updated in ${GCP_PROJECT}"

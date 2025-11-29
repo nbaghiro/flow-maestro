@@ -162,6 +162,10 @@ META_WEBHOOK_VERIFY_TOKEN=$(get_secret "flowmaestro-app-meta-webhook-verify-toke
 ZENDESK_CLIENT_ID=$(get_secret "flowmaestro-app-zendesk-client-id" "")
 ZENDESK_CLIENT_SECRET=$(get_secret "flowmaestro-app-zendesk-client-secret" "")
 
+# Email Service (Resend)
+RESEND_API_KEY=$(get_secret "flowmaestro-app-resend-api-key" "")
+RESEND_FROM_EMAIL=$(get_secret "flowmaestro-app-resend-from-email" "")
+
 print_success "Developer secrets fetched successfully"
 
 # Generate .env file
@@ -388,6 +392,29 @@ else
     echo "ZENDESK_CLIENT_ID=" >> "$BACKEND_ENV_FILE"
     echo "ZENDESK_CLIENT_SECRET=" >> "$BACKEND_ENV_FILE"
     echo "" >> "$BACKEND_ENV_FILE"
+fi
+
+# Email Service (Resend)
+if [ -n "$RESEND_API_KEY" ] || [ -n "$RESEND_FROM_EMAIL" ]; then
+    cat >> "$BACKEND_ENV_FILE" << EOF
+
+# ==============================================================================
+# Email Configuration (Resend)
+# ==============================================================================
+RESEND_API_KEY=${RESEND_API_KEY}
+RESEND_FROM_EMAIL=${RESEND_FROM_EMAIL}
+FRONTEND_URL=http://localhost:3000
+EOF
+else
+    cat >> "$BACKEND_ENV_FILE" << EOF
+
+# ==============================================================================
+# Email Configuration (Resend)
+# ==============================================================================
+RESEND_API_KEY=
+RESEND_FROM_EMAIL=
+FRONTEND_URL=http://localhost:3000
+EOF
 fi
 
 cat >> "$BACKEND_ENV_FILE" << EOF
