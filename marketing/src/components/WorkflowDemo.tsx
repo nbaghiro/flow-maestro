@@ -11,13 +11,13 @@ const initialNodes: Node[] = [
         data: { label: "📧 Email Trigger" },
         position: { x: 50, y: 150 },
         style: {
-            background: "#7c3aed",
+            background: "#374151",
             color: "white",
-            border: "2px solid #a78bfa",
-            borderRadius: "12px",
-            padding: "12px 24px",
-            fontSize: "14px",
-            fontWeight: "600"
+            border: "2px solid #4b5563",
+            borderRadius: "8px",
+            padding: "10px 20px",
+            fontSize: "13px",
+            fontWeight: "500"
         }
     },
     {
@@ -25,12 +25,12 @@ const initialNodes: Node[] = [
         data: { label: "⚙️ Extract Data" },
         position: { x: 250, y: 80 },
         style: {
-            background: "#1e293b",
+            background: "#1f2937",
             color: "white",
-            border: "2px solid #64748b",
-            borderRadius: "12px",
-            padding: "12px 24px",
-            fontSize: "14px"
+            border: "2px solid #374151",
+            borderRadius: "8px",
+            padding: "10px 20px",
+            fontSize: "13px"
         }
     },
     {
@@ -38,13 +38,13 @@ const initialNodes: Node[] = [
         data: { label: "🤖 AI Agent: Analyze" },
         position: { x: 250, y: 200 },
         style: {
-            background: "#d946ef",
+            background: "#374151",
             color: "white",
-            border: "2px solid #f0abfc",
-            borderRadius: "12px",
-            padding: "12px 24px",
-            fontSize: "14px",
-            fontWeight: "600"
+            border: "2px solid #4b5563",
+            borderRadius: "8px",
+            padding: "10px 20px",
+            fontSize: "13px",
+            fontWeight: "500"
         }
     },
     {
@@ -52,12 +52,12 @@ const initialNodes: Node[] = [
         data: { label: "⚙️ Format Response" },
         position: { x: 450, y: 150 },
         style: {
-            background: "#1e293b",
+            background: "#1f2937",
             color: "white",
-            border: "2px solid #64748b",
-            borderRadius: "12px",
-            padding: "12px 24px",
-            fontSize: "14px"
+            border: "2px solid #374151",
+            borderRadius: "8px",
+            padding: "10px 20px",
+            fontSize: "13px"
         }
     },
     {
@@ -66,13 +66,13 @@ const initialNodes: Node[] = [
         data: { label: "✅ Send to Slack" },
         position: { x: 650, y: 150 },
         style: {
-            background: "#16a34a",
+            background: "#374151",
             color: "white",
-            border: "2px solid #4ade80",
-            borderRadius: "12px",
-            padding: "12px 24px",
-            fontSize: "14px",
-            fontWeight: "600"
+            border: "2px solid #4b5563",
+            borderRadius: "8px",
+            padding: "10px 20px",
+            fontSize: "13px",
+            fontWeight: "500"
         }
     }
 ];
@@ -83,35 +83,35 @@ const initialEdges: Edge[] = [
         source: "1",
         target: "2",
         animated: true,
-        style: { stroke: "#a78bfa", strokeWidth: 2 }
+        style: { stroke: "#6b7280", strokeWidth: 2 }
     },
     {
         id: "e1-3",
         source: "1",
         target: "3",
         animated: true,
-        style: { stroke: "#d946ef", strokeWidth: 2 }
+        style: { stroke: "#6b7280", strokeWidth: 2 }
     },
     {
         id: "e2-4",
         source: "2",
         target: "4",
         animated: true,
-        style: { stroke: "#a78bfa", strokeWidth: 2 }
+        style: { stroke: "#6b7280", strokeWidth: 2 }
     },
     {
         id: "e3-4",
         source: "3",
         target: "4",
         animated: true,
-        style: { stroke: "#d946ef", strokeWidth: 2 }
+        style: { stroke: "#6b7280", strokeWidth: 2 }
     },
     {
         id: "e4-5",
         source: "4",
         target: "5",
         animated: true,
-        style: { stroke: "#4ade80", strokeWidth: 2 }
+        style: { stroke: "#6b7280", strokeWidth: 2 }
     }
 ];
 
@@ -130,21 +130,20 @@ export const WorkflowDemo: React.FC = () => {
             <div className="max-w-7xl mx-auto">
                 {/* Section Header */}
                 <motion.div
-                    initial={{ opacity: 0, y: 30 }}
+                    initial={{ opacity: 0, y: 20 }}
                     animate={isInView ? { opacity: 1, y: 0 } : {}}
-                    transition={{ duration: 0.6 }}
+                    transition={{ duration: 0.4 }}
                     className="text-center mb-16"
                 >
-                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent-500/10 border border-accent-500/20 mb-6">
-                        <Sparkles className="w-4 h-4 text-accent-400" />
-                        <span className="text-sm text-accent-300">Interactive Demo</span>
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gray-800/50 border border-gray-700 mb-6">
+                        <Sparkles className="w-3 h-3 text-gray-400" />
+                        <span className="text-sm text-gray-300">Interactive Demo</span>
                     </div>
 
-                    <h2 className="text-4xl sm:text-5xl font-bold mb-4">
-                        Workflows
-                        <span className="gradient-text"> Meet Agents</span>
+                    <h2 className="text-3xl sm:text-4xl font-semibold mb-4">
+                        Workflows Meet Agents
                     </h2>
-                    <p className="text-xl text-gray-400 max-w-2xl mx-auto">
+                    <p className="text-lg text-gray-400 max-w-2xl mx-auto">
                         Structured workflow nodes (⚙️) handle deterministic steps, while AI agents
                         (🤖) handle complex reasoning. They work together seamlessly.
                     </p>
@@ -172,7 +171,7 @@ export const WorkflowDemo: React.FC = () => {
                             <button
                                 onClick={handleRun}
                                 disabled={isRunning}
-                                className="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 disabled:bg-primary-800 disabled:cursor-not-allowed rounded-lg text-sm font-semibold transition-colors"
+                                className="flex items-center gap-2 px-4 py-2 bg-white text-black hover:bg-gray-100 disabled:bg-gray-300 disabled:cursor-not-allowed rounded-md text-sm font-medium transition-colors"
                             >
                                 <Play className="w-4 h-4" />
                                 {isRunning ? "Running..." : "Run Workflow"}
@@ -214,10 +213,10 @@ export const WorkflowDemo: React.FC = () => {
                                             repeat: Infinity,
                                             ease: "linear"
                                         }}
-                                        className="w-16 h-16 border-4 border-primary-500 border-t-transparent rounded-full mx-auto mb-4"
+                                        className="w-12 h-12 border-4 border-gray-400 border-t-transparent rounded-full mx-auto mb-4"
                                     ></motion.div>
-                                    <p className="text-lg font-semibold">Executing workflow...</p>
-                                    <p className="text-sm text-gray-400 mt-2">
+                                    <p className="text-base font-medium">Executing workflow...</p>
+                                    <p className="text-sm text-gray-400 mt-1">
                                         Processing nodes in parallel
                                     </p>
                                 </div>
