@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { normalizeNotionId } from "../utils/id-normalizer";
 import type { OperationDefinition, OperationResult } from "../../../core/types";
 import type { NotionClient } from "../client/NotionClient";
 
@@ -37,7 +38,11 @@ export const queryDatabaseOperation: OperationDefinition = {
             },
             sorts: {
                 type: "array",
-                description: "Array of sort objects"
+                description: "Array of sort objects",
+                items: {
+                    type: "object",
+                    additionalProperties: true
+                }
             },
             page_size: {
                 type: "number",
@@ -58,7 +63,9 @@ export async function executeQueryDatabase(
     params: QueryDatabaseParams
 ): Promise<OperationResult> {
     try {
-        const response = await client.queryDatabase(params.database_id, {
+        // Normalize database ID to proper UUID format
+        const normalizedDatabaseId = normalizeNotionId(params.database_id);
+        const response = await client.queryDatabase(normalizedDatabaseId, {
             filter: params.filter,
             sorts: params.sorts,
             page_size: params.page_size

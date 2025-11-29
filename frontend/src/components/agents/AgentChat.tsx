@@ -100,8 +100,12 @@ export function AgentChat({ agent }: AgentChatProps) {
                 try {
                     const response = await api.getThreadMessages(currentThread.id);
                     if (response.success && response.data.messages) {
+                        // Filter out tool messages (raw JSON responses) - keep "Using tools" indicators
+                        const filteredMessages = response.data.messages.filter(
+                            (m) => m.role !== "tool"
+                        );
                         // Sort by timestamp with tie-breaker (same as conversations pane)
-                        const sortedMessages = [...response.data.messages].sort((a, b) => {
+                        const sortedMessages = [...filteredMessages].sort((a, b) => {
                             const timeA = new Date(a.timestamp).getTime();
                             const timeB = new Date(b.timestamp).getTime();
                             if (timeA === timeB) {
@@ -150,6 +154,8 @@ export function AgentChat({ agent }: AgentChatProps) {
             const isSameThread = prevThreadIdRef.current === currentThreadId;
             const isSameThreadAsCurrent = currentThread?.id === currentThreadId;
             const history = currentExecution.conversation_history || [];
+            // Filter out tool messages (raw JSON responses) - keep "Using tools" indicators
+            const filteredHistory = history.filter((m) => m.role !== "tool");
 
             // Update thread reference
             prevThreadIdRef.current = currentThreadId;
@@ -159,7 +165,9 @@ export function AgentChat({ agent }: AgentChatProps) {
                 // This handles the case where we loaded full thread messages and then start a new execution
                 if (isSameThreadAsCurrent && prev.length > 0) {
                     const existingMessageIds = new Set(prev.map((m) => m.id));
-                    const newMessages = history.filter((m) => !existingMessageIds.has(m.id));
+                    const newMessages = filteredHistory.filter(
+                        (m) => !existingMessageIds.has(m.id)
+                    );
                     // Add new messages from the execution (typically just the new user message)
                     const combined = newMessages.length > 0 ? [...prev, ...newMessages] : prev;
                     // Sort by timestamp with tie-breaker (same as conversations pane)
@@ -177,7 +185,9 @@ export function AgentChat({ agent }: AgentChatProps) {
                 // If same thread as previous execution and we have existing messages, preserve them
                 if (isSameThread && prev.length > 0) {
                     const existingMessageIds = new Set(prev.map((m) => m.id));
-                    const newMessages = history.filter((m) => !existingMessageIds.has(m.id));
+                    const newMessages = filteredHistory.filter(
+                        (m) => !existingMessageIds.has(m.id)
+                    );
                     // Add new messages from the execution (typically just the new user message)
                     const combined = newMessages.length > 0 ? [...prev, ...newMessages] : prev;
                     // Sort by timestamp with tie-breaker (same as conversations pane)
@@ -193,7 +203,7 @@ export function AgentChat({ agent }: AgentChatProps) {
                 }
 
                 // New thread or no previous messages - use execution history, sorted with tie-breaker
-                return history.sort((a, b) => {
+                return filteredHistory.sort((a, b) => {
                     const timeA = new Date(a.timestamp).getTime();
                     const timeB = new Date(b.timestamp).getTime();
                     if (timeA === timeB) {
@@ -276,6 +286,7 @@ export function AgentChat({ agent }: AgentChatProps) {
             const store = useAgentStore.getState();
             if (!store.currentExecution || data.executionId !== store.currentExecution.id) return;
             if (data.message.role === "user") return; // Skip user messages
+            if (data.message.role === "tool") return; // Skip tool messages (raw JSON)
 
             store.addMessageToExecution(data.executionId, data.message);
 

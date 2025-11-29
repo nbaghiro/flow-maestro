@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { normalizeNotionId } from "../utils/id-normalizer";
 import type { OperationDefinition, OperationResult } from "../../../core/types";
 import type { NotionClient } from "../client/NotionClient";
 
@@ -47,7 +48,11 @@ export const createPageOperation: OperationDefinition = {
             },
             children: {
                 type: "array",
-                description: "Page content blocks"
+                description: "Page content blocks",
+                items: {
+                    type: "object",
+                    additionalProperties: true
+                }
             }
         },
         required: ["parent_id", "parent_type", "title"]
@@ -62,12 +67,15 @@ export async function executeCreatePage(
     params: CreatePageParams
 ): Promise<OperationResult> {
     try {
+        // Normalize the parent ID to proper UUID format (Notion requires hyphens)
+        const normalizedParentId = normalizeNotionId(params.parent_id);
+
         // Build parent object
         const parent: { page_id?: string; database_id?: string } = {};
         if (params.parent_type === "page_id") {
-            parent.page_id = params.parent_id;
+            parent.page_id = normalizedParentId;
         } else {
-            parent.database_id = params.parent_id;
+            parent.database_id = normalizedParentId;
         }
 
         // Build properties with title

@@ -81,9 +81,16 @@ export async function emitAgentExecutionStarted(
 
 /**
  * Emit new message event (user, assistant, or tool)
+ * Note: Tool messages are not emitted to avoid showing raw JSON to users
  */
 export async function emitAgentMessage(input: EmitAgentMessageInput): Promise<void> {
     const { executionId, threadId, message } = input;
+
+    // Skip tool messages - they contain raw JSON that users don't need to see
+    // The LLM still has access to them in the conversation history
+    if (message.role === "tool") {
+        return;
+    }
 
     // Normalize timestamp to ISO string regardless of whether it's a Date,
     // string, or numeric epoch. This avoids runtime errors when message
@@ -147,10 +154,6 @@ export async function emitAgentToken(input: EmitAgentTokenInput): Promise<void> 
         executionId,
         token
     } as unknown as WebSocketEvent;
-    console.log(
-        `[Agent Events] Publishing token to agent:events:token for execution ${executionId}:`,
-        token
-    );
     await redisEventBus.publish("agent:events:token", event);
 }
 
@@ -173,19 +176,14 @@ export async function emitAgentToolCallStarted(
 
 /**
  * Emit tool call completed event
+ * Note: This event is not emitted to avoid showing raw JSON to users
  */
 export async function emitAgentToolCallCompleted(
-    input: EmitAgentToolCallCompletedInput
+    _input: EmitAgentToolCallCompletedInput
 ): Promise<void> {
-    const { executionId, threadId, toolName, result } = input;
-    await redisEventBus.publish("agent:events:tool:call:completed", {
-        type: "agent:tool:call:completed",
-        timestamp: Date.now(),
-        executionId,
-        threadId,
-        toolName,
-        result
-    });
+    // Don't emit tool call completed events - they contain raw JSON
+    // Users don't need to see these, and the LLM has access via conversation history
+    return;
 }
 
 /**

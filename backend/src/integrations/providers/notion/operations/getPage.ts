@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { normalizeNotionId } from "../utils/id-normalizer";
 import type { OperationDefinition, OperationResult } from "../../../core/types";
 import type { NotionClient } from "../client/NotionClient";
 
@@ -41,7 +42,9 @@ export async function executeGetPage(
     params: GetPageParams
 ): Promise<OperationResult> {
     try {
-        const response = await client.getPage(params.page_id);
+        // Normalize page ID to proper UUID format
+        const normalizedPageId = normalizeNotionId(params.page_id);
+        const response = await client.getPage(normalizedPageId);
 
         return {
             success: true,

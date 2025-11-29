@@ -4,14 +4,16 @@ import { Tool } from "../../../storage/models/Agent";
 import { AgentRepository } from "../../../storage/repositories/AgentRepository";
 
 const addToolSchema = z.object({
-    type: z.enum(["workflow", "function", "knowledge_base"]),
+    type: z.enum(["workflow", "function", "knowledge_base", "mcp"]),
     name: z.string().min(1).max(100),
     description: z.string(),
     schema: z.record(z.any()),
     config: z.object({
         workflowId: z.string().optional(),
         functionName: z.string().optional(),
-        knowledgeBaseId: z.string().optional()
+        knowledgeBaseId: z.string().optional(),
+        connectionId: z.string().optional(),
+        provider: z.string().optional()
     })
 });
 

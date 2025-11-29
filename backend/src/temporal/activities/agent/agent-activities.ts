@@ -11,6 +11,8 @@ import { WorkflowRepository } from "../../../storage/repositories/WorkflowReposi
 import { emitAgentToken } from "./agent-events";
 import { searchConversationMemory as searchConversationMemoryActivity } from "./conversation-memory-activities";
 import { injectConversationMemoryTool } from "./conversation-memory-tool";
+import { executeMCPTool } from "./mcp-tool-executor";
+import { normalizeSchemaForLLM } from "./schema-normalizer";
 import type { Tool } from "../../../storage/models/Agent";
 import type { ConversationMessage, ToolCall } from "../../../storage/models/AgentExecution";
 import type { AgentConfig, LLMResponse } from "../../workflows/agent-orchestrator-workflow";
@@ -188,21 +190,56 @@ async function callOpenAI(input: OpenAICallInput): Promise<LLMResponse> {
     const { model, apiKey, messages, tools, temperature, maxTokens, executionId } = input;
 
     // Format messages for OpenAI
-    const formattedMessages = messages.map((msg) => ({
-        role: msg.role === "assistant" ? "assistant" : msg.role === "tool" ? "tool" : "user",
-        content: msg.content,
-        ...(msg.tool_calls && { tool_calls: msg.tool_calls }),
-        ...(msg.tool_call_id && { tool_call_id: msg.tool_call_id }),
-        ...(msg.tool_name && { name: msg.tool_name })
-    }));
+    const formattedMessages = messages.map((msg) => {
+        const formatted: {
+            role: string;
+            content: string | null;
+            tool_calls?: Array<{
+                id: string;
+                type: "function";
+                function: {
+                    name: string;
+                    arguments: string;
+                };
+            }>;
+            tool_call_id?: string;
+            name?: string;
+        } = {
+            role: msg.role === "assistant" ? "assistant" : msg.role === "tool" ? "tool" : "user",
+            content: msg.content
+        };
+
+        // Format tool_calls for OpenAI (requires type: "function" and arguments as JSON string)
+        if (msg.tool_calls && msg.tool_calls.length > 0) {
+            formatted.tool_calls = msg.tool_calls.map((tc) => ({
+                id: tc.id,
+                type: "function" as const,
+                function: {
+                    name: tc.name,
+                    arguments: JSON.stringify(tc.arguments)
+                }
+            }));
+        }
+
+        if (msg.tool_call_id) {
+            formatted.tool_call_id = msg.tool_call_id;
+        }
+
+        if (msg.tool_name) {
+            formatted.name = msg.tool_name;
+        }
+
+        return formatted;
+    });
 
     // Format tools for OpenAI function calling
+    // Normalize schemas to ensure compatibility (arrays must have items per JSON Schema spec)
     const formattedTools = tools.map((tool) => ({
         type: "function",
         function: {
             name: tool.name,
             description: tool.description,
-            parameters: tool.schema
+            parameters: normalizeSchemaForLLM(tool.schema)
         }
     }));
 
@@ -241,6 +278,8 @@ async function callOpenAI(input: OpenAICallInput): Promise<LLMResponse> {
     }
 
     // Process streaming response chunks
+    // Track raw argument strings for each tool call (arguments stream as partial JSON)
+    const toolCallArgumentStrings: Map<number, string> = new Map();
     let done = false;
     while (!done) {
         const result = await reader.read();
@@ -288,20 +327,18 @@ async function callOpenAI(input: OpenAICallInput): Promise<LLMResponse> {
 
                         if (delta?.content && executionId) {
                             // Emit token for streaming
-                            console.log(
-                                `[LLM Stream] Emitting token for execution ${executionId}: "${delta.content}"`
-                            );
                             await emitAgentToken({ executionId, token: delta.content });
                             fullContent += delta.content;
                         }
 
                         if (delta?.tool_calls) {
-                            // Handle tool calls (for now, we'll collect them)
+                            // Handle tool calls - accumulate argument strings
                             if (!toolCalls) {
                                 toolCalls = [];
                             }
                             for (const toolCall of delta.tool_calls) {
                                 if (toolCall.index !== undefined) {
+                                    // Initialize tool call if needed
                                     if (!toolCalls[toolCall.index]) {
                                         toolCalls[toolCall.index] = {
                                             id: toolCall.id || "",
@@ -309,21 +346,14 @@ async function callOpenAI(input: OpenAICallInput): Promise<LLMResponse> {
                                             arguments: {}
                                         };
                                     }
+
+                                    // Accumulate argument string (arguments stream as partial JSON)
                                     if (toolCall.function?.arguments) {
-                                        try {
-                                            const existingArgs =
-                                                (toolCalls[toolCall.index].arguments as Record<
-                                                    string,
-                                                    unknown
-                                                >) || {};
-                                            const newArgs = JSON.parse(toolCall.function.arguments);
-                                            toolCalls[toolCall.index].arguments = {
-                                                ...existingArgs,
-                                                ...newArgs
-                                            };
-                                        } catch {
-                                            // Partial JSON, continue accumulating
-                                        }
+                                        const existingString =
+                                            toolCallArgumentStrings.get(toolCall.index) || "";
+                                        const newString =
+                                            existingString + toolCall.function.arguments;
+                                        toolCallArgumentStrings.set(toolCall.index, newString);
                                     }
                                 }
                             }
@@ -345,6 +375,41 @@ async function callOpenAI(input: OpenAICallInput): Promise<LLMResponse> {
                     // Skip invalid JSON lines
                     continue;
                 }
+            }
+        }
+    }
+
+    // Parse accumulated argument strings after streaming is complete
+    if (toolCalls) {
+        for (let i = 0; i < toolCalls.length; i++) {
+            const argumentString = toolCallArgumentStrings.get(i);
+            if (argumentString && argumentString.trim()) {
+                try {
+                    const parsed = JSON.parse(argumentString);
+                    toolCalls[i].arguments = parsed;
+                    console.log(
+                        `[OpenAI Stream] Successfully parsed arguments for ${toolCalls[i].name}:`,
+                        JSON.stringify(parsed, null, 2)
+                    );
+                } catch (error) {
+                    console.error(
+                        `[OpenAI Stream] Failed to parse final tool arguments for ${toolCalls[i].name}:`,
+                        error instanceof Error ? error.message : error,
+                        "Raw arguments string:",
+                        argumentString
+                    );
+                    // Keep empty object if parsing fails
+                    toolCalls[i].arguments = {};
+                }
+            } else {
+                // No arguments were provided - log warning with details
+                console.warn(
+                    `[OpenAI Stream] Tool call ${toolCalls[i].name} (index ${i}) has no arguments. ` +
+                        `Argument string was: "${argumentString || "(undefined)"}". ` +
+                        "This may indicate the LLM didn't provide required parameters in the stream."
+                );
+                // Keep empty object - validation will catch missing required fields
+                toolCalls[i].arguments = {};
             }
         }
     }
@@ -414,10 +479,11 @@ async function callAnthropic(input: AnthropicCallInput): Promise<LLMResponse> {
     });
 
     // Format tools for Anthropic
+    // Normalize schemas to ensure compatibility (arrays must have items per JSON Schema spec)
     const formattedTools = tools.map((tool) => ({
         name: tool.name,
         description: tool.description,
-        input_schema: tool.schema
+        input_schema: normalizeSchemaForLLM(tool.schema)
     }));
 
     // Call Anthropic API
@@ -539,6 +605,8 @@ export async function executeToolCall(input: ExecuteToolCallInput): Promise<Json
             return await executeKnowledgeBaseTool({ tool, arguments: validatedArgs, userId });
         case "agent":
             return await executeAgentTool({ tool, arguments: validatedArgs, userId });
+        case "mcp":
+            return await executeMCPTool({ tool, arguments: validatedArgs, userId, executionId });
         default:
             throw new Error(`Unknown tool type: ${tool.type}`);
     }

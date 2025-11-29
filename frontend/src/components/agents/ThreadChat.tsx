@@ -36,9 +36,13 @@ export function ThreadChat({ agent, thread }: ThreadChatProps) {
             try {
                 const response = await api.getThreadMessages(thread.id);
                 if (response.success && response.data.messages) {
+                    // Filter out tool messages (raw JSON responses) - keep "Using tools" indicators
+                    const filteredMessages = response.data.messages.filter(
+                        (m) => m.role !== "tool"
+                    );
                     // Sort by timestamp to ensure correct chronological order (oldest first)
                     // This ensures user messages appear before agent responses
-                    const sortedMessages = [...response.data.messages].sort((a, b) => {
+                    const sortedMessages = [...filteredMessages].sort((a, b) => {
                         const timeA = new Date(a.timestamp).getTime();
                         const timeB = new Date(b.timestamp).getTime();
                         // If timestamps are equal, ensure user messages come before assistant
@@ -68,8 +72,10 @@ export function ThreadChat({ agent, thread }: ThreadChatProps) {
         if (currentExecution && currentExecution.thread_id === thread.id) {
             setMessages((prev) => {
                 const executionMessages = currentExecution.conversation_history || [];
+                // Filter out tool messages (raw JSON responses) - keep "Using tools" indicators
+                const filteredMessages = executionMessages.filter((m) => m.role !== "tool");
                 const existingIds = new Set(prev.map((m) => m.id));
-                const newMessages = executionMessages.filter((m) => !existingIds.has(m.id));
+                const newMessages = filteredMessages.filter((m) => !existingIds.has(m.id));
 
                 const combined = newMessages.length > 0 ? [...prev, ...newMessages] : prev;
                 // Always sort by timestamp to ensure chronological order (oldest first)
