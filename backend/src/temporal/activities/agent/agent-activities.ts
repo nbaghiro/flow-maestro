@@ -8,6 +8,7 @@ import { AgentExecutionRepository } from "../../../storage/repositories/AgentExe
 import { AgentRepository } from "../../../storage/repositories/AgentRepository";
 import { ConnectionRepository } from "../../../storage/repositories/ConnectionRepository";
 import { WorkflowRepository } from "../../../storage/repositories/WorkflowRepository";
+import { emitAgentToken } from "./agent-events";
 import { searchConversationMemory as searchConversationMemoryActivity } from "./conversation-memory-activities";
 import { injectConversationMemoryTool } from "./conversation-memory-tool";
 import type { Tool } from "../../../storage/models/Agent";
@@ -65,10 +66,46 @@ export interface CallLLMInput {
     tools: Tool[];
     temperature: number;
     maxTokens: number;
+    executionId?: string; // For streaming token emission
 }
 
 export async function callLLM(input: CallLLMInput): Promise<LLMResponse> {
-    const { model, provider, connectionId, messages, tools, temperature, maxTokens } = input;
+    const { model, provider, connectionId, messages, tools, temperature, maxTokens, executionId } =
+        input;
+
+    // Mock mode for testing without using LLM tokens
+    const mockMode = process.env.AGENT_MOCK_MODE === "true" || process.env.AGENT_MOCK_MODE === "1";
+    if (mockMode) {
+        console.log("[callLLM] 🧪 MOCK MODE: Returning mock response without calling LLM");
+
+        // Get the last user message for context
+        const lastUserMessage = messages.filter((m) => m.role === "user").pop();
+        const userQuery = lastUserMessage?.content || "Hello";
+
+        // Generate a mock response
+        const mockResponse = `This is a mock response to: "${userQuery}". In a real scenario, I would analyze your request and provide a helpful answer. This response is generated in mock mode to test the agent flow without consuming LLM tokens.`;
+
+        // Emit tokens as if streaming (for realistic testing)
+        if (executionId) {
+            const tokens = mockResponse.split(" ");
+            for (const token of tokens) {
+                await emitAgentToken({ executionId, token: token + " " });
+                // Small delay to simulate streaming
+                await new Promise((resolve) => setTimeout(resolve, 50));
+            }
+        }
+
+        return {
+            content: mockResponse,
+            tool_calls: undefined,
+            isComplete: true,
+            usage: {
+                promptTokens: 100,
+                completionTokens: 50,
+                totalTokens: 150
+            }
+        };
+    }
 
     // Get API credentials from connection
     let apiKey: string | null = null;
@@ -110,9 +147,25 @@ export async function callLLM(input: CallLLMInput): Promise<LLMResponse> {
     // Call appropriate LLM provider
     switch (provider) {
         case "openai":
-            return await callOpenAI({ model, apiKey, messages, tools, temperature, maxTokens });
+            return await callOpenAI({
+                model,
+                apiKey,
+                messages,
+                tools,
+                temperature,
+                maxTokens,
+                executionId: input.executionId
+            });
         case "anthropic":
-            return await callAnthropic({ model, apiKey, messages, tools, temperature, maxTokens });
+            return await callAnthropic({
+                model,
+                apiKey,
+                messages,
+                tools,
+                temperature,
+                maxTokens,
+                executionId: input.executionId
+            });
         default:
             throw new Error(`Provider ${provider} not yet implemented`);
     }
@@ -128,10 +181,11 @@ interface OpenAICallInput {
     tools: Tool[];
     temperature: number;
     maxTokens: number;
+    executionId?: string;
 }
 
 async function callOpenAI(input: OpenAICallInput): Promise<LLMResponse> {
-    const { model, apiKey, messages, tools, temperature, maxTokens } = input;
+    const { model, apiKey, messages, tools, temperature, maxTokens, executionId } = input;
 
     // Format messages for OpenAI
     const formattedMessages = messages.map((msg) => ({
@@ -152,7 +206,7 @@ async function callOpenAI(input: OpenAICallInput): Promise<LLMResponse> {
         }
     }));
 
-    // Call OpenAI API
+    // Call OpenAI API with streaming
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
         headers: {
@@ -164,7 +218,8 @@ async function callOpenAI(input: OpenAICallInput): Promise<LLMResponse> {
             messages: formattedMessages,
             tools: formattedTools.length > 0 ? formattedTools : undefined,
             temperature,
-            max_tokens: maxTokens
+            max_tokens: maxTokens,
+            stream: true // Enable streaming
         })
     });
 
@@ -173,52 +228,132 @@ async function callOpenAI(input: OpenAICallInput): Promise<LLMResponse> {
         throw new Error(`OpenAI API error: ${response.status} - ${error}`);
     }
 
-    interface OpenAIResponse {
-        choices: Array<{
-            message: {
-                content?: string;
-                tool_calls?: Array<{
-                    id: string;
-                    function: {
-                        name: string;
-                        arguments: string;
-                    };
-                }>;
-            };
-            finish_reason: string;
-        }>;
-        usage?: {
-            prompt_tokens: number;
-            completion_tokens: number;
-            total_tokens: number;
-        };
+    // Process streaming response
+    const reader = response.body?.getReader();
+    const decoder = new TextDecoder();
+    let fullContent = "";
+    let toolCalls: ToolCall[] | undefined;
+    let usage: { promptTokens: number; completionTokens: number; totalTokens: number } | undefined;
+    let finishReason = "";
+
+    if (!reader) {
+        throw new Error("Failed to get response reader");
     }
 
-    const data = (await response.json()) as OpenAIResponse;
-    const choice = data.choices[0];
-    const message = choice.message;
+    // Process streaming response chunks
+    let done = false;
+    while (!done) {
+        const result = await reader.read();
+        done = result.done;
+        if (done) break;
 
-    // Parse tool calls
-    let toolCalls: ToolCall[] | undefined;
-    if (message.tool_calls) {
-        toolCalls = message.tool_calls.map((tc) => ({
-            id: tc.id,
-            name: tc.function.name,
-            arguments: JSON.parse(tc.function.arguments)
-        }));
+        const value = result.value;
+
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split("\n");
+
+        for (const line of lines) {
+            if (line.startsWith("data: ")) {
+                const data = line.slice(6);
+                if (data === "[DONE]") {
+                    continue;
+                }
+
+                try {
+                    const parsed = JSON.parse(data) as {
+                        choices?: Array<{
+                            delta?: {
+                                content?: string;
+                                tool_calls?: Array<{
+                                    index: number;
+                                    id?: string;
+                                    function?: {
+                                        name?: string;
+                                        arguments?: string;
+                                    };
+                                }>;
+                            };
+                            finish_reason?: string;
+                        }>;
+                        usage?: {
+                            prompt_tokens: number;
+                            completion_tokens: number;
+                            total_tokens: number;
+                        };
+                    };
+
+                    if (parsed.choices && parsed.choices[0]) {
+                        const choice = parsed.choices[0];
+                        const delta = choice.delta;
+
+                        if (delta?.content && executionId) {
+                            // Emit token for streaming
+                            console.log(
+                                `[LLM Stream] Emitting token for execution ${executionId}: "${delta.content}"`
+                            );
+                            await emitAgentToken({ executionId, token: delta.content });
+                            fullContent += delta.content;
+                        }
+
+                        if (delta?.tool_calls) {
+                            // Handle tool calls (for now, we'll collect them)
+                            if (!toolCalls) {
+                                toolCalls = [];
+                            }
+                            for (const toolCall of delta.tool_calls) {
+                                if (toolCall.index !== undefined) {
+                                    if (!toolCalls[toolCall.index]) {
+                                        toolCalls[toolCall.index] = {
+                                            id: toolCall.id || "",
+                                            name: toolCall.function?.name || "",
+                                            arguments: {}
+                                        };
+                                    }
+                                    if (toolCall.function?.arguments) {
+                                        try {
+                                            const existingArgs =
+                                                (toolCalls[toolCall.index].arguments as Record<
+                                                    string,
+                                                    unknown
+                                                >) || {};
+                                            const newArgs = JSON.parse(toolCall.function.arguments);
+                                            toolCalls[toolCall.index].arguments = {
+                                                ...existingArgs,
+                                                ...newArgs
+                                            };
+                                        } catch {
+                                            // Partial JSON, continue accumulating
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        if (choice.finish_reason) {
+                            finishReason = choice.finish_reason;
+                        }
+                    }
+
+                    if (parsed.usage) {
+                        usage = {
+                            promptTokens: parsed.usage.prompt_tokens,
+                            completionTokens: parsed.usage.completion_tokens,
+                            totalTokens: parsed.usage.total_tokens
+                        };
+                    }
+                } catch {
+                    // Skip invalid JSON lines
+                    continue;
+                }
+            }
+        }
     }
 
     return {
-        content: message.content || "",
+        content: fullContent,
         tool_calls: toolCalls,
-        isComplete: choice.finish_reason === "stop" && !toolCalls,
-        usage: data.usage
-            ? {
-                  promptTokens: data.usage.prompt_tokens,
-                  completionTokens: data.usage.completion_tokens,
-                  totalTokens: data.usage.total_tokens
-              }
-            : undefined
+        isComplete: finishReason === "stop" && !toolCalls,
+        usage
     };
 }
 
@@ -232,6 +367,7 @@ interface AnthropicCallInput {
     tools: Tool[];
     temperature: number;
     maxTokens: number;
+    executionId?: string;
 }
 
 async function callAnthropic(input: AnthropicCallInput): Promise<LLMResponse> {

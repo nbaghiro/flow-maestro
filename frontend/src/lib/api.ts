@@ -258,6 +258,95 @@ export async function register(
 }
 
 /**
+ * Request password reset email
+ */
+export async function forgotPassword(email: string): Promise<ApiResponse<{ message: string }>> {
+    const response = await fetch(`${API_BASE_URL}/api/auth/forgot-password`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ email })
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    return response.json();
+}
+
+/**
+ * Reset password with token
+ */
+export async function resetPassword(
+    token: string,
+    password: string
+): Promise<ApiResponse<{ message: string }>> {
+    const response = await fetch(`${API_BASE_URL}/api/auth/reset-password`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ token, password })
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    return response.json();
+}
+
+/**
+ * Verify email with token
+ */
+export async function verifyEmail(token: string): Promise<ApiResponse<{ message: string }>> {
+    const response = await fetch(`${API_BASE_URL}/api/auth/verify-email`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ token })
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    return response.json();
+}
+
+/**
+ * Resend email verification
+ */
+export async function resendVerificationEmail(): Promise<ApiResponse<{ message: string }>> {
+    const token = getAuthToken();
+
+    if (!token) {
+        throw new Error("No authentication token found");
+    }
+
+    const response = await fetch(`${API_BASE_URL}/api/auth/resend-verification`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`
+        }
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    return response.json();
+}
+
+/**
  * Get current user info (validates token)
  */
 export async function getCurrentUser(): Promise<UserResponse> {
@@ -1436,6 +1525,131 @@ export async function sendAgentMessage(
 }
 
 /**
+ * Connect to agent execution SSE stream for real-time token streaming
+ */
+export function streamAgentExecution(
+    agentId: string,
+    executionId: string,
+    callbacks: {
+        onToken?: (token: string) => void;
+        onMessage?: (message: ConversationMessage) => void;
+        onCompleted?: (data: { finalMessage: string; iterations: number }) => void;
+        onError?: (error: string) => void;
+        onConnected?: () => void;
+    }
+): () => void {
+    const token = getAuthToken();
+    if (!token) {
+        callbacks.onError?.("Authentication required");
+        return () => {}; // Return no-op cleanup function
+    }
+
+    // EventSource doesn't support custom headers, so we pass token as query param
+    const url = `${API_BASE_URL}/api/agents/${agentId}/executions/${executionId}/stream?token=${encodeURIComponent(token)}`;
+
+    const eventSource = new EventSource(url, {
+        withCredentials: true
+    });
+
+    eventSource.addEventListener("connected", () => {
+        callbacks.onConnected?.();
+    });
+
+    eventSource.addEventListener("token", (event) => {
+        try {
+            const data = JSON.parse(event.data) as { token: string; executionId: string };
+            if (data.executionId === executionId) {
+                callbacks.onToken?.(data.token);
+            }
+        } catch {
+            // Silently ignore parsing errors
+        }
+    });
+
+    eventSource.addEventListener("message", (event) => {
+        try {
+            const data = JSON.parse(event.data) as {
+                message: ConversationMessage;
+                executionId: string;
+            };
+            if (data.executionId === executionId && data.message) {
+                callbacks.onMessage?.(data.message);
+            }
+        } catch {
+            // Silently ignore parsing errors
+        }
+    });
+
+    eventSource.addEventListener("completed", (event) => {
+        try {
+            const data = JSON.parse(event.data) as {
+                finalMessage: string;
+                iterations: number;
+                executionId: string;
+            };
+            if (data.executionId === executionId) {
+                callbacks.onCompleted?.({
+                    finalMessage: data.finalMessage,
+                    iterations: data.iterations
+                });
+            }
+        } catch {
+            // Silently ignore parsing errors
+        }
+    });
+
+    eventSource.addEventListener("error", (event) => {
+        try {
+            const data = JSON.parse((event as MessageEvent).data) as {
+                error: string;
+                executionId: string;
+            };
+            if (data.executionId === executionId) {
+                callbacks.onError?.(data.error);
+            }
+        } catch {
+            // Generic error
+            callbacks.onError?.("Stream connection error");
+        }
+    });
+
+    // Track if we've received a completed event
+    let completedReceived = false;
+
+    // Override the completed handler to mark it as received
+    const originalOnCompleted = callbacks.onCompleted;
+    callbacks.onCompleted = (data) => {
+        completedReceived = true;
+        originalOnCompleted?.(data);
+    };
+
+    eventSource.onerror = () => {
+        if (eventSource.readyState === EventSource.CLOSED) {
+            // If stream closed without completed event, treat it as completion
+            // This handles cases where the stream closes before the completed event arrives
+            if (!completedReceived) {
+                // Small delay to allow any pending completed event to arrive
+                setTimeout(() => {
+                    if (!completedReceived) {
+                        originalOnCompleted?.({
+                            finalMessage: "",
+                            iterations: 0
+                        });
+                    }
+                }, 1000);
+            }
+        } else {
+            callbacks.onError?.("Stream connection failed");
+        }
+    };
+
+    // Return cleanup function
+    return () => {
+        eventSource.close();
+    };
+}
+
+/**
  * Get agent execution details
  */
 export async function getAgentExecution(
@@ -1569,6 +1783,31 @@ export async function getThread(
 ): Promise<{ success: boolean; data: ThreadWithStats | Thread; error?: string }> {
     const token = getAuthToken();
     const url = `${API_BASE_URL}/api/threads/${threadId}${includeStats ? "?include_stats=true" : ""}`;
+
+    const response = await fetch(url, {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json",
+            ...(token && { Authorization: `Bearer ${token}` })
+        }
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    return response.json();
+}
+
+/**
+ * Get messages for a thread
+ */
+export async function getThreadMessages(
+    threadId: string
+): Promise<{ success: boolean; data: { messages: ConversationMessage[] }; error?: string }> {
+    const token = getAuthToken();
+    const url = `${API_BASE_URL}/api/threads/${threadId}/messages`;
 
     const response = await fetch(url, {
         method: "GET",

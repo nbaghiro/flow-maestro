@@ -50,6 +50,8 @@ interface AgentStore {
     sendMessage: (message: string) => Promise<void>;
     fetchExecution: (agentId: string, executionId: string) => Promise<void>;
     clearExecution: () => void;
+    updateExecutionStatus: (executionId: string, status: AgentExecution["status"]) => void;
+    addMessageToExecution: (executionId: string, message: ConversationMessage) => void;
 }
 
 export const useAgentStore = create<AgentStore>((set, get) => ({
@@ -315,7 +317,19 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
                 }));
             }
 
-            // Create initial execution state
+            // Create initial execution state with just the new user message
+            // The component will preserve previous messages when thread_id is the same
+            const newUserMessage: ConversationMessage = {
+                id: `user-${Date.now()}`,
+                role: "user",
+                content: message,
+                timestamp: new Date().toISOString()
+            };
+
+            const conversationHistory: ConversationMessage[] = [newUserMessage];
+
+            // Create initial execution state with just the new user message
+            // The component will preserve previous messages when thread_id is the same
             set({
                 currentExecution: {
                     id: executionId,
@@ -323,14 +337,7 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
                     user_id: "",
                     thread_id: returnedThreadId,
                     status: "running",
-                    conversation_history: [
-                        {
-                            id: `user-${Date.now()}`,
-                            role: "user",
-                            content: message,
-                            timestamp: new Date().toISOString()
-                        }
-                    ],
+                    conversation_history: conversationHistory,
                     iterations: 0,
                     error: null,
                     started_at: new Date().toISOString(),
@@ -406,5 +413,36 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
     // Clear execution
     clearExecution: () => {
         set({ currentExecution: null });
+    },
+
+    // Update execution status (e.g., from WebSocket events)
+    updateExecutionStatus: (executionId: string, status: AgentExecution["status"]) => {
+        set((state) => {
+            if (!state.currentExecution || state.currentExecution.id !== executionId) {
+                return state;
+            }
+            return {
+                currentExecution: {
+                    ...state.currentExecution,
+                    status
+                }
+            };
+        });
+    },
+
+    // Add message to conversation history (from WebSocket events)
+    addMessageToExecution: (executionId: string, message: ConversationMessage) => {
+        set((state) => {
+            if (!state.currentExecution || state.currentExecution.id !== executionId) {
+                return state;
+            }
+            const updated = {
+                currentExecution: {
+                    ...state.currentExecution,
+                    conversation_history: [...state.currentExecution.conversation_history, message]
+                }
+            };
+            return updated;
+        });
     }
 }));

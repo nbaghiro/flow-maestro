@@ -1,5 +1,6 @@
 import { Send, Bot, User, Loader2 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
+import * as api from "../../lib/api";
 import { cn } from "../../lib/utils";
 import { wsClient } from "../../lib/websocket";
 import { useAgentStore } from "../../stores/agentStore";
@@ -11,7 +12,13 @@ interface ThreadChatProps {
 }
 
 export function ThreadChat({ agent, thread }: ThreadChatProps) {
-    const { currentExecution, executeAgent, sendMessage } = useAgentStore();
+    const {
+        currentExecution,
+        executeAgent,
+        sendMessage,
+        updateExecutionStatus,
+        addMessageToExecution
+    } = useAgentStore();
 
     const [input, setInput] = useState("");
     const [isSending, setIsSending] = useState(false);
@@ -23,16 +30,41 @@ export function ThreadChat({ agent, thread }: ThreadChatProps) {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages]);
 
-    // Update messages from execution when thread matches
+    // Load messages from backend when thread changes
+    useEffect(() => {
+        const loadMessages = async () => {
+            try {
+                const response = await api.getThreadMessages(thread.id);
+                if (response.success && response.data.messages) {
+                    setMessages(response.data.messages);
+                }
+            } catch (error) {
+                console.error("Failed to load thread messages:", error);
+                setMessages([]);
+            }
+        };
+
+        loadMessages();
+    }, [thread.id]);
+
+    // Update messages from execution when thread matches (for real-time updates)
     useEffect(() => {
         if (currentExecution && currentExecution.thread_id === thread.id) {
             setMessages(currentExecution.conversation_history);
-        } else {
-            // Thread changed or no execution - clear messages
-            // In a full implementation, we'd load thread history from backend here
-            setMessages([]);
         }
     }, [currentExecution, thread.id]);
+
+    // Subscribe/unsubscribe to current execution over WebSocket
+    useEffect(() => {
+        if (!currentExecution) return;
+
+        const executionId = currentExecution.id;
+        wsClient.subscribeToExecution(executionId);
+
+        return () => {
+            wsClient.unsubscribeFromExecution(executionId);
+        };
+    }, [currentExecution?.id]);
 
     // Listen for WebSocket events
     useEffect(() => {
@@ -43,8 +75,13 @@ export function ThreadChat({ agent, thread }: ThreadChatProps) {
                 message?: ConversationMessage;
             };
             // Only add messages that belong to this thread
-            if (data.threadId === thread.id && data.message) {
-                setMessages((prev) => [...prev, data.message!]);
+            if (data.threadId === thread.id && data.message && data.executionId) {
+                // Avoid duplicating user messages (we already add them locally)
+                if (data.message.role === "user") {
+                    return;
+                }
+                // Update store so useEffect syncs it to UI
+                addMessageToExecution(data.executionId, data.message);
             }
         };
 
@@ -57,15 +94,17 @@ export function ThreadChat({ agent, thread }: ThreadChatProps) {
 
         const handleCompleted = (event: unknown) => {
             const data = event as { executionId?: string; threadId?: string };
-            if (data.threadId === thread.id) {
+            if (data.threadId === thread.id && data.executionId) {
                 setIsSending(false);
+                updateExecutionStatus(data.executionId, "completed");
             }
         };
 
         const handleFailed = (event: unknown) => {
             const data = event as { executionId?: string; threadId?: string; error?: unknown };
-            if (data.threadId === thread.id) {
+            if (data.threadId === thread.id && data.executionId) {
                 setIsSending(false);
+                updateExecutionStatus(data.executionId, "failed");
                 console.error("Agent failed:", data.error);
             }
         };
@@ -81,7 +120,7 @@ export function ThreadChat({ agent, thread }: ThreadChatProps) {
             wsClient.off("agent:execution:completed", handleCompleted);
             wsClient.off("agent:execution:failed", handleFailed);
         };
-    }, [thread.id]);
+    }, [thread.id, updateExecutionStatus, addMessageToExecution]);
 
     const handleSend = async () => {
         if (!input.trim() || isSending) return;
@@ -91,7 +130,12 @@ export function ThreadChat({ agent, thread }: ThreadChatProps) {
         setIsSending(true);
 
         try {
-            if (!currentExecution || currentExecution.thread_id !== thread.id) {
+            // Check if we have a running execution for this thread
+            if (
+                !currentExecution ||
+                currentExecution.thread_id !== thread.id ||
+                currentExecution.status !== "running"
+            ) {
                 // Start new execution in this thread
                 await executeAgent(agent.id, message, thread.id);
             } else {

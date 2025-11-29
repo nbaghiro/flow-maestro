@@ -29,11 +29,19 @@ export async function streamAgentHandler(
     }
 
     // Set SSE headers
+    const origin = request.headers.origin;
+    const allowedOrigins = ["http://localhost:3000"];
+    const corsOrigin = origin && allowedOrigins.includes(origin) ? origin : allowedOrigins[0];
+
     reply.raw.writeHead(200, {
         "Content-Type": "text/event-stream",
         "Cache-Control": "no-cache",
         Connection: "keep-alive",
-        "X-Accel-Buffering": "no" // Disable nginx buffering
+        "X-Accel-Buffering": "no", // Disable nginx buffering
+        "Access-Control-Allow-Origin": corsOrigin,
+        "Access-Control-Allow-Credentials": "true",
+        "Access-Control-Allow-Methods": "GET, OPTIONS",
+        "Access-Control-Allow-Headers": "Cache-Control"
     });
 
     // Keep connection alive
@@ -46,6 +54,14 @@ export async function streamAgentHandler(
 
     // Handle client disconnect
     request.raw.on("close", () => {
+        console.log(`[SSE Stream] Client disconnected for execution ${executionId}`);
+        clientDisconnected = true;
+        clearInterval(keepAliveInterval);
+        unsubscribeAll();
+    });
+
+    request.raw.on("error", (error) => {
+        console.error(`[SSE Stream] Request error for execution ${executionId}:`, error);
         clientDisconnected = true;
         clearInterval(keepAliveInterval);
         unsubscribeAll();
@@ -56,7 +72,13 @@ export async function streamAgentHandler(
         if (clientDisconnected) return;
 
         const message = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
-        reply.raw.write(message);
+        console.log(`[SSE Stream] Writing SSE event: ${event}`, data);
+        try {
+            reply.raw.write(message);
+        } catch (error) {
+            console.error(`[SSE Stream] Error writing SSE event ${event}:`, error);
+            clientDisconnected = true;
+        }
     };
 
     // Subscribe to Redis events for this execution
@@ -70,8 +92,17 @@ export async function streamAgentHandler(
         handler: (data: Record<string, unknown>) => void
     ): void => {
         const channel = `agent:events:${eventType}`;
+        console.log(`[SSE Stream] Subscribing to channel: ${channel} for execution ${executionId}`);
         eventHandlers.push({ channel, handler });
-        redisEventBus.subscribe(channel, handler);
+        redisEventBus.subscribe(channel, (event: unknown) => {
+            const eventData = event as Record<string, unknown>;
+            console.log(`[SSE Stream] Received event on channel ${channel}:`, {
+                type: eventData.type,
+                executionId: eventData.executionId,
+                hasToken: !!eventData.token
+            });
+            handler(eventData);
+        });
     };
 
     const unsubscribeAll = (): void => {
@@ -97,11 +128,19 @@ export async function streamAgentHandler(
     });
 
     subscribe("token", (data) => {
+        console.log(
+            `[SSE Stream] Received token event for execution ${data.executionId}, current: ${executionId}`
+        );
         if (data.executionId === executionId) {
+            console.log(`[SSE Stream] Sending token to client: "${data.token}"`);
             sendEvent("token", {
                 token: data.token,
                 executionId: data.executionId
             });
+        } else {
+            console.log(
+                `[SSE Stream] Token event executionId mismatch: ${data.executionId} !== ${executionId}`
+            );
         }
     });
 
@@ -144,8 +183,13 @@ export async function streamAgentHandler(
         }
     });
 
-    subscribe("completed", (data) => {
+    subscribe("execution:completed", (data) => {
+        console.log(
+            `[SSE Stream] Received execution:completed event for execution ${data.executionId}, current execution: ${executionId}`
+        );
+        console.log("[SSE Stream] Completed event data:", JSON.stringify(data, null, 2));
         if (data.executionId === executionId) {
+            console.log("[SSE Stream] Sending completed event to client");
             sendEvent("completed", {
                 finalMessage: data.finalMessage,
                 iterations: data.iterations,
@@ -161,7 +205,10 @@ export async function streamAgentHandler(
         }
     });
 
-    subscribe("failed", (data) => {
+    subscribe("execution:failed", (data) => {
+        console.log(
+            `[SSE Stream] Received execution:failed event for execution ${data.executionId}`
+        );
         if (data.executionId === executionId) {
             sendEvent("error", {
                 error: data.error,
@@ -178,8 +225,11 @@ export async function streamAgentHandler(
     });
 
     // Send initial connection event
+    console.log(`[SSE Stream] Sending connected event for execution ${executionId}`);
     sendEvent("connected", {
         executionId,
         status: execution.status
     });
+
+    console.log(`[SSE Stream] Stream handler initialized for execution ${executionId}`);
 }
