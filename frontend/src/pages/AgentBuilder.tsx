@@ -282,9 +282,8 @@ export function AgentBuilder() {
             const newThread = response.data;
             // Set the new thread as current
             setCurrentThread(newThread);
-            // Refresh threads list - backend sorts by last_message_at DESC NULLS LAST, created_at DESC
-            // New thread will appear at top since it has no messages yet (NULL last_message_at)
-            // and is the most recently created
+            // Refresh threads list - backend sorts by created_at DESC (newest conversations first)
+            // New thread will appear at top since it's the most recently created
             await fetchThreads(currentAgent.id);
         } catch (error) {
             console.error("Failed to create new thread:", error);
