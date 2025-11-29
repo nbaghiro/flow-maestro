@@ -16,6 +16,7 @@ export interface KeyboardShortcutHandlers {
     onFitView: () => void;
     canUndo?: () => boolean;
     canRedo?: () => boolean;
+    onCreateComment?: () => void;
 }
 
 /**
@@ -38,6 +39,7 @@ export function useKeyboardShortcuts(handlers: KeyboardShortcutHandlers): void {
         onSelectAll,
         onDeselectAll,
         onFitView,
+        onCreateComment,
         canUndo = () => true,
         canRedo = () => true
     } = handlers;
@@ -153,6 +155,13 @@ export function useKeyboardShortcuts(handlers: KeyboardShortcutHandlers): void {
                 onFitView();
                 return;
             }
+
+            // "N" - Create Comment Node
+            if (!modifier && key === "n" && onCreateComment) {
+                event.preventDefault();
+                onCreateComment();
+                return;
+            }
         };
 
         document.addEventListener("keydown", handleKeyDown);
@@ -175,6 +184,7 @@ export function useKeyboardShortcuts(handlers: KeyboardShortcutHandlers): void {
         onDeselectAll,
         onFitView,
         canUndo,
-        canRedo
+        canRedo,
+        onCreateComment
     ]);
 }

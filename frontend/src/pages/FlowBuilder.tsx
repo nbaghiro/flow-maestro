@@ -409,6 +409,31 @@ export function FlowBuilder() {
         setCheckpoints(updated);
     };
 
+    const handleCreateComment = useCallback(() => {
+        const instance = reactFlowInstanceRef.current;
+        if (!instance) return;
+
+        const { x, y, zoom } = instance.getViewport();
+        const centerX = (-x + window.innerWidth / 2) / zoom;
+        const centerY = (-y + window.innerHeight / 2) / zoom;
+
+        addNode({
+            id: generateId(),
+            type: "comment",
+            position: { x: centerX - 100, y: centerY - 75 },
+            data: {
+                label: "Comment",
+                content: "",
+                backgroundColor: "#FEF3C7",
+                textColor: "#1F2937"
+            },
+            style: {
+                width: 200,
+                height: 150
+            }
+        });
+    }, [addNode]);
+
     useKeyboardShortcuts({
         onSave: handleSave,
         onRun: handleRunWorkflow,
@@ -424,7 +449,8 @@ export function FlowBuilder() {
         onDeselectAll: handleDeselectAll,
         onFitView: handleFitView,
         canUndo,
-        canRedo
+        canRedo,
+        onCreateComment: handleCreateComment
     });
 
     if (isLoading) {
