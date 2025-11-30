@@ -1,6 +1,6 @@
 import { WebSocketEvent, WebSocketEventType } from "@flowmaestro/shared";
-import { globalEventEmitter } from "../events/EventEmitter";
-import { redisEventBus } from "../events/RedisEventBus";
+import { globalEventEmitter } from "../../services/events/EventEmitter";
+import { redisEventBus } from "../../services/events/RedisEventBus";
 import { wsManager } from "./WebSocketManager";
 
 /**

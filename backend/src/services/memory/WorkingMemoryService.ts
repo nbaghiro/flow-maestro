@@ -4,7 +4,7 @@
  */
 
 import { Mutex } from "async-mutex";
-import { WorkingMemoryRepository } from "../storage/repositories/WorkingMemoryRepository";
+import { WorkingMemoryRepository } from "../../storage/repositories/WorkingMemoryRepository";
 
 export interface UpdateWorkingMemoryInput {
     agentId: string;

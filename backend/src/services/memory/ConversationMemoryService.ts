@@ -8,9 +8,9 @@ import {
     type CreateConversationEmbeddingInput,
     type SearchSimilarMessagesInput,
     type SimilarMessageResult
-} from "../storage/repositories/ConversationEmbeddingRepository";
-import { EmbeddingService } from "./EmbeddingService";
-import type { ConversationMessage } from "../storage/models/AgentExecution";
+} from "../../storage/repositories/ConversationEmbeddingRepository";
+import { EmbeddingService } from "../embeddings/EmbeddingService";
+import type { ConversationMessage } from "../../storage/models/AgentExecution";
 
 export interface StoreConversationEmbeddingsInput {
     agentId: string;

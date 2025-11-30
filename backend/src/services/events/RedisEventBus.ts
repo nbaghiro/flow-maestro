@@ -1,6 +1,6 @@
 import Redis from "ioredis";
 import { WebSocketEvent } from "@flowmaestro/shared";
-import { config } from "../config";
+import { config } from "../../shared/config";
 
 /**
  * RedisEventBus - Cross-process event communication via Redis Pub/Sub
