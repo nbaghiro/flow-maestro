@@ -111,6 +111,12 @@ function CommentNode({ id, data, selected }: NodeProps) {
     };
 
     const onSetText = (c: string) => {
+        const hasSelection = selectionRef.current && !selectionRef.current.collapsed;
+        if (hasSelection) {
+            runFormatting("foreColor", c);
+            return;
+        }
+
         updateNode(id, { textColor: c });
     };
 
@@ -181,6 +187,10 @@ function CommentNode({ id, data, selected }: NodeProps) {
     return (
         <div
             data-id={id}
+            onWheelCapture={(e) => {
+                // Prevent canvas zoom when scrolling inside the note.
+                e.stopPropagation();
+            }}
             onDoubleClick={(e) => {
                 e.stopPropagation();
                 setIsEditing(true);
