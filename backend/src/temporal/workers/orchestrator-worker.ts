@@ -1,6 +1,6 @@
 import path from "path";
 import { Worker, NativeConnection } from "@temporalio/worker";
-import { redisEventBus } from "../../shared/events/RedisEventBus";
+import { redisEventBus } from "../../services/events/RedisEventBus";
 import { initializeSpanService } from "../../shared/observability";
 import { registerAllNodes } from "../../shared/registry/register-nodes";
 import { db } from "../../storage/database";
