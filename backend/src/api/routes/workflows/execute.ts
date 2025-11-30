@@ -3,7 +3,7 @@ import {
     convertFrontendToBackend,
     FrontendWorkflowDefinition,
     stripNonExecutableNodes
-} from "../../../shared/utils/workflow-converter";
+} from "../../../core/utils/workflow-converter";
 import { getTemporalClient } from "../../../temporal/client";
 import { authMiddleware } from "../../middleware";
 

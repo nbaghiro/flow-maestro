@@ -3,7 +3,7 @@ import {
     validateToolInput,
     coerceToolArguments,
     createValidationErrorResponse
-} from "../../../shared/validation/tool-validation";
+} from "../../../core/validation/tool-validation";
 import { AgentExecutionRepository } from "../../../storage/repositories/AgentExecutionRepository";
 import { AgentRepository } from "../../../storage/repositories/AgentRepository";
 import { ConnectionRepository } from "../../../storage/repositories/ConnectionRepository";

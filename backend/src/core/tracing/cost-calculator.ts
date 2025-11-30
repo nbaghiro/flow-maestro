@@ -1,7 +1,6 @@
 /**
- * Model Pricing Configuration
- * Centralized pricing data for LLM providers
- * Prices are in USD per token
+ * Cost Calculator - LLM cost calculation utilities
+ * Calculates costs for LLM API calls based on token usage
  */
 
 export interface ModelPricing {
@@ -9,7 +8,6 @@ export interface ModelPricing {
     model: string;
     inputPricePerToken: number; // USD per input token
     outputPricePerToken: number; // USD per output token
-    // Alternative pricing units (some models charge per million tokens)
     inputPricePer1M?: number; // USD per 1M input tokens
     outputPricePer1M?: number; // USD per 1M output tokens
 }
@@ -19,7 +17,7 @@ export interface ModelPricing {
  * Updated as of January 2025
  * Sources: OpenAI, Anthropic, Google pricing pages
  */
-export const MODEL_PRICING_DB: ModelPricing[] = [
+const MODEL_PRICING_DB: ModelPricing[] = [
     // OpenAI Models
     {
         provider: "openai",

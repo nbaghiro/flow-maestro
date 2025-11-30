@@ -4,7 +4,7 @@ import { WorkflowDefinition } from "@flowmaestro/shared";
 import {
     convertFrontendToBackend,
     stripNonExecutableNodes
-} from "../../../shared/utils/workflow-converter";
+} from "../../../core/utils/workflow-converter";
 import { ManualTriggerConfig } from "../../../storage/models/Trigger";
 import { ExecutionRepository } from "../../../storage/repositories/ExecutionRepository";
 import { TriggerRepository } from "../../../storage/repositories/TriggerRepository";

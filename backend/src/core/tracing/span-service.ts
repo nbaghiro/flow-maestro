@@ -4,7 +4,7 @@
  */
 
 import { randomUUID } from "crypto";
-import { calculateCost } from "./model-pricing";
+import { calculateCost } from "./cost-calculator";
 import {
     CreateSpanInput,
     EndSpanInput,
@@ -17,7 +17,7 @@ import {
     Trace,
     PaginatedSpans,
     PaginationOptions
-} from "./types";
+} from "./span-types";
 import type { Pool } from "pg";
 
 /**
@@ -241,6 +241,27 @@ export class SpanService {
         if (input.error) {
             await this.flush();
         }
+    }
+
+    /**
+     * Update attributes on a span that's still in the batch
+     * Note: This only works for spans that haven't been flushed yet
+     */
+    updateSpanAttributes(
+        spanId: string,
+        attributes: Record<string, string | number | boolean>
+    ): void {
+        const span = this.spanBatch.find((s) => s.spanId === spanId);
+
+        if (!span) {
+            console.warn(`Span ${spanId} not found in batch, may have been flushed`);
+            return;
+        }
+
+        span.attributes = {
+            ...span.attributes,
+            ...attributes
+        };
     }
 
     /**
