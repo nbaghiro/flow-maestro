@@ -1,6 +1,10 @@
 import { FastifyInstance } from "fastify";
 import type { JsonValue } from "@flowmaestro/shared";
-import { convertFrontendToBackend } from "../../../shared/utils/workflow-converter";
+import { WorkflowDefinition } from "@flowmaestro/shared";
+import {
+    convertFrontendToBackend,
+    stripNonExecutableNodes
+} from "../../../shared/utils/workflow-converter";
 import { ManualTriggerConfig } from "../../../storage/models/Trigger";
 import { ExecutionRepository } from "../../../storage/repositories/ExecutionRepository";
 import { TriggerRepository } from "../../../storage/repositories/TriggerRepository";
@@ -99,27 +103,33 @@ export async function executeTriggerRoute(fastify: FastifyInstance) {
                 // Check if already in backend format (nodes is an object/Record)
                 if (workflowDef.nodes && !Array.isArray(workflowDef.nodes)) {
                     // Already in backend format
-                    backendWorkflowDefinition = {
-                        name: workflow.name,
-                        ...workflowDef
-                    };
+                    backendWorkflowDefinition = stripNonExecutableNodes(
+                        {
+                            ...(workflowDef as WorkflowDefinition),
+                            name: workflow.name
+                        },
+                        workflow.name
+                    );
                 } else if (workflowDef.nodes && Array.isArray(workflowDef.nodes)) {
                     // Frontend format, needs conversion
-                    backendWorkflowDefinition = convertFrontendToBackend(
-                        workflow.definition as unknown as {
-                            nodes: Array<{
-                                id: string;
-                                type: string;
-                                data: Record<string, unknown>;
-                                position?: { x: number; y: number };
-                            }>;
-                            edges: Array<{
-                                id: string;
-                                source: string;
-                                target: string;
-                                sourceHandle?: string;
-                            }>;
-                        },
+                    backendWorkflowDefinition = stripNonExecutableNodes(
+                        convertFrontendToBackend(
+                            workflow.definition as unknown as {
+                                nodes: Array<{
+                                    id: string;
+                                    type: string;
+                                    data: Record<string, unknown>;
+                                    position?: { x: number; y: number };
+                                }>;
+                                edges: Array<{
+                                    id: string;
+                                    source: string;
+                                    target: string;
+                                    sourceHandle?: string;
+                                }>;
+                            },
+                            workflow.name
+                        ),
                         workflow.name
                     );
                 } else {

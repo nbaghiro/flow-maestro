@@ -31,12 +31,20 @@ export function convertFrontendToBackend(
     frontendWorkflow: FrontendWorkflowDefinition,
     workflowName: string = "Untitled Workflow"
 ): WorkflowDefinition {
+    const executableNodes = frontendWorkflow.nodes.filter(
+        (n) => (n.type || "").toLowerCase() !== "comment"
+    );
+    if (executableNodes.length === 0) {
+        throw new Error(`No executable nodes found for workflow: ${workflowName}`);
+    }
+    const executableNodeIds = new Set(executableNodes.map((n) => n.id));
+    const executableEdges = frontendWorkflow.edges.filter(
+        (e) => executableNodeIds.has(e.source) && executableNodeIds.has(e.target)
+    );
+
     const nodesRecord: Record<string, WorkflowNode> = {};
-
-    // Convert nodes array to record
-    for (const node of frontendWorkflow.nodes) {
+    for (const node of executableNodes) {
         const { id, type, data, position } = node;
-
         const nodeName =
             (data.label as string) ||
             (data.inputName as string) ||
@@ -51,25 +59,23 @@ export function convertFrontendToBackend(
         };
     }
 
-    // Find entry point (first input node or first node)
-    const inputNode = frontendWorkflow.nodes.find((n) => n.type === "input");
-    const entryPoint = inputNode?.id || frontendWorkflow.nodes[0]?.id;
-
+    const inputNode = executableNodes.find((n) => n.type === "input");
+    const entryPoint = inputNode?.id || executableNodes[0]?.id;
     if (!entryPoint) {
         throw new Error(`No entry point found for workflow: ${workflowName}`);
     }
 
-    return {
+    return stripNonExecutableNodes({
         name: workflowName,
         nodes: nodesRecord,
-        edges: frontendWorkflow.edges,
+        edges: executableEdges,
         entryPoint,
         settings: {
             timeout: 300000, // 5 minutes
             maxConcurrentNodes: 10,
             enableCache: false
         }
-    };
+    });
 }
 
 /**
@@ -93,5 +99,40 @@ export function convertBackendToFrontend(
     return {
         nodes: nodesArray,
         edges: backendWorkflow.edges
+    };
+}
+
+/**
+ * Remove non-executable nodes (e.g., comments) from a backend workflow definition.
+ */
+export function stripNonExecutableNodes(
+    workflow: WorkflowDefinition,
+    workflowName: string = "Untitled Workflow"
+): WorkflowDefinition {
+    const executableEntries = Object.entries(workflow.nodes).filter(
+        ([, node]) => (node.type || "").toLowerCase() !== "comment"
+    );
+
+    if (executableEntries.length === 0) {
+        throw new Error(`No executable nodes found for workflow: ${workflowName}`);
+    }
+
+    const executableNodeIds = new Set(executableEntries.map(([id]) => id));
+    const nodes: Record<string, WorkflowNode> = Object.fromEntries(executableEntries);
+
+    const edges = workflow.edges.filter(
+        (e) => executableNodeIds.has(e.source) && executableNodeIds.has(e.target)
+    );
+
+    let entryPoint = workflow.entryPoint;
+    if (!executableNodeIds.has(entryPoint)) {
+        entryPoint = executableEntries[0][0];
+    }
+
+    return {
+        ...workflow,
+        nodes,
+        edges,
+        entryPoint
     };
 }
