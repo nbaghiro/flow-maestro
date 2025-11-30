@@ -10,6 +10,29 @@ import type {
     Thread
 } from "../lib/api";
 
+const LAST_THREAD_KEY_PREFIX = "agent_last_thread_";
+
+function getLastThreadIdForAgent(agentId: string): string | null {
+    try {
+        return localStorage.getItem(`${LAST_THREAD_KEY_PREFIX}${agentId}`);
+    } catch {
+        return null;
+    }
+}
+
+function setLastThreadIdForAgent(agentId: string, threadId: string | null): void {
+    try {
+        const key = `${LAST_THREAD_KEY_PREFIX}${agentId}`;
+        if (threadId) {
+            localStorage.setItem(key, threadId);
+        } else {
+            localStorage.removeItem(key);
+        }
+    } catch {
+        // Ignore storage errors
+    }
+}
+
 interface AgentStore {
     // State
     agents: Agent[];
@@ -234,7 +257,12 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
     },
 
     createNewThread: () => {
-        // Clear current thread and execution to start fresh
+        // Clear remembered last thread for this agent and reset state
+        const { currentAgent } = get();
+        if (currentAgent) {
+            setLastThreadIdForAgent(currentAgent.id, null);
+        }
+
         set({
             currentThread: null,
             currentExecution: null
@@ -298,23 +326,42 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
         }
     },
 
-    // Execute an agent with initial message (thread-aware)
+    // Execute an agent with initial message (thread-aware, remembers last thread per agent)
     executeAgent: async (agentId: string, message: string, threadId?: string) => {
         set({ isLoading: true, error: null });
         try {
-            const response = await api.executeAgent(agentId, message, threadId);
+            // If no explicit threadId provided, reuse the last thread for this agent (if any)
+            const persistedThreadId = threadId ?? getLastThreadIdForAgent(agentId) ?? undefined;
+
+            const response = await api.executeAgent(agentId, message, persistedThreadId);
             const { executionId, threadId: returnedThreadId } = response.data;
 
-            // If we got a new thread, add it to the list
-            if (!threadId && returnedThreadId) {
-                // Fetch the thread details
-                const threadResponse = await api.getThread(returnedThreadId);
-                const newThread = threadResponse.data as Thread;
+            if (returnedThreadId) {
+                // Remember this thread as the last-used thread for this agent
+                setLastThreadIdForAgent(agentId, returnedThreadId);
 
-                set((state) => ({
-                    currentThread: newThread,
-                    threads: [newThread, ...state.threads]
-                }));
+                // If we don't already know about this thread, fetch and add it
+                const existingThreads = get().threads;
+                const exists = existingThreads.some((t) => t.id === returnedThreadId);
+
+                if (!exists) {
+                    const threadResponse = await api.getThread(returnedThreadId);
+                    const newThread = threadResponse.data as Thread;
+
+                    set((state) => ({
+                        currentThread: newThread,
+                        threads: [newThread, ...state.threads]
+                    }));
+                } else {
+                    // Ensure currentThread points at this thread
+                    set((state) => ({
+                        currentThread:
+                            state.currentThread?.id === returnedThreadId
+                                ? state.currentThread
+                                : state.threads.find((t) => t.id === returnedThreadId) ||
+                                  state.currentThread
+                    }));
+                }
             }
 
             // Create initial execution state with just the new user message

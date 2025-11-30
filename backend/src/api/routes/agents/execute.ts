@@ -37,6 +37,17 @@ export async function executeAgentHandler(
         // Get or create thread
         let threadId: string;
 
+        // Load previous conversation history if using existing thread
+        let previousConversationHistory: Array<{
+            id: string;
+            role: string;
+            content: string;
+            tool_calls?: unknown[];
+            tool_name?: string;
+            tool_call_id?: string;
+            timestamp: Date;
+        }> = [];
+
         if (thread_id) {
             // Use existing thread - verify it exists and belongs to user
             const existingThread = await threadRepo.findByIdAndUserId(thread_id, userId);
@@ -48,6 +59,18 @@ export async function executeAgentHandler(
                 throw new BadRequestError("Thread belongs to a different agent");
             }
             threadId = thread_id;
+
+            // Load previous conversation history from thread
+            const previousMessages = await executionRepo.getMessagesByThread(threadId);
+            previousConversationHistory = previousMessages.map((msg) => ({
+                id: msg.id,
+                role: msg.role,
+                content: msg.content,
+                tool_calls: msg.tool_calls || undefined,
+                tool_name: msg.tool_name || undefined,
+                tool_call_id: msg.tool_call_id || undefined,
+                timestamp: msg.created_at
+            }));
         } else {
             // Create new thread
             const newThread = await threadRepo.create({
@@ -68,7 +91,7 @@ export async function executeAgentHandler(
             iterations: 0
         });
 
-        // Start Temporal workflow
+        // Start Temporal workflow with previous conversation history
         const client = await getTemporalClient();
         await client.workflow.start("agentOrchestratorWorkflow", {
             taskQueue: "flowmaestro-orchestrator",
@@ -79,7 +102,8 @@ export async function executeAgentHandler(
                     agentId,
                     userId,
                     threadId,
-                    initialMessage: message
+                    initialMessage: message,
+                    previousConversationHistory // Pass previous messages for context
                 }
             ]
         });

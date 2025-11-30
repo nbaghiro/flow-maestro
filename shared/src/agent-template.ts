@@ -4,7 +4,7 @@ import type { TemplateCategory } from "./template";
 export type AgentProvider = "openai" | "anthropic" | "google" | "cohere";
 
 // Tool types that can be configured for an agent template
-export type AgentToolType = "workflow" | "function" | "knowledge_base" | "agent";
+export type AgentToolType = "workflow" | "function" | "knowledge_base" | "agent" | "mcp";
 
 // Simplified tool definition for templates
 // Actual Tool objects are created when the user connects their own integrations

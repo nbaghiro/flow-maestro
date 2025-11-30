@@ -36,7 +36,26 @@ export function ThreadChat({ agent, thread }: ThreadChatProps) {
             try {
                 const response = await api.getThreadMessages(thread.id);
                 if (response.success && response.data.messages) {
-                    setMessages(response.data.messages);
+                    // Filter out tool messages (raw JSON responses) - keep "Using tools" indicators
+                    const filteredMessages = response.data.messages.filter(
+                        (m) => m.role !== "tool"
+                    );
+                    // Sort by timestamp to ensure correct chronological order (oldest first)
+                    // This ensures user messages appear before agent responses
+                    const sortedMessages = [...filteredMessages].sort((a, b) => {
+                        const timeA = new Date(a.timestamp).getTime();
+                        const timeB = new Date(b.timestamp).getTime();
+                        // If timestamps are equal, ensure user messages come before assistant
+                        if (timeA === timeB) {
+                            if (a.role === "user" && b.role === "assistant") return -1;
+                            if (a.role === "assistant" && b.role === "user") return 1;
+                        }
+                        return timeA - timeB;
+                    });
+                    setMessages(sortedMessages);
+                } else {
+                    // New thread with no messages yet - ensure empty state
+                    setMessages([]);
                 }
             } catch (error) {
                 console.error("Failed to load thread messages:", error);
@@ -48,9 +67,29 @@ export function ThreadChat({ agent, thread }: ThreadChatProps) {
     }, [thread.id]);
 
     // Update messages from execution when thread matches (for real-time updates)
+    // Only add new messages, don't overwrite existing ones
     useEffect(() => {
         if (currentExecution && currentExecution.thread_id === thread.id) {
-            setMessages(currentExecution.conversation_history);
+            setMessages((prev) => {
+                const executionMessages = currentExecution.conversation_history || [];
+                // Filter out tool messages (raw JSON responses) - keep "Using tools" indicators
+                const filteredMessages = executionMessages.filter((m) => m.role !== "tool");
+                const existingIds = new Set(prev.map((m) => m.id));
+                const newMessages = filteredMessages.filter((m) => !existingIds.has(m.id));
+
+                const combined = newMessages.length > 0 ? [...prev, ...newMessages] : prev;
+                // Always sort by timestamp to ensure chronological order (oldest first)
+                // If timestamps are equal, ensure user messages come before assistant
+                return combined.sort((a, b) => {
+                    const timeA = new Date(a.timestamp).getTime();
+                    const timeB = new Date(b.timestamp).getTime();
+                    if (timeA === timeB) {
+                        if (a.role === "user" && b.role === "assistant") return -1;
+                        if (a.role === "assistant" && b.role === "user") return 1;
+                    }
+                    return timeA - timeB;
+                });
+            });
         }
     }, [currentExecution, thread.id]);
 
@@ -80,8 +119,27 @@ export function ThreadChat({ agent, thread }: ThreadChatProps) {
                 if (data.message.role === "user") {
                     return;
                 }
-                // Update store so useEffect syncs it to UI
+                // Update store
                 addMessageToExecution(data.executionId, data.message);
+                // Also update local messages state directly, ensuring proper order
+                setMessages((prev) => {
+                    const existingIds = new Set(prev.map((m) => m.id));
+                    if (existingIds.has(data.message!.id)) {
+                        return prev; // Already exists
+                    }
+                    const updated = [...prev, data.message!];
+                    // Sort by timestamp to ensure chronological order (oldest first)
+                    // If timestamps are equal, ensure user messages come before assistant
+                    return updated.sort((a, b) => {
+                        const timeA = new Date(a.timestamp).getTime();
+                        const timeB = new Date(b.timestamp).getTime();
+                        if (timeA === timeB) {
+                            if (a.role === "user" && b.role === "assistant") return -1;
+                            if (a.role === "assistant" && b.role === "user") return 1;
+                        }
+                        return timeA - timeB;
+                    });
+                });
             }
         };
 
@@ -182,60 +240,74 @@ export function ThreadChat({ agent, thread }: ThreadChatProps) {
                     <div className="h-full flex items-center justify-center">
                         <div className="text-center text-muted-foreground">
                             <Bot className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                            <p>Continue your conversation with {agent.name}</p>
+                            <p>
+                                {currentExecution && currentExecution.thread_id === thread.id
+                                    ? "Agent is thinking..."
+                                    : "Start a new conversation with " + agent.name}
+                            </p>
                         </div>
                     </div>
                 ) : (
                     <>
-                        {messages.map((message) => (
-                            <div
-                                key={message.id}
-                                className={cn(
-                                    "flex gap-3",
-                                    message.role === "user" ? "justify-end" : "justify-start"
-                                )}
-                            >
-                                {message.role !== "user" && message.role !== "system" && (
-                                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                                        <Bot className="w-4 h-4 text-primary" />
-                                    </div>
-                                )}
+                        {messages
+                            .sort((a, b) => {
+                                const timeA = new Date(a.timestamp).getTime();
+                                const timeB = new Date(b.timestamp).getTime();
+                                if (timeA === timeB) {
+                                    if (a.role === "user" && b.role === "assistant") return -1;
+                                    if (a.role === "assistant" && b.role === "user") return 1;
+                                }
+                                return timeA - timeB;
+                            })
+                            .map((message) => (
                                 <div
+                                    key={message.id}
                                     className={cn(
-                                        "max-w-[80%] rounded-lg px-4 py-3",
-                                        message.role === "user"
-                                            ? "bg-primary text-primary-foreground"
-                                            : message.role === "system"
-                                              ? "bg-muted/50 text-muted-foreground text-sm italic"
-                                              : "bg-muted text-foreground"
+                                        "flex gap-3",
+                                        message.role === "user" ? "justify-end" : "justify-start"
                                     )}
                                 >
-                                    <div className="whitespace-pre-wrap break-words">
-                                        {message.content}
+                                    {message.role !== "user" && message.role !== "system" && (
+                                        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                                            <Bot className="w-4 h-4 text-primary" />
+                                        </div>
+                                    )}
+                                    <div
+                                        className={cn(
+                                            "max-w-[80%] rounded-lg px-4 py-3",
+                                            message.role === "user"
+                                                ? "bg-primary text-primary-foreground"
+                                                : message.role === "system"
+                                                  ? "bg-muted/50 text-muted-foreground text-sm italic"
+                                                  : "bg-muted text-foreground"
+                                        )}
+                                    >
+                                        <div className="whitespace-pre-wrap break-words">
+                                            {message.content}
+                                        </div>
+                                        {message.tool_calls && message.tool_calls.length > 0 && (
+                                            <div className="mt-2 pt-2 border-t border-border/50">
+                                                <p className="text-xs text-muted-foreground mb-1">
+                                                    Using tools:
+                                                </p>
+                                                {message.tool_calls.map((tool, idx) => (
+                                                    <div
+                                                        key={idx}
+                                                        className="text-xs bg-background/50 rounded px-2 py-1 mt-1"
+                                                    >
+                                                        {tool.name}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
-                                    {message.tool_calls && message.tool_calls.length > 0 && (
-                                        <div className="mt-2 pt-2 border-t border-border/50">
-                                            <p className="text-xs text-muted-foreground mb-1">
-                                                Using tools:
-                                            </p>
-                                            {message.tool_calls.map((tool, idx) => (
-                                                <div
-                                                    key={idx}
-                                                    className="text-xs bg-background/50 rounded px-2 py-1 mt-1"
-                                                >
-                                                    {tool.name}
-                                                </div>
-                                            ))}
+                                    {message.role === "user" && (
+                                        <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center flex-shrink-0">
+                                            <User className="w-4 h-4 text-secondary-foreground" />
                                         </div>
                                     )}
                                 </div>
-                                {message.role === "user" && (
-                                    <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center flex-shrink-0">
-                                        <User className="w-4 h-4 text-secondary-foreground" />
-                                    </div>
-                                )}
-                            </div>
-                        ))}
+                            ))}
                         {isSending && (
                             <div className="flex gap-3">
                                 <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">

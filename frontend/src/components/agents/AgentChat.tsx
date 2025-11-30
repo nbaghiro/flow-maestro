@@ -1,5 +1,6 @@
 import { Send, X, Loader2, Bot, User } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
+import * as api from "../../lib/api";
 import { cn } from "../../lib/utils";
 import { wsClient } from "../../lib/websocket";
 import { useAgentStore } from "../../stores/agentStore";
@@ -11,8 +12,15 @@ interface AgentChatProps {
 }
 
 export function AgentChat({ agent }: AgentChatProps) {
-    const { currentExecution, executeAgent, sendMessage, clearExecution, updateExecutionStatus } =
-        useAgentStore();
+    const {
+        currentExecution,
+        executeAgent,
+        sendMessage,
+        createNewThread,
+        updateExecutionStatus,
+        currentThread,
+        setCurrentThread
+    } = useAgentStore();
 
     const [input, setInput] = useState("");
     const [isSending, setIsSending] = useState(false);
@@ -29,34 +37,191 @@ export function AgentChat({ agent }: AgentChatProps) {
     // Track previous thread_id to preserve messages when continuing in same thread
     const prevThreadIdRef = useRef<string | undefined>(undefined);
 
-    // Sync messages from execution when execution ID changes
-    // Preserve existing messages if we're continuing in the same thread
+    // Always check for the most recent thread and switch to it if it's newer
+    // This ensures we show the latest conversation when reopening the chat
     useEffect(() => {
-        if (currentExecution) {
+        // Skip if there's an active execution (don't interrupt ongoing conversation)
+        const store = useAgentStore.getState();
+        if (store.currentExecution && store.currentExecution.status === "running") {
+            return;
+        }
+
+        const checkAndUpdateMostRecentThread = async () => {
+            try {
+                // Fetch the most recent thread for this agent
+                const response = await api.getThreads({
+                    agent_id: agent.id,
+                    status: "active",
+                    limit: 1
+                });
+
+                if (response.success && response.data.threads.length > 0) {
+                    const mostRecentThread = response.data.threads[0];
+                    const currentThreadState = useAgentStore.getState().currentThread;
+
+                    // If no current thread, or if the most recent thread is newer, switch to it
+                    if (!currentThreadState) {
+                        setCurrentThread(mostRecentThread);
+                    } else {
+                        const currentThreadCreatedAt = new Date(
+                            currentThreadState.created_at
+                        ).getTime();
+                        const mostRecentThreadCreatedAt = new Date(
+                            mostRecentThread.created_at
+                        ).getTime();
+
+                        // Switch to most recent thread if it's newer (or if it's a different thread)
+                        if (
+                            mostRecentThreadCreatedAt > currentThreadCreatedAt ||
+                            mostRecentThread.id !== currentThreadState.id
+                        ) {
+                            setCurrentThread(mostRecentThread);
+                        }
+                    }
+                } else {
+                    const currentThreadState = useAgentStore.getState().currentThread;
+                    if (currentThreadState) {
+                        // No threads exist, clear current thread
+                        setCurrentThread(null);
+                    }
+                }
+            } catch (error) {
+                console.error("Failed to fetch most recent thread:", error);
+            }
+        };
+
+        checkAndUpdateMostRecentThread();
+    }, [agent.id, setCurrentThread]);
+
+    // Load all messages from thread when component mounts or thread changes (for reopening chat)
+    useEffect(() => {
+        const loadThreadMessages = async () => {
+            if (currentThread && currentThread.id) {
+                try {
+                    const response = await api.getThreadMessages(currentThread.id);
+                    if (response.success && response.data.messages) {
+                        // Filter out tool messages (raw JSON responses) - keep "Using tools" indicators
+                        const filteredMessages = response.data.messages.filter(
+                            (m) => m.role !== "tool"
+                        );
+                        // Sort by timestamp with tie-breaker (same as conversations pane)
+                        const sortedMessages = [...filteredMessages].sort((a, b) => {
+                            const timeA = new Date(a.timestamp).getTime();
+                            const timeB = new Date(b.timestamp).getTime();
+                            if (timeA === timeB) {
+                                if (a.role === "user" && b.role === "assistant") return -1;
+                                if (a.role === "assistant" && b.role === "user") return 1;
+                            }
+                            return timeA - timeB;
+                        });
+                        setMessages(sortedMessages);
+                    } else {
+                        // No messages in thread, ensure empty state
+                        setMessages([]);
+                    }
+                } catch (error) {
+                    console.error("Failed to load thread messages:", error);
+                    setMessages([]);
+                }
+            } else {
+                // No thread means empty state (user explicitly cleared or new agent)
+                setMessages([]);
+            }
+        };
+
+        // Load messages when we have a thread but no active execution (reopening scenario)
+        // Only use execution history when execution is actively running
+        // When execution is completed or doesn't exist, load full conversation from thread
+        const hasActiveExecution = currentExecution && currentExecution.status === "running";
+
+        if (currentThread && !hasActiveExecution) {
+            // Reopening chat or execution completed - load full conversation from thread
+            loadThreadMessages();
+        } else if (!currentThread && !currentExecution) {
+            // No thread and no execution = empty state
+            setMessages([]);
+        }
+    }, [currentThread?.id, currentExecution?.id, currentExecution?.status]);
+
+    // Sync messages from execution when execution ID changes
+    // Only update messages when execution is actively running
+    // When execution completes, the first useEffect will reload full conversation from thread
+    useEffect(() => {
+        // Only sync from execution if it's actively running
+        // Completed executions should not overwrite full thread messages
+        if (currentExecution && currentExecution.status === "running") {
             const currentThreadId = currentExecution.thread_id;
             const isSameThread = prevThreadIdRef.current === currentThreadId;
+            const isSameThreadAsCurrent = currentThread?.id === currentThreadId;
             const history = currentExecution.conversation_history || [];
+            // Filter out tool messages (raw JSON responses) - keep "Using tools" indicators
+            const filteredHistory = history.filter((m) => m.role !== "tool");
 
             // Update thread reference
             prevThreadIdRef.current = currentThreadId;
 
             setMessages((prev) => {
-                // If same thread and we have existing messages, preserve them and add new ones
-                if (isSameThread && prev.length > 0) {
+                // If this execution is in the same thread as currentThread, preserve existing messages
+                // This handles the case where we loaded full thread messages and then start a new execution
+                if (isSameThreadAsCurrent && prev.length > 0) {
                     const existingMessageIds = new Set(prev.map((m) => m.id));
-                    const newMessages = history.filter((m) => !existingMessageIds.has(m.id));
+                    const newMessages = filteredHistory.filter(
+                        (m) => !existingMessageIds.has(m.id)
+                    );
                     // Add new messages from the execution (typically just the new user message)
-                    return newMessages.length > 0 ? [...prev, ...newMessages] : prev;
+                    const combined = newMessages.length > 0 ? [...prev, ...newMessages] : prev;
+                    // Sort by timestamp with tie-breaker (same as conversations pane)
+                    return combined.sort((a, b) => {
+                        const timeA = new Date(a.timestamp).getTime();
+                        const timeB = new Date(b.timestamp).getTime();
+                        if (timeA === timeB) {
+                            if (a.role === "user" && b.role === "assistant") return -1;
+                            if (a.role === "assistant" && b.role === "user") return 1;
+                        }
+                        return timeA - timeB;
+                    });
                 }
 
-                // New thread or no previous messages - use execution history
-                return history;
+                // If same thread as previous execution and we have existing messages, preserve them
+                if (isSameThread && prev.length > 0) {
+                    const existingMessageIds = new Set(prev.map((m) => m.id));
+                    const newMessages = filteredHistory.filter(
+                        (m) => !existingMessageIds.has(m.id)
+                    );
+                    // Add new messages from the execution (typically just the new user message)
+                    const combined = newMessages.length > 0 ? [...prev, ...newMessages] : prev;
+                    // Sort by timestamp with tie-breaker (same as conversations pane)
+                    return combined.sort((a, b) => {
+                        const timeA = new Date(a.timestamp).getTime();
+                        const timeB = new Date(b.timestamp).getTime();
+                        if (timeA === timeB) {
+                            if (a.role === "user" && b.role === "assistant") return -1;
+                            if (a.role === "assistant" && b.role === "user") return 1;
+                        }
+                        return timeA - timeB;
+                    });
+                }
+
+                // New thread or no previous messages - use execution history, sorted with tie-breaker
+                return filteredHistory.sort((a, b) => {
+                    const timeA = new Date(a.timestamp).getTime();
+                    const timeB = new Date(b.timestamp).getTime();
+                    if (timeA === timeB) {
+                        if (a.role === "user" && b.role === "assistant") return -1;
+                        if (a.role === "assistant" && b.role === "user") return 1;
+                    }
+                    return timeA - timeB;
+                });
             });
         } else {
             prevThreadIdRef.current = undefined;
-            setMessages([]);
+            // Don't clear messages if we have a thread (they're loaded from thread in first useEffect)
+            // Only clear if there's no thread and no execution
+            if (!currentThread && !currentExecution) {
+                setMessages([]);
+            }
         }
-    }, [currentExecution?.id]);
+    }, [currentExecution?.id, currentExecution?.status, currentThread]);
 
     // Subscribe to execution WebSocket events
     useEffect(() => {
@@ -121,8 +286,33 @@ export function AgentChat({ agent }: AgentChatProps) {
             const store = useAgentStore.getState();
             if (!store.currentExecution || data.executionId !== store.currentExecution.id) return;
             if (data.message.role === "user") return; // Skip user messages
+            if (data.message.role === "tool") return; // Skip tool messages (raw JSON)
 
             store.addMessageToExecution(data.executionId, data.message);
+
+            // Update local messages state, replacing streaming message with final message
+            setMessages((prev) => {
+                // Remove any streaming message for this execution
+                const filtered = prev.filter((m) => m.id !== `streaming-${data.executionId}`);
+
+                // Check if this message already exists (avoid duplicates)
+                const existingIds = new Set(filtered.map((m) => m.id));
+                if (existingIds.has(data.message!.id)) {
+                    return filtered; // Already exists, just return filtered (streaming removed)
+                }
+
+                // Add the final message and sort by timestamp with tie-breaker
+                const updated = [...filtered, data.message!];
+                return updated.sort((a, b) => {
+                    const timeA = new Date(a.timestamp).getTime();
+                    const timeB = new Date(b.timestamp).getTime();
+                    if (timeA === timeB) {
+                        if (a.role === "user" && b.role === "assistant") return -1;
+                        if (a.role === "assistant" && b.role === "user") return 1;
+                    }
+                    return timeA - timeB;
+                });
+            });
         };
 
         const handleCompleted = (event: unknown) => {
@@ -135,24 +325,10 @@ export function AgentChat({ agent }: AgentChatProps) {
             )
                 return;
 
-            // Finalize streaming message
-            const accumulated = tokenAccumulatorRef.current.get(data.executionId);
-            if (accumulated) {
-                const finalMessage: ConversationMessage = {
-                    id: `asst-${data.executionId}-${Date.now()}`,
-                    role: "assistant",
-                    content: data.finalMessage || accumulated,
-                    timestamp: new Date().toISOString()
-                };
-
-                setMessages((prev) => {
-                    const filtered = prev.filter((m) => m.id !== `streaming-${data.executionId}`);
-                    return [...filtered, finalMessage];
-                });
-
-                store.addMessageToExecution(data.executionId, finalMessage);
-                tokenAccumulatorRef.current.delete(data.executionId);
-            }
+            // Just clear streaming state - the final message will come from handleMessage WebSocket event
+            // Remove streaming message if it still exists
+            setMessages((prev) => prev.filter((m) => m.id !== `streaming-${data.executionId}`));
+            tokenAccumulatorRef.current.delete(data.executionId);
 
             setIsSending(false);
             updateExecutionStatus(data.executionId, "completed");
@@ -237,7 +413,14 @@ export function AgentChat({ agent }: AgentChatProps) {
     };
 
     const handleClear = () => {
-        clearExecution();
+        // If already empty, just return
+        if (messages.length === 0 && !currentExecution) {
+            setShowClearConfirm(false);
+            return;
+        }
+
+        // Start a brand new conversation for this agent and clear remembered thread
+        createNewThread();
         setMessages([]);
         setShowClearConfirm(false);
     };
@@ -257,15 +440,20 @@ export function AgentChat({ agent }: AgentChatProps) {
                         </p>
                     </div>
                 </div>
-                {currentExecution && (
-                    <button
-                        onClick={() => setShowClearConfirm(true)}
-                        className="p-2 hover:bg-muted rounded-lg transition-colors"
-                        title="Start new conversation"
-                    >
-                        <X className="w-4 h-4" />
-                    </button>
-                )}
+                <button
+                    onClick={() => {
+                        // If empty, just clear without confirmation
+                        if (messages.length === 0 && !currentExecution) {
+                            handleClear();
+                        } else {
+                            setShowClearConfirm(true);
+                        }
+                    }}
+                    className="p-2 hover:bg-muted rounded-lg transition-colors"
+                    title="Start new conversation"
+                >
+                    <X className="w-4 h-4" />
+                </button>
             </div>
 
             {/* Messages - Scrollable */}
@@ -279,55 +467,65 @@ export function AgentChat({ agent }: AgentChatProps) {
                     </div>
                 ) : (
                     <>
-                        {messages.map((message) => (
-                            <div
-                                key={message.id}
-                                className={cn(
-                                    "flex gap-3",
-                                    message.role === "user" ? "justify-end" : "justify-start"
-                                )}
-                            >
-                                {message.role !== "user" && message.role !== "system" && (
-                                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                                        <Bot className="w-4 h-4 text-primary" />
-                                    </div>
-                                )}
+                        {messages
+                            .sort((a, b) => {
+                                const timeA = new Date(a.timestamp).getTime();
+                                const timeB = new Date(b.timestamp).getTime();
+                                if (timeA === timeB) {
+                                    if (a.role === "user" && b.role === "assistant") return -1;
+                                    if (a.role === "assistant" && b.role === "user") return 1;
+                                }
+                                return timeA - timeB;
+                            })
+                            .map((message) => (
                                 <div
+                                    key={message.id}
                                     className={cn(
-                                        "max-w-[80%] rounded-lg px-4 py-3",
-                                        message.role === "user"
-                                            ? "bg-primary text-primary-foreground"
-                                            : message.role === "system"
-                                              ? "bg-muted/50 text-muted-foreground text-sm italic"
-                                              : "bg-muted text-foreground"
+                                        "flex gap-3",
+                                        message.role === "user" ? "justify-end" : "justify-start"
                                     )}
                                 >
-                                    <div className="whitespace-pre-wrap break-words">
-                                        {message.content}
+                                    {message.role !== "user" && message.role !== "system" && (
+                                        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                                            <Bot className="w-4 h-4 text-primary" />
+                                        </div>
+                                    )}
+                                    <div
+                                        className={cn(
+                                            "max-w-[80%] rounded-lg px-4 py-3",
+                                            message.role === "user"
+                                                ? "bg-primary text-primary-foreground"
+                                                : message.role === "system"
+                                                  ? "bg-muted/50 text-muted-foreground text-sm italic"
+                                                  : "bg-muted text-foreground"
+                                        )}
+                                    >
+                                        <div className="whitespace-pre-wrap break-words">
+                                            {message.content}
+                                        </div>
+                                        {message.tool_calls && message.tool_calls.length > 0 && (
+                                            <div className="mt-2 pt-2 border-t border-border/50">
+                                                <p className="text-xs text-muted-foreground mb-1">
+                                                    Using tools:
+                                                </p>
+                                                {message.tool_calls.map((tool, idx) => (
+                                                    <div
+                                                        key={idx}
+                                                        className="text-xs bg-background/50 rounded px-2 py-1 mt-1"
+                                                    >
+                                                        {tool.name}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
-                                    {message.tool_calls && message.tool_calls.length > 0 && (
-                                        <div className="mt-2 pt-2 border-t border-border/50">
-                                            <p className="text-xs text-muted-foreground mb-1">
-                                                Using tools:
-                                            </p>
-                                            {message.tool_calls.map((tool, idx) => (
-                                                <div
-                                                    key={idx}
-                                                    className="text-xs bg-background/50 rounded px-2 py-1 mt-1"
-                                                >
-                                                    {tool.name}
-                                                </div>
-                                            ))}
+                                    {message.role === "user" && (
+                                        <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center flex-shrink-0">
+                                            <User className="w-4 h-4 text-secondary-foreground" />
                                         </div>
                                     )}
                                 </div>
-                                {message.role === "user" && (
-                                    <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center flex-shrink-0">
-                                        <User className="w-4 h-4 text-secondary-foreground" />
-                                    </div>
-                                )}
-                            </div>
-                        ))}
+                            ))}
                         {isSending &&
                             currentExecution &&
                             !messages.some((m) => m.id === `streaming-${currentExecution.id}`) && (

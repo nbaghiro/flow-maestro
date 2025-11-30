@@ -7,7 +7,7 @@ import { BadRequestError } from "../../middleware";
 const toolSchema = z.object({
     name: z.string().min(1),
     description: z.string(),
-    type: z.enum(["workflow", "function", "knowledge_base"]),
+    type: z.enum(["workflow", "function", "knowledge_base", "agent", "mcp"]),
     schema: z.record(z.any()),
     config: z.record(z.any())
 });

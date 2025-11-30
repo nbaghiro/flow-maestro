@@ -111,10 +111,11 @@ export class ThreadRepository {
         `;
 
         // Data query
+        // Sort by created_at DESC (newest conversations first)
         const dataQuery = `
             SELECT * FROM flowmaestro.threads
             WHERE ${whereClause}
-            ORDER BY last_message_at DESC NULLS LAST, created_at DESC
+            ORDER BY created_at DESC
             LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
         `;
 
@@ -158,7 +159,7 @@ export class ThreadRepository {
               AND user_id = $2
               AND status = 'active'
               AND deleted_at IS NULL
-            ORDER BY last_message_at DESC NULLS LAST, created_at DESC
+            ORDER BY created_at DESC
             LIMIT 1
         `;
 

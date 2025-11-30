@@ -11,6 +11,7 @@ import { ThreadList } from "../components/agents/ThreadList";
 import { ToolsList } from "../components/agents/ToolsList";
 import { ConfirmDialog } from "../components/common/ConfirmDialog";
 import { Select } from "../components/common/Select";
+import * as api from "../lib/api";
 import { cn } from "../lib/utils";
 import { useAgentStore } from "../stores/agentStore";
 import { useConnectionStore } from "../stores/connectionStore";
@@ -36,7 +37,6 @@ export function AgentBuilder() {
         currentThread,
         fetchThreads,
         setCurrentThread,
-        createNewThread,
         updateThreadTitle,
         archiveThread,
         deleteThread
@@ -257,8 +257,38 @@ export function AgentBuilder() {
     };
 
     // Thread management handlers
-    const handleNewThread = () => {
-        createNewThread();
+    const handleNewThread = async () => {
+        if (!currentAgent) return;
+
+        try {
+            // Format date as "Conversation MM/DD/YYYY, HH:MM AM/PM" to match existing format
+            const now = new Date();
+            const month = String(now.getMonth() + 1).padStart(2, "0");
+            const day = String(now.getDate()).padStart(2, "0");
+            const year = now.getFullYear();
+            const hours = now.getHours();
+            const minutes = String(now.getMinutes()).padStart(2, "0");
+            const ampm = hours >= 12 ? "PM" : "AM";
+            const displayHours = hours % 12 || 12;
+            const threadTitle = `Conversation ${month}/${day}/${year}, ${displayHours}:${minutes} ${ampm}`;
+
+            // Create a new thread for this agent with properly formatted title
+            const response = await api.createThread({
+                agent_id: currentAgent.id,
+                title: threadTitle,
+                status: "active"
+            });
+
+            const newThread = response.data;
+            // Set the new thread as current
+            setCurrentThread(newThread);
+            // Refresh threads list - backend sorts by created_at DESC (newest conversations first)
+            // New thread will appear at top since it's the most recently created
+            await fetchThreads(currentAgent.id);
+        } catch (error) {
+            console.error("Failed to create new thread:", error);
+            setError(error instanceof Error ? error.message : "Failed to create new thread");
+        }
     };
 
     const handleArchiveThread = async (threadId: string) => {

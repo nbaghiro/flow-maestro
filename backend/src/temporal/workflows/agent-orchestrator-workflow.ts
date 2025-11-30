@@ -64,6 +64,16 @@ export interface AgentOrchestratorInput {
     // For continue-as-new with ConversationManager
     serializedConversation?: SerializedConversation;
     iterations?: number;
+    // Previous conversation history from thread (for context continuity)
+    previousConversationHistory?: Array<{
+        id: string;
+        role: string;
+        content: string;
+        tool_calls?: unknown[];
+        tool_name?: string;
+        tool_call_id?: string;
+        timestamp: Date | string;
+    }>;
 }
 
 export interface AgentOrchestratorResult {
@@ -142,7 +152,8 @@ export async function agentOrchestratorWorkflow(
         threadId,
         initialMessage,
         serializedConversation,
-        iterations = 0
+        iterations = 0,
+        previousConversationHistory
     } = input;
 
     console.log(
@@ -203,6 +214,29 @@ export async function agentOrchestratorWorkflow(
         };
         messageState.messages.push(systemMessage);
         messageState.savedMessageIds.push(systemMessage.id); // System message is "saved"
+
+        // Load previous conversation history if provided (for continuing conversations)
+        if (previousConversationHistory && previousConversationHistory.length > 0) {
+            // Convert previous messages to ConversationMessage format
+            // Include tool messages - LLM needs them for context (they contain tool results)
+            const previousMessages = previousConversationHistory.map((msg) => ({
+                id: msg.id,
+                role: msg.role as ConversationMessage["role"],
+                content: msg.content,
+                tool_calls: msg.tool_calls as ToolCall[] | undefined,
+                tool_name: msg.tool_name,
+                tool_call_id: msg.tool_call_id,
+                timestamp: msg.timestamp instanceof Date ? msg.timestamp : new Date(msg.timestamp)
+            }));
+
+            // Add previous messages to conversation (excluding system message which we already added)
+            const nonSystemMessages = previousMessages.filter((msg) => msg.role !== "system");
+            messageState.messages.push(...nonSystemMessages);
+            // Mark all previous messages as "saved" since they're already persisted
+            nonSystemMessages.forEach((msg) => {
+                messageState.savedMessageIds.push(msg.id);
+            });
+        }
 
         // Add initial user message if provided
         if (initialMessage) {
@@ -685,8 +719,6 @@ export async function agentOrchestratorWorkflow(
 
         // Execute tool calls
         for (const toolCall of llmResponse.tool_calls!) {
-            console.log(`[Agent] Executing tool: ${toolCall.name}`);
-
             await emitAgentToolCallStarted({
                 executionId,
                 threadId,
@@ -721,16 +753,17 @@ export async function agentOrchestratorWorkflow(
                     agentId
                 });
 
-                // Add tool result to conversation
+                // Add tool result to conversation (for LLM, not shown to users)
                 const toolMessage: ConversationMessage = {
                     id: `tool-${Date.now()}-${toolCall.id}`,
                     role: "tool",
-                    content: JSON.stringify(toolResult),
+                    content: JSON.stringify(toolResult), // Raw JSON for LLM
                     tool_name: toolCall.name,
                     tool_call_id: toolCall.id,
                     timestamp: new Date()
                 };
                 messageState.messages.push(toolMessage);
+                // Note: We don't emit tool messages to frontend to avoid showing raw JSON
 
                 // End TOOL_EXECUTION span with success
                 await endSpan({
@@ -752,16 +785,17 @@ export async function agentOrchestratorWorkflow(
                 const errorMessage = error instanceof Error ? error.message : "Unknown tool error";
                 console.error(`[Agent] Tool ${toolCall.name} failed: ${errorMessage}`);
 
-                // Add error result to conversation
+                // Add error result to conversation (for LLM, not shown to users)
                 const toolMessage: ConversationMessage = {
                     id: `tool-${Date.now()}-${toolCall.id}`,
                     role: "tool",
-                    content: JSON.stringify({ error: errorMessage }),
+                    content: JSON.stringify({ success: false, error: errorMessage }), // Raw JSON for LLM
                     tool_name: toolCall.name,
                     tool_call_id: toolCall.id,
                     timestamp: new Date()
                 };
                 messageState.messages.push(toolMessage);
+                // Note: We don't emit tool messages to frontend to avoid showing raw JSON
 
                 // End TOOL_EXECUTION span with error
                 await endSpan({
