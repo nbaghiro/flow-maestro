@@ -110,7 +110,7 @@ function ContentArea({
     return (
         <div
             ref={divRef}
-            className={`pr-6 pt-1 pb-2 outline-none w-full h-full [&:empty]:before:content-[attr(data-placeholder)] [&:empty]:before:text-gray-400 [&_*]:bg-transparent ${
+            className={`pr-6 pt-1 pb-2 outline-none w-full h-full comment-scrollbar [&:empty]:before:content-[attr(data-placeholder)] [&:empty]:before:text-gray-400 [&_*]:bg-transparent ${
                 isEditing ? "cursor-text nodrag" : "cursor-grab active:cursor-grabbing"
             }`}
             tabIndex={0}

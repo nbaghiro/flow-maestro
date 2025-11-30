@@ -16,6 +16,40 @@ function CommentNode({ id, data, selected }: NodeProps) {
     const [isEditing, setIsEditing] = useState(false);
     const selectionRef = useRef<Range | null>(null);
     const [activeFormats, setActiveFormats] = useState<string[]>([]);
+    const [activeTextColor, setActiveTextColor] = useState(textColor);
+
+    const normalizeColorToHex = (value: string | null): string => {
+        if (!value) return textColor;
+        if (value.startsWith("#") && (value.length === 7 || value.length === 4)) {
+            return value.length === 4
+                ? `#${value[1]}${value[1]}${value[2]}${value[2]}${value[3]}${value[3]}`.toUpperCase()
+                : value.toUpperCase();
+        }
+
+        const match = value.match(/\d+/g);
+        if (!match || match.length < 3) return textColor;
+
+        const [r, g, b] = match.map((n) => {
+            const hex = Math.max(0, Math.min(255, Number(n)))
+                .toString(16)
+                .padStart(2, "0");
+            return hex;
+        });
+        return `#${r}${g}${b}`.toUpperCase();
+    };
+
+    const readSelectionColor = (range: Range | null) => {
+        if (!range) return textColor;
+        let node: Node | null = range.startContainer;
+        if (node.nodeType === Node.TEXT_NODE) {
+            node = node.parentElement;
+        }
+        if (node && node instanceof HTMLElement) {
+            const color = getComputedStyle(node).color;
+            return normalizeColorToHex(color);
+        }
+        return textColor;
+    };
 
     const refreshFormatState = () => {
         const next: string[] = [];
@@ -111,13 +145,16 @@ function CommentNode({ id, data, selected }: NodeProps) {
     };
 
     const onSetText = (c: string) => {
+        const normalized = normalizeColorToHex(c);
         const hasSelection = selectionRef.current && !selectionRef.current.collapsed;
         if (hasSelection) {
-            runFormatting("foreColor", c);
+            setActiveTextColor(normalized);
+            runFormatting("foreColor", normalized);
             return;
         }
 
-        updateNode(id, { textColor: c });
+        setActiveTextColor(normalized);
+        updateNode(id, { textColor: normalized });
     };
 
     // --- Resize logic (same as BaseNode) ---
@@ -184,6 +221,10 @@ function CommentNode({ id, data, selected }: NodeProps) {
         };
     }, [isResizing]);
 
+    useEffect(() => {
+        setActiveTextColor(textColor);
+    }, [textColor]);
+
     return (
         <div
             data-id={id}
@@ -212,7 +253,7 @@ function CommentNode({ id, data, selected }: NodeProps) {
                     onSetBg={onSetBg}
                     onSetText={onSetText}
                     activeBg={backgroundColor}
-                    activeText={textColor}
+                    activeText={activeTextColor}
                     activeBold={activeFormats.includes("bold")}
                     activeItalic={activeFormats.includes("italic")}
                     activeUnderline={activeFormats.includes("underline")}
@@ -228,6 +269,7 @@ function CommentNode({ id, data, selected }: NodeProps) {
                 onStopEditing={() => setIsEditing(false)}
                 onSelectionChange={(range) => {
                     selectionRef.current = range;
+                    setActiveTextColor(readSelectionColor(range));
                     refreshFormatState();
                 }}
                 onStartEditing={() => setIsEditing(true)}
