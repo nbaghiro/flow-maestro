@@ -97,44 +97,41 @@ export async function executeTriggerRoute(fastify: FastifyInstance) {
                 const workflowId = `execution-${execution.id}`;
 
                 // Convert frontend workflow definition to backend format if needed
-                let backendWorkflowDefinition: unknown;
+                let backendWorkflowDef: WorkflowDefinition;
                 const workflowDef = workflow.definition as { nodes?: unknown; edges?: unknown };
 
                 // Check if already in backend format (nodes is an object/Record)
                 if (workflowDef.nodes && !Array.isArray(workflowDef.nodes)) {
                     // Already in backend format
-                    backendWorkflowDefinition = stripNonExecutableNodes(
-                        {
-                            ...(workflowDef as WorkflowDefinition),
-                            name: workflow.name
-                        },
-                        workflow.name
-                    );
+                    backendWorkflowDef = {
+                        ...(workflowDef as WorkflowDefinition),
+                        name: workflow.name
+                    };
                 } else if (workflowDef.nodes && Array.isArray(workflowDef.nodes)) {
                     // Frontend format, needs conversion
-                    backendWorkflowDefinition = stripNonExecutableNodes(
-                        convertFrontendToBackend(
-                            workflow.definition as unknown as {
-                                nodes: Array<{
-                                    id: string;
-                                    type: string;
-                                    data: Record<string, unknown>;
-                                    position?: { x: number; y: number };
-                                }>;
-                                edges: Array<{
-                                    id: string;
-                                    source: string;
-                                    target: string;
-                                    sourceHandle?: string;
-                                }>;
-                            },
-                            workflow.name
-                        ),
+                    backendWorkflowDef = convertFrontendToBackend(
+                        workflow.definition as unknown as {
+                            nodes: Array<{
+                                id: string;
+                                type: string;
+                                data: Record<string, unknown>;
+                                position?: { x: number; y: number };
+                            }>;
+                            edges: Array<{
+                                id: string;
+                                source: string;
+                                target: string;
+                                sourceHandle?: string;
+                            }>;
+                        },
                         workflow.name
                     );
                 } else {
                     throw new Error("Invalid workflow definition format");
                 }
+
+                // Strip non-executable nodes
+                backendWorkflowDef = stripNonExecutableNodes(backendWorkflowDef, workflow.name);
 
                 // Start the workflow (non-blocking)
                 await client.workflow.start("orchestratorWorkflow", {
@@ -143,7 +140,7 @@ export async function executeTriggerRoute(fastify: FastifyInstance) {
                     args: [
                         {
                             executionId: execution.id,
-                            workflowDefinition: backendWorkflowDefinition,
+                            workflowDefinition: backendWorkflowDef,
                             inputs,
                             userId
                         }
